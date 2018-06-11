@@ -1,4 +1,4 @@
 package com.bluedb;
 
-public class BlueDbInMemoryImpl {
+public class BlueDbInMemoryImpl implements BlueDB {
 }
