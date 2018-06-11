@@ -1,4 +1,4 @@
 package com.bluedb;
 
-public class BlueDBOnDiskImpl {
+public class BlueDBOnDiskImpl implements BlueDB {
 }
