@@ -1,11 +1,8 @@
 
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src']
-        }
-        resources {
-            srcDirs = ['res']
-        }
-    }
+repositories {
+    mavenCentral()
+}
+
+dependencies{
+    compile group: 'de.ruedigermoeller', name: 'fst', version: '2.57'
 }
