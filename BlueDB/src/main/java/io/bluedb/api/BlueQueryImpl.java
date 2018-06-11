@@ -9,14 +9,12 @@ import io.bluedb.api.keys.TimeKey;
 
 public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
-	private BlueDbInternal db;
-	private Class<T> clazz;
+	private BlueDbInternalCollection<T> db;
 	private List<Condition<BlueKey>> keyConditions = new LinkedList<>();
 	private List<Condition<T>> objectConditions = new LinkedList<>();
 
-	public BlueQueryImpl(BlueDbInternal db, Class<T> clazz) {
+	public BlueQueryImpl(BlueDbInternalCollection<T> db) {
 		this.db = db;
-		this.clazz = clazz;
 	}
 
 	@Override
@@ -85,16 +83,16 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public List<T> getAll() throws BlueDbException {
-		return db.getAll(clazz, keyConditions, objectConditions);
+		return db.getAll(keyConditions, objectConditions);
 	}
 
 	@Override
 	public void deleteAll() throws BlueDbException {
-		db.deleteAll(clazz, keyConditions, objectConditions);
+		db.deleteAll(keyConditions, objectConditions);
 	}
 
 	@Override
 	public void updateAll(Updater<T> updater) throws BlueDbException {
-		db.updateAll(clazz, keyConditions, objectConditions, updater);
+		db.updateAll(keyConditions, objectConditions, updater);
 	}
 }
