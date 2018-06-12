@@ -1,8 +1,8 @@
 package io.bluedb.api;
 
-import io.bluedb.api.entities.BlueEntity;
+import java.io.Serializable;
 
 @FunctionalInterface
-public interface Updater<T extends BlueEntity> {
+public interface Updater<T extends Serializable> {
 	public void update(T entity);
 }

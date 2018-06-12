@@ -1,10 +1,10 @@
 package io.bluedb.api;
 
+import java.io.Serializable;
 import java.util.List;
-import io.bluedb.api.entities.BlueEntity;
 import io.bluedb.api.exceptions.BlueDbException;
 
-public interface BlueQuery<T extends BlueEntity> {
+public interface BlueQuery<T extends Serializable> {
 
 	BlueQuery<T> where(Condition<T> c);
 

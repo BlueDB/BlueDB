@@ -1,39 +1,37 @@
 package io.bluedb.api;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
-import io.bluedb.api.entities.BlueEntity;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
 
-public class BlueQueryImpl<T extends BlueEntity> implements BlueQuery<T> {
+public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
-	private BlueDbInternal db;
-	private Class<T> clazz;
-	private List<Condition<T>> conditions = new LinkedList<>();
+	private BlueDbInternalCollection<T> db;
+	private List<Condition<BlueKey>> keyConditions = new LinkedList<>();
+	private List<Condition<T>> objectConditions = new LinkedList<>();
 
-	public BlueQueryImpl(BlueDbInternal db, Class<T> clazz) {
+	public BlueQueryImpl(BlueDbInternalCollection<T> db) {
 		this.db = db;
-		this.clazz = clazz;
 	}
 
 	@Override
 	public BlueQuery<T> where(Condition<T> c) {
 		if (c != null) {
-			conditions.add(c);
+			objectConditions.add(c);
 		}
 		return this;
 	}
 
 	@Override
 	public BlueQuery<T> afterTime(long time) {
-		conditions.add(entity -> isEntityAfterTime(entity, time));
+		keyConditions.add(key -> isEntityAfterTime(key, time));
 		return this;
 	}
 
-	private boolean isEntityAfterTime(T entity, long time) {
-		BlueKey key = entity.getKey();
+	private boolean isEntityAfterTime(BlueKey key, long time) {
 		if (key instanceof TimeKey) {
 			return ((TimeKey) key).getTime() > time;
 		} else {
@@ -43,12 +41,11 @@ public class BlueQueryImpl<T extends BlueEntity> implements BlueQuery<T> {
 
 	@Override
 	public BlueQuery<T> afterOrAtTime(long time) {
-		conditions.add(entity -> isEntityAfterOrAtTime(entity, time));
+		keyConditions.add(key -> isEntityAfterOrAtTime(key, time));
 		return this;
 	}
 
-	private boolean isEntityAfterOrAtTime(T entity, long time) {
-		BlueKey key = entity.getKey();
+	private boolean isEntityAfterOrAtTime(BlueKey key, long time) {
 		if (key instanceof TimeKey) {
 			return ((TimeKey) key).getTime() >= time;
 		} else {
@@ -58,12 +55,11 @@ public class BlueQueryImpl<T extends BlueEntity> implements BlueQuery<T> {
 
 	@Override
 	public BlueQuery<T> beforeTime(long time) {
-		conditions.add(entity -> isEntityBeforeTime(entity, time));
+		keyConditions.add(key -> isEntityBeforeTime(key, time));
 		return this;
 	}
 
-	private boolean isEntityBeforeTime(T entity, long time) {
-		BlueKey key = entity.getKey();
+	private boolean isEntityBeforeTime(BlueKey key, long time) {
 		if (key instanceof TimeKey) {
 			return ((TimeKey) key).getTime() < time;
 		} else {
@@ -73,12 +69,11 @@ public class BlueQueryImpl<T extends BlueEntity> implements BlueQuery<T> {
 
 	@Override
 	public BlueQuery<T> beforeOrAtTime(long time) {
-		conditions.add(entity -> isEntityBeforeOrAtTime(entity, time));
+		keyConditions.add(key -> isEntityBeforeOrAtTime(key, time));
 		return this;
 	}
 
-	private boolean isEntityBeforeOrAtTime(T entity, long time) {
-		BlueKey key = entity.getKey();
+	private boolean isEntityBeforeOrAtTime(BlueKey key, long time) {
 		if (key instanceof TimeKey) {
 			return ((TimeKey) key).getTime() <= time;
 		} else {
@@ -88,16 +83,16 @@ public class BlueQueryImpl<T extends BlueEntity> implements BlueQuery<T> {
 
 	@Override
 	public List<T> getAll() throws BlueDbException {
-		return db.getAll(clazz, conditions);
+		return db.getAll(keyConditions, objectConditions);
 	}
 
 	@Override
 	public void deleteAll() throws BlueDbException {
-		db.deleteAll(clazz, conditions);
+		db.deleteAll(keyConditions, objectConditions);
 	}
 
 	@Override
 	public void updateAll(Updater<T> updater) throws BlueDbException {
-		db.updateAll(clazz, conditions, updater);
+		db.updateAll(keyConditions, objectConditions, updater);
 	}
 }

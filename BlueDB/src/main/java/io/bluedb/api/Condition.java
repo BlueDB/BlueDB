@@ -1,8 +1,8 @@
 package io.bluedb.api;
 
-import io.bluedb.api.entities.BlueEntity;
+import java.io.Serializable;
 
 @FunctionalInterface
-public interface Condition<T extends BlueEntity> {
+public interface Condition<T extends Serializable> {
 	public boolean resolve(T entity);
 }
