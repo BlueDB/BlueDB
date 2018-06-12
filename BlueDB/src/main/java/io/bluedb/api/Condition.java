@@ -4,5 +4,5 @@ import java.io.Serializable;
 
 @FunctionalInterface
 public interface Condition<T extends Serializable> {
-	public boolean resolve(T entity);
+	public boolean resolve(T object);
 }

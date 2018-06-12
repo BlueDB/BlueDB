@@ -1,9 +1,9 @@
-package io.bluedb.memory;
+package io.bluedb.disk;
 
 import java.io.Serializable;
 import io.bluedb.api.keys.BlueKey;
 
-class BlueEntity implements Serializable {
+public class BlueEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private BlueKey key;

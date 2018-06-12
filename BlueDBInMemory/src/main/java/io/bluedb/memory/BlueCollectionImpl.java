@@ -2,18 +2,18 @@ package io.bluedb.memory;
 
 import java.io.Serializable;
 import java.util.List;
-import io.bluedb.api.BlueDbInternalCollection;
+import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 
-public class BlueDbInMemoryCollection<T extends Serializable> implements BlueDbInternalCollection<T> {
+class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
 	private Class<T> type;
 
-	public BlueDbInMemoryCollection(Class<T> type) {
+	public BlueCollectionImpl(Class<T> type) {
 		this.type = type;
 	}
 
@@ -47,19 +47,16 @@ public class BlueDbInMemoryCollection<T extends Serializable> implements BlueDbI
 		return null;
 	}
 
-	@Override
 	public List<T> getAll(List<Condition<BlueKey>> keyConditions, List<Condition<T>> objectConditions) throws BlueDbException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	@Override
 	public void deleteAll(List<Condition<BlueKey>> keyConditions, List<Condition<T>> objectConditions) throws BlueDbException {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
 	public void updateAll(List<Condition<BlueKey>> keyConditions, List<Condition<T>> objectConditions, Updater<T> updater) throws BlueDbException {
 		// TODO Auto-generated method stub
 

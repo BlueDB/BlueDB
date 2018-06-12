@@ -1,20 +1,23 @@
-package io.bluedb.api;
+package io.bluedb.memory;
 
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
+import io.bluedb.api.BlueQuery;
+import io.bluedb.api.Condition;
+import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
 
-public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
+class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
-	private BlueDbInternalCollection<T> db;
+	private BlueCollectionImpl<T> collection;
 	private List<Condition<BlueKey>> keyConditions = new LinkedList<>();
 	private List<Condition<T>> objectConditions = new LinkedList<>();
 
-	public BlueQueryImpl(BlueDbInternalCollection<T> db) {
-		this.db = db;
+	public BlueQueryImpl(BlueCollectionImpl<T> collection) {
+		this.collection = collection;
 	}
 
 	@Override
@@ -83,16 +86,16 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public List<T> getAll() throws BlueDbException {
-		return db.getAll(keyConditions, objectConditions);
+		return collection.getAll(keyConditions, objectConditions);
 	}
 
 	@Override
 	public void deleteAll() throws BlueDbException {
-		db.deleteAll(keyConditions, objectConditions);
+		collection.deleteAll(keyConditions, objectConditions);
 	}
 
 	@Override
 	public void updateAll(Updater<T> updater) throws BlueDbException {
-		db.updateAll(keyConditions, objectConditions, updater);
+		collection.updateAll(keyConditions, objectConditions, updater);
 	}
 }

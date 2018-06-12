@@ -4,7 +4,7 @@ import java.io.Serializable;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 
-public interface BlueDbCollection<T extends Serializable> {
+public interface BlueCollection<T extends Serializable> {
 
 	public void insert(T object, BlueKey key) throws BlueDbException;
 
