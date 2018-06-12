@@ -1,6 +1,7 @@
 package io.bluedb.memory;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
@@ -47,7 +48,12 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 		return null;
 	}
 
-	public List<T> getAll(List<Condition<BlueKey>> keyConditions, List<Condition<T>> objectConditions) throws BlueDbException {
+	public List<T> getList() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public Iterator<T> getIterator() {
 		// TODO Auto-generated method stub
 		return null;
 	}

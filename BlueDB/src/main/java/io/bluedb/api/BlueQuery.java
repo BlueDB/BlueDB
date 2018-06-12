@@ -1,6 +1,7 @@
 package io.bluedb.api;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 
@@ -14,8 +15,11 @@ public interface BlueQuery<T extends Serializable> {
 	BlueQuery<T> afterTime(long time);
 	BlueQuery<T> afterOrAtTime(long time);
 
-	List<T> getAll() throws BlueDbException;
+	List<T> getList() throws BlueDbException;
+	Iterator<T> getIterator() throws BlueDbException;
+
 	void deleteAll() throws BlueDbException;
+
 	void updateAll(Updater<T> updater) throws BlueDbException;
 
 }

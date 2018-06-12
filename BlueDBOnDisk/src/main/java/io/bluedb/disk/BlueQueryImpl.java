@@ -1,6 +1,7 @@
 package io.bluedb.disk;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import io.bluedb.api.BlueQuery;
@@ -85,8 +86,13 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	}
 
 	@Override
-	public List<T> getAll() throws BlueDbException {
-		return collection.getAll(keyConditions, objectConditions);
+	public List<T> getList() throws BlueDbException {
+		return collection.getList(keyConditions, objectConditions);
+	}
+
+	@Override
+	public Iterator<T> getIterator() throws BlueDbException {
+		return collection.getIterator(keyConditions, objectConditions);
 	}
 
 	@Override
