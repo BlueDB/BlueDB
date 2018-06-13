@@ -8,14 +8,13 @@ import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeKey;
 
 class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	private BlueCollectionImpl<T> collection;
-	private List<Condition<BlueKey>> keyConditions = new LinkedList<>();
 	private List<Condition<T>> objectConditions = new LinkedList<>();
+	private long maxTime = Long.MAX_VALUE;
+	private long minTime = Long.MIN_VALUE;
 
 	public BlueQueryImpl(BlueCollectionImpl<T> collection) {
 		this.collection = collection;
@@ -31,77 +30,45 @@ class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public BlueQuery<T> afterTime(long time) {
-		keyConditions.add(key -> isEntityAfterTime(key, time));
+		minTime = Math.max(minTime, Math.max(time + 1,time)); // last part to avoid overflow errors
 		return this;
-	}
-
-	private boolean isEntityAfterTime(BlueKey key, long time) {
-		if (key instanceof TimeKey) {
-			return ((TimeKey) key).getTime() > time;
-		} else {
-			return true;
-		}
 	}
 
 	@Override
 	public BlueQuery<T> afterOrAtTime(long time) {
-		keyConditions.add(key -> isEntityAfterOrAtTime(key, time));
+		minTime = Math.max(minTime, time);
 		return this;
-	}
-
-	private boolean isEntityAfterOrAtTime(BlueKey key, long time) {
-		if (key instanceof TimeKey) {
-			return ((TimeKey) key).getTime() >= time;
-		} else {
-			return true;
-		}
 	}
 
 	@Override
 	public BlueQuery<T> beforeTime(long time) {
-		keyConditions.add(key -> isEntityBeforeTime(key, time));
+		maxTime = Math.min(maxTime, Math.min(time - 1,time)); // last part to avoid overflow errors
 		return this;
-	}
-
-	private boolean isEntityBeforeTime(BlueKey key, long time) {
-		if (key instanceof TimeKey) {
-			return ((TimeKey) key).getTime() < time;
-		} else {
-			return true;
-		}
 	}
 
 	@Override
 	public BlueQuery<T> beforeOrAtTime(long time) {
-		keyConditions.add(key -> isEntityBeforeOrAtTime(key, time));
+		maxTime = Math.min(maxTime, time);
 		return this;
-	}
-
-	private boolean isEntityBeforeOrAtTime(BlueKey key, long time) {
-		if (key instanceof TimeKey) {
-			return ((TimeKey) key).getTime() <= time;
-		} else {
-			return true;
-		}
 	}
 
 	@Override
 	public List<T> getList() throws BlueDbException {
-		return collection.getList();
+		return collection.getList(minTime, maxTime, objectConditions);
 	}
 
 	@Override
 	public Iterator<T> getIterator() throws BlueDbException {
-		return collection.getIterator();
+		return  getList().iterator();
 	}
 
 	@Override
 	public void delete() throws BlueDbException {
-		collection.deleteAll(keyConditions, objectConditions);
+		collection.deleteAll(minTime, maxTime, objectConditions);
 	}
 
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
-		collection.updateAll(keyConditions, objectConditions, updater);
+		collection.updateAll(minTime, maxTime, objectConditions, updater);
 	}
 }

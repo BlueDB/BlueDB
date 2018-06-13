@@ -107,7 +107,12 @@ public class BlueDbInMemoryTest extends TestCase {
 		}
 		cleanup();
 	}
-	
+
+	@Test
+	public void testBeforeTimeFrame() {
+		// TODO
+	}
+
 	@Test
 	public void testBeforeTime() {
 		TestValue valueAt1 = new TestValue("Joe");
@@ -156,6 +161,11 @@ public class BlueDbInMemoryTest extends TestCase {
 			fail();
 		}
 		cleanup();
+	}
+
+	@Test
+	public void testAfterTimeFrame() {
+		// TODO
 	}
 
 	@Test
@@ -300,7 +310,7 @@ public class BlueDbInMemoryTest extends TestCase {
 		insert(3, valueBobby);
 		List<TestValue> storedValues, joseyOnly, everyoneButJosey;
 		BlueQuery<TestValue> queryForJosey = getCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
-		BlueQuery<TestValue> queryForEveryoneButJosey = getCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
+		BlueQuery<TestValue> queryForEveryoneButJosey = getCollection().query().where((v) -> !v.getName().equals("Josey"));
 		try {
 			// sanity check
 			storedValues = getCollection().query().getList();
@@ -311,7 +321,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 			// test update with conditions
 			queryForJosey.update((v) -> v.addCupcake());
-			joseyOnly = getCollection().query().getList();
+			joseyOnly = queryForJosey.getList();
 			assertEquals(1, joseyOnly.size());
 			int joseyCupcakes = joseyOnly.get(0).getCupcakes();
 			assertEquals(1, joseyCupcakes);
@@ -320,7 +330,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 			// test update all
 			getCollection().query().update((v) -> v.addCupcake());
-			joseyOnly = getCollection().query().getList();
+			joseyOnly = queryForJosey.getList();
 			assertEquals(1, joseyOnly.size());
 			joseyCupcakes = joseyOnly.get(0).getCupcakes();
 			assertEquals(2, joseyCupcakes);
@@ -393,7 +403,7 @@ public class BlueDbInMemoryTest extends TestCase {
 	}
 
 	private void insert(long time, TestValue value) {
-		BlueKey key = createKey(10, value);
+		BlueKey key = createKey(time, value);
 		insert(key, value);
 	}
 
