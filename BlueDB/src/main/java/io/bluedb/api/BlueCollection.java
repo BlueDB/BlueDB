@@ -6,7 +6,7 @@ import io.bluedb.api.keys.BlueKey;
 
 public interface BlueCollection<T extends Serializable> {
 
-	public void insert(T object, BlueKey key) throws BlueDbException;
+	public void insert(BlueKey key, T object) throws BlueDbException;
 
 	public T get(BlueKey key) throws BlueDbException;
 

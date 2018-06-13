@@ -19,7 +19,7 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 	}
 
 	@Override
-	public void insert(T object, BlueKey key) throws BlueDbException {
+	public void insert(BlueKey key, T object) throws BlueDbException {
 		// TODO Auto-generated method stub
 
 	}
