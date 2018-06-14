@@ -9,6 +9,10 @@ public class TimeFrameKey extends TimeKey {
 		super(id, startTime);
 	}
 
+	public TimeFrameKey(BlueKey key, long startTime, long endTime) {
+		super(key, startTime);
+	}
+
 	public long getStartTime() {
 		return super.getTime();
 	}
