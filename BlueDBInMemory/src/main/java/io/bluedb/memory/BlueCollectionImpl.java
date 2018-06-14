@@ -2,6 +2,8 @@ package io.bluedb.memory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -107,6 +109,7 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 				results.add(key);
 			}
 		}
+		sort(results);
 		return results;
 	}
 	
@@ -147,5 +150,24 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 	@SuppressWarnings("unchecked")
 	private T deserialize(byte[] bytes) {
 		return (T) conf.asObject(bytes);
+	}
+
+	private static void sort(List<BlueKey> keys) {
+		Collections.sort(keys, new Comparator<BlueKey>(){
+			@Override
+			public int compare(BlueKey k1, BlueKey k2) {
+				if ((k1 instanceof TimeKey) && (k2 instanceof TimeKey)) {
+					Long t1 = ((TimeKey) k1).getTime();
+					Long t2 = ((TimeKey) k2).getTime();
+					return t1.compareTo(t2);
+				} else if (k1 instanceof TimeKey) {
+					return -1;
+				} else if (k2 instanceof TimeKey) {
+					return 1;
+				} else {
+					return 0;
+				}
+			}
+		});
 	}
 }
