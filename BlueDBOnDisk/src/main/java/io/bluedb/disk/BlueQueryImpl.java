@@ -96,12 +96,18 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	}
 
 	@Override
-	public void deleteAll() throws BlueDbException {
+	public void delete() throws BlueDbException {
 		collection.deleteAll(keyConditions, objectConditions);
 	}
 
 	@Override
-	public void updateAll(Updater<T> updater) throws BlueDbException {
+	public void update(Updater<T> updater) throws BlueDbException {
 		collection.updateAll(keyConditions, objectConditions, updater);
+	}
+
+	@Override
+	public int count() throws BlueDbException {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }

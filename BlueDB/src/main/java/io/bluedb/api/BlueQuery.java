@@ -18,8 +18,8 @@ public interface BlueQuery<T extends Serializable> {
 	List<T> getList() throws BlueDbException;
 	Iterator<T> getIterator() throws BlueDbException;
 
-	void deleteAll() throws BlueDbException;
-
-	void updateAll(Updater<T> updater) throws BlueDbException;
+	void delete() throws BlueDbException;
+	void update(Updater<T> updater) throws BlueDbException;
+	public int count() throws BlueDbException;
 
 }
