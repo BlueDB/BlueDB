@@ -2,9 +2,9 @@ package io.bluedb.memory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.nustaq.serialization.FSTConfiguration;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
@@ -18,7 +18,8 @@ import io.bluedb.api.keys.TimeKey;
 class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
 	private Class<T> type;
-	private Map<BlueKey, T> data = new HashMap<>();
+	private Map<BlueKey, byte[]> data = new ConcurrentHashMap<>();
+	FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 
 	public BlueCollectionImpl(Class<T> type) {
 		this.type = type;
@@ -26,20 +27,28 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
 	@Override
 	public void insert(BlueKey key, T object) throws BlueDbException {
-		object = clone(object);
-		data.put(key, object); // TODO store bytes instead to imitate onDisk
+		// TODO lock on update, insert or delete
+		byte[] bytes = serialize(object);
+		data.put(key, bytes);
 	}
 
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
-		return clone(data.get(key)); // TODO store bytes instead to imitate onDisk
+		byte[] bytes = data.get(key);
+		if (bytes == null)
+			return null;
+		return deserialize(bytes);
 	}
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
-		T object = data.get(key);
-		if (object != null) {
+		// TODO lock on update, insert or delete
+		byte[] bytes = data.get(key);
+		if (bytes != null) {
+			T object = deserialize(bytes);
 			updater.update(object);
+			bytes = serialize(object);
+			data.put(key, bytes);
 		}
 	}
 
@@ -57,7 +66,11 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 		List<T> results = new ArrayList<>();
 		List<BlueKey> matches = findMatches(minTime, maxTime, objectConditions);
 		for (BlueKey key: matches) {
-			results.add(clone(data.get(key))); // TODO store bytes instead to imitate onDisk
+			byte[] bytes = data.get(key);
+			if (bytes != null) { // in case there's been a delete
+				T object = deserialize(bytes);
+				results.add(object);
+			}
 		}
 		return results;
 	}
@@ -65,6 +78,7 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 	public void deleteAll(long minTime, long maxTime, List<Condition<T>> objectConditions) throws BlueDbException {
 		List<BlueKey> matches = findMatches(minTime, maxTime, objectConditions);
 		for (BlueKey key: matches) {
+			// TODO lock on update, insert or delete
 			data.remove(key);
 		}
 	}
@@ -72,7 +86,12 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 	public void updateAll(long minTime, long maxTime, List<Condition<T>> objectConditions, Updater<T> updater) throws BlueDbException {
 		List<BlueKey> matches = findMatches(minTime, maxTime, objectConditions);
 		for (BlueKey key: matches) {
-			updater.update(data.get(key));
+			// TODO lock on update, insert or delete
+			byte[] bytes = data.get(key);
+			T obj = deserialize(bytes);
+			updater.update(obj);
+			bytes = serialize(obj);
+			data.put(key, bytes);
 		}
 	}
 
@@ -98,7 +117,16 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 		}
 	}
 
-	private static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
+	private <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, byte[] bytes) {
+		if (bytes == null) { // in case it's been deleted.
+			return false;
+		}
+		@SuppressWarnings("unchecked")
+		X object = (X) deserialize(bytes);
+		return meetsConditions(conditions, object);
+	}
+
+	private <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
 		for (Condition<X> condition: conditions) {
 			if (!condition.resolve(object)) {
 				return false;
@@ -107,11 +135,12 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 		return true;
 	}
 
-	 // TODO store bytes instead to imitate onDisk
-	private static <X extends Serializable> X clone(X object) {
-		FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
-		byte[] serialized = conf.asByteArray(object);
-		X deserialized = (X) conf.asObject(serialized);
-		return deserialized;
+	private byte[] serialize(T object) {
+		return conf.asByteArray(object);
+	}
+
+	@SuppressWarnings("unchecked")
+	private T deserialize(byte[] bytes) {
+		return (T) conf.asObject(bytes);
 	}
 }
