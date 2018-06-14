@@ -6,6 +6,8 @@ import io.bluedb.api.keys.BlueKey;
 
 public interface BlueCollection<T extends Serializable> {
 
+	public boolean contains(BlueKey key) throws BlueDbException;
+
 	public void insert(BlueKey key, T object) throws BlueDbException;
 
 	public T get(BlueKey key) throws BlueDbException;

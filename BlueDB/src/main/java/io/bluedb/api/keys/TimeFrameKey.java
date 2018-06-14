@@ -7,6 +7,12 @@ public class TimeFrameKey extends TimeKey {
 
 	public TimeFrameKey(long id, long startTime, long endTime) {
 		super(id, startTime);
+		this.endTime = endTime;
+	}
+
+	public TimeFrameKey(BlueKey key, long startTime, long endTime) {
+		super(key, startTime);
+		this.endTime = endTime;
 	}
 
 	public long getStartTime() {

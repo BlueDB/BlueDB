@@ -28,7 +28,7 @@ public class TestValue implements Serializable {
 	}
 
 	public void addCupcake() {
-		cupcakes = 1;
+		cupcakes += 1;
 	}
 
 	public void setCupcakes(int cupcakes) {

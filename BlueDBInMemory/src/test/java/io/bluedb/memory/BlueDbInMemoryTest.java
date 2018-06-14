@@ -11,6 +11,7 @@ import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.StringKey;
+import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import junit.framework.TestCase;
 
@@ -22,7 +23,7 @@ public class BlueDbInMemoryTest extends TestCase {
 	@Test
 	public void testInsert() {
 		TestValue value = new TestValue("Joe");
-		BlueKey key = createKey(10, value);
+		BlueKey key = createTimeKey(10, value);
 		insert(key, value);
 		assertValueAtKey(key, value);
 		cleanup();
@@ -32,10 +33,10 @@ public class BlueDbInMemoryTest extends TestCase {
 	public void testGet() {
 		TestValue value = new TestValue("Joe");
 		TestValue differentValue = new TestValue("Bob");
-		BlueKey key = createKey(10, value);
-		BlueKey sameTimeDifferentValue = createKey(10, differentValue);
-		BlueKey sameValueDifferentTime = createKey(20, value);
-		BlueKey differentValueAndTime = createKey(20, differentValue);
+		BlueKey key = createTimeKey(10, value);
+		BlueKey sameTimeDifferentValue = createTimeKey(10, differentValue);
+		BlueKey sameValueDifferentTime = createTimeKey(20, value);
+		BlueKey differentValueAndTime = createTimeKey(20, differentValue);
 		insert(key, value);
 		try {
 			assertEquals(value, getCollection().get(key));
@@ -52,19 +53,26 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testUpdate() {
-		TestValue value = new TestValue("Joe", 0);
-		BlueKey key = createKey(10, value);
-		insert(key, value);
-
+		BlueKey key = insert(10, new TestValue("Joe", 0));
 		try {
-			TestValue storedValue = getCollection().get(key);
-			assertEquals(0, storedValue.getCupcakes());
-			assertNotEquals(1, storedValue.getCupcakes());
-
+			assertCupcakes(key, 0);
 			getCollection().update(key, (v) -> v.addCupcake());
-			TestValue updatedValue = getCollection().get(key);
-			assertNotEquals(0, updatedValue.getCupcakes());
-			assertEquals(1, updatedValue.getCupcakes());
+			assertCupcakes(key, 1);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		cleanup();
+	}
+
+	@Test
+	public void testCount() {
+		try {
+			assertEquals(0, getCollection().query().count());
+			BlueKey key = insert(10, new TestValue("Joe", 0));
+			assertEquals(1, getCollection().query().count());
+			getCollection().delete(key);
+			assertEquals(0, getCollection().query().count());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -75,12 +83,11 @@ public class BlueDbInMemoryTest extends TestCase {
 	@Test
 	public void testDelete() {
 		TestValue value = new TestValue("Joe");
-		BlueKey key = createKey(10, value);
-		insert(key, value);
+		BlueKey key = insert(10, value);
 		try {
-			assertEquals(value, getCollection().get(key));
+			assertValueAtKey(key, value);
 			getCollection().delete(key);
-			assertNotEquals(value, getCollection().get(key));
+			assertValueNotAtKey(key, value);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -107,7 +114,31 @@ public class BlueDbInMemoryTest extends TestCase {
 		}
 		cleanup();
 	}
-	
+
+	@Test
+	public void testBeforeTimeFrame() {
+		TestValue value1to2 = new TestValue("Joe");
+		TestValue value2to3 = new TestValue("Bob");
+		insert(1, 2, value1to2);
+		insert(2, 3, value2to3);
+		try {
+			List<TestValue> before3 = getCollection().query().beforeTime(3).getList();
+			List<TestValue> before2 = getCollection().query().beforeTime(2).getList();
+			List<TestValue> before1 = getCollection().query().beforeTime(1).getList();
+			assertEquals(2, before3.size());
+			assertEquals(1, before2.size());
+			assertEquals(0, before1.size());
+			assertTrue(before3.contains(value2to3));
+			assertTrue(before3.contains(value1to2));
+			assertTrue(before2.contains(value1to2));
+			assertFalse(before1.contains(value1to2));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		cleanup();
+	}
+
 	@Test
 	public void testBeforeTime() {
 		TestValue valueAt1 = new TestValue("Joe");
@@ -125,6 +156,34 @@ public class BlueDbInMemoryTest extends TestCase {
 			assertTrue(before3.contains(valueAt1));
 			assertTrue(before2.contains(valueAt1));
 			assertFalse(before1.contains(valueAt1));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		cleanup();
+	}
+
+	@Test
+	public void testBeforeOrAtTimeFrame() {
+		TestValue value1to2 = new TestValue("Joe");
+		TestValue value2to3 = new TestValue("Bob");
+		insert(1, 2, value1to2);
+		insert(2, 3, value2to3);
+		try {
+			List<TestValue> beforeOrAt3 = getCollection().query().beforeOrAtTime(3).getList();
+			List<TestValue> beforeOrAt2 = getCollection().query().beforeOrAtTime(2).getList();
+			List<TestValue> beforeOrAt1 = getCollection().query().beforeOrAtTime(1).getList();
+			List<TestValue> beforeOrAt0 = getCollection().query().beforeOrAtTime(0).getList();
+			assertEquals(2, beforeOrAt3.size());
+			assertEquals(2, beforeOrAt2.size());
+			assertEquals(1, beforeOrAt1.size());
+			assertEquals(0, beforeOrAt0.size());
+			assertTrue(beforeOrAt3.contains(value2to3));
+			assertTrue(beforeOrAt3.contains(value1to2));
+			assertTrue(beforeOrAt2.contains(value2to3));
+			assertTrue(beforeOrAt2.contains(value1to2));
+			assertTrue(beforeOrAt1.contains(value1to2));
+			assertFalse(beforeOrAt0.contains(value1to2));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -159,6 +218,34 @@ public class BlueDbInMemoryTest extends TestCase {
 	}
 
 	@Test
+	public void testAfterTimeFrame() {
+		TestValue value1to2 = new TestValue("Joe");
+		TestValue value2to3 = new TestValue("Bob");
+		insert(1, 2, value1to2);
+		insert(2, 3, value2to3);
+		try {
+			List<TestValue> after3 = getCollection().query().afterTime(3).getList();
+			List<TestValue> after2 = getCollection().query().afterTime(2).getList();
+			List<TestValue> after1 = getCollection().query().afterTime(1).getList();
+			List<TestValue> after0 = getCollection().query().afterTime(0).getList();
+			assertEquals(2, after0.size());
+			assertEquals(2, after1.size());
+			assertEquals(1, after2.size());
+			assertEquals(0, after3.size());
+			assertTrue(after0.contains(value2to3));
+			assertTrue(after0.contains(value1to2));
+			assertTrue(after1.contains(value2to3));
+			assertTrue(after1.contains(value1to2));
+			assertTrue(after2.contains(value2to3));
+			assertFalse(after3.contains(value2to3));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		cleanup();
+	}
+
+	@Test
 	public void testAfterTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
@@ -175,6 +262,38 @@ public class BlueDbInMemoryTest extends TestCase {
 			assertTrue(after0.contains(valueAt1));
 			assertTrue(after1.contains(valueAt2));
 			assertFalse(after2.contains(valueAt2));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		cleanup();
+	}
+
+	@Test
+	public void testAfterOrAtTimeFrame() {
+		TestValue value1to2 = new TestValue("Joe");
+		TestValue value2to3 = new TestValue("Bob");
+		insert(1, 2, value1to2);
+		insert(2, 3, value2to3);
+		try {
+			List<TestValue> afterOrAt4 = getCollection().query().afterOrAtTime(4).getList();
+			List<TestValue> afterOrAt3 = getCollection().query().afterOrAtTime(3).getList();
+			List<TestValue> afterOrAt2 = getCollection().query().afterOrAtTime(2).getList();
+			List<TestValue> afterOrAt1 = getCollection().query().afterOrAtTime(1).getList();
+			List<TestValue> afterOrAt0 = getCollection().query().afterOrAtTime(0).getList();
+			assertEquals(2, afterOrAt0.size());
+			assertEquals(2, afterOrAt1.size());
+			assertEquals(2, afterOrAt2.size());
+			assertEquals(1, afterOrAt3.size());
+			assertEquals(0, afterOrAt4.size());
+			assertTrue(afterOrAt0.contains(value2to3));
+			assertTrue(afterOrAt0.contains(value1to2));
+			assertTrue(afterOrAt1.contains(value2to3));
+			assertTrue(afterOrAt1.contains(value1to2));
+			assertTrue(afterOrAt2.contains(value2to3));
+			assertTrue(afterOrAt2.contains(value1to2));
+			assertTrue(afterOrAt3.contains(value2to3));
+			assertFalse(afterOrAt4.contains(value2to3));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -290,44 +409,31 @@ public class BlueDbInMemoryTest extends TestCase {
 	
 	@Test
 	public void testQueryUpdate() {
-		TestValue valueJoe = new TestValue("Joe", 0);
-		TestValue valueBob = new TestValue("Bob", 0);
-		TestValue valueJosey = new TestValue("Josey", 0);
-		TestValue valueBobby = new TestValue("Bobby", 0);
-		insert(1, valueJoe);
-		insert(2, valueBob);
-		insert(2, valueJosey);
-		insert(3, valueBobby);
-		List<TestValue> storedValues, joseyOnly, everyoneButJosey;
+		BlueKey keyJoe   = insert(1, new TestValue("Joe", 0));
+		BlueKey keyBob   = insert(2, new TestValue("Bob", 0));
+		BlueKey keyJosey = insert(2,  new TestValue("Josey", 0));
+		BlueKey keyBobby = insert(3, new TestValue("Bobby", 0));
 		BlueQuery<TestValue> queryForJosey = getCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
-		BlueQuery<TestValue> queryForEveryoneButJosey = getCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
 		try {
 			// sanity check
-			storedValues = getCollection().query().getList();
-			assertEquals(4, storedValues.size());
-			assertTrue(storedValues.contains(valueJosey));
-			int maxCupcakes = storedValues.stream().mapToInt((t) -> t.getCupcakes()).max().getAsInt();
-			assertEquals(0, maxCupcakes);
+			assertCupcakes(keyJoe, 0);
+			assertCupcakes(keyBob, 0);
+			assertCupcakes(keyJosey, 0);
+			assertCupcakes(keyBobby, 0);
 
 			// test update with conditions
 			queryForJosey.update((v) -> v.addCupcake());
-			joseyOnly = getCollection().query().getList();
-			assertEquals(1, joseyOnly.size());
-			int joseyCupcakes = joseyOnly.get(0).getCupcakes();
-			assertEquals(1, joseyCupcakes);
-			int maxCupcakesExcludingJosey = queryForEveryoneButJosey.getList().stream().mapToInt((t) -> t.getCupcakes()).max().getAsInt();
-			assertEquals(0, maxCupcakesExcludingJosey);
+			assertCupcakes(keyJoe, 0);
+			assertCupcakes(keyBob, 0);
+			assertCupcakes(keyJosey, 1);
+			assertCupcakes(keyBobby, 0);
 
 			// test update all
 			getCollection().query().update((v) -> v.addCupcake());
-			joseyOnly = getCollection().query().getList();
-			assertEquals(1, joseyOnly.size());
-			joseyCupcakes = joseyOnly.get(0).getCupcakes();
-			assertEquals(2, joseyCupcakes);
-			maxCupcakesExcludingJosey = queryForEveryoneButJosey.getList().stream().mapToInt((t) -> t.getCupcakes()).max().getAsInt();
-			int minCupcakesExcludingJosey = queryForEveryoneButJosey.getList().stream().mapToInt((t) -> t.getCupcakes()).max().getAsInt();
-			assertEquals(1, maxCupcakesExcludingJosey);
-			assertEquals(1, minCupcakesExcludingJosey);
+			assertCupcakes(keyJoe, 1);
+			assertCupcakes(keyBob, 1);
+			assertCupcakes(keyJosey, 2);
+			assertCupcakes(keyBobby, 1);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -371,6 +477,18 @@ public class BlueDbInMemoryTest extends TestCase {
 		cleanup();
 	}
 
+	private void assertCupcakes(BlueKey key, int cupcakes) {
+		try {
+			TestValue value = getCollection().get(key);
+			if (value == null)
+				fail();
+			assertEquals(cupcakes, value.getCupcakes());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
 	private void assertValueNotAtKey(BlueKey key, TestValue value) {
 		try {
 			assertNotEquals(value, getCollection().get(key));
@@ -392,9 +510,16 @@ public class BlueDbInMemoryTest extends TestCase {
 		}
 	}
 
-	private void insert(long time, TestValue value) {
-		BlueKey key = createKey(10, value);
+	private BlueKey insert(long start, long end, TestValue value) {
+		BlueKey key = createTimeFrameKey(start, end, value);
 		insert(key, value);
+		return key;
+	}
+
+	private BlueKey insert(long time, TestValue value) {
+		BlueKey key = createTimeKey(time, value);
+		insert(key, value);
+		return key;
 	}
 
 	private void insert(BlueKey key, TestValue value) {
@@ -410,7 +535,12 @@ public class BlueDbInMemoryTest extends TestCase {
 		return collection;
 	}
 	
-	private TimeKey createKey(long time, TestValue obj) {
+	private TimeKey createTimeFrameKey(long start, long end, TestValue obj) {
+		StringKey stringKey = new StringKey(obj.getName());
+		return new TimeFrameKey(stringKey, start, end);
+	}
+
+	private TimeKey createTimeKey(long time, TestValue obj) {
 		StringKey stringKey = new StringKey(obj.getName());
 		return new TimeKey(stringKey, time);
 	}
