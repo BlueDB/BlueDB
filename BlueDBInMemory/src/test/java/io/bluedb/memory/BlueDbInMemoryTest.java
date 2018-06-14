@@ -53,19 +53,11 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testUpdate() {
-		TestValue value = new TestValue("Joe", 0);
-		BlueKey key = createTimeKey(10, value);
-		insert(key, value);
-
+		BlueKey key = insert(10, new TestValue("Joe", 0));
 		try {
-			TestValue storedValue = getCollection().get(key);
-			assertEquals(0, storedValue.getCupcakes());
-			assertNotEquals(1, storedValue.getCupcakes());
-
+			assertCupcakes(key, 0);
 			getCollection().update(key, (v) -> v.addCupcake());
-			TestValue updatedValue = getCollection().get(key);
-			assertNotEquals(0, updatedValue.getCupcakes());
-			assertEquals(1, updatedValue.getCupcakes());
+			assertCupcakes(key, 1);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -76,12 +68,11 @@ public class BlueDbInMemoryTest extends TestCase {
 	@Test
 	public void testDelete() {
 		TestValue value = new TestValue("Joe");
-		BlueKey key = createTimeKey(10, value);
-		insert(key, value);
+		BlueKey key = insert(10, value);
 		try {
-			assertEquals(value, getCollection().get(key));
+			assertValueAtKey(key, value);
 			getCollection().delete(key);
-			assertNotEquals(value, getCollection().get(key));
+			assertValueNotAtKey(key, value);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
