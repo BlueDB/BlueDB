@@ -66,6 +66,21 @@ public class BlueDbInMemoryTest extends TestCase {
 	}
 
 	@Test
+	public void testCount() {
+		try {
+			assertEquals(0, getCollection().query().count());
+			BlueKey key = insert(10, new TestValue("Joe", 0));
+			assertEquals(1, getCollection().query().count());
+			getCollection().delete(key);
+			assertEquals(0, getCollection().query().count());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		cleanup();
+	}
+
+	@Test
 	public void testDelete() {
 		TestValue value = new TestValue("Joe");
 		BlueKey key = insert(10, value);

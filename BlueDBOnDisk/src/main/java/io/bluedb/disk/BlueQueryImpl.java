@@ -104,4 +104,10 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	public void update(Updater<T> updater) throws BlueDbException {
 		collection.updateAll(keyConditions, objectConditions, updater);
 	}
+
+	@Override
+	public int count() throws BlueDbException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

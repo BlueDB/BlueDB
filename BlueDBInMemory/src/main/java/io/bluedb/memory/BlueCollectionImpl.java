@@ -26,6 +26,11 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 	}
 
 	@Override
+	public boolean contains (BlueKey key) throws BlueDbException {
+		return data.containsKey(key);
+	}
+
+	@Override
 	public void insert(BlueKey key, T object) throws BlueDbException {
 		// TODO lock on update, insert or delete
 		byte[] bytes = serialize(object);
@@ -128,7 +133,7 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
 	private <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
 		for (Condition<X> condition: conditions) {
-			if (!condition.resolve(object)) {
+			if (!condition.test(object)) {
 				return false;
 			}
 		}

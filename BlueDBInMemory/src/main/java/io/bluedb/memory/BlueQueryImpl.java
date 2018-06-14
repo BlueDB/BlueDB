@@ -71,4 +71,9 @@ class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	public void update(Updater<T> updater) throws BlueDbException {
 		collection.updateAll(minTime, maxTime, objectConditions, updater);
 	}
+
+	@Override
+	public int count() throws BlueDbException {
+		return getList().size();
+	}
 }

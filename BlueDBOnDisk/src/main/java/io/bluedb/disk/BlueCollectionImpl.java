@@ -68,4 +68,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	}
 
+	@Override
+	public boolean contains(BlueKey key) throws BlueDbException {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
