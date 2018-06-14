@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.nustaq.serialization.FSTConfiguration;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
@@ -25,12 +26,13 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
 	@Override
 	public void insert(BlueKey key, T object) throws BlueDbException {
-		data.put(key, object); // TODO clone
+		object = clone(object);
+		data.put(key, object); // TODO store bytes instead to imitate onDisk
 	}
 
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
-		return data.get(key);
+		return clone(data.get(key)); // TODO store bytes instead to imitate onDisk
 	}
 
 	@Override
@@ -55,7 +57,7 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 		List<T> results = new ArrayList<>();
 		List<BlueKey> matches = findMatches(minTime, maxTime, objectConditions);
 		for (BlueKey key: matches) {
-			results.add(data.get(key));
+			results.add(clone(data.get(key))); // TODO store bytes instead to imitate onDisk
 		}
 		return results;
 	}
@@ -103,5 +105,13 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 			}
 		}
 		return true;
+	}
+
+	 // TODO store bytes instead to imitate onDisk
+	private static <X extends Serializable> X clone(X object) {
+		FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
+		byte[] serialized = conf.asByteArray(object);
+		X deserialized = (X) conf.asObject(serialized);
+		return deserialized;
 	}
 }
