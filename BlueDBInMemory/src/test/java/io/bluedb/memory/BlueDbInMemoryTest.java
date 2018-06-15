@@ -26,6 +26,11 @@ public class BlueDbInMemoryTest extends TestCase {
 		BlueKey key = createTimeKey(10, value);
 		insert(key, value);
 		assertValueAtKey(key, value);
+		try {
+			getCollection().insert(key, value); // insert duplicate
+			fail();
+		} catch (BlueDbException e) {
+		}
 		cleanup();
 	}
 

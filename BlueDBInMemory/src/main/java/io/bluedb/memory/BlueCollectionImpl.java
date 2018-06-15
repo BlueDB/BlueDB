@@ -13,6 +13,7 @@ import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
@@ -35,6 +36,9 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 	@Override
 	public void insert(BlueKey key, T object) throws BlueDbException {
 		// TODO lock on update, insert or delete
+		if (data.containsKey(key)) {
+			throw new DuplicateKeyException("key already exists: " + key);
+		}
 		byte[] bytes = serialize(object);
 		data.put(key, bytes);
 	}
