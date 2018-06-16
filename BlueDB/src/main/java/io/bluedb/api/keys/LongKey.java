@@ -43,4 +43,13 @@ public class LongKey implements BlueKey {
 	public String toString() {
 		return "LongKey [key=" + key + "]";
 	}
+
+	@Override
+	public int compareTo(BlueKey other) {
+		// TODO
+		if (other instanceof TimeKey) {
+			return 1;
+		}
+		return 0;
+	}
 }

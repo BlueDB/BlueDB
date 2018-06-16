@@ -69,4 +69,20 @@ public class TimeKey implements BlueKey {
 	public String toString() {
 		return "TimeKey [key=" + id + ", time=" + time + "]";
 	}
+
+	@Override
+	public int compareTo(BlueKey other) {
+		// TODO
+		if (other instanceof TimeKey) {
+			long otherTime = ((TimeKey)other).getTime();
+			if (getTime() == otherTime) {
+				return id.compareTo(((TimeKey) other).getId());
+			} else if (getTime() > otherTime) {
+				return 1;
+			} else {
+				return -1;
+			}
+		}
+		return -1;
+	}
 }

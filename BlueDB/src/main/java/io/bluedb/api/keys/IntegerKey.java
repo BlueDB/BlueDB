@@ -43,4 +43,13 @@ public class IntegerKey implements BlueKey {
 	public String toString() {
 		return "IntegerKey [key=" + id + "]";
 	}
+
+	@Override
+	public int compareTo(BlueKey other) {
+		// TODO
+		if (other instanceof TimeKey) {
+			return 1;
+		}
+		return 0;
+	}
 }

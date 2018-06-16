@@ -7,6 +7,8 @@ import io.bluedb.api.BlueCollection;
 
 public class BlueDbOnDisk implements BlueDb {
 
+	// TODO figure out directory
+	
 	@Override
 	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type) {
 		return new BlueCollectionImpl<>(type);
@@ -15,7 +17,6 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public void shutdown() throws BlueDbException {
 		// TODO Auto-generated method stub
-
 	}
 
 }
