@@ -49,6 +49,15 @@ public class Segment {
 		return results;
 	}
 
+	public List<BlueEntity> read(long minTime, long maxTime) throws BlueDbException {
+		List<BlueEntity> results = new ArrayList<>();
+		for (BlueEntity entity: load().values()) {
+			if (Blutils.meetsTimeConstraint(entity.getKey(), minTime, maxTime))
+				results.add(entity);
+		}
+		return results;
+	}
+
 	@SuppressWarnings("unchecked")
 	private TreeMap<BlueKey, BlueEntity> load() throws BlueDbException {
 		try {

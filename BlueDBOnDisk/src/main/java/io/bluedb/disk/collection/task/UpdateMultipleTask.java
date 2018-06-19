@@ -1,4 +1,4 @@
-package io.bluedb.disk.write;
+package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
 import java.util.List;
@@ -8,27 +8,32 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 
-public class UpdateTask<T extends Serializable> implements Runnable {
+public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 	private final RecoveryManager recoveryManager;
 	private final BlueCollectionImpl<T> collection;
-	private final BlueKey key;
+	private final List<BlueEntity> entities;
 	private final Updater<T> updater;
 	
-	public UpdateTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, BlueKey key, Updater<T> updater) {
+	public UpdateMultipleTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, List<BlueEntity> entities, Updater<T> updater) {
 		this.collection = collection;
 		this.recoveryManager = recoveryManager;
-		this.key = key;
+		this.entities = entities;
 		this.updater = updater;
 	}
 
 	@Override
 	public void run() {
 		try {
-			T value = collection.get(key);
-			PendingChange change = PendingChange.createUpdate(key, value, updater);
-			applyUpdateWithRecovery(key, change);
+			for (BlueEntity entity: entities) {
+				BlueKey key = entity.getKey();
+				T value = (T) entity.getObject();
+				PendingChange change = PendingChange.createUpdate(key, value, updater);
+				applyUpdateWithRecovery(key, change);
+				// TODO probably make it fail before doing any updates if any update fails?
+			}
 		} catch (BlueDbException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

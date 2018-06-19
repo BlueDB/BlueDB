@@ -22,17 +22,17 @@ import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.collection.task.DeleteMultipleTask;
+import io.bluedb.disk.collection.task.DeleteTask;
+import io.bluedb.disk.collection.task.InsertTask;
+import io.bluedb.disk.collection.task.UpdateMultipleTask;
+import io.bluedb.disk.collection.task.UpdateTask;
 import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentIdConverter;
-import io.bluedb.disk.write.DeleteMultipleTask;
-import io.bluedb.disk.write.DeleteTask;
-import io.bluedb.disk.write.InsertTask;
-import io.bluedb.disk.write.UpdateMultipleTask;
-import io.bluedb.disk.write.UpdateTask;
 
 public class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
@@ -135,36 +135,15 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		List<BlueEntity> results = new ArrayList<>();
 		List<Segment> segments = getSegments(minTime, maxTime);
 		for (Segment segment: segments) {
-			List<BlueEntity> entitesInSegment = segment.read();
+			List<BlueEntity> entitesInSegment = segment.read(minTime, maxTime);
 			for (BlueEntity entity: entitesInSegment) {
 				T value = (T)entity.getObject();
-				if(meetsConditions(conditions, value) && meetsTimeConstraint(entity.getKey(), minTime, maxTime)) {
+				if(Blutils.meetsConditions(conditions, value)) {
 					results.add(entity);
 				}
 			}
 		}
 		return results;
-	}
-
-	private static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
-		for (Condition<X> condition: conditions) {
-			if (!condition.test(object)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	private static boolean meetsTimeConstraint(BlueKey key, long minTime, long maxTime) {
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeKey = (TimeFrameKey) key;
-			return timeKey.getEndTime() >= minTime && timeKey.getStartTime() <= maxTime;
-		}
-		if (key instanceof TimeKey) {
-			TimeKey timeKey = (TimeKey) key;
-			return timeKey.getTime() >= minTime && timeKey.getTime() <= maxTime;
-		}
-		return true;
 	}
 
 	@Override

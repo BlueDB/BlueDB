@@ -1,4 +1,4 @@
-package io.bluedb.disk.write;
+package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
 import java.util.List;
@@ -10,27 +10,29 @@ import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Segment;
 
-public class DeleteTask<T extends Serializable> implements Runnable {
+public class UpdateTask<T extends Serializable> implements Runnable {
 	private final RecoveryManager recoveryManager;
 	private final BlueCollectionImpl<T> collection;
 	private final BlueKey key;
+	private final Updater<T> updater;
 	
-	public DeleteTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, BlueKey key) {
+	public UpdateTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, BlueKey key, Updater<T> updater) {
 		this.collection = collection;
 		this.recoveryManager = recoveryManager;
 		this.key = key;
+		this.updater = updater;
 	}
 
 	@Override
 	public void run() {
 		try {
-			PendingChange change = PendingChange.createDelete(key);
+			T value = collection.get(key);
+			PendingChange change = PendingChange.createUpdate(key, value, updater);
 			applyUpdateWithRecovery(key, change);
-		} catch (Throwable t) {
-			// TODO rollback or try again?
-		} finally {
+		} catch (BlueDbException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
 	}
 
 	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {

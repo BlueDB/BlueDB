@@ -1,41 +1,37 @@
-package io.bluedb.disk.write;
+package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
 import java.util.List;
+import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 
-public class InsertTask<T extends Serializable> implements Runnable {
-
+public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 	private final RecoveryManager recoveryManager;
 	private final BlueCollectionImpl<T> collection;
-	private final BlueKey key;
-	private final T value;
+	private final List<BlueKey> keys;
 	
-	public InsertTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, BlueKey key, T value) {
+	public DeleteMultipleTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, List<BlueKey> keys) {
 		this.collection = collection;
 		this.recoveryManager = recoveryManager;
-		this.key = key;
-		this.value = value;
+		this.keys = keys;
 	}
 
 	@Override
 	public void run() {
 		try {
-			if (collection.contains(key)) {
-				throw new DuplicateKeyException("key already exists: " + key);
+			for (BlueKey key: keys) {
+				PendingChange change = PendingChange.createDelete(key);
+				applyUpdateWithRecovery(key, change);
 			}
-			PendingChange change = PendingChange.createInsert(key, value);
-			applyUpdateWithRecovery(key, change);
-		} catch (Throwable t) {
-			// TODO rollback or try again?
-			throw new RuntimeException(); // TODO
-		} finally {
+		} catch (BlueDbException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
