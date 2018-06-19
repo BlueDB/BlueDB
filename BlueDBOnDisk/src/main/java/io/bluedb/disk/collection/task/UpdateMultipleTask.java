@@ -14,10 +14,10 @@ import io.bluedb.disk.segment.Segment;
 public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 	private final RecoveryManager recoveryManager;
 	private final BlueCollectionImpl<T> collection;
-	private final List<BlueEntity> entities;
+	private final List<BlueEntity<T>> entities;
 	private final Updater<T> updater;
 	
-	public UpdateMultipleTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, List<BlueEntity> entities, Updater<T> updater) {
+	public UpdateMultipleTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, List<BlueEntity<T>> entities, Updater<T> updater) {
 		this.collection = collection;
 		this.recoveryManager = recoveryManager;
 		this.entities = entities;
@@ -27,7 +27,7 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 	@Override
 	public void run() {
 		try {
-			for (BlueEntity entity: entities) {
+			for (BlueEntity<T> entity: entities) {
 				BlueKey key = entity.getKey();
 				T value = (T) entity.getObject();
 				PendingChange change = PendingChange.createUpdate(key, value, updater);
@@ -42,8 +42,8 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 
 	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
 		recoveryManager.saveChange(change);
-		List<Segment> segments = collection.getSegments(key);
-		for (Segment segment: segments) {
+		List<Segment<T>> segments = collection.getSegments(key);
+		for (Segment<T> segment: segments) {
 			change.applyChange(segment);
 		}
 		recoveryManager.removeChange(change);

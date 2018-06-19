@@ -14,7 +14,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
 
-public class Segment {
+public class Segment <T extends Serializable> {
 	private static String SUFFIX = ".segment";
 
 	final String pathString;
@@ -31,27 +31,27 @@ public class Segment {
 		this.pathString = this.path.toString();
 	}
 
-	public void put(BlueKey key, Serializable value) throws BlueDbException {
-		TreeMap<BlueKey, BlueEntity> data = load();
-		BlueEntity entity = new BlueEntity(key, value);
+	public void put(BlueKey key, T value) throws BlueDbException {
+		TreeMap<BlueKey, BlueEntity<T>> data = load();
+		BlueEntity<T> entity = new BlueEntity<T>(key, value);
 		data.put(key, entity);
 		save(data);
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
-		TreeMap<BlueKey, BlueEntity> data = load();
+		TreeMap<BlueKey, BlueEntity<T>> data = load();
 		data.remove(key);
 		save(data);
 	}
 
-	public List<BlueEntity> read() throws BlueDbException {
-		List<BlueEntity> results = new ArrayList<>(load().values());
+	public List<BlueEntity<T>> read() throws BlueDbException {
+		List<BlueEntity<T>> results = new ArrayList<>(load().values());
 		return results;
 	}
 
-	public List<BlueEntity> read(long minTime, long maxTime) throws BlueDbException {
-		List<BlueEntity> results = new ArrayList<>();
-		for (BlueEntity entity: load().values()) {
+	public List<BlueEntity<T>> read(long minTime, long maxTime) throws BlueDbException {
+		List<BlueEntity<T>> results = new ArrayList<>();
+		for (BlueEntity<T>entity: load().values()) {
 			if (Blutils.meetsTimeConstraint(entity.getKey(), minTime, maxTime))
 				results.add(entity);
 		}
@@ -59,14 +59,14 @@ public class Segment {
 	}
 
 	@SuppressWarnings("unchecked")
-	private TreeMap<BlueKey, BlueEntity> load() throws BlueDbException {
+	private TreeMap<BlueKey, BlueEntity<T>> load() throws BlueDbException {
 		try {
 			File file = new File(pathString);
 			if (!file.exists()) {
 				return new TreeMap<>();
 			} else {
 				byte[] bytes = Files.readAllBytes(Paths.get(pathString));
-				return (TreeMap<BlueKey, BlueEntity>) serializer.asObject(bytes);
+				return (TreeMap<BlueKey, BlueEntity<T>>) serializer.asObject(bytes);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

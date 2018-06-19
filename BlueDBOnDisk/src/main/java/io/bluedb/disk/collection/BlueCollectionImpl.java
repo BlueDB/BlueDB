@@ -64,9 +64,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
-		List<Segment> segments = getSegments(key);
-		List<BlueEntity> entitiesInSegment = segments.get(0).read();
-		for (BlueEntity entity: entitiesInSegment) {
+		List<Segment<T>> segments = getSegments(key);
+		List<BlueEntity<T>> entitiesInSegment = segments.get(0).read();
+		for (BlueEntity<T> entity: entitiesInSegment) {
 			if (entity.getKey().equals(key)) {
 				return (T) entity.getObject();
 			}
@@ -120,7 +120,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	}
 
 	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
-		List<BlueEntity> entities = findMatches(minTime, maxTime, conditions);
+		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
 		Runnable updateTask = new UpdateMultipleTask(recoveryManager, this, entities, updater);
 		Future<?> future = executor.submit(updateTask);
 		try {
@@ -131,12 +131,12 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		}
 	}
 
-	private List<BlueEntity> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		List<BlueEntity> results = new ArrayList<>();
-		List<Segment> segments = getSegments(minTime, maxTime);
+	private List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+		List<BlueEntity<T>> results = new ArrayList<>();
+		List<Segment<T>> segments = getSegments(minTime, maxTime);
 		for (Segment segment: segments) {
-			List<BlueEntity> entitesInSegment = segment.read(minTime, maxTime);
-			for (BlueEntity entity: entitesInSegment) {
+			List<BlueEntity<T>> entitesInSegment = segment.read(minTime, maxTime);
+			for (BlueEntity<T> entity: entitesInSegment) {
 				T value = (T)entity.getObject();
 				if(Blutils.meetsConditions(conditions, value)) {
 					results.add(entity);
@@ -159,27 +159,27 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		// TODO shutdown executors? what else?
 	}
 
-	public List<Segment> getSegments(BlueKey key) {
-		List<Segment> segments = new ArrayList<>();
+	public List<Segment<T>> getSegments(BlueKey key) {
+		List<Segment<T>> segments = new ArrayList<>();
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
-				segments.add(new Segment(path, l));
+				segments.add(new Segment<T>(path, l));
 			}
 		} else if (key instanceof TimeKey) {
 			TimeKey timeKey = (TimeKey)key;
 			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
-			segments.add(new Segment(path, segmentId));
+			segments.add(new Segment<T>(path, segmentId));
 		} else {
-			segments.add(new Segment(path, key.toString())); // TODO break into safely named segments
+			segments.add(new Segment<T>(path, key.toString())); // TODO break into safely named segments
 		}
 		return segments;
 	}
 
-	private List<Segment> getSegments(long minTime, long maxTime) {
+	private List<Segment<T>> getSegments(long minTime, long maxTime) {
 		long minSegmentId = SegmentIdConverter.convertTimeToSegmentId(minTime);
 		long maxSegmentId = SegmentIdConverter.convertTimeToSegmentId(maxTime);
-		List<Segment> segments = new ArrayList<>();
+		List<Segment<T>> segments = new ArrayList<>();
 		// TODO this should be way better
 		List<File> segmentFiles = Blutils.listFiles(path, ".segment");
 		for (File segmentFile: segmentFiles) {
@@ -187,7 +187,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			String segmentIdStr = fileName.substring(0, fileName.indexOf(".segment"));
 			long segmentId = Long.parseLong(segmentIdStr);
 			if (segmentId >= minSegmentId && segmentId <= maxSegmentId) {
-				segments.add(new Segment(path, segmentId));
+				segments.add(new Segment<T>(path, segmentId));
 			}
 		}
 		return segments;

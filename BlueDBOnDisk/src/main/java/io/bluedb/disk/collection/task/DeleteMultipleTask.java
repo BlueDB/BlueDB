@@ -37,8 +37,8 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 
 	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
 		recoveryManager.saveChange(change);
-		List<Segment> segments = collection.getSegments(key);
-		for (Segment segment: segments) {
+		List<Segment<T>> segments = collection.getSegments(key);
+		for (Segment<T> segment: segments) {
 			change.applyChange(segment);
 		}
 		recoveryManager.removeChange(change);
