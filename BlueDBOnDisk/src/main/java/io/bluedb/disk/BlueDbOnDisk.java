@@ -34,6 +34,5 @@ public class BlueDbOnDisk implements BlueDb {
 
 	private void recover() {
 		// TODO implement and also add to startup
-		RecoveryManager.getPendingChanges();
 	}
 }

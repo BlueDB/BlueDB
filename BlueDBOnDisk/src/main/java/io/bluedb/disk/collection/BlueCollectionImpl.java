@@ -28,46 +28,38 @@ import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentIdConverter;
+import io.bluedb.disk.write.DeleteMultipleTask;
+import io.bluedb.disk.write.DeleteTask;
+import io.bluedb.disk.write.InsertTask;
+import io.bluedb.disk.write.UpdateMultipleTask;
+import io.bluedb.disk.write.UpdateTask;
 
 public class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
 	private Class<T> type;
-	private RecoveryManager recoveryManager = new RecoveryManager();
+	private final RecoveryManager recoveryManager;
 	final private Path path;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
 		this.type = type;
 		path = Paths.get(db.getPath().toString(), type.getName());
 		path.toFile().mkdirs();
+		recoveryManager = new RecoveryManager(this);
+		recoveryManager.recover();
 	}
 
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
-		if (contains(key)) {
-			throw new DuplicateKeyException("key already exists: " + key);
-		}
-		Runnable updateTask = new Runnable(){
-			@Override
-			public void run() {
-				try {
-					PendingChange change = PendingChange.createInsert(key, value);
-					applyUpdateWithRecovery(key, change);
-				} catch (Throwable t) {
-					// TODO rollback or try again?
-				} finally {
-				}
-			}
-		};
-		Future<?> future = executor.submit(updateTask);
+		Runnable insertTask = new InsertTask(recoveryManager, this, key, value);
+		Future<?> future = executor.submit(insertTask);
 		try {
 			future.get();
 		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 			throw new BlueDbException("insert failed for key " + key.toString(), e);
 		}
-
 	}
 
 	@Override
@@ -84,19 +76,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
-		Runnable updateTask = new Runnable(){
-			@Override
-			public void run() {
-				try {
-					T value = get(key);
-					PendingChange change = PendingChange.createUpdate(key, value, updater);
-					applyUpdateWithRecovery(key, change);
-				} catch (BlueDbException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		};
+		Runnable updateTask = new UpdateTask(recoveryManager, this, key, updater);
 		Future<?> future = executor.submit(updateTask);
 		try {
 			future.get();
@@ -108,18 +88,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public void delete(BlueKey key) throws BlueDbException {
-		Runnable deleteTask = new Runnable(){
-			@Override
-			public void run() {
-				try {
-					PendingChange change = PendingChange.createDelete(key);
-					applyUpdateWithRecovery(key, change);
-				} catch (Throwable t) {
-					// TODO rollback or try again?
-				} finally {
-				}
-			}
-		};
+		Runnable deleteTask = new DeleteTask(recoveryManager, this, key);
 		Future<?> future = executor.submit(deleteTask);
 		try {
 			future.get();
@@ -139,23 +108,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	}
 
 	public void deleteAll(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		Runnable updateTask = new Runnable(){
-			@Override
-			public void run() {
-				try {
-					for (BlueEntity entity: findMatches(minTime, maxTime, conditions)) {
-						BlueKey key = entity.getKey();
-						T value = (T) entity.getObject();
-						PendingChange change = PendingChange.createDelete(key);
-						applyUpdateWithRecovery(key, change);
-					}
-				} catch (BlueDbException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		};
-		Future<?> future = executor.submit(updateTask);
+		List<BlueKey> keys = findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getKey()).collect(Collectors.toList());
+		Runnable deleteAllTask = new DeleteMultipleTask(recoveryManager, this, keys);
+		Future<?> future = executor.submit(deleteAllTask);
 		try {
 			future.get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -165,22 +120,8 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	}
 
 	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
-		Runnable updateTask = new Runnable(){
-			@Override
-			public void run() {
-				try {
-					for (BlueEntity entity: findMatches(minTime, maxTime, conditions)) {
-						BlueKey key = entity.getKey();
-						T value = (T) entity.getObject();
-						PendingChange change = PendingChange.createUpdate(key, value, updater);
-						applyUpdateWithRecovery(key, change);
-					}
-				} catch (BlueDbException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		};
+		List<BlueEntity> entities = findMatches(minTime, maxTime, conditions);
+		Runnable updateTask = new UpdateMultipleTask(recoveryManager, this, entities, updater);
 		Future<?> future = executor.submit(updateTask);
 		try {
 			future.get();
@@ -205,7 +146,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return results;
 	}
 
-	private <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
+	private static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
 		for (Condition<X> condition: conditions) {
 			if (!condition.test(object)) {
 				return false;
@@ -214,7 +155,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return true;
 	}
 
-	private boolean meetsTimeConstraint(BlueKey key, long minTime, long maxTime) {
+	private static boolean meetsTimeConstraint(BlueKey key, long minTime, long maxTime) {
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeKey = (TimeFrameKey) key;
 			return timeKey.getEndTime() >= minTime && timeKey.getStartTime() <= maxTime;
@@ -239,16 +180,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		// TODO shutdown executors? what else?
 	}
 
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
-		recoveryManager.saveChange(change);
-		List<Segment> segments = getSegments(key);
-		for (Segment segment: segments) {
-			change.applyChange(segment);
-		}
-		recoveryManager.removeChange(change);
-	}
-
-	private List<Segment> getSegments(BlueKey key) {
+	public List<Segment> getSegments(BlueKey key) {
 		List<Segment> segments = new ArrayList<>();
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
