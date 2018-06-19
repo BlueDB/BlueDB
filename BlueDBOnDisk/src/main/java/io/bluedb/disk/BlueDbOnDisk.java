@@ -12,7 +12,6 @@ import io.bluedb.api.BlueCollection;
 public class BlueDbOnDisk implements BlueDb {
 
 	final Path path;
-	// TODO figure out directory
 	
 	public BlueDbOnDisk() {
 		path = Paths.get(".", "bluedb");

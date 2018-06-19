@@ -3,7 +3,6 @@ package io.bluedb.disk;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +37,6 @@ public class Blutils {
 	}
 
 	public static void writeToDisk(Path path, Object data) throws IOException {
-//		ensureDirectoryExists(path.getParent());
 		File file = path.toFile();
 		File folder = new File(file.getParent());
 		folder.mkdirs();
@@ -51,31 +49,4 @@ public class Blutils {
 			throw e;
 		}
 	}
-//
-//	public static void writeToDisk(String path, Object data) throws IOException {
-//		try (FileOutputStream fos = new FileOutputStream(path)) {
-//			byte[] bytes = serializer.asByteArray(data);
-//			fos.write(bytes);
-//			fos.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			throw e;
-//		}
-//	}
-
-//	public static void ensureDirectoryExists(Path folderPath) {
-//		if (!Files.exists(folderPath.getParent())) {
-//			ensureDirectoryExists(folderPath.getParent());
-//		}
-//		while()
-//	}
-
-//	public static void mkDirs(File root, List<String> dirs, int depth) {
-//		if (depth == 0) return;
-//		for (String s : dirs) {
-//			File subdir = new File(root, s);
-//			subdir.mkdir();
-//			mkDirs(subdir, dirs, depth - 1);
-//		}
-//	}
 }

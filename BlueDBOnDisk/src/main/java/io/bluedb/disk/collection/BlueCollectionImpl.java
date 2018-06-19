@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -23,7 +22,6 @@ import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.LockManager;
 import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
@@ -36,7 +34,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
 	private Class<T> type;
-//	private LockManager locks = new LockManager();
 	private RecoveryManager recoveryManager = new RecoveryManager();
 	final private Path path;
 
@@ -54,14 +51,12 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		Runnable updateTask = new Runnable(){
 			@Override
 			public void run() {
-//				locks.lock(key);
 				try {
 					PendingChange change = PendingChange.createInsert(key, value);
 					applyUpdateWithRecovery(key, change);
 				} catch (Throwable t) {
 					// TODO rollback or try again?
 				} finally {
-//					locks.unlock(key);
 				}
 			}
 		};
@@ -109,17 +104,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			e.printStackTrace();
 			throw new BlueDbException("update failed for key " + key.toString(), e);
 		}
-		
-//		locks.lock(key);
-//		try {
-//			T value = get(key);
-//			PendingChange change = PendingChange.createUpdate(key, value, updater);
-//			applyUpdateWithRecovery(key, change);
-//		} catch (Throwable t) {
-//			// TODO rollback or try again?
-//		} finally {
-//			locks.unlock(key);
-//		}
 	}
 
 	@Override
@@ -127,14 +111,12 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		Runnable deleteTask = new Runnable(){
 			@Override
 			public void run() {
-		//		locks.lock(key);
 				try {
 					PendingChange change = PendingChange.createDelete(key);
 					applyUpdateWithRecovery(key, change);
 				} catch (Throwable t) {
 					// TODO rollback or try again?
 				} finally {
-		//			locks.unlock(key);
 				}
 			}
 		};
@@ -166,7 +148,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 						T value = (T) entity.getObject();
 						PendingChange change = PendingChange.createDelete(key);
 						applyUpdateWithRecovery(key, change);
-//						update(entity.getKey(), updater);
 					}
 				} catch (BlueDbException e) {
 					// TODO Auto-generated catch block
@@ -181,9 +162,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			e.printStackTrace();
 			throw new BlueDbException("delete query failed", e);
 		}
-//		for (BlueEntity entity: findMatches(minTime, maxTime, conditions)) {
-//			delete(entity.getKey());
-//		}
 	}
 
 	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
@@ -196,7 +174,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 						T value = (T) entity.getObject();
 						PendingChange change = PendingChange.createUpdate(key, value, updater);
 						applyUpdateWithRecovery(key, change);
-//						update(entity.getKey(), updater);
 					}
 				} catch (BlueDbException e) {
 					// TODO Auto-generated catch block
@@ -248,9 +225,27 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		}
 		return true;
 	}
+
 	@Override
 	public boolean contains(BlueKey key) throws BlueDbException {
 		return get(key) != null;
+	}
+
+	public Path getPath() {
+		return path;
+	}
+	
+	public void shutdown() {
+		// TODO shutdown executors? what else?
+	}
+
+	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
+		recoveryManager.saveChange(change);
+		List<Segment> segments = getSegments(key);
+		for (Segment segment: segments) {
+			change.applyChange(segment);
+		}
+		recoveryManager.removeChange(change);
 	}
 
 	private List<Segment> getSegments(BlueKey key) {
@@ -259,16 +254,13 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
 				segments.add(new Segment(path, l));
-//				segments.add(new Segment(String.valueOf(l)));
 			}
 		} else if (key instanceof TimeKey) {
 			TimeKey timeKey = (TimeKey)key;
 			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
 			segments.add(new Segment(path, segmentId));
-//			segments.add(new Segment(String.valueOf(segmentId)));
 		} else {
 			segments.add(new Segment(path, key.toString())); // TODO break into safely named segments
-//			segments.add(new Segment(key.toString())); // TODO break into safely named segments
 		}
 		return segments;
 	}
@@ -288,22 +280,5 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			}
 		}
 		return segments;
-	}
-
-	public Path getPath() {
-		return path;
-	}
-	
-	public void shutdown() {
-		// TODO shutdown executors? what else?
-	}
-
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
-		recoveryManager.saveChange(change);
-		List<Segment> segments = getSegments(key);
-		for (Segment segment: segments) {
-			change.applyChange(segment);
-		}
-		recoveryManager.removeChange(change);
 	}
 }
