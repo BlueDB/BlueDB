@@ -3,6 +3,8 @@ package io.bluedb.disk;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.nustaq.serialization.FSTConfiguration;
@@ -23,8 +25,8 @@ public class Blutils {
 		}
 	}
 
-	public static List<File> listFiles(String folderPath, String suffix) {
-		File folder = new File(folderPath);
+	public static List<File> listFiles(Path path, String suffix) {
+		File folder = path.toFile();
 		File[] filesInFolder = folder.listFiles();
 		List<File> results = new ArrayList<>();
 		for (File file: filesInFolder) {
@@ -35,8 +37,12 @@ public class Blutils {
 		return results;
 	}
 
-	public static void writeToDisk(String path, Object data) throws IOException {
-		try (FileOutputStream fos = new FileOutputStream(path)) {
+	public static void writeToDisk(Path path, Object data) throws IOException {
+//		ensureDirectoryExists(path.getParent());
+		File file = path.toFile();
+		File folder = new File(file.getParent());
+		folder.mkdirs();
+		try (FileOutputStream fos = new FileOutputStream(file)) {
 			byte[] bytes = serializer.asByteArray(data);
 			fos.write(bytes);
 			fos.close();
@@ -45,4 +51,31 @@ public class Blutils {
 			throw e;
 		}
 	}
+//
+//	public static void writeToDisk(String path, Object data) throws IOException {
+//		try (FileOutputStream fos = new FileOutputStream(path)) {
+//			byte[] bytes = serializer.asByteArray(data);
+//			fos.write(bytes);
+//			fos.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//			throw e;
+//		}
+//	}
+
+//	public static void ensureDirectoryExists(Path folderPath) {
+//		if (!Files.exists(folderPath.getParent())) {
+//			ensureDirectoryExists(folderPath.getParent());
+//		}
+//		while()
+//	}
+
+//	public static void mkDirs(File root, List<String> dirs, int depth) {
+//		if (depth == 0) return;
+//		for (String s : dirs) {
+//			File subdir = new File(root, s);
+//			subdir.mkdir();
+//			mkDirs(subdir, dirs, depth - 1);
+//		}
+//	}
 }

@@ -2,6 +2,8 @@ package io.bluedb.disk.collection;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +21,7 @@ import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.LockManager;
 import io.bluedb.disk.query.BlueQueryImpl;
@@ -35,9 +38,12 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	private Class<T> type;
 //	private LockManager locks = new LockManager();
 	private RecoveryManager recoveryManager = new RecoveryManager();
+	final private Path path;
 
-	public BlueCollectionImpl(Class<T> type) {
+	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
 		this.type = type;
+		path = Paths.get(db.getPath().toString(), type.getName());
+		path.toFile().mkdirs();
 	}
 
 	@Override
@@ -252,14 +258,17 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
-				segments.add(new Segment(String.valueOf(l)));
+				segments.add(new Segment(path, l));
+//				segments.add(new Segment(String.valueOf(l)));
 			}
 		} else if (key instanceof TimeKey) {
 			TimeKey timeKey = (TimeKey)key;
 			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
-			segments.add(new Segment(String.valueOf(segmentId)));
+			segments.add(new Segment(path, segmentId));
+//			segments.add(new Segment(String.valueOf(segmentId)));
 		} else {
-			segments.add(new Segment(key.toString())); // TODO break into safely named segments
+			segments.add(new Segment(path, key.toString())); // TODO break into safely named segments
+//			segments.add(new Segment(key.toString())); // TODO break into safely named segments
 		}
 		return segments;
 	}
@@ -269,21 +278,20 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		long maxSegmentId = SegmentIdConverter.convertTimeToSegmentId(maxTime);
 		List<Segment> segments = new ArrayList<>();
 		// TODO this should be way better
-		List<File> segmentFiles = Blutils.listFiles(".", ".segment");
+		List<File> segmentFiles = Blutils.listFiles(path, ".segment");
 		for (File segmentFile: segmentFiles) {
 			String fileName = segmentFile.getName();
 			String segmentIdStr = fileName.substring(0, fileName.indexOf(".segment"));
 			long segmentId = Long.parseLong(segmentIdStr);
 			if (segmentId >= minSegmentId && segmentId <= maxSegmentId) {
-				segments.add(new Segment(segmentIdStr));
+				segments.add(new Segment(path, segmentId));
 			}
 		}
 		return segments;
 	}
 
-	public String getPath() {
-		// TODO
-		return null;
+	public Path getPath() {
+		return path;
 	}
 	
 	public void shutdown() {
