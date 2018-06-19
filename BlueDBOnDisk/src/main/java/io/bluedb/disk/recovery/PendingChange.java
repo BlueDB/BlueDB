@@ -5,16 +5,18 @@ import org.nustaq.serialization.FSTConfiguration;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.Segment;
+import io.bluedb.disk.segment.Segment;
 
-public class PendingChange {
+public class PendingChange implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private static FSTConfiguration serializer = FSTConfiguration.createDefaultConfiguration();
 
-	final BlueKey key;
-	final Serializable oldValue;
-	final Serializable newValue;
-	final long timeCreated;
+	private BlueKey key;
+	private Serializable oldValue;
+	private Serializable newValue;
+	private long timeCreated;
 	
 	private PendingChange(BlueKey key, Serializable oldValue, Serializable newValue) {
 		this.key = key;

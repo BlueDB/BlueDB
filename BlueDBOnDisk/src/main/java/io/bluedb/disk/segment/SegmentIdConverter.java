@@ -1,4 +1,4 @@
-package io.bluedb.disk;
+package io.bluedb.disk.segment;
 
 import java.util.ArrayList;
 import java.util.List;

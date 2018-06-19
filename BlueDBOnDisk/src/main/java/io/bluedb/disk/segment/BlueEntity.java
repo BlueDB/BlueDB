@@ -1,4 +1,4 @@
-package io.bluedb.disk;
+package io.bluedb.disk.segment;
 
 import java.io.Serializable;
 import io.bluedb.api.keys.BlueKey;

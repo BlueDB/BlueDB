@@ -1,4 +1,4 @@
-package io.bluedb.disk;
+package io.bluedb.disk.segment;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +16,7 @@ import java.util.TreeMap;
 import org.nustaq.serialization.FSTConfiguration;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.LockManager;
 
 public class Segment {
 //	public void put(BlueEntity entity) {
@@ -23,7 +24,7 @@ public class Segment {
 //	}
 //
 	
-	final static private LockManager lockManager = new LockManager();
+//	final static private LockManager lockManager = new LockManager();
 	final String path;
 	private static final FSTConfiguration serializer = FSTConfiguration.createDefaultConfiguration();
 
@@ -32,26 +33,26 @@ public class Segment {
 	}
 
 	public void put(BlueKey key, Serializable value) throws BlueDbException {
-		lockManager.lock(path);
+//		lockManager.lock(path);
 		TreeMap<BlueKey, BlueEntity> data = load();
 		BlueEntity entity = new BlueEntity(key, value);
 		data.put(key, entity);
 		save(data);
-		lockManager.unlock(path);
+//		lockManager.unlock(path);
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
-		lockManager.lock(path);
+//		lockManager.lock(path);
 		TreeMap<BlueKey, BlueEntity> data = load();
 		data.remove(key);
 		save(data);
-		lockManager.unlock(path);
+//		lockManager.unlock(path);
 	}
 
 	public List<BlueEntity> read() throws BlueDbException {
-		lockManager.lock(path);
+//		lockManager.lock(path);
 		List<BlueEntity> results = new ArrayList<>(load().values());
-		lockManager.unlock(path);
+//		lockManager.unlock(path);
 		return results;
 	}
 

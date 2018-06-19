@@ -1,4 +1,4 @@
-package io.bluedb.disk;
+package io.bluedb.disk.query;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -10,6 +10,7 @@ import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.collection.BlueCollectionImpl;
 
 public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
