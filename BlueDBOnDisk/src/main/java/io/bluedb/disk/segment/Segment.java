@@ -16,6 +16,7 @@ import java.util.TreeMap;
 import org.nustaq.serialization.FSTConfiguration;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.LockManager;
 
 public class Segment {
@@ -73,10 +74,8 @@ public class Segment {
 	}
 	
 	private void save(Object o) throws BlueDbException {
-		try (FileOutputStream fos = new FileOutputStream(path)) {
-			byte[] bytes = serializer.asByteArray(o);
-		   fos.write(bytes);
-		   fos.close();
+		try {
+			Blutils.writeToDisk(path, o);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("error loading segment from disk", e);

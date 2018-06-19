@@ -34,4 +34,15 @@ public class Blutils {
 		}
 		return results;
 	}
+
+	public static void writeToDisk(String path, Object data) throws IOException {
+		try (FileOutputStream fos = new FileOutputStream(path)) {
+			byte[] bytes = serializer.asByteArray(data);
+			fos.write(bytes);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw e;
+		}
+	}
 }
