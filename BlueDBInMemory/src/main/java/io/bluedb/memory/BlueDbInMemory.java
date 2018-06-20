@@ -9,16 +9,21 @@ import io.bluedb.api.BlueCollection;
 
 public class BlueDbInMemory implements BlueDb {
 
-	Map<Class<?>, BlueCollection<?>> collections = new HashMap<>();
+	Map<String, BlueCollection<? extends Serializable>> collections = new HashMap<>();
+	Map<String, Class<? extends Serializable>> classes = new HashMap<>();
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type) {
+	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) {
 		synchronized(collections) {
-			if (!collections.containsKey(type)) {
-				collections.put(type, new BlueCollectionImpl<T>(type));
+			if (!collections.containsKey(name)) {
+				collections.put(name, new BlueCollectionImpl<T>(type));
+				classes.put(name, type);
 			}
-			return (BlueCollection<T>)(collections.get(type));
+			if (classes.get(name) != type) {
+				throw new RuntimeException("Collection '" + name + "' is not for type " + type);
+			}
+			return (BlueCollection<T>)(collections.get(name));
 		}
 	}
 

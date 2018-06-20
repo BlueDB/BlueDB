@@ -18,7 +18,7 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type) {
+	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) {
 		// TODO make sure only one Collection object per collection to avoid concurrency issues
 		return new BlueCollectionImpl<>(this, type);
 	}

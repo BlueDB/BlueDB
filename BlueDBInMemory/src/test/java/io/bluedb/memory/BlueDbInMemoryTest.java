@@ -18,7 +18,7 @@ import junit.framework.TestCase;
 public class BlueDbInMemoryTest extends TestCase {
 
 	BlueDb db = new BlueDbInMemory();
-	BlueCollection<TestValue> collection = db.getCollection(TestValue.class);
+	BlueCollection<TestValue> collection = db.getCollection(TestValue.class, "testing");
 	
 	@Test
 	public void testInsert() {

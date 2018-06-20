@@ -20,7 +20,7 @@ import io.bluedb.disk.TestValue;
 public class BlueDbOnDiskTest {
 
 	BlueDb db = new BlueDbOnDisk();
-	BlueCollection<TestValue> collection = db.getCollection(TestValue.class);
+	BlueCollection<TestValue> collection = db.getCollection(TestValue.class, "testing");
 	
 	@Test
 	public void testInsert() {
