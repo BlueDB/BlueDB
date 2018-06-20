@@ -2,22 +2,18 @@ package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
 import java.util.List;
-import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
-import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Segment;
 
 public class DeleteTask<T extends Serializable> implements Runnable {
-	private final RecoveryManager recoveryManager;
 	private final BlueCollectionImpl<T> collection;
 	private final BlueKey key;
 	
-	public DeleteTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, BlueKey key) {
+	public DeleteTask(BlueCollectionImpl<T> collection, BlueKey key) {
 		this.collection = collection;
-		this.recoveryManager = recoveryManager;
 		this.key = key;
 	}
 
@@ -34,11 +30,11 @@ public class DeleteTask<T extends Serializable> implements Runnable {
 	}
 
 	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
-		recoveryManager.saveChange(change);
+		collection.getRecoveryManager().saveChange(change);
 		List<Segment<T>> segments = collection.getSegments(key);
 		for (Segment<T> segment: segments) {
 			change.applyChange(segment);
 		}
-		recoveryManager.removeChange(change);
+		collection.getRecoveryManager().removeChange(change);
 	}
 }

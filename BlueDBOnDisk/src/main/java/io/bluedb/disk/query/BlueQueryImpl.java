@@ -8,8 +8,6 @@ import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 
 public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {

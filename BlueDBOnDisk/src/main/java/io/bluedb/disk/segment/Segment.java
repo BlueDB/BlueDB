@@ -35,13 +35,13 @@ public class Segment <T extends Serializable> {
 		TreeMap<BlueKey, BlueEntity<T>> data = load();
 		BlueEntity<T> entity = new BlueEntity<T>(key, value);
 		data.put(key, entity);
-		save(data);
+		Blutils.save(pathString, data);
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
 		TreeMap<BlueKey, BlueEntity<T>> data = load();
 		data.remove(key);
-		save(data);
+		Blutils.save(pathString, data);
 	}
 
 	public List<BlueEntity<T>> read() throws BlueDbException {
@@ -68,15 +68,6 @@ public class Segment <T extends Serializable> {
 				byte[] bytes = Files.readAllBytes(Paths.get(pathString));
 				return (TreeMap<BlueKey, BlueEntity<T>>) serializer.asObject(bytes);
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new BlueDbException("error loading segment from disk", e);
-		}
-	}
-	
-	private void save(Object o) throws BlueDbException {
-		try {
-			Blutils.writeToDisk(Paths.get(pathString), o);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("error loading segment from disk", e);

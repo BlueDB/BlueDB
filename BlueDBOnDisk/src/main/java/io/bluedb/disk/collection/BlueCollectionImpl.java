@@ -16,7 +16,6 @@ import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
@@ -28,7 +27,6 @@ import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.collection.task.UpdateTask;
 import io.bluedb.disk.query.BlueQueryImpl;
-import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
@@ -52,7 +50,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
-		Runnable insertTask = new InsertTask(recoveryManager, this, key, value);
+		Runnable insertTask = new InsertTask<T>(this, key, value);
 		Future<?> future = executor.submit(insertTask);
 		try {
 			future.get();
@@ -76,7 +74,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
-		Runnable updateTask = new UpdateTask(recoveryManager, this, key, updater);
+		Runnable updateTask = new UpdateTask<T>(this, key, updater);
 		Future<?> future = executor.submit(updateTask);
 		try {
 			future.get();
@@ -88,7 +86,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public void delete(BlueKey key) throws BlueDbException {
-		Runnable deleteTask = new DeleteTask(recoveryManager, this, key);
+		Runnable deleteTask = new DeleteTask<T>(this, key);
 		Future<?> future = executor.submit(deleteTask);
 		try {
 			future.get();
@@ -109,7 +107,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	public void deleteAll(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueKey> keys = findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getKey()).collect(Collectors.toList());
-		Runnable deleteAllTask = new DeleteMultipleTask(recoveryManager, this, keys);
+		Runnable deleteAllTask = new DeleteMultipleTask<T>(this, keys);
 		Future<?> future = executor.submit(deleteAllTask);
 		try {
 			future.get();
@@ -121,7 +119,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
 		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
-		Runnable updateTask = new UpdateMultipleTask(recoveryManager, this, entities, updater);
+		Runnable updateTask = new UpdateMultipleTask<T>(this, entities, updater);
 		Future<?> future = executor.submit(updateTask);
 		try {
 			future.get();
@@ -134,7 +132,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	private List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
 		List<Segment<T>> segments = getSegments(minTime, maxTime);
-		for (Segment segment: segments) {
+		for (Segment<T> segment: segments) {
 			List<BlueEntity<T>> entitesInSegment = segment.read(minTime, maxTime);
 			for (BlueEntity<T> entity: entitesInSegment) {
 				T value = (T)entity.getObject();
@@ -151,6 +149,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return get(key) != null;
 	}
 
+	public RecoveryManager getRecoveryManager() {
+		return recoveryManager;
+	}
 	public Path getPath() {
 		return path;
 	}

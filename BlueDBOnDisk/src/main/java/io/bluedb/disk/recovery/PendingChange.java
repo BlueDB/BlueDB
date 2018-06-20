@@ -7,39 +7,39 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.segment.Segment;
 
-public class PendingChange implements Serializable {
+public class PendingChange<T extends Serializable> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private static FSTConfiguration serializer = FSTConfiguration.createDefaultConfiguration();
 
 	private BlueKey key;
-	private Serializable oldValue;
-	private Serializable newValue;
+	private T oldValue;
+	private T newValue;
 	private long timeCreated;
 	
-	private PendingChange(BlueKey key, Serializable oldValue, Serializable newValue) {
+	private PendingChange(BlueKey key, T oldValue, T newValue) {
 		this.key = key;
 		this.oldValue = oldValue;
 		this.newValue = newValue;
 		timeCreated = System.currentTimeMillis();
 	}
 	
-	public static PendingChange createDelete(BlueKey key){
-		return new PendingChange(key, null, null);
+	public static <X extends Serializable> PendingChange<X> createDelete(BlueKey key){
+		return new PendingChange<X>(key, null, null);
 	}
 
-	public static PendingChange createInsert(BlueKey key, Serializable newValue){
-		return new PendingChange(key, null, newValue);
+	public static <T extends Serializable> PendingChange<T> createInsert(BlueKey key, T newValue){
+		return new PendingChange<T>(key, null, newValue);
 	}
 
-	public static <X extends Serializable> PendingChange createUpdate(BlueKey key, X oldValue, Updater<X> updater){
-		X newValue = clone(oldValue);
+	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T oldValue, Updater<T> updater){
+		T newValue = clone(oldValue);
 		updater.update(newValue);
-		return new PendingChange(key, oldValue, newValue);
+		return new PendingChange<T>(key, oldValue, newValue);
 	}
 
-	public void applyChange(Segment segment) throws BlueDbException {
+	public void applyChange(Segment<T> segment) throws BlueDbException {
 		if (isInsert()) {
 			// TODO check for already existing?  probably not, probably do that in the calling function
 			segment.put(key, newValue);
@@ -55,10 +55,10 @@ public class PendingChange implements Serializable {
 	public BlueKey getKey() {
 		return key;
 	}
-	public Object getOldValue() {
+	public T getOldValue() {
 		return oldValue;
 	}
-	public Object getNewValue() {
+	public T getNewValue() {
 		return newValue;
 	}
 

@@ -7,19 +7,16 @@ import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
-import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Segment;
 
 public class InsertTask<T extends Serializable> implements Runnable {
 
-	private final RecoveryManager recoveryManager;
 	private final BlueCollectionImpl<T> collection;
 	private final BlueKey key;
 	private final T value;
 	
-	public InsertTask(RecoveryManager recoveryManager, BlueCollectionImpl<T> collection, BlueKey key, T value) {
+	public InsertTask(BlueCollectionImpl<T> collection, BlueKey key, T value) {
 		this.collection = collection;
-		this.recoveryManager = recoveryManager;
 		this.key = key;
 		this.value = value;
 	}
@@ -40,11 +37,11 @@ public class InsertTask<T extends Serializable> implements Runnable {
 	}
 
 	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
-		recoveryManager.saveChange(change);
+		collection.getRecoveryManager().saveChange(change);
 		List<Segment<T>> segments = collection.getSegments(key);
 		for (Segment<T> segment: segments) {
 			change.applyChange(segment);
 		}
-		recoveryManager.removeChange(change);
+		collection.getRecoveryManager().removeChange(change);
 	}
 }
