@@ -1,23 +1,28 @@
 package io.bluedb.api.keys;
 
-public class StringKey implements BlueKey {
+public class StringKey implements ValueKey {
 	private static final long serialVersionUID = 1L;
 
-	private String key;
+	private String id;
 
-	public StringKey(String key) {
-		this.key = key;
+	public StringKey(String id) {
+		this.id = id;
 	}
 
-	public String getKey() {
-		return key;
+	public String getId() {
+		return id;
+	}
+	
+	@Override
+	public long getGroupingNumber() {
+		return hashCode();
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return result;
 	}
 
@@ -33,11 +38,11 @@ public class StringKey implements BlueKey {
 			return false;
 		}
 		StringKey other = (StringKey) obj;
-		if (key == null) {
-			if (other.key != null) {
+		if (id == null) {
+			if (other.id != null) {
 				return false;
 			}
-		} else if (!key.equals(other.key)) {
+		} else if (!id.equals(other.id)) {
 			return false;
 		}
 		return true;
@@ -45,19 +50,20 @@ public class StringKey implements BlueKey {
 
 	@Override
 	public String toString() {
-		return "StringKey [key=" + key + "]";
+		return "StringKey [key=" + id + "]";
 	}
 
 	@Override
 	public int compareTo(BlueKey other) {
-		// TODO
-		if (other instanceof TimeKey) {
-			return 1;
-		} else if (other instanceof StringKey) {
-			StringKey stringKey = (StringKey) other;
-			return key.compareTo(stringKey.key);
-		} else {
-			return this.hashCode() - other.hashCode();
+		if(other == null) {
+			return -1;
 		}
+		
+		if (other instanceof StringKey) {
+			StringKey stringKey = (StringKey) other;
+			return id.compareTo(stringKey.id);
+		}
+		
+		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
 }

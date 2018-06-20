@@ -1,11 +1,13 @@
 package io.bluedb.disk;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotEquals;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeMap;
+
 import org.junit.Test;
+
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.BlueQuery;
@@ -14,13 +16,19 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
-import io.bluedb.disk.BlueDbOnDisk;
-import io.bluedb.disk.TestValue;
+import junit.framework.TestCase;
 
-public class BlueDbOnDiskTest {
+public class BlueDbOnDiskTest extends TestCase {
 
-	BlueDb db = new BlueDbOnDisk();
-	BlueCollection<TestValue> collection = db.getCollection(TestValue.class, "testing");
+	BlueDb db;
+	BlueCollection<TestValue> collection;
+	
+	@Override
+	protected void setUp() throws Exception {
+		super.setUp();
+		db = new BlueDbOnDisk();
+		collection = db.getCollection(TestValue.class, "testing");
+	}
 	
 	@Test
 	public void testInsert() {

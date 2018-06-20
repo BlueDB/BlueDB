@@ -3,7 +3,7 @@ package io.bluedb.api.keys;
 public class TimeKey implements BlueKey {
 	private static final long serialVersionUID = 1L;
 
-	private BlueKey id;
+	private ValueKey id;
 	private long time;
 
 	public TimeKey(int id, long time) {
@@ -18,16 +18,21 @@ public class TimeKey implements BlueKey {
 		this(new StringKey(id), time);
 	}
 
-	public TimeKey(BlueKey id, long time) {
+	public TimeKey(ValueKey id, long time) {
 		this.id = id;
 		this.time = time;
 	}
 
-	public BlueKey getId() {
+	public ValueKey getId() {
 		return id;
 	}
 
 	public long getTime() {
+		return time;
+	}
+	
+	@Override
+	public long getGroupingNumber() {
 		return time;
 	}
 
@@ -72,7 +77,10 @@ public class TimeKey implements BlueKey {
 
 	@Override
 	public int compareTo(BlueKey other) {
-		// TODO
+		if(other == null) {
+			return -1;
+		}
+		
 		if (other instanceof TimeKey) {
 			long otherTime = ((TimeKey)other).getTime();
 			if (getTime() == otherTime) {
@@ -83,6 +91,7 @@ public class TimeKey implements BlueKey {
 				return -1;
 			}
 		}
-		return -1;
+		
+		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
 }
