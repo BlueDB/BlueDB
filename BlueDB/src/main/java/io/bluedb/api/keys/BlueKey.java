@@ -11,4 +11,6 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
 	@Override
 	public abstract int compareTo(BlueKey other);
+	
+	public long getGroupingNumber();
 }

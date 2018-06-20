@@ -10,7 +10,7 @@ public class TimeFrameKey extends TimeKey {
 		this.endTime = endTime;
 	}
 
-	public TimeFrameKey(BlueKey key, long startTime, long endTime) {
+	public TimeFrameKey(ValueKey key, long startTime, long endTime) {
 		super(key, startTime);
 		this.endTime = endTime;
 	}

@@ -1,6 +1,6 @@
 package io.bluedb.api.keys;
 
-public class IntegerKey implements BlueKey {
+public class IntegerKey implements ValueKey {
 	private static final long serialVersionUID = 1L;
 
 	private int id;
@@ -11,6 +11,11 @@ public class IntegerKey implements BlueKey {
 
 	public int getId() {
 		return id;
+	}
+	
+	@Override
+	public long getGroupingNumber() {
+		return hashCode();
 	}
 
 	@Override
@@ -46,10 +51,14 @@ public class IntegerKey implements BlueKey {
 
 	@Override
 	public int compareTo(BlueKey other) {
-		// TODO
-		if (other instanceof TimeKey) {
-			return 1;
+		if(other == null) {
+			return -1;
 		}
-		return 0;
+		
+		if(other instanceof IntegerKey) {
+			return id - ((IntegerKey)other).id;
+		}
+		
+		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
 }

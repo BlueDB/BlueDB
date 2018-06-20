@@ -1,23 +1,28 @@
 package io.bluedb.api.keys;
 
-public class LongKey implements BlueKey {
+public class LongKey implements ValueKey {
 	private static final long serialVersionUID = 1L;
 
-	private long key;
+	private long id;
 
-	public LongKey(long key) {
-		this.key = key;
+	public LongKey(long id) {
+		this.id = id;
 	}
 
-	public long getKey() {
-		return key;
+	public long getId() {
+		return id;
+	}
+	
+	@Override
+	public long getGroupingNumber() {
+		return hashCode();
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (int) (key ^ (key >>> 32));
+		result = prime * result + (int) (id ^ (id >>> 32));
 		return result;
 	}
 
@@ -33,7 +38,7 @@ public class LongKey implements BlueKey {
 			return false;
 		}
 		LongKey other = (LongKey) obj;
-		if (key != other.key) {
+		if (id != other.id) {
 			return false;
 		}
 		return true;
@@ -41,15 +46,25 @@ public class LongKey implements BlueKey {
 
 	@Override
 	public String toString() {
-		return "LongKey [key=" + key + "]";
+		return "LongKey [key=" + id + "]";
 	}
 
 	@Override
 	public int compareTo(BlueKey other) {
-		// TODO
-		if (other instanceof TimeKey) {
-			return 1;
+		if(other == null) {
+			return -1;
 		}
-		return 0;
+		
+		if(other instanceof LongKey) {
+			long otherId = ((LongKey)other).id;
+			if(id < otherId) {
+				return -1;
+			}
+			if(id > otherId) {
+				return 1;
+			}
+		}
+		
+		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
 }
