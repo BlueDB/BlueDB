@@ -21,7 +21,7 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 	public void run() {
 		try {
 			for (BlueKey key: keys) {
-				PendingChange change = PendingChange.createDelete(key);
+				PendingChange<T> change = PendingChange.createDelete(key);
 				applyUpdateWithRecovery(key, change);
 			}
 		} catch (BlueDbException e) {
@@ -30,7 +30,7 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 		}
 	}
 
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
+	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
 		collection.getRecoveryManager().saveChange(change);
 		List<Segment<T>> segments = collection.getSegments(key);
 		for (Segment<T> segment: segments) {

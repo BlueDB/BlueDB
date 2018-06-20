@@ -27,7 +27,7 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 			for (BlueEntity<T> entity: entities) {
 				BlueKey key = entity.getKey();
 				T value = (T) entity.getObject();
-				PendingChange change = PendingChange.createUpdate(key, value, updater);
+				PendingChange<T> change = PendingChange.createUpdate(key, value, updater);
 				applyUpdateWithRecovery(key, change);
 				// TODO probably make it fail before doing any updates if any update fails?
 			}
@@ -37,7 +37,7 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 		}
 	}
 
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
+	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
 		collection.getRecoveryManager().saveChange(change);
 		List<Segment<T>> segments = collection.getSegments(key);
 		for (Segment<T> segment: segments) {

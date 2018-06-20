@@ -24,7 +24,7 @@ public class UpdateTask<T extends Serializable> implements Runnable {
 	public void run() {
 		try {
 			T value = collection.get(key);
-			PendingChange change = PendingChange.createUpdate(key, value, updater);
+			PendingChange<T> change = PendingChange.createUpdate(key, value, updater);
 			applyUpdateWithRecovery(key, change);
 		} catch (BlueDbException e) {
 			// TODO Auto-generated catch block
@@ -32,7 +32,7 @@ public class UpdateTask<T extends Serializable> implements Runnable {
 		}
 	}
 
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
+	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
 		collection.getRecoveryManager().saveChange(change);
 		List<Segment<T>> segments = collection.getSegments(key);
 		for (Segment<T> segment: segments) {

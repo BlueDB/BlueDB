@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.TreeMap;
 import org.nustaq.serialization.FSTConfiguration;
@@ -42,6 +43,15 @@ public class Segment <T extends Serializable> {
 		TreeMap<BlueKey, BlueEntity<T>> data = load();
 		data.remove(key);
 		Blutils.save(pathString, data);
+	}
+
+	public BlueEntity<T> read(BlueKey key) throws BlueDbException {
+		Collection<BlueEntity<T>> values = load().values();
+		for (BlueEntity<T> entity: values) {
+			if (entity.getKey().equals(key))
+				return entity;
+		}
+		return null;
 	}
 
 	public List<BlueEntity<T>> read() throws BlueDbException {

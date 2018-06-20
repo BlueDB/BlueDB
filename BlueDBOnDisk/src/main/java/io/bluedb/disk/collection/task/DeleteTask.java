@@ -20,7 +20,7 @@ public class DeleteTask<T extends Serializable> implements Runnable {
 	@Override
 	public void run() {
 		try {
-			PendingChange change = PendingChange.createDelete(key);
+			PendingChange<T> change = PendingChange.createDelete(key);
 			applyUpdateWithRecovery(key, change);
 		} catch (Throwable t) {
 			// TODO rollback or try again?
@@ -29,7 +29,7 @@ public class DeleteTask<T extends Serializable> implements Runnable {
 
 	}
 
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
+	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
 		collection.getRecoveryManager().saveChange(change);
 		List<Segment<T>> segments = collection.getSegments(key);
 		for (Segment<T> segment: segments) {

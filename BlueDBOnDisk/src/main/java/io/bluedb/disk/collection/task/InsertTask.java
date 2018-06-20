@@ -27,7 +27,7 @@ public class InsertTask<T extends Serializable> implements Runnable {
 			if (collection.contains(key)) {
 				throw new DuplicateKeyException("key already exists: " + key);
 			}
-			PendingChange change = PendingChange.createInsert(key, value);
+			PendingChange<T> change = PendingChange.createInsert(key, value);
 			applyUpdateWithRecovery(key, change);
 		} catch (Throwable t) {
 			// TODO rollback or try again?
@@ -36,7 +36,7 @@ public class InsertTask<T extends Serializable> implements Runnable {
 		}
 	}
 
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange change) throws BlueDbException {
+	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
 		collection.getRecoveryManager().saveChange(change);
 		List<Segment<T>> segments = collection.getSegments(key);
 		for (Segment<T> segment: segments) {

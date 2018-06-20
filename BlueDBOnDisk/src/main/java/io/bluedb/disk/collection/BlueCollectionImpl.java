@@ -37,15 +37,36 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
 	private Class<T> type;
-	private final RecoveryManager recoveryManager;
+	private final RecoveryManager<T> recoveryManager;
 	final private Path path;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
 		this.type = type;
 		path = Paths.get(db.getPath().toString(), type.getName());
 		path.toFile().mkdirs();
-		recoveryManager = new RecoveryManager(this);
+		recoveryManager = new RecoveryManager<T>(this);
 		recoveryManager.recover();
+	}
+
+	@Override
+	public BlueQuery<T> query() {
+		return new BlueQueryImpl<T>(this);
+	}
+
+	@Override
+	public boolean contains(BlueKey key) throws BlueDbException {
+		return get(key) != null;
+	}
+
+	@Override
+	public T get(BlueKey key) throws BlueDbException {
+		Segment<T> firstSegment = getFirstSegment(key);
+		BlueEntity<T> entity = firstSegment.read(key);
+		return entity == null ? null : entity.getObject();
+	}
+
+	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+		 return (List<T>) findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getObject()).collect(Collectors.toList());
 	}
 
 	@Override
@@ -58,18 +79,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			e.printStackTrace();
 			throw new BlueDbException("insert failed for key " + key.toString(), e);
 		}
-	}
-
-	@Override
-	public T get(BlueKey key) throws BlueDbException {
-		List<Segment<T>> segments = getSegments(key);
-		List<BlueEntity<T>> entitiesInSegment = segments.get(0).read();
-		for (BlueEntity<T> entity: entitiesInSegment) {
-			if (entity.getKey().equals(key)) {
-				return (T) entity.getObject();
-			}
-		}
-		return null;
 	}
 
 	@Override
@@ -96,13 +105,16 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		}
 	}
 
-	@Override
-	public BlueQuery<T> query() {
-		return new BlueQueryImpl<T>(this);
-	}
-
-	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		 return (List<T>) findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getObject()).collect(Collectors.toList());
+	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
+		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
+		Runnable updateTask = new UpdateMultipleTask<T>(this, entities, updater);
+		Future<?> future = executor.submit(updateTask);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("update query failed", e);
+		}
 	}
 
 	public void deleteAll(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
@@ -114,18 +126,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 			throw new BlueDbException("delete query failed", e);
-		}
-	}
-
-	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
-		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
-		Runnable updateTask = new UpdateMultipleTask<T>(this, entities, updater);
-		Future<?> future = executor.submit(updateTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("update query failed", e);
 		}
 	}
 
@@ -144,14 +144,10 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return results;
 	}
 
-	@Override
-	public boolean contains(BlueKey key) throws BlueDbException {
-		return get(key) != null;
-	}
-
-	public RecoveryManager getRecoveryManager() {
+	public RecoveryManager<T> getRecoveryManager() {
 		return recoveryManager;
 	}
+
 	public Path getPath() {
 		return path;
 	}
@@ -160,6 +156,10 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		// TODO shutdown executors? what else?
 	}
 
+	public Segment<T> getFirstSegment(BlueKey key) {
+		return getSegments(key).get(0);
+	}
+	
 	public List<Segment<T>> getSegments(BlueKey key) {
 		List<Segment<T>> segments = new ArrayList<>();
 		if (key instanceof TimeFrameKey) {
