@@ -47,4 +47,17 @@ public class StringKey implements BlueKey {
 	public String toString() {
 		return "StringKey [key=" + key + "]";
 	}
+
+	@Override
+	public int compareTo(BlueKey other) {
+		// TODO
+		if (other instanceof TimeKey) {
+			return 1;
+		} else if (other instanceof StringKey) {
+			StringKey stringKey = (StringKey) other;
+			return key.compareTo(stringKey.key);
+		} else {
+			return this.hashCode() - other.hashCode();
+		}
+	}
 }

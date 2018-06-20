@@ -1,15 +1,15 @@
-package io.bluedb.disk;
+package io.bluedb.disk.segment;
 
 import java.io.Serializable;
 import io.bluedb.api.keys.BlueKey;
 
-public class BlueEntity implements Serializable {
+public class BlueEntity<T extends Serializable> implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private BlueKey key;
-	private Serializable object;
+	private T object;
 
-	public BlueEntity(BlueKey key, Serializable object) {
+	public BlueEntity(BlueKey key, T object) {
 		this.key = key;
 		this.object = object;
 	}
@@ -18,7 +18,7 @@ public class BlueEntity implements Serializable {
 		return key;
 	}
 
-	public Serializable getObject() {
+	public T getObject() {
 		return object;
 	}
 }

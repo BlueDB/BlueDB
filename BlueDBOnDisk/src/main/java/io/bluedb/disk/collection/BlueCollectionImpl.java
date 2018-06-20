@@ -1,0 +1,196 @@
+package io.bluedb.disk.collection;
+
+import java.io.File;
+import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import io.bluedb.api.BlueCollection;
+import io.bluedb.api.BlueQuery;
+import io.bluedb.api.Condition;
+import io.bluedb.api.Updater;
+import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbOnDisk;
+import io.bluedb.disk.Blutils;
+import io.bluedb.disk.collection.task.DeleteMultipleTask;
+import io.bluedb.disk.collection.task.DeleteTask;
+import io.bluedb.disk.collection.task.InsertTask;
+import io.bluedb.disk.collection.task.UpdateMultipleTask;
+import io.bluedb.disk.collection.task.UpdateTask;
+import io.bluedb.disk.query.BlueQueryImpl;
+import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.BlueEntity;
+import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.segment.SegmentIdConverter;
+
+public class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
+
+	ExecutorService executor = Executors.newFixedThreadPool(1);
+
+	private Class<T> type;
+	private final RecoveryManager<T> recoveryManager;
+	final private Path path;
+
+	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
+		this.type = type;
+		path = Paths.get(db.getPath().toString(), type.getName());
+		path.toFile().mkdirs();
+		recoveryManager = new RecoveryManager<T>(this);
+		recoveryManager.recover();
+	}
+
+	@Override
+	public BlueQuery<T> query() {
+		return new BlueQueryImpl<T>(this);
+	}
+
+	@Override
+	public boolean contains(BlueKey key) throws BlueDbException {
+		return get(key) != null;
+	}
+
+	@Override
+	public T get(BlueKey key) throws BlueDbException {
+		Segment<T> firstSegment = getFirstSegment(key);
+		BlueEntity<T> entity = firstSegment.read(key);
+		return entity == null ? null : entity.getObject();
+	}
+
+	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+		 return (List<T>) findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getObject()).collect(Collectors.toList());
+	}
+
+	@Override
+	public void insert(BlueKey key, T value) throws BlueDbException {
+		Runnable insertTask = new InsertTask<T>(this, key, value);
+		Future<?> future = executor.submit(insertTask);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("insert failed for key " + key.toString(), e);
+		}
+	}
+
+	@Override
+	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
+		Runnable updateTask = new UpdateTask<T>(this, key, updater);
+		Future<?> future = executor.submit(updateTask);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("update failed for key " + key.toString(), e);
+		}
+	}
+
+	@Override
+	public void delete(BlueKey key) throws BlueDbException {
+		Runnable deleteTask = new DeleteTask<T>(this, key);
+		Future<?> future = executor.submit(deleteTask);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("delete failed for key " + key.toString(), e);
+		}
+	}
+
+	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
+		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
+		Runnable updateTask = new UpdateMultipleTask<T>(this, entities, updater);
+		Future<?> future = executor.submit(updateTask);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("update query failed", e);
+		}
+	}
+
+	public void deleteAll(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+		List<BlueKey> keys = findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getKey()).collect(Collectors.toList());
+		Runnable deleteAllTask = new DeleteMultipleTask<T>(this, keys);
+		Future<?> future = executor.submit(deleteAllTask);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("delete query failed", e);
+		}
+	}
+
+	private List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+		List<BlueEntity<T>> results = new ArrayList<>();
+		List<Segment<T>> segments = getSegments(minTime, maxTime);
+		for (Segment<T> segment: segments) {
+			List<BlueEntity<T>> entitesInSegment = segment.read(minTime, maxTime);
+			for (BlueEntity<T> entity: entitesInSegment) {
+				T value = (T)entity.getObject();
+				if(Blutils.meetsConditions(conditions, value)) {
+					results.add(entity);
+				}
+			}
+		}
+		return results;
+	}
+
+	public RecoveryManager<T> getRecoveryManager() {
+		return recoveryManager;
+	}
+
+	public Path getPath() {
+		return path;
+	}
+	
+	public void shutdown() {
+		// TODO shutdown executors? what else?
+	}
+
+	public Segment<T> getFirstSegment(BlueKey key) {
+		return getSegments(key).get(0);
+	}
+	
+	public List<Segment<T>> getSegments(BlueKey key) {
+		List<Segment<T>> segments = new ArrayList<>();
+		if (key instanceof TimeFrameKey) {
+			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
+			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
+				segments.add(new Segment<T>(path, l));
+			}
+		} else if (key instanceof TimeKey) {
+			TimeKey timeKey = (TimeKey)key;
+			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
+			segments.add(new Segment<T>(path, segmentId));
+		} else {
+			segments.add(new Segment<T>(path, key.toString())); // TODO break into safely named segments
+		}
+		return segments;
+	}
+
+	private List<Segment<T>> getSegments(long minTime, long maxTime) {
+		long minSegmentId = SegmentIdConverter.convertTimeToSegmentId(minTime);
+		long maxSegmentId = SegmentIdConverter.convertTimeToSegmentId(maxTime);
+		List<Segment<T>> segments = new ArrayList<>();
+		// TODO this should be way better
+		List<File> segmentFiles = Blutils.listFiles(path, ".segment");
+		for (File segmentFile: segmentFiles) {
+			String fileName = segmentFile.getName();
+			String segmentIdStr = fileName.substring(0, fileName.indexOf(".segment"));
+			long segmentId = Long.parseLong(segmentIdStr);
+			if (segmentId >= minSegmentId && segmentId <= maxSegmentId) {
+				segments.add(new Segment<T>(path, segmentId));
+			}
+		}
+		return segments;
+	}
+}

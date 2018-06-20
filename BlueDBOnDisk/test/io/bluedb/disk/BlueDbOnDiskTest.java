@@ -1,9 +1,10 @@
-package io.bluedb.memory;
+package io.bluedb.disk;
 
 import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeMap;
 import org.junit.Test;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
@@ -13,15 +14,17 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
-import junit.framework.TestCase;
+import io.bluedb.disk.BlueDbOnDisk;
+import io.bluedb.disk.TestValue;
 
-public class BlueDbInMemoryTest extends TestCase {
+public class BlueDbOnDiskTest {
 
-	BlueDb db = new BlueDbInMemory();
+	BlueDb db = new BlueDbOnDisk();
 	BlueCollection<TestValue> collection = db.getCollection(TestValue.class, "testing");
 	
 	@Test
 	public void testInsert() {
+		cleanup();
 		TestValue value = new TestValue("Joe");
 		BlueKey key = createTimeKey(10, value);
 		insert(key, value);
@@ -36,6 +39,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testGet() {
+		cleanup();
 		TestValue value = new TestValue("Joe");
 		TestValue differentValue = new TestValue("Bob");
 		BlueKey key = createTimeKey(10, value);
@@ -58,6 +62,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testUpdate() {
+		cleanup();
 		BlueKey key = insert(10, new TestValue("Joe", 0));
 		try {
 			assertCupcakes(key, 0);
@@ -122,6 +127,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testBeforeTimeFrame() {
+		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -146,6 +152,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testBeforeTime() {
+		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -170,6 +177,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testBeforeOrAtTimeFrame() {
+		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -198,6 +206,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testBeforeOrAtTime() {
+		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -224,6 +233,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testAfterTimeFrame() {
+		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -252,6 +262,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testAfterTime() {
+		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -276,6 +287,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testAfterOrAtTimeFrame() {
+		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -308,6 +320,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testAfterOrAtTime() {
+		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -334,6 +347,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testBetween() {
+		cleanup();
 		TestValue valueAt2 = new TestValue("Joe");
 		TestValue valueAt3 = new TestValue("Bob");
 		insert(2, valueAt2);
@@ -373,6 +387,7 @@ public class BlueDbInMemoryTest extends TestCase {
 
 	@Test
 	public void testGetList() {
+		cleanup();
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insert(1, valueJoe);
@@ -393,6 +408,7 @@ public class BlueDbInMemoryTest extends TestCase {
 	
 	@Test
 	public void testGetIterator() {
+		cleanup();
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insert(1, valueJoe);
@@ -414,6 +430,7 @@ public class BlueDbInMemoryTest extends TestCase {
 	
 	@Test
 	public void testQueryUpdate() {
+		cleanup();
 		BlueKey keyJoe   = insert(1, new TestValue("Joe", 0));
 		BlueKey keyBob   = insert(2, new TestValue("Bob", 0));
 		BlueKey keyJosey = insert(2,  new TestValue("Josey", 0));
@@ -448,6 +465,7 @@ public class BlueDbInMemoryTest extends TestCase {
 	
 	@Test
 	public void testQueryDelete() {
+		cleanup();
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		TestValue valueJosey = new TestValue("Josey");
