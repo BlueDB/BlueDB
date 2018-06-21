@@ -65,8 +65,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
 		Segment<T> firstSegment = getFirstSegment(key);
-		BlueEntity<T> entity = firstSegment.read(key);
-		return entity == null ? null : entity.getObject();
+		return firstSegment.get(key);
 	}
 
 	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
@@ -137,9 +136,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		List<BlueEntity<T>> results = new ArrayList<>();
 		List<Segment<T>> segments = getSegments(minTime, maxTime);
 		for (Segment<T> segment: segments) {
-			List<BlueEntity<T>> entitesInSegment = segment.read(minTime, maxTime);
+			List<BlueEntity<T>> entitesInSegment = segment.getRange(minTime, maxTime);
 			for (BlueEntity<T> entity: entitesInSegment) {
-				T value = (T)entity.getObject();
+				T value = entity.getObject();
 				if(Blutils.meetsConditions(conditions, value)) {
 					results.add(entity);
 				}
@@ -169,14 +168,14 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
-				segments.add(new Segment<T>(path, l, serializer));
+				segments.add(new Segment<T>(this, l));
 			}
 		} else if (key instanceof TimeKey) {
 			TimeKey timeKey = (TimeKey)key;
 			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
-			segments.add(new Segment<T>(path, segmentId, serializer));
+			segments.add(new Segment<T>(this, segmentId));
 		} else {
-			segments.add(new Segment<T>(path, key.toString(), serializer)); // TODO break into safely named segments
+			segments.add(new Segment<T>(this, key.toString())); // TODO break into safely named segments
 		}
 		return segments;
 	}
@@ -192,7 +191,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			String segmentIdStr = fileName.substring(0, fileName.indexOf(".segment"));
 			long segmentId = Long.parseLong(segmentIdStr);
 			if (segmentId >= minSegmentId && segmentId <= maxSegmentId) {
-				segments.add(new Segment<T>(path, segmentId, serializer));
+				segments.add(new Segment<T>(this, segmentId));
 			}
 		}
 		return segments;
