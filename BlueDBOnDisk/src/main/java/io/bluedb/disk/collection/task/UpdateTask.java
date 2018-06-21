@@ -24,7 +24,7 @@ public class UpdateTask<T extends Serializable> implements Runnable {
 	public void run() {
 		try {
 			T value = collection.get(key);
-			PendingChange<T> change = PendingChange.createUpdate(key, value, updater);
+			PendingChange<T> change = PendingChange.createUpdate(key, value, updater, collection.getSerializer());
 			applyUpdateWithRecovery(key, change);
 		} catch (BlueDbException e) {
 			// TODO Auto-generated catch block

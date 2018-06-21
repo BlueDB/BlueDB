@@ -26,7 +26,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		db = new BlueDbOnDisk();
+		db = new BlueDbOnDiskBuilder().build();
 		collection = db.getCollection(TestValue.class, "testing");
 	}
 	

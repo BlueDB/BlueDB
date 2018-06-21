@@ -10,39 +10,42 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.TreeMap;
-import org.nustaq.serialization.FSTConfiguration;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Segment <T extends Serializable> {
 	private static String SUFFIX = ".segment";
 
-	final String pathString;
-	final Path path;
-	private static final FSTConfiguration serializer = FSTConfiguration.createDefaultConfiguration();
-
-	public Segment(Path collectionPath, String segmentId) {
+	private final String pathString;
+	private final Path path;
+	private final BlueSerializer serializer;
+	
+	public Segment(Path collectionPath, String segmentId, BlueSerializer serializer) {
 		this.path = Paths.get(collectionPath.toString(), segmentId + SUFFIX);
 		this.pathString = this.path.toString();
+		this.serializer = serializer;
 	}
 
-	public Segment(Path collectionPath, long segmentId) {
+	public Segment(Path collectionPath, long segmentId, BlueSerializer serializer) {
 		this.path = Paths.get(collectionPath.toString(), segmentId + SUFFIX);
 		this.pathString = this.path.toString();
+		this.serializer = serializer;
 	}
 
 	public void put(BlueKey key, T value) throws BlueDbException {
 		TreeMap<BlueKey, BlueEntity<T>> data = load();
 		BlueEntity<T> entity = new BlueEntity<T>(key, value);
 		data.put(key, entity);
-		Blutils.save(pathString, data);
+		Blutils.save(pathString, data, serializer);
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
 		TreeMap<BlueKey, BlueEntity<T>> data = load();
 		data.remove(key);
-		Blutils.save(pathString, data);
+		Blutils.save(pathString, data, serializer);
 	}
 
 	public BlueEntity<T> read(BlueKey key) throws BlueDbException {
@@ -76,7 +79,7 @@ public class Segment <T extends Serializable> {
 				return new TreeMap<>();
 			} else {
 				byte[] bytes = Files.readAllBytes(Paths.get(pathString));
-				return (TreeMap<BlueKey, BlueEntity<T>>) serializer.asObject(bytes);
+				return (TreeMap<BlueKey, BlueEntity<T>>) serializer.deserializeObjectFromByteArray(bytes);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

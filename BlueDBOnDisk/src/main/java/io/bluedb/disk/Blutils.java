@@ -7,18 +7,17 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.nustaq.serialization.FSTConfiguration;
+
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Blutils {
-	private static final FSTConfiguration serializer = FSTConfiguration.createDefaultConfiguration();
-
-	public static void save(String path, Object o) throws BlueDbException {
-		byte[] bytes = serializer.asByteArray(o);
+	public static void save(String path, Object o, BlueSerializer serializer) throws BlueDbException {
+		byte[] bytes = serializer.serializeObjectToByteArray(o);
 		try (FileOutputStream fos = new FileOutputStream(path)) {
 			fos.write(bytes);
 			fos.close();
@@ -41,12 +40,12 @@ public class Blutils {
 		return results;
 	}
 
-	public static void writeToDisk(Path path, Object data) throws IOException {
+	public static void writeToDisk(Path path, Object data, BlueSerializer serializer) throws IOException {
 		File file = path.toFile();
 		File folder = new File(file.getParent());
 		folder.mkdirs();
 		try (FileOutputStream fos = new FileOutputStream(file)) {
-			byte[] bytes = serializer.asByteArray(data);
+			byte[] bytes = serializer.serializeObjectToByteArray(data);
 			fos.write(bytes);
 			fos.close();
 		} catch (IOException e) {

@@ -5,11 +5,11 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionImpl;
-import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 
 public class RecoveryManager<T extends Serializable> {
@@ -26,7 +26,7 @@ public class RecoveryManager<T extends Serializable> {
 
 	public void saveChange(PendingChange<T> change) throws BlueDbException {
 		String filename = getFileName(change);
-		Blutils.save(filename, change);
+		Blutils.save(filename, change, collection.getSerializer());
 	}
 
 	public void removeChange(PendingChange<T> change) throws BlueDbException {

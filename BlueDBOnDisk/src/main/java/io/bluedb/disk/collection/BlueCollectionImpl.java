@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
@@ -31,6 +32,7 @@ import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentIdConverter;
+import io.bluedb.disk.serialization.BlueSerializer;
 
 public class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
@@ -38,7 +40,8 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	private Class<T> type;
 	private final RecoveryManager<T> recoveryManager;
-	final private Path path;
+	private final Path path;
+	private final BlueSerializer serializer;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
 		this.type = type;
@@ -46,6 +49,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		path.toFile().mkdirs();
 		recoveryManager = new RecoveryManager<T>(this);
 		recoveryManager.recover();
+		serializer = db.getSerializer();
 	}
 
 	@Override
@@ -165,14 +169,14 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
-				segments.add(new Segment<T>(path, l));
+				segments.add(new Segment<T>(path, l, serializer));
 			}
 		} else if (key instanceof TimeKey) {
 			TimeKey timeKey = (TimeKey)key;
 			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
-			segments.add(new Segment<T>(path, segmentId));
+			segments.add(new Segment<T>(path, segmentId, serializer));
 		} else {
-			segments.add(new Segment<T>(path, key.toString())); // TODO break into safely named segments
+			segments.add(new Segment<T>(path, key.toString(), serializer)); // TODO break into safely named segments
 		}
 		return segments;
 	}
@@ -188,9 +192,13 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			String segmentIdStr = fileName.substring(0, fileName.indexOf(".segment"));
 			long segmentId = Long.parseLong(segmentIdStr);
 			if (segmentId >= minSegmentId && segmentId <= maxSegmentId) {
-				segments.add(new Segment<T>(path, segmentId));
+				segments.add(new Segment<T>(path, segmentId, serializer));
 			}
 		}
 		return segments;
+	}
+	
+	public BlueSerializer getSerializer() {
+		return serializer;
 	}
 }

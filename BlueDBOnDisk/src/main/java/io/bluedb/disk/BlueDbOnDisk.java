@@ -2,19 +2,22 @@ package io.bluedb.disk;
 
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+
+import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionImpl;
-import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.api.BlueCollection;
+import io.bluedb.disk.serialization.BlueSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class BlueDbOnDisk implements BlueDb {
 
-	final Path path;
+	private final Path path;
+	private BlueSerializer serializer;
 	
-	public BlueDbOnDisk() {
-		path = Paths.get(".", "bluedb");
+	BlueDbOnDisk(Path path, Class<?>...registeredSerializableClasses) {
+		this.path = path;
+		this.serializer = new ThreadLocalFstSerializer(registeredSerializableClasses);
 	}
 
 	@Override
@@ -30,6 +33,10 @@ public class BlueDbOnDisk implements BlueDb {
 
 	public Path getPath() {
 		return path;
+	}
+	
+	public BlueSerializer getSerializer() {
+		return serializer;
 	}
 
 	private void recover() {

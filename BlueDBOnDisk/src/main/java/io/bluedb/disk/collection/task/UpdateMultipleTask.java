@@ -27,7 +27,7 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 			for (BlueEntity<T> entity: entities) {
 				BlueKey key = entity.getKey();
 				T value = (T) entity.getObject();
-				PendingChange<T> change = PendingChange.createUpdate(key, value, updater);
+				PendingChange<T> change = PendingChange.createUpdate(key, value, updater, collection.getSerializer());
 				applyUpdateWithRecovery(key, change);
 				// TODO probably make it fail before doing any updates if any update fails?
 			}
