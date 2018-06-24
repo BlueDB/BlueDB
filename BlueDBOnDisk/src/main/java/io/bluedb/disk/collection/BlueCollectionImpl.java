@@ -156,6 +156,10 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return path;
 	}
 	
+	public BlueSerializer getSerializer() {
+		return serializer;
+	}
+	
 	public void shutdown() {
 		// TODO shutdown executors? what else?
 	}
@@ -196,9 +200,5 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			}
 		}
 		return segments;
-	}
-	
-	public BlueSerializer getSerializer() {
-		return serializer;
 	}
 }

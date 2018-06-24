@@ -23,6 +23,12 @@ public class Segment <T extends Serializable> {
 	private final Path path;
 	private final BlueSerializer serializer;
 	
+	public Segment(Path segmentPath, BlueSerializer serializer) {
+		this.path = Paths.get(segmentPath.toString() + SUFFIX);
+		this.pathString = this.path.toString();
+		this.serializer = serializer;
+	}
+
 	public Segment(Path collectionPath, String segmentId, BlueSerializer serializer) {
 		this.path = Paths.get(collectionPath.toString(), segmentId + SUFFIX);
 		this.pathString = this.path.toString();
