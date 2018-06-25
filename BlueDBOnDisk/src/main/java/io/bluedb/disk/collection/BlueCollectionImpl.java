@@ -140,9 +140,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		List<BlueEntity<T>> results = new ArrayList<>();
 		List<Segment<T>> segments = segmentManager.getExistingSegments(minTime, maxTime);
 		for (Segment<T> segment: segments) {
-			List<BlueEntity<T>> entitesInSegment = segment.read(minTime, maxTime);
+			List<BlueEntity<T>> entitesInSegment = segment.getRange(minTime, maxTime);
 			for (BlueEntity<T> entity: entitesInSegment) {
-				T value = (T)entity.getObject();
+				T value = entity.getObject();
 				if(Blutils.meetsConditions(conditions, value)) {
 					results.add(entity);
 				}
@@ -162,11 +162,11 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	public Path getPath() {
 		return path;
 	}
-	
+
 	public BlueSerializer getSerializer() {
 		return serializer;
 	}
-	
+
 	public void shutdown() {
 		// TODO shutdown executors? what else?
 	}
