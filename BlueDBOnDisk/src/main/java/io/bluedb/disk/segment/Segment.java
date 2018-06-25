@@ -15,16 +15,17 @@ import java.util.TreeMap;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.disk.FileManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Segment <T extends Serializable> {
 
-	private final BlueSerializer serializer;
+	private final FileManager fileManager;
 	private final Path segmentPath;
 
-	public Segment(Path segmentPath, BlueSerializer serializer) {
+	public Segment(Path segmentPath, FileManager fileManager) {
 		this.segmentPath = segmentPath;
-		this.serializer = serializer;
+		this.fileManager = fileManager;
 	}
 
 	@Override
@@ -111,8 +112,7 @@ public class Segment <T extends Serializable> {
 	private List<BlueEntity<T>> fetch(File file) throws BlueDbException {
 		if (!file.exists())
 			return new ArrayList<BlueEntity<T>>();
-		byte[] fileData = load(file.toPath());
-		List<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) serializer.deserializeObjectFromByteArray((fileData));
+		List<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
 		return fileContents;
 	}
 
@@ -122,7 +122,7 @@ public class Segment <T extends Serializable> {
 			file.delete();
 		} else {
 			ArrayList<BlueEntity<T>> entites = asEntityArrayList(data);
-			save(file.toPath(), entites);
+			fileManager.save(file.toPath(), entites);
 		}
 	}
 
@@ -152,34 +152,34 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	// TODO move to a FileManager class
-	public byte[] load(Path path) throws BlueDbException {
-		File file = path.toFile();
-		if (!file.exists())
-			return null;
-		try {
-			return Files.readAllBytes(path);
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file ?
-			throw new BlueDbException("error writing to disk (" + path +")", e);
-		}
-	}
-
-	// TODO move to a FileManager class
-	public void save(Path path, Object o) throws BlueDbException {
-		File file = path.toFile();
-		file.getParentFile().mkdirs();
-		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file
-			throw new BlueDbException("error writing to disk (" + path +")", e);
-		}
-	}
+//	// TODO move to a FileManager class
+//	public byte[] load(Path path) throws BlueDbException {
+//		File file = path.toFile();
+//		if (!file.exists())
+//			return null;
+//		try {
+//			return Files.readAllBytes(path);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//			// TODO delete the file ?
+//			throw new BlueDbException("error writing to disk (" + path +")", e);
+//		}
+//	}
+//
+//	// TODO move to a FileManager class
+//	public void save(Path path, Object o) throws BlueDbException {
+//		File file = path.toFile();
+//		file.getParentFile().mkdirs();
+//		byte[] bytes = serializer.serializeObjectToByteArray(o);
+//		try (FileOutputStream fos = new FileOutputStream(file)) {
+//			fos.write(bytes);
+//			fos.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//			// TODO delete the file
+//			throw new BlueDbException("error writing to disk (" + path +")", e);
+//		}
+//	}
 
 	@Override
 	public int hashCode() {
