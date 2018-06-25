@@ -51,13 +51,13 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	// TODO test
-	public Path getPath(BlueKey key) {
+	protected Path getPath(BlueKey key) {
 		long groupingNumber = key.getGroupingNumber();
 		return getPath(groupingNumber);
 	}
 
 	// TODO test
-	public Path getPath(long groupingNumber) {
+	protected Path getPath(long groupingNumber) {
 		String level0 = getRangeFileName(groupingNumber, LEVEL_0);
 		String level1 = getRangeFileName(groupingNumber, LEVEL_1);
 		String level2 = getRangeFileName(groupingNumber, LEVEL_2);
@@ -66,7 +66,7 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	// TODO test
-	public List<Path> getAllPossiblePaths(BlueKey key) {
+	protected List<Path> getAllPossiblePaths(BlueKey key) {
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			return getAllPossiblePaths(timeFrameKey.getStartTime(), timeFrameKey.getEndTime());
@@ -77,7 +77,7 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	// TODO test
-	public List<Path> getAllPossiblePaths(long minTime, long maxTime) {
+	protected List<Path> getAllPossiblePaths(long minTime, long maxTime) {
 		List<Path> paths = new ArrayList<>();
 		minTime = minTime - (minTime % LEVEL_3);
 		long i = minTime;
@@ -90,7 +90,7 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	// TODO test
-	public List<File> getExistingSegmentFiles(BlueKey key) {
+	protected List<File> getExistingSegmentFiles(BlueKey key) {
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			return getExistingSegmentFiles(timeFrameKey.getStartTime(), timeFrameKey.getEndTime());
@@ -101,7 +101,7 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	// TODO test
-	public List<File> getExistingSegmentFiles(long minValue, long maxValue) {
+	protected List<File> getExistingSegmentFiles(long minValue, long maxValue) {
 		Deque<File> foldersToSearch = new ArrayDeque<>();
 		File collectionFolder = collection.getPath().toFile();
 		foldersToSearch.addLast(collectionFolder);
@@ -117,30 +117,28 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	// TODO test
-	private Segment<T> toSegment(Path path) {
+	protected Segment<T> toSegment(Path path) {
 		return new Segment<T>(path, collection.getSerializer());
 	}
 
-	// TODO test
 	protected static List<File> getSubfoldersInRange(File folder, long minValue, long maxValue) {
 		List<File> folderContents = Arrays.asList(folder.listFiles());
 		return folderContents.stream()
 			.filter((f) -> f.isDirectory())
-			.filter((f) -> folderNameInLongInRange(f, minValue, maxValue))
+			.filter((f) -> folderNameRangeContainsRange(f, minValue, maxValue))
 			.collect(Collectors.toList());
 	}
 
 	// TODO add suffix?
-	// TODO test
 	protected static List<File> getSegmentFilesInRange(File folder, long minFileName, long maxFileName) {
 		List<File> folderContents = Arrays.asList(folder.listFiles());
 		return folderContents.stream()
 			.filter((f) -> !f.isDirectory())
-			.filter((f) -> fileNameInLongInRange(f, minFileName, maxFileName))
+			.filter((f) -> isFileNameALongInRange(f, minFileName, maxFileName))
 			.collect(Collectors.toList());
 	}
 
-	protected static boolean fileNameInLongInRange(File file, long minValue, long maxValue) {
+	protected static boolean isFileNameALongInRange(File file, long minValue, long maxValue) {
 		try {
 			String fileName = file.getName();
 			long fileNameAsLong = Long.valueOf(fileName);
@@ -150,7 +148,7 @@ public class SegmentManager<T extends Serializable> {
 		}
 	}
 	
-	protected static boolean folderNameInLongInRange(File file, long minValue, long maxValue) {
+	protected static boolean folderNameRangeContainsRange(File file, long minValue, long maxValue) {
 		try {
 			String[] fileNameSplit = file.getName().split("_");
 			long folderMinValue = Long.valueOf(fileNameSplit[0]);
