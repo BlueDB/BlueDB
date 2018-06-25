@@ -48,7 +48,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		path.toFile().mkdirs();
 		BlueSerializer serializer = db.getSerializer();
 		fileManager = new FileManager(serializer);
-		recoveryManager = new RecoveryManager<T>(this, fileManager);
+		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		recoveryManager.recover();
 		segmentManager = new SegmentManager<T>(this);
 	}

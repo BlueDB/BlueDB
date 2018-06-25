@@ -7,12 +7,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.FileManager;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.serialization.BlueSerializer;
 
 public class RecoveryManager<T extends Serializable> {
 	
@@ -21,11 +23,29 @@ public class RecoveryManager<T extends Serializable> {
 	private final BlueCollectionImpl<T> collection;
 	private final Path recoveryPath;
 	private final FileManager fileManager;
+	private final BlueSerializer serializer;
 	
-	public RecoveryManager(BlueCollectionImpl<T> collection, FileManager fileManager) {
+	public RecoveryManager(BlueCollectionImpl<T> collection, FileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
 		this.fileManager = fileManager;
+		this.serializer = serializer;
 		this.recoveryPath = Paths.get(collection.getPath().toString(), ".pending");
+	}
+
+	public PendingChange<T> saveUpdate(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
+		PendingChange<T> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
+		saveChange(change);
+		return change;
+	}
+
+	public PendingChange<T> saveDelete(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
+		// TODO
+		return null;
+	}
+
+	public PendingChange<T> saveInsert(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
+		// TODO
+		return null;
 	}
 
 	public void saveChange(PendingChange<T> change) throws BlueDbException {
