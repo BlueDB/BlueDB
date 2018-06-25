@@ -33,10 +33,6 @@ public class Segment <T extends Serializable> {
 		this.serializer = serializer;
 	}
 
-	public Segment(BlueCollectionImpl<T> db, long segmentId) {
-		this(db, String.valueOf(segmentId));
-	}
-
 	@Override
 	public String toString() {
 		return "<Segment for path " + segmentPath.toString() + ">";
@@ -67,16 +63,6 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	// TODO test or delete?
-	public BlueEntity<T> read(BlueKey key) throws BlueDbException {
-        File file = getFileFor(key);
-        Map<BlueKey, T> fileContents = fetchAsMap(file);
-        for (BlueEntity<T> entity: fileContents.values()) {
-            if (entity.getKey().equals(key))
-                return entity;
-        }
-        return null;
-    }
 	public T get(BlueKey key) throws BlueDbException {
 		File file = getFileFor(key);
 		Map<BlueKey, T> fileContents = fetchAsMap(file);
@@ -93,29 +79,6 @@ public class Segment <T extends Serializable> {
 		return results;
 	}
 
-	// TODO delete?
-    public List<BlueEntity<T>> read(long minTime, long maxTime) throws BlueDbException {
-	    return getRange(minTime, maxTime);
-    }
-
-
-//    public List<BlueEntity<T>> read(long minTime, long maxTime) throws BlueDbException {
-//        List<BlueEntity<T>> results = new ArrayList<>();
-//        List<Long> groupingNumbers = getAllFiles().stream()
-//                .filter((f) -> isFileNameALong(f))
-//                .map((f) -> f.getName())
-//                .map((filename) -> Long.valueOf(filename))
-//                .collect(Collectors.toList());
-//        for (long groupingNumber: groupingNumbers) {
-//            TreeMap<BlueKey, BlueEntity<T>> data = load(groupingNumber);
-//            for (BlueEntity<T>entity: data.values()) {
-//                if (Blutils.meetsTimeConstraint(entity.getKey(), minTime, maxTime))
-//                    results.add(entity);
-//            }
-//        }
-//        return results;
-//    }
-
     public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
 		File[] filesInFolder = segmentPath.toFile().listFiles();
 		List<BlueEntity<T>> results = new ArrayList<>();
@@ -131,39 +94,6 @@ public class Segment <T extends Serializable> {
 		return results;
 	}
 
-//
-//    // TODO refactor and test and maybe move somewhere else
-//    protected static boolean isFileNameALong(File file) {
-//        try {
-//            String fileName = file.getName();
-//            long fileNameAsLong = Long.valueOf(fileName);
-//            return true;
-//        } catch(Exception e) {
-//            return false;
-//        }
-//    }
-//
-//    // TODO refactor and test and maybe move somewhere else
-//    protected static boolean isFileNameALongInRange(File file, long minValue, long maxValue) {
-//        try {
-//            String fileName = file.getName();
-//            long fileNameAsLong = Long.valueOf(fileName);
-//            return fileNameAsLong >= minValue && fileNameAsLong <= maxValue;
-//        } catch(Exception e) {
-//            return false;
-//        }
-//    }
-//
-//    // TODO refactor and test
-//    private List<File> getAllFiles() {
-//        File segmentFolder = path.toFile();
-//        if (!segmentFolder.exists()) {
-//            return new ArrayList<>();
-//        } else {
-//            return Arrays.asList(segmentFolder.listFiles());
-//        }
-//    }
-
 	protected File getFileFor(BlueKey key) {
 		return getPathFor(key).toFile();
 	}
@@ -177,24 +107,6 @@ public class Segment <T extends Serializable> {
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 
-//    @SuppressWarnings("unchecked")
-//    private TreeMap<BlueKey, BlueEntity<T>> load(long groupingNumber) throws BlueDbException {
-//        Path groupPath = Paths.get(path.toString(), String.valueOf(groupingNumber));
-//        try {
-//            File file = groupPath.toFile();
-//            if (!file.exists()) {
-//                return new TreeMap<>();
-//            } else {
-//                byte[] bytes = Files.readAllBytes(groupPath);
-//                return (TreeMap<BlueKey, BlueEntity<T>>) serializer.deserializeObjectFromByteArray(bytes);
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            throw new BlueDbException("error loading segment from disk for " + groupPath.toString(), e);
-//        }
-//    }
-
-	@SuppressWarnings("unchecked")
 	private TreeMap<BlueKey, T> fetchAsMap(File file) throws BlueDbException {
 		List<BlueEntity<T>> entities = fetch(file);
 		return asMap(entities);
@@ -246,6 +158,7 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
+	// TODO move to a FileManager class
 	public byte[] load(Path path) throws BlueDbException {
 		File file = path.toFile();
 		if (!file.exists())
@@ -259,6 +172,7 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
+	// TODO move to a FileManager class
 	public void save(Path path, Object o) throws BlueDbException {
 		File file = path.toFile();
 		file.getParentFile().mkdirs();

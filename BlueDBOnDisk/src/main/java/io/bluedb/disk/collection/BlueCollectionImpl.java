@@ -1,6 +1,5 @@
 package io.bluedb.disk.collection;
 
-import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,8 +17,6 @@ import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeFrameKey;
-import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
@@ -31,7 +28,6 @@ import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
-import io.bluedb.disk.segment.SegmentIdConverter;
 import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
@@ -68,8 +64,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
 		Segment<T> firstSegment = segmentManager.getFirstSegment(key);
-		BlueEntity<T> entity = firstSegment.read(key);
-		return entity == null ? null : entity.getObject();
+		return firstSegment.get(key);
 	}
 
 	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {

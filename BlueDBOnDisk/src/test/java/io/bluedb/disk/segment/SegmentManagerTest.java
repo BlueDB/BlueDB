@@ -24,12 +24,11 @@ public class SegmentManagerTest extends TestCase {
 	BlueCollectionImpl<TestValue> collection;
 	SegmentManager<TestValue> segmentManager;
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		db = new BlueDbOnDiskBuilder().build();
-		collection = (BlueCollectionImpl) db.getCollection(TestValue.class, "test_segment_manager");
+		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "test_segment_manager");
 		segmentManager = new SegmentManager<TestValue>(collection);
 	}
 
@@ -51,19 +50,6 @@ public class SegmentManagerTest extends TestCase {
 		assertEquals("42_83", SegmentManager.getRangeFileName(42, 42));  // test equal to a multiple
 		// TODO test at Long.MAX_VALUE, Long.MIN_VALUE
 	}
-
-//	@Test
-//	public void test_isFileNameALongInRange() {
-//		File file3 = Paths.get("3").toFile();
-//		File file2to4 = Paths.get("2_4").toFile();
-//		assertFalse(SegmentManager.isFileNameALongInRange(file2to4, 0, 1));  // should not use folder name convention
-//		assertFalse(SegmentManager.isFileNameALongInRange(file3, 0, 2));  // below range
-//		assertTrue(SegmentManager.isFileNameALongInRange(file3, 0, 3));  // at top of range
-//		assertTrue(SegmentManager.isFileNameALongInRange(file3, 2, 4));  // at middle of range
-//		assertTrue(SegmentManager.isFileNameALongInRange(file3, 3, 4));  // at bottom of range
-//		assertFalse(SegmentManager.isFileNameALongInRange(file3, 4, 5));  // above range
-//		// TODO test at Long.MAX_VALUE, Long.MIN_VALUE
-//	}
 
 	@Test
 	public void test_folderNameRangeContainsRange() {
@@ -87,13 +73,13 @@ public class SegmentManagerTest extends TestCase {
 
 		File segmentAt2 = createSegment(folder, 2L, 2L);
 		File segmentAt5 = createSegment(folder, 5L, 5L);
-		File junkFile = createJunkFile(folder, "5t");
-		File junkFolder = createJunkFolder(folder, "7x");
-		File folderInRange = createNonsegmentSubfolder(folder, 2, 3);
+		createJunkFile(folder, "5t");  // make sure junk doesn't get included
+		createJunkFolder(folder, "7x");  // make sure junk doesn't get included
+		createNonsegmentSubfolder(folder, 2, 3);  // make sure non-segments don't get included
 
 		List<File> empty = Arrays.asList();
 		List<File> only2 = Arrays.asList(segmentAt2);
-		List<File> both = Arrays.asList(segmentAt5, segmentAt2);
+		List<File> both = Arrays.asList(segmentAt2, segmentAt5);
 
 		assertEquals(empty, SegmentManager.getSegmentFilesInRange(folder, 0L, 1L));  // above range
 		assertEquals(only2, SegmentManager.getSegmentFilesInRange(folder, 0L, 2L));  // at top of range
@@ -114,8 +100,7 @@ public class SegmentManagerTest extends TestCase {
 
 		File folder2to4 = createNonsegmentSubfolder(folder, 2, 4);
 		File folder7to8 = createNonsegmentSubfolder(folder, 7, 8);
-		File segmentAt2 = createSegment(folder, 2L, 2L);
-		File nonsenseFile = Paths.get(folder.toString(), "2_4").toFile();
+		createSegment(folder, 2L, 2L);  // to make sure segment doesn't get included
 		
 		List<File> empty = Arrays.asList();
 		List<File> only2to4 = Arrays.asList(folder2to4);
@@ -211,7 +196,6 @@ public class SegmentManagerTest extends TestCase {
 	
 	@Test
 	public void test_getPath() {
-//		SegmentManager<TestValue> finder = new SegmentManager<TestValue>(collection);
 		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
 		List<Path> paths = segmentManager.getAllPossibleSegmentPaths(key);
 		assertEquals(1, paths.size());

@@ -2,13 +2,9 @@ package io.bluedb.disk.segment;
 
 import static org.junit.Assert.*;
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
-import io.bluedb.api.BlueCollection;
-import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
@@ -23,8 +19,6 @@ public class SegmentTest {
 	BlueCollectionImpl<TestValue> COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 
 	private static final long SEGMENT_ID = 42;
-	private static final long KEY_ID = 43;
-	private static final long KEY_TIME = 43;
 
 	@Test
 	public void testContains() {
@@ -267,33 +261,9 @@ public class SegmentTest {
 		}
 		cleanup(segment);
 	}
-
-	@Test
-	public void testGetPath() {
-		Segment<TestValue> segment = createSegment(SEGMENT_ID);
-		Path segment1Path = Paths.get(COLLECTION.getPath().toString(), SEGMENT_ID + ".segment");
-		assertEquals(segment1Path, segment.getPath());
-
-		Path segment2Path = Paths.get(COLLECTION.getPath().toString(), "2.segment");
-		Segment<TestValue> segment2 = createSegment(2);
-		assertEquals(segment2Path, segment2.getPath());
-
-		cleanup(segment);
-		cleanup(segment2);
-	}
-
-
 	
-	private TestValue createValue(){
-		return createValue("Joe");
-	}
-
 	private TestValue createValue(String name){
 		return new TestValue(name);
-	}
-
-	private BlueKey createKey(){
-		return createKey(KEY_ID, KEY_TIME);
 	}
 
 	private BlueKey createKey(long keyId, long time){
@@ -304,12 +274,9 @@ public class SegmentTest {
 		return createSegment(SEGMENT_ID);
 	}
 	
-	private Segment<TestValue> createSegment(String segmentId) {
-		return new Segment<TestValue>(COLLECTION, segmentId);
-	}
-
 	private Segment<TestValue> createSegment(long segmentId) {
-		return new Segment<TestValue>(COLLECTION, segmentId);
+		BlueKey keyInSegment = new TimeKey(1, segmentId);
+		return COLLECTION.getSegmentManager().getFirstSegment(keyInSegment);
 	}
 
 	private void cleanup(Segment<TestValue> segment) {

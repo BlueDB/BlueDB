@@ -41,7 +41,7 @@ public class RecoveryManager<T extends Serializable> {
 		}
 	}
 
-	public static String getFileName(PendingChange change) {
+	public static String getFileName(PendingChange<?> change) {
 		return  String.valueOf(change.getTimeCreated()) + SUFFIX;
 	}
 

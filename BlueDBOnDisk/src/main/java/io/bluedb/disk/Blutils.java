@@ -32,6 +32,9 @@ public class Blutils {
 
 	public static List<File> listFiles(Path path, String suffix) {
 		File folder = path.toFile();
+		if (!folder.exists()) {
+			return new ArrayList<>();
+		}
 		File[] filesInFolder = folder.listFiles();
 		List<File> results = new ArrayList<>();
 		for (File file: filesInFolder) {

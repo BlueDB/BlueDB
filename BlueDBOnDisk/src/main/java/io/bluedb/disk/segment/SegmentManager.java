@@ -140,15 +140,6 @@ public class SegmentManager<T extends Serializable> {
 	protected static boolean isSegment(File folder) {
 		return folder.isDirectory() && folder.getName().contains(SEGMENT_SUFFIX);
 	}
-//	protected static boolean isFileNameALongInRange(File file, long minValue, long maxValue) {
-//		try {
-//			String fileName = file.getName();
-//			long fileNameAsLong = Long.valueOf(fileName);
-//			return fileNameAsLong >= minValue && fileNameAsLong <= maxValue;
-//		} catch(Exception e) {
-//			return false;
-//		}
-//	}
 	
 	protected static boolean folderNameRangeContainsRange(File file, long minValue, long maxValue) {
 		try {
