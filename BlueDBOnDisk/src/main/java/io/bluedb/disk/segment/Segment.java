@@ -8,19 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
-
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
-import io.bluedb.disk.Blutils;
-import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Segment <T extends Serializable> {
@@ -187,4 +181,21 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
+	@Override
+	public int hashCode() {
+		return 31 + ((segmentPath == null) ? 0 : segmentPath.hashCode());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Segment)) {
+			return false;
+		}
+		Segment<?> other = (Segment<?>) obj;
+		if (segmentPath == null) {
+			return other.segmentPath == null;
+		} else {
+			return segmentPath.equals(other.segmentPath);
+		}
+	}
 }

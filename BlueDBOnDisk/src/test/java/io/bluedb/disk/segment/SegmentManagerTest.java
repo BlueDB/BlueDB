@@ -6,10 +6,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.stream.Collectors;
 import org.junit.Test;
 
 import io.bluedb.api.BlueDb;
+import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
@@ -193,9 +194,98 @@ public class SegmentManagerTest extends TestCase {
 		emptyAndDelete(folder);
 	}
 
-	
 	@Test
-	public void test_getPath() {
+	public void test_getAllPossibleSegmentPaths_range() {
+		List<Path> paths = segmentManager.getAllPossibleSegmentPaths(0, SegmentManager.LEVEL_3);
+		assertEquals(2, paths.size());
+		
+		Path secondPath = paths.get(1);
+		Path parent = secondPath.getParent();
+		Path grandparent = parent.getParent();
+		Path greatGrandparent = grandparent.getParent();
+		
+		String fname = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_3) + SegmentManager.SEGMENT_SUFFIX;
+		String parentName = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_2);
+		String grandparentName = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_1);
+		String greatGrandparentName = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_0);
+		assertEquals(fname, secondPath.getFileName().toString());
+		assertEquals(parentName, parent.getFileName().toString());
+		assertEquals(grandparentName, grandparent.getFileName().toString());
+		assertEquals(greatGrandparentName, greatGrandparent.getFileName().toString());
+	}
+
+	@Test
+	public void test_getAllPossibleSegmentPaths_key() {
+		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.LEVEL_3);
+		List<Path> timeFramePaths = segmentManager.getAllPossibleSegmentPaths(timeFrameKey);
+		List<Path> timeFramePaths_range = segmentManager.getAllPossibleSegmentPaths(0, SegmentManager.LEVEL_3);
+		assertEquals(timeFramePaths_range, timeFramePaths);
+		
+		BlueKey timeKey = new TimeKey(1, SegmentManager.LEVEL_3);
+		List<Path> timePaths = segmentManager.getAllPossibleSegmentPaths(timeKey);
+		List<Path> timePaths_range = segmentManager.getAllPossibleSegmentPaths(SegmentManager.LEVEL_3, SegmentManager.LEVEL_3);
+		assertEquals(timePaths_range, timePaths);
+	}
+
+	@Test
+	public void test_getAllSegments() {
+		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.LEVEL_3);
+		List<Path> timeFramePaths = segmentManager.getAllPossibleSegmentPaths(timeFrameKey);
+		List<Segment<TestValue>> timeFrameSegments = segmentManager.getAllSegments(timeFrameKey);
+		List<Path> timeFrameSegmentPaths = timeFrameSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
+
+		assertEquals(timeFramePaths, timeFrameSegmentPaths);
+		
+		BlueKey timeKey = new TimeKey(1, SegmentManager.LEVEL_3);
+		List<Path> timePaths = segmentManager.getAllPossibleSegmentPaths(timeKey);
+		List<Segment<TestValue>> timeSegments = segmentManager.getAllSegments(timeKey);
+		List<Path> segmentPaths = timeSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
+		assertEquals(timePaths, segmentPaths);
+	}
+
+	// TODO test extreme values
+	@Test
+	public void test_getExistingSegments() {
+		emptyAndDelete(collection.getPath().toFile());
+		long minTime = 0;
+		long maxTime = SegmentManager.LEVEL_3 * 2;
+		BlueKey timeFrameKey = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
+		TestValue value = new TestValue("Bob", 0);
+		try {
+			List<Segment<TestValue>> existingSegments = segmentManager.getExistingSegments(minTime, maxTime);
+			assertEquals(0, existingSegments.size());
+			collection.insert(timeFrameKey, value);
+			existingSegments = segmentManager.getExistingSegments(minTime, maxTime);
+			assertEquals(3, existingSegments.size());
+			List<Segment<TestValue>> existingSegments0to0 = segmentManager.getExistingSegments(minTime, minTime);
+			assertEquals(1, existingSegments0to0.size());
+			List<Segment<TestValue>> existingSegmentsOutsideRange = segmentManager.getExistingSegments(maxTime * 2, maxTime * 2);
+			assertEquals(0, existingSegmentsOutsideRange.size());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		emptyAndDelete(collection.getPath().toFile());
+	}
+
+	@Test
+	public void test_getFirstSegment() {
+		BlueKey timeFrameKey = new TimeFrameKey(1, SegmentManager.LEVEL_3, SegmentManager.LEVEL_3 * 2);
+		List<Segment<TestValue>> timeFrameSegments = segmentManager.getAllSegments(timeFrameKey);
+		assertEquals(2, timeFrameSegments.size());
+		assertEquals(timeFrameSegments.get(0), segmentManager.getFirstSegment(timeFrameKey));
+	}
+
+	@Test
+	public void test_toSegment() {
+		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
+		Path path = segmentManager.getPath(key);
+		Segment<TestValue> segment = segmentManager.toSegment(path);
+		assertEquals(path, segment.getPath());
+	}
+
+	@Test
+	public void test_getPath_key() {
 		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
 		List<Path> paths = segmentManager.getAllPossibleSegmentPaths(key);
 		assertEquals(1, paths.size());

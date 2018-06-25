@@ -30,34 +30,29 @@ public class SegmentManager<T extends Serializable> {
 		this.collection = collection;
 	}
 
-	// TODO test
 	public Segment<T> getFirstSegment(BlueKey key) {
 		long groupingNumber = key.getGroupingNumber();
 		Path segmentPath = getPath(groupingNumber);
 		return toSegment(segmentPath);
 	}
 
-	// TODO test
 	public List<Segment<T>> getAllSegments(BlueKey key) {
 		return getAllPossibleSegmentPaths(key).stream()
 				.map((p) -> (toSegment(p)))
 				.collect(Collectors.toList());
 	}
 
-	// TODO test
 	public List<Segment<T>> getExistingSegments(long minValue, long maxValue) {
 		return getExistingSegmentFiles(minValue, maxValue).stream()
 				.map((f) -> (toSegment(f.toPath())))
 				.collect(Collectors.toList());
 	}
 
-	// TODO test
 	protected Path getPath(BlueKey key) {
 		long groupingNumber = key.getGroupingNumber();
 		return getPath(groupingNumber);
 	}
 
-	// TODO test
 	protected Path getPath(long groupingNumber) {
 		String level0 = getRangeFileName(groupingNumber, LEVEL_0);
 		String level1 = getRangeFileName(groupingNumber, LEVEL_1);
@@ -66,7 +61,6 @@ public class SegmentManager<T extends Serializable> {
 		return Paths.get(collection.getPath().toString(), level0, level1, level2, level3 + SEGMENT_SUFFIX);
 	}
 
-	// TODO test
 	protected List<Path> getAllPossibleSegmentPaths(BlueKey key) {
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
@@ -77,7 +71,6 @@ public class SegmentManager<T extends Serializable> {
 		}
 	}
 
-	// TODO test
 	protected List<Path> getAllPossibleSegmentPaths(long minTime, long maxTime) {
 		List<Path> paths = new ArrayList<>();
 		minTime = minTime - (minTime % LEVEL_3);
@@ -115,14 +108,13 @@ public class SegmentManager<T extends Serializable> {
 		return results;
 	}
 
-	// TODO test
 	protected Segment<T> toSegment(Path path) {
 		return new Segment<T>(path, collection.getSerializer());
 	}
 
 	protected static List<File> getNonsegmentSubfoldersInRange(File folder, long minValue, long maxValue) {
-		List<File> folderContents = Arrays.asList(folder.listFiles());
-		return folderContents.stream()
+		return getFolderContents(folder)
+            .stream()
 			.filter((f) -> f.isDirectory())
 			.filter((f) -> !isSegment(f))
 			.filter((f) -> folderNameRangeContainsRange(f, minValue, maxValue))
@@ -130,11 +122,19 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected static List<File> getSegmentFilesInRange(File folder, long minValue, long maxValue) {
-		List<File> folderContents = Arrays.asList(folder.listFiles());
-		return folderContents.stream()
+		return getFolderContents(folder)
+            .stream()
 			.filter((f) -> isSegment(f))
 			.filter((f) -> folderNameRangeContainsRange(f, minValue, maxValue))
 			.collect(Collectors.toList());
+	}
+
+	protected static List<File> getFolderContents(File folder) {
+		File[] folderContentsArray = folder.listFiles();
+		if (folderContentsArray == null) {
+			return new ArrayList<>();
+		}
+		return Arrays.asList(folderContentsArray);
 	}
 
 	protected static boolean isSegment(File folder) {
