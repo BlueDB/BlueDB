@@ -173,14 +173,14 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		if (key instanceof TimeFrameKey) {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
-				segments.add(new Segment<T>(path, l, serializer));
+				segments.add(new Segment<T>(path, l + ".segment", serializer));
 			}
 		} else if (key instanceof TimeKey) {
 			TimeKey timeKey = (TimeKey)key;
 			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
-			segments.add(new Segment<T>(path, segmentId, serializer));
+			segments.add(new Segment<T>(path, segmentId + ".segment", serializer));
 		} else {
-			segments.add(new Segment<T>(path, key.toString(), serializer)); // TODO break into safely named segments
+			segments.add(new Segment<T>(path, key.getGroupingNumber() + ".segment", serializer)); // TODO break into safely named segments
 		}
 		return segments;
 	}
@@ -196,7 +196,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			String segmentIdStr = fileName.substring(0, fileName.indexOf(".segment"));
 			long segmentId = Long.parseLong(segmentIdStr);
 			if (segmentId >= minSegmentId && segmentId <= maxSegmentId) {
-				segments.add(new Segment<T>(path, segmentId, serializer));
+				segments.add(new Segment<T>(path, segmentId + ".segment", serializer));
 			}
 		}
 		return segments;

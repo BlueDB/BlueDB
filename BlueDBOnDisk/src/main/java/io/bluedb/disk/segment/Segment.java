@@ -17,28 +17,22 @@ import io.bluedb.disk.Blutils;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Segment <T extends Serializable> {
-	private static String SUFFIX = ".segment";
-
 	private final String pathString;
 	private final Path path;
 	private final BlueSerializer serializer;
 	
 	public Segment(Path segmentPath, BlueSerializer serializer) {
-		this.path = Paths.get(segmentPath.toString() + SUFFIX);
+		this.path = segmentPath;
 		this.pathString = this.path.toString();
 		this.serializer = serializer;
 	}
 
 	public Segment(Path collectionPath, String segmentId, BlueSerializer serializer) {
-		this.path = Paths.get(collectionPath.toString(), segmentId + SUFFIX);
-		this.pathString = this.path.toString();
-		this.serializer = serializer;
+		this(Paths.get(collectionPath.toString(), segmentId), serializer);
 	}
 
 	public Segment(Path collectionPath, long segmentId, BlueSerializer serializer) {
-		this.path = Paths.get(collectionPath.toString(), segmentId + SUFFIX);
-		this.pathString = this.path.toString();
-		this.serializer = serializer;
+		this(collectionPath, String.valueOf(segmentId), serializer);
 	}
 
 	public void put(BlueKey key, T value) throws BlueDbException {
