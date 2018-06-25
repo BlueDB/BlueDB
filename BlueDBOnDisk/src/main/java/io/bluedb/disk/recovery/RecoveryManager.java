@@ -18,22 +18,22 @@ public class RecoveryManager<T extends Serializable> {
 	private static String SUFFIX = ".pending";
 
 	private final BlueCollectionImpl<T> collection;
-	private final Path path;
+	private final Path recoveryPath;
 
 	public RecoveryManager(BlueCollectionImpl<T> collection) {
 		this.collection = collection;
-		this.path = collection.getPath();
+		this.recoveryPath = Paths.get(collection.getPath().toString(), ".pending");
 	}
 
 	public void saveChange(PendingChange<T> change) throws BlueDbException {
 		String filename = getFileName(change);
-		Path path = Paths.get(".", ".pending", filename);
+		Path path = Paths.get(recoveryPath.toString(), filename);
 		Blutils.save(path.toString(), change, collection.getSerializer());
 	}
 
 	public void removeChange(PendingChange<T> change) throws BlueDbException {
 		String filename = getFileName(change);
-		Path path = Paths.get(".", ".pending", filename);
+		Path path = Paths.get(recoveryPath.toString(), filename);
 		File file = new File(path.toString());
 		if (!file.delete()) {
 			// TODO do we want to throw an exception
@@ -46,7 +46,7 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<PendingChange<T>> getPendingChanges() {
-		List<File> pendingChangeFiles = Blutils.listFiles(path, SUFFIX);
+		List<File> pendingChangeFiles = Blutils.listFiles(recoveryPath, SUFFIX);
 		List<PendingChange<T>> changes = new ArrayList<>();
 		for (File file: pendingChangeFiles) {
 			// TODO also remember to throw out corrupted files
