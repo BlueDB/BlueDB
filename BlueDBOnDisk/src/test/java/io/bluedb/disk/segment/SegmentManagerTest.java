@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -87,7 +88,9 @@ public class SegmentManagerTest extends TestCase {
 		assertEquals(only2, SegmentManager.getSegmentFilesInRange(folder, 0L, 3L));  // at middle of range
 		assertEquals(only2, SegmentManager.getSegmentFilesInRange(folder, 2L, 3L));  // at bottom of range
 		assertEquals(empty, SegmentManager.getSegmentFilesInRange(folder, 3L, 4L));  // below range
-		assertEquals(both, SegmentManager.getSegmentFilesInRange(folder, 0L, 6L));  //works with multiple files
+		List<File> filesInWideRange = SegmentManager.getSegmentFilesInRange(folder, 0L, 6L);
+		Collections.sort(filesInWideRange);
+		assertEquals(both, filesInWideRange);  //works with multiple files
 
 		emptyAndDelete(folder);
 	}
