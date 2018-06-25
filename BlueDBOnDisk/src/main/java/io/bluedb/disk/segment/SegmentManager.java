@@ -39,8 +39,8 @@ public class SegmentManager<T extends Serializable> {
 
 	// TODO test
 	public List<Segment<T>> getAllSegments(BlueKey key) {
-		return getExistingSegmentFiles(key).stream()
-				.map((f) -> (toSegment(f.toPath())))
+		return getAllPossibleSegmentPaths(key).stream()
+				.map((p) -> (toSegment(p)))
 				.collect(Collectors.toList());
 	}
 

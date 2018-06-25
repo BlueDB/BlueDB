@@ -32,6 +32,7 @@ import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentIdConverter;
+import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
@@ -42,6 +43,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	private final RecoveryManager<T> recoveryManager;
 	private final Path path;
 	private final BlueSerializer serializer;
+	private final SegmentManager<T> segmentManager;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
 		this.type = type;
@@ -50,6 +52,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		recoveryManager = new RecoveryManager<T>(this);
 		recoveryManager.recover();
 		serializer = db.getSerializer();
+		segmentManager = new SegmentManager<T>(this);
 	}
 
 	@Override
@@ -64,7 +67,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
-		Segment<T> firstSegment = getFirstSegment(key);
+		Segment<T> firstSegment = segmentManager.getFirstSegment(key);
 		BlueEntity<T> entity = firstSegment.read(key);
 		return entity == null ? null : entity.getObject();
 	}
@@ -135,7 +138,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	private List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		List<Segment<T>> segments = getSegments(minTime, maxTime);
+		List<Segment<T>> segments = segmentManager.getExistingSegments(minTime, maxTime);
 		for (Segment<T> segment: segments) {
 			List<BlueEntity<T>> entitesInSegment = segment.read(minTime, maxTime);
 			for (BlueEntity<T> entity: entitesInSegment) {
@@ -146,6 +149,10 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			}
 		}
 		return results;
+	}
+
+	public SegmentManager<T> getSegmentManager() {
+		return segmentManager;
 	}
 
 	public RecoveryManager<T> getRecoveryManager() {
@@ -162,43 +169,5 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	
 	public void shutdown() {
 		// TODO shutdown executors? what else?
-	}
-
-	public Segment<T> getFirstSegment(BlueKey key) {
-		return getSegments(key).get(0);
-	}
-	
-	public List<Segment<T>> getSegments(BlueKey key) {
-		List<Segment<T>> segments = new ArrayList<>();
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
-			for (Long l: SegmentIdConverter.getSegments(timeFrameKey.getStartTime(), timeFrameKey.getEndTime())) {
-				segments.add(new Segment<T>(path, l + ".segment", serializer));
-			}
-		} else if (key instanceof TimeKey) {
-			TimeKey timeKey = (TimeKey)key;
-			long segmentId = SegmentIdConverter.convertTimeToSegmentId(timeKey.getTime());
-			segments.add(new Segment<T>(path, segmentId + ".segment", serializer));
-		} else {
-			segments.add(new Segment<T>(path, key.getGroupingNumber() + ".segment", serializer)); // TODO break into safely named segments
-		}
-		return segments;
-	}
-
-	private List<Segment<T>> getSegments(long minTime, long maxTime) {
-		long minSegmentId = SegmentIdConverter.convertTimeToSegmentId(minTime);
-		long maxSegmentId = SegmentIdConverter.convertTimeToSegmentId(maxTime);
-		List<Segment<T>> segments = new ArrayList<>();
-		// TODO this should be way better
-		List<File> segmentFiles = Blutils.listFiles(path, ".segment");
-		for (File segmentFile: segmentFiles) {
-			String fileName = segmentFile.getName();
-			String segmentIdStr = fileName.substring(0, fileName.indexOf(".segment"));
-			long segmentId = Long.parseLong(segmentIdStr);
-			if (segmentId >= minSegmentId && segmentId <= maxSegmentId) {
-				segments.add(new Segment<T>(path, segmentId + ".segment", serializer));
-			}
-		}
-		return segments;
 	}
 }

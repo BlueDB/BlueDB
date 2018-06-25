@@ -3,6 +3,7 @@ package io.bluedb.disk.recovery;
 import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,12 +27,14 @@ public class RecoveryManager<T extends Serializable> {
 
 	public void saveChange(PendingChange<T> change) throws BlueDbException {
 		String filename = getFileName(change);
-		Blutils.save(filename, change, collection.getSerializer());
+		Path path = Paths.get(".", ".pending", filename);
+		Blutils.save(path.toString(), change, collection.getSerializer());
 	}
 
 	public void removeChange(PendingChange<T> change) throws BlueDbException {
 		String filename = getFileName(change);
-		File file = new File(filename);
+		Path path = Paths.get(".", ".pending", filename);
+		File file = new File(path.toString());
 		if (!file.delete()) {
 			// TODO do we want to throw an exception
 			throw new BlueDbException("failed to remove pending change from recovery folder: " + change);
@@ -56,7 +59,7 @@ public class RecoveryManager<T extends Serializable> {
 		List<PendingChange<T>> pendingChanges = getPendingChanges();
 		for (PendingChange<T> change: pendingChanges) {
 			BlueKey key = change.getKey();
-			List<Segment<T>> segments = collection.getSegments(key);
+			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
 			for (Segment<T> segment: segments) {
 //				change.applyChange(segment);
 			}

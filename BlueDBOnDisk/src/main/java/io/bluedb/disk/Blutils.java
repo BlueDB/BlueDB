@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +19,7 @@ import io.bluedb.disk.serialization.BlueSerializer;
 public class Blutils {
 	public static void save(String path, Object o, BlueSerializer serializer) throws BlueDbException {
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		Paths.get(path).toFile().getParentFile().mkdirs();
 		try (FileOutputStream fos = new FileOutputStream(path)) {
 			fos.write(bytes);
 			fos.close();
@@ -38,20 +40,6 @@ public class Blutils {
 			}
 		}
 		return results;
-	}
-
-	public static void writeToDisk(Path path, Object data, BlueSerializer serializer) throws IOException {
-		File file = path.toFile();
-		File folder = new File(file.getParent());
-		folder.mkdirs();
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			byte[] bytes = serializer.serializeObjectToByteArray(data);
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw e;
-		}
 	}
 
 	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
