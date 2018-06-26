@@ -27,22 +27,17 @@ public class InsertTask<T extends Serializable> implements Runnable {
 			if (collection.contains(key)) {
 				throw new DuplicateKeyException("key already exists: " + key);
 			}
-			PendingChange<T> change = PendingChange.createInsert(key, value);
-			applyUpdateWithRecovery(key, change);
+			PendingChange<T> change = collection.getRecoveryManager().saveInsert(key, value);
+			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
+			for (Segment<T> segment: segments) {
+				change.applyChange(segment);
+			}
+			collection.getRecoveryManager().removeChange(change);
 		} catch (Throwable t) {
 			// TODO rollback or try again?
 			t.printStackTrace();
 			throw new RuntimeException(); // TODO
 		} finally {
 		}
-	}
-
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
-		collection.getRecoveryManager().saveChange(change);
-		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-		for (Segment<T> segment: segments) {
-			change.applyChange(segment);
-		}
-		collection.getRecoveryManager().removeChange(change);
 	}
 }

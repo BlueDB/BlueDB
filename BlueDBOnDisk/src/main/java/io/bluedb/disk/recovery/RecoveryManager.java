@@ -38,14 +38,16 @@ public class RecoveryManager<T extends Serializable> {
 		return change;
 	}
 
-	public PendingChange<T> saveDelete(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
-		// TODO
-		return null;
+	public PendingChange<T> saveDelete(BlueKey key) throws BlueDbException {
+		PendingChange<T> change = PendingChange.createDelete(key);
+		saveChange(change);
+		return change;
 	}
 
-	public PendingChange<T> saveInsert(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
-		// TODO
-		return null;
+	public PendingChange<T> saveInsert(BlueKey key, T value) throws BlueDbException {
+		PendingChange<T> change = PendingChange.createInsert(key, value);
+		saveChange(change);
+		return change;
 	}
 
 	public void saveChange(PendingChange<T> change) throws BlueDbException {
