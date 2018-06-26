@@ -118,7 +118,7 @@ public class Segment <T extends Serializable> {
 		if (entites.isEmpty()) {
 			file.delete();
 		} else {
-			save(file.toPath(), entites);
+			fileManager.saveObject(file.toPath(), entites);
 		}
 	}
 
@@ -153,35 +153,6 @@ public class Segment <T extends Serializable> {
 			}
 		}
 		return null;
-	}
-
-	// TODO move to a FileManager class
-	public byte[] load(Path path) throws BlueDbException {
-		File file = path.toFile();
-		if (!file.exists())
-			return null;
-		try {
-			return Files.readAllBytes(path);
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file ?
-			throw new BlueDbException("error writing to disk (" + path +")", e);
-		}
-	}
-
-	// TODO move to a FileManager class
-	public void save(Path path, Object o) throws BlueDbException {
-		File file = path.toFile();
-		file.getParentFile().mkdirs();
-		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file
-			throw new BlueDbException("error writing to disk (" + path +")", e);
-		}
 	}
 
 	@Override
