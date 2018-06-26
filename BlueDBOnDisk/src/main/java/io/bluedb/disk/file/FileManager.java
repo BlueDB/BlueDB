@@ -1,4 +1,4 @@
-package io.bluedb.disk;
+package io.bluedb.disk.file;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,11 +33,31 @@ public class FileManager {
 	}
 
 	public Object loadObject(Path path) throws BlueDbException {
-		byte[] fileData = load(path);
+		byte[] fileData = loadBytes(path);
+		if (fileData == null || fileData.length == 0) {
+			return null;
+		}
 		return serializer.deserializeObjectFromByteArray(fileData);
 	}
 
-	public byte[] load(Path path) throws BlueDbException {
+	public void saveObject(Path path, Object o) throws BlueDbException {
+		File file = path.toFile();
+		File parent = file.getParentFile();
+		if (parent != null) {
+			parent.mkdirs();
+		}
+		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		try (FileOutputStream fos = new FileOutputStream(file)) {
+			fos.write(bytes);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			// TODO delete the file
+			throw new BlueDbException("error writing to disk (" + path +")", e);
+		}
+	}
+
+	private byte[] loadBytes(Path path) throws BlueDbException {
 		File file = path.toFile();
 		if (!file.exists())
 			return null;
@@ -46,20 +66,6 @@ public class FileManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 			// TODO delete the file ?
-			throw new BlueDbException("error writing to disk (" + path +")", e);
-		}
-	}
-
-	public void save(Path path, Object o) throws BlueDbException {
-		File file = path.toFile();
-		file.getParentFile().mkdirs();
-		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file
 			throw new BlueDbException("error writing to disk (" + path +")", e);
 		}
 	}

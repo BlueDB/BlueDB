@@ -15,7 +15,7 @@ import java.util.TreeMap;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
-import io.bluedb.disk.FileManager;
+import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Segment <T extends Serializable> {
@@ -113,6 +113,8 @@ public class Segment <T extends Serializable> {
 		if (!file.exists())
 			return new ArrayList<BlueEntity<T>>();
 		List<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
+		if (fileContents == null)
+			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
 	}
 
@@ -122,7 +124,7 @@ public class Segment <T extends Serializable> {
 			file.delete();
 		} else {
 			ArrayList<BlueEntity<T>> entites = asEntityArrayList(data);
-			fileManager.save(file.toPath(), entites);
+			fileManager.saveObject(file.toPath(), entites);
 		}
 	}
 
@@ -151,35 +153,6 @@ public class Segment <T extends Serializable> {
 			return key.getGroupingNumber() >= minTime && key.getGroupingNumber() <= maxTime;
 		}
 	}
-
-//	// TODO move to a FileManager class
-//	public byte[] load(Path path) throws BlueDbException {
-//		File file = path.toFile();
-//		if (!file.exists())
-//			return null;
-//		try {
-//			return Files.readAllBytes(path);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			// TODO delete the file ?
-//			throw new BlueDbException("error writing to disk (" + path +")", e);
-//		}
-//	}
-//
-//	// TODO move to a FileManager class
-//	public void save(Path path, Object o) throws BlueDbException {
-//		File file = path.toFile();
-//		file.getParentFile().mkdirs();
-//		byte[] bytes = serializer.serializeObjectToByteArray(o);
-//		try (FileOutputStream fos = new FileOutputStream(file)) {
-//			fos.write(bytes);
-//			fos.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			// TODO delete the file
-//			throw new BlueDbException("error writing to disk (" + path +")", e);
-//		}
-//	}
 
 	@Override
 	public int hashCode() {
