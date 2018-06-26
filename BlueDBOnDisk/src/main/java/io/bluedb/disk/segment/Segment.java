@@ -1,94 +1,202 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.TreeMap;
-
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.Blutils;
+import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Segment <T extends Serializable> {
-	private static String SUFFIX = ".segment";
 
-	private final String pathString;
-	private final Path path;
 	private final BlueSerializer serializer;
-	
-	public Segment(Path collectionPath, String segmentId, BlueSerializer serializer) {
-		this.path = Paths.get(collectionPath.toString(), segmentId + SUFFIX);
-		this.pathString = this.path.toString();
+	private final Path segmentPath;
+
+	public Segment(Path segmentPath, BlueSerializer serializer) {
+		this.segmentPath = segmentPath;
 		this.serializer = serializer;
-	}
-
-	public Segment(Path collectionPath, long segmentId, BlueSerializer serializer) {
-		this.path = Paths.get(collectionPath.toString(), segmentId + SUFFIX);
-		this.pathString = this.path.toString();
-		this.serializer = serializer;
-	}
-
-	public void put(BlueKey key, T value) throws BlueDbException {
-		TreeMap<BlueKey, BlueEntity<T>> data = load();
-		BlueEntity<T> entity = new BlueEntity<T>(key, value);
-		data.put(key, entity);
-		Blutils.save(pathString, data, serializer);
-	}
-
-	public void delete(BlueKey key) throws BlueDbException {
-		TreeMap<BlueKey, BlueEntity<T>> data = load();
-		data.remove(key);
-		Blutils.save(pathString, data, serializer);
-	}
-
-	public BlueEntity<T> read(BlueKey key) throws BlueDbException {
-		Collection<BlueEntity<T>> values = load().values();
-		for (BlueEntity<T> entity: values) {
-			if (entity.getKey().equals(key))
-				return entity;
-		}
-		return null;
-	}
-
-	public List<BlueEntity<T>> read() throws BlueDbException {
-		List<BlueEntity<T>> results = new ArrayList<>(load().values());
-		return results;
-	}
-
-	public List<BlueEntity<T>> read(long minTime, long maxTime) throws BlueDbException {
-		List<BlueEntity<T>> results = new ArrayList<>();
-		for (BlueEntity<T>entity: load().values()) {
-			if (Blutils.meetsTimeConstraint(entity.getKey(), minTime, maxTime))
-				results.add(entity);
-		}
-		return results;
-	}
-
-	@SuppressWarnings("unchecked")
-	private TreeMap<BlueKey, BlueEntity<T>> load() throws BlueDbException {
-		try {
-			File file = new File(pathString);
-			if (!file.exists()) {
-				return new TreeMap<>();
-			} else {
-				byte[] bytes = Files.readAllBytes(Paths.get(pathString));
-				return (TreeMap<BlueKey, BlueEntity<T>>) serializer.deserializeObjectFromByteArray(bytes);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new BlueDbException("error loading segment from disk", e);
-		}
 	}
 
 	@Override
 	public String toString() {
-		return "<Segment for path " + pathString + ">";
+		return "<Segment for path " + segmentPath.toString() + ">";
+	}
+
+	public boolean contains(BlueKey key) throws BlueDbException {
+		File file = getFileFor(key);
+		if (!file.exists()) {
+			return false;
+		}
+		List<BlueEntity<T>> entities = fetch(file);
+		return contains(key, entities);
+	}
+
+	public void put(BlueKey key, T value) throws BlueDbException {
+		File file = getFileFor(key);
+		ArrayList<BlueEntity<T>> entities = fetch(file);
+		BlueEntity<T> newEntity = new BlueEntity<T>(key, value);
+		remove(key, entities);
+		entities.add(newEntity);
+		persist(file, entities);
+	}
+
+	public void delete(BlueKey key) throws BlueDbException {
+		File file = getFileFor(key);
+		if (file.exists()) {
+			ArrayList<BlueEntity<T>> entities = fetch(file);
+			remove(key, entities);
+			persist(file, entities);
+		}
+	}
+
+	public T get(BlueKey key) throws BlueDbException {
+		File file = getFileFor(key);
+		ArrayList<BlueEntity<T>> entities = fetch(file);
+		return get(key, entities);
+	}
+
+	public List<T> getAll() throws BlueDbException {
+		File[] filesInFolder = segmentPath.toFile().listFiles();
+		List<T> results = new ArrayList<>();
+		for (File file: filesInFolder) {
+			for (BlueEntity<T> entity: fetch(file)) {
+				results.add(entity.getObject());
+			}
+		}
+		return results;
+	}
+
+    public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
+		File[] filesInFolder = segmentPath.toFile().listFiles();
+		List<BlueEntity<T>> results = new ArrayList<>();
+		for (File file: filesInFolder) {
+			List<BlueEntity<T>> fileContents = fetch(file);
+			for (BlueEntity<T> entity: fileContents) {
+				BlueKey key = entity.getKey();
+				if (inTimeRange(minTime, maxTime, key)) {
+					results.add(entity);
+				}
+			}
+		}
+		return results;
+	}
+
+	protected File getFileFor(BlueKey key) {
+		return getPathFor(key).toFile();
+	}
+
+	protected Path getPath() {
+		return segmentPath;
+	}
+
+	private Path getPathFor(BlueKey key) {
+		String fileName = String.valueOf(key.getGroupingNumber());
+		return Paths.get(segmentPath.toString(), fileName);
+	}
+
+	// TODO handle locking?
+	@SuppressWarnings("unchecked")
+	private ArrayList<BlueEntity<T>> fetch(File file) throws BlueDbException {
+		if (!file.exists())
+			return new ArrayList<BlueEntity<T>>();
+		byte[] fileData = load(file.toPath());
+		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) serializer.deserializeObjectFromByteArray((fileData));
+		return fileContents;
+	}
+
+	// TODO handle locking?
+	private void persist(File file, ArrayList<BlueEntity<T>> entites) throws BlueDbException {
+		if (entites.isEmpty()) {
+			file.delete();
+		} else {
+			save(file.toPath(), entites);
+		}
+	}
+
+	private static boolean inTimeRange(long minTime, long maxTime, BlueKey key) {
+		if (key instanceof TimeFrameKey) {
+			TimeFrameKey timeFrameKey = (TimeFrameKey) key;
+			return timeFrameKey.getEndTime() >= minTime && timeFrameKey.getStartTime() <= maxTime;
+		} else {
+			return key.getGroupingNumber() >= minTime && key.getGroupingNumber() <= maxTime;
+		}
+	}
+	
+	protected static <T extends Serializable> T remove(BlueKey key, List<BlueEntity<T>> entities) {
+		for (int i = 0; i < entities.size(); i++) {
+			BlueEntity<T> entity = entities.get(i);
+			if (entity.getKey().equals(key)) {
+				entities.remove(i);
+				return entity.getObject();
+			}
+		}
+		return null;
+	}
+
+	protected static <T extends Serializable> boolean contains(BlueKey key, List<BlueEntity<T>> entities) {
+		return get(key, entities) != null;
+	}
+
+	protected static <T extends Serializable> T get(BlueKey key, List<BlueEntity<T>> entities) {
+		for (BlueEntity<T> entity: entities) {
+			if (entity.getKey().equals(key)) {
+				return entity.getObject();
+			}
+		}
+		return null;
+	}
+
+	// TODO move to a FileManager class
+	public byte[] load(Path path) throws BlueDbException {
+		File file = path.toFile();
+		if (!file.exists())
+			return null;
+		try {
+			return Files.readAllBytes(path);
+		} catch (IOException e) {
+			e.printStackTrace();
+			// TODO delete the file ?
+			throw new BlueDbException("error writing to disk (" + path +")", e);
+		}
+	}
+
+	// TODO move to a FileManager class
+	public void save(Path path, Object o) throws BlueDbException {
+		File file = path.toFile();
+		file.getParentFile().mkdirs();
+		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		try (FileOutputStream fos = new FileOutputStream(file)) {
+			fos.write(bytes);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			// TODO delete the file
+			throw new BlueDbException("error writing to disk (" + path +")", e);
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return 31 + ((segmentPath == null) ? 0 : segmentPath.hashCode());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Segment)) {
+			return false;
+		}
+		Segment<?> other = (Segment<?>) obj;
+		if (segmentPath == null) {
+			return other.segmentPath == null;
+		} else {
+			return segmentPath.equals(other.segmentPath);
+		}
 	}
 }
