@@ -1,10 +1,7 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -13,7 +10,6 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.file.FileManager;
-import io.bluedb.disk.serialization.BlueSerializer;
 
 public class Segment <T extends Serializable> {
 
@@ -131,7 +127,7 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	protected static <T extends Serializable> T remove(BlueKey key, List<BlueEntity<T>> entities) {
+	protected static <T extends Serializable> T remove(BlueKey key, ArrayList<BlueEntity<T>> entities) {
 		for (int i = 0; i < entities.size(); i++) {
 			BlueEntity<T> entity = entities.get(i);
 			if (entity.getKey().equals(key)) {

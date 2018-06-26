@@ -33,6 +33,7 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 		return data.containsKey(key);
 	}
 
+	// TODO discuss don't delay inserts on deletes and updates ?
 	@Override
 	public void insert(BlueKey key, T object) throws BlueDbException {
 		// TODO lock on update, insert or delete
