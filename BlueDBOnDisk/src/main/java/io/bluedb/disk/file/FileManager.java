@@ -12,9 +12,11 @@ import io.bluedb.disk.serialization.BlueSerializer;
 
 public class FileManager {
 	private final BlueSerializer serializer;
+	private final LatchManager<Path> lockManager;
 
 	public FileManager(BlueSerializer serializer) {
 		this.serializer = serializer;
+		lockManager = new LatchManager<Path>(); 
 	}
 
 	public List<File> listFiles(Path path, String suffix) {
@@ -47,26 +49,44 @@ public class FileManager {
 			parent.mkdirs();
 		}
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file
-			throw new BlueDbException("error writing to disk (" + path +")", e);
+		lockManager.requestLatchFor(path);
+		IOException exception = null;
+		try {
+			try (FileOutputStream fos = new FileOutputStream(file)) {
+				fos.write(bytes);
+				fos.close();
+			} catch (IOException e) {
+				exception = e;
+				e.printStackTrace();
+			}
+		} finally {
+			lockManager.releaseLatch(path);
+		}
+		if (exception != null) {
+			throw new BlueDbException("error writing to file " + path, exception);
 		}
 	}
 
 	private byte[] loadBytes(Path path) throws BlueDbException {
 		File file = path.toFile();
-		if (!file.exists())
-			return null;
+		byte[] results = null;
+		lockManager.requestLatchFor(path);
+		IOException exception = null;
 		try {
-			return Files.readAllBytes(path);
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file ?
-			throw new BlueDbException("error writing to disk (" + path +")", e);
+			if (file.exists()) {
+				try {
+					results = Files.readAllBytes(path);
+				} catch (IOException e) {
+					exception = e;
+					e.printStackTrace();
+				}
+			}
+		} finally {
+			lockManager.releaseLatch(path);
 		}
+		if (exception != null) {
+			throw new BlueDbException("error writing to file " + path, exception);
+		}
+		return results;
 	}
 }
