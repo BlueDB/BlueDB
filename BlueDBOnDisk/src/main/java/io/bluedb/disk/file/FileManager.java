@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
@@ -25,17 +27,11 @@ public class FileManager {
 			return new ArrayList<>();
 		}
 		File[] filesInFolder = folder.listFiles();
-		List<File> results = new ArrayList<>();
-		for (File file: filesInFolder) {
-			if(file.getName().endsWith(suffix)) {
-				results.add(file);
-			}
-		}
-		return results;
+		return filterFilesWithSuffix(filesInFolder, suffix);
 	}
 
 	public Object loadObject(Path path) throws BlueDbException {
-		byte[] fileData = loadBytes(path);
+		byte[] fileData = getLatchAndReadBytes(path);
 		if (fileData == null || fileData.length == 0) {
 			return null;
 		}
@@ -43,50 +39,64 @@ public class FileManager {
 	}
 
 	public void saveObject(Path path, Object o) throws BlueDbException {
-		File file = path.toFile();
+		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		lockManager.requestLatchFor(path);
+		try {
+			writeBytes(path, bytes);
+		} finally {
+			lockManager.releaseLatch(path);
+		}
+	}
+
+	private byte[] getLatchAndReadBytes(Path path) throws BlueDbException {
+		lockManager.requestLatchFor(path);
+		try {
+			return readBytes(path);
+		} finally {
+			lockManager.releaseLatch(path);
+		}
+	}
+
+	protected static List<File> filterFilesWithSuffix(File[] files, String suffix) {
+		List<File> results = new ArrayList<>();
+		for (File file: files) {
+			if(file.getName().endsWith(suffix)) {
+				results.add(file);
+			}
+		}
+		return results;
+	}
+
+	protected static void ensureDirectoryExists(File file) {
 		File parent = file.getParentFile();
 		if (parent != null) {
 			parent.mkdirs();
 		}
-		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		lockManager.requestLatchFor(path);
-		IOException exception = null;
+	}
+
+	private byte[] readBytes(Path path) throws BlueDbException {
 		try {
-			try (FileOutputStream fos = new FileOutputStream(file)) {
-				fos.write(bytes);
-				fos.close();
-			} catch (IOException e) {
-				exception = e;
-				e.printStackTrace();
+			if (!path.toFile().exists()) {
+				return null;
 			}
-		} finally {
-			lockManager.releaseLatch(path);
-		}
-		if (exception != null) {
-			throw new BlueDbException("error writing to file " + path, exception);
+			return Files.readAllBytes(path);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("error reading bytes from " + path);
 		}
 	}
 
-	private byte[] loadBytes(Path path) throws BlueDbException {
-		File file = path.toFile();
-		byte[] results = null;
-		lockManager.requestLatchFor(path);
-		IOException exception = null;
-		try {
-			if (file.exists()) {
-				try {
-					results = Files.readAllBytes(path);
-				} catch (IOException e) {
-					exception = e;
-					e.printStackTrace();
-				}
-			}
-		} finally {
-			lockManager.releaseLatch(path);
+	private void writeBytes(Path path, byte[] bytes) throws BlueDbException {
+		File tmpFile = Paths.get(path.toString() + "_tmp").toFile();
+		File targetFile = path.toFile();
+		ensureDirectoryExists(targetFile);
+		try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
+			fos.write(bytes);
+			fos.close();
+			Files.move(tmpFile.toPath(), path, StandardCopyOption.ATOMIC_MOVE);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("error writing to file " + path, e);
 		}
-		if (exception != null) {
-			throw new BlueDbException("error writing to file " + path, exception);
-		}
-		return results;
 	}
 }
