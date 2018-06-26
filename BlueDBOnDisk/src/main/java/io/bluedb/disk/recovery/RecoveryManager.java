@@ -33,7 +33,9 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public PendingChange<T> saveUpdate(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
-		PendingChange<T> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
+		T newValue = serializer.clone(originalValue);
+		updater.update(newValue);
+		PendingChange<T> change = PendingChange.createUpdate(key, originalValue, newValue);
 		saveChange(change);
 		return change;
 	}

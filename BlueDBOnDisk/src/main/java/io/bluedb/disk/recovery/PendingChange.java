@@ -2,11 +2,9 @@ package io.bluedb.disk.recovery;
 
 import java.io.Serializable;
 
-import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.segment.Segment;
-import io.bluedb.disk.serialization.BlueSerializer;
 
 public class PendingChange<T extends Serializable> implements Serializable {
 
@@ -32,9 +30,7 @@ public class PendingChange<T extends Serializable> implements Serializable {
 		return new PendingChange<T>(key, null, newValue);
 	}
 
-	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T oldValue, Updater<T> updater, BlueSerializer serializer){
-		T newValue = serializer.clone(oldValue);
-		updater.update(newValue);
+	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T oldValue, T newValue){
 		return new PendingChange<T>(key, oldValue, newValue);
 	}
 
