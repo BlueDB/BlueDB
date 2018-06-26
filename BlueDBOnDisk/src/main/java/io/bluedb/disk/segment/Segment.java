@@ -9,9 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
@@ -38,38 +35,41 @@ public class Segment <T extends Serializable> {
 		if (!file.exists()) {
 			return false;
 		}
-		Map<BlueKey, T> fileContents = fetchAsMap(file);
-		return fileContents.containsKey(key);
+		List<BlueEntity<T>> entities = fetch(file);
+		return contains(key, entities);
 	}
 
 	public void put(BlueKey key, T value) throws BlueDbException {
 		File file = getFileFor(key);
-		Map<BlueKey, T> fileContents = fetchAsMap(file);
-		fileContents.put(key, value);
-		persist(file, fileContents);
+		ArrayList<BlueEntity<T>> entities = fetch(file);
+		BlueEntity<T> newEntity = new BlueEntity<T>(key, value);
+		remove(key, entities);
+		entities.add(newEntity);
+		persist(file, entities);
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
 		File file = getFileFor(key);
 		if (file.exists()) {
-			Map<BlueKey, T> fileContents = fetchAsMap(file);
-			fileContents.remove(key);
-			persist(file, fileContents);
+			ArrayList<BlueEntity<T>> entities = fetch(file);
+			remove(key, entities);
+			persist(file, entities);
 		}
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
 		File file = getFileFor(key);
-		Map<BlueKey, T> fileContents = fetchAsMap(file);
-		return fileContents.get(key);
+		ArrayList<BlueEntity<T>> entities = fetch(file);
+		return get(key, entities);
 	}
 
 	public List<T> getAll() throws BlueDbException {
 		File[] filesInFolder = segmentPath.toFile().listFiles();
 		List<T> results = new ArrayList<>();
 		for (File file: filesInFolder) {
-			Map<BlueKey, T> fileContents = fetchAsMap(file);
-			results.addAll(fileContents.values());
+			for (BlueEntity<T> entity: fetch(file)) {
+				results.add(entity.getObject());
+			}
 		}
 		return results;
 	}
@@ -102,47 +102,24 @@ public class Segment <T extends Serializable> {
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 
-	private TreeMap<BlueKey, T> fetchAsMap(File file) throws BlueDbException {
-		List<BlueEntity<T>> entities = fetch(file);
-		return asMap(entities);
-	}
-
 	// TODO handle locking?
 	@SuppressWarnings("unchecked")
-	private List<BlueEntity<T>> fetch(File file) throws BlueDbException {
+	private ArrayList<BlueEntity<T>> fetch(File file) throws BlueDbException {
 		if (!file.exists())
 			return new ArrayList<BlueEntity<T>>();
-		List<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
+		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
 		if (fileContents == null)
 			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
 	}
 
 	// TODO handle locking?
-	private void persist(File file, Map<BlueKey, T> data) throws BlueDbException {
-		if (data.isEmpty()) {
+	private void persist(File file, ArrayList<BlueEntity<T>> entites) throws BlueDbException {
+		if (entites.isEmpty()) {
 			file.delete();
 		} else {
-			ArrayList<BlueEntity<T>> entites = asEntityArrayList(data);
-			fileManager.saveObject(file.toPath(), entites);
+			save(file.toPath(), entites);
 		}
-	}
-
-	private TreeMap<BlueKey, T> asMap(List<BlueEntity<T>> list) {
-		TreeMap<BlueKey, T> map = new TreeMap<>();
-		for (BlueEntity<T> entity: list) {
-			map.put(entity.getKey(), entity.getObject());
-		}
-		return map;
-	}
-
-	private ArrayList<BlueEntity<T>> asEntityArrayList(Map<BlueKey, T> data) {
-		ArrayList<BlueEntity<T>> list = new ArrayList<>();
-		for (Entry<BlueKey, T> entry: data.entrySet()) {
-			BlueEntity<T> entity = new BlueEntity<T>(entry.getKey(), entry.getValue());
-			list.add(entity);
-		}
-		return list;
 	}
 
 	private static boolean inTimeRange(long minTime, long maxTime, BlueKey key) {
@@ -151,6 +128,59 @@ public class Segment <T extends Serializable> {
 			return timeFrameKey.getEndTime() >= minTime && timeFrameKey.getStartTime() <= maxTime;
 		} else {
 			return key.getGroupingNumber() >= minTime && key.getGroupingNumber() <= maxTime;
+		}
+	}
+
+	protected static <T extends Serializable> T remove(BlueKey key, List<BlueEntity<T>> entities) {
+		for (int i = 0; i < entities.size(); i++) {
+			BlueEntity<T> entity = entities.get(i);
+			if (entity.getKey().equals(key)) {
+				entities.remove(i);
+				return entity.getObject();
+			}
+		}
+		return null;
+	}
+
+	protected static <T extends Serializable> boolean contains(BlueKey key, List<BlueEntity<T>> entities) {
+		return get(key, entities) != null;
+	}
+
+	protected static <T extends Serializable> T get(BlueKey key, List<BlueEntity<T>> entities) {
+		for (BlueEntity<T> entity: entities) {
+			if (entity.getKey().equals(key)) {
+				return entity.getObject();
+			}
+		}
+		return null;
+	}
+
+	// TODO move to a FileManager class
+	public byte[] load(Path path) throws BlueDbException {
+		File file = path.toFile();
+		if (!file.exists())
+			return null;
+		try {
+			return Files.readAllBytes(path);
+		} catch (IOException e) {
+			e.printStackTrace();
+			// TODO delete the file ?
+			throw new BlueDbException("error writing to disk (" + path +")", e);
+		}
+	}
+
+	// TODO move to a FileManager class
+	public void save(Path path, Object o) throws BlueDbException {
+		File file = path.toFile();
+		file.getParentFile().mkdirs();
+		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		try (FileOutputStream fos = new FileOutputStream(file)) {
+			fos.write(bytes);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			// TODO delete the file
+			throw new BlueDbException("error writing to disk (" + path +")", e);
 		}
 	}
 
