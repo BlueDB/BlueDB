@@ -8,7 +8,7 @@ public class ThreadLocalFstSerializer extends ThreadLocal<FSTConfiguration> impl
 	
 	private Class<?>[] registeredSerializableClasses;
 	
-	public ThreadLocalFstSerializer(Class<?>[] registeredSerializableClasses) {
+	public ThreadLocalFstSerializer(Class<?>...registeredSerializableClasses) {
 		this.registeredSerializableClasses = registeredSerializableClasses;
 	}
 
