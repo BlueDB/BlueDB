@@ -1,10 +1,7 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -12,16 +9,16 @@ import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
-import io.bluedb.disk.serialization.BlueSerializer;
+import io.bluedb.disk.file.FileManager;
 
 public class Segment <T extends Serializable> {
 
-	private final BlueSerializer serializer;
+	private final FileManager fileManager;
 	private final Path segmentPath;
 
-	public Segment(Path segmentPath, BlueSerializer serializer) {
+	public Segment(Path segmentPath, FileManager fileManager) {
 		this.segmentPath = segmentPath;
-		this.serializer = serializer;
+		this.fileManager = fileManager;
 	}
 
 	@Override
@@ -106,8 +103,9 @@ public class Segment <T extends Serializable> {
 	private ArrayList<BlueEntity<T>> fetch(File file) throws BlueDbException {
 		if (!file.exists())
 			return new ArrayList<BlueEntity<T>>();
-		byte[] fileData = load(file.toPath());
-		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) serializer.deserializeObjectFromByteArray((fileData));
+		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
+		if (fileContents == null)
+			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
 	}
 
@@ -116,7 +114,7 @@ public class Segment <T extends Serializable> {
 		if (entites.isEmpty()) {
 			file.delete();
 		} else {
-			save(file.toPath(), entites);
+			fileManager.saveObject(file.toPath(), entites);
 		}
 	}
 
@@ -128,8 +126,8 @@ public class Segment <T extends Serializable> {
 			return key.getGroupingNumber() >= minTime && key.getGroupingNumber() <= maxTime;
 		}
 	}
-	
-	protected static <T extends Serializable> T remove(BlueKey key, List<BlueEntity<T>> entities) {
+
+	protected static <T extends Serializable> T remove(BlueKey key, ArrayList<BlueEntity<T>> entities) {
 		for (int i = 0; i < entities.size(); i++) {
 			BlueEntity<T> entity = entities.get(i);
 			if (entity.getKey().equals(key)) {
@@ -151,35 +149,6 @@ public class Segment <T extends Serializable> {
 			}
 		}
 		return null;
-	}
-
-	// TODO move to a FileManager class
-	public byte[] load(Path path) throws BlueDbException {
-		File file = path.toFile();
-		if (!file.exists())
-			return null;
-		try {
-			return Files.readAllBytes(path);
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file ?
-			throw new BlueDbException("error writing to disk (" + path +")", e);
-		}
-	}
-
-	// TODO move to a FileManager class
-	public void save(Path path, Object o) throws BlueDbException {
-		File file = path.toFile();
-		file.getParentFile().mkdirs();
-		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO delete the file
-			throw new BlueDbException("error writing to disk (" + path +")", e);
-		}
 	}
 
 	@Override

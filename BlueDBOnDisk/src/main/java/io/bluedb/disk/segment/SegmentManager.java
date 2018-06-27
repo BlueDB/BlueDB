@@ -109,7 +109,7 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected Segment<T> toSegment(Path path) {
-		return new Segment<T>(path, collection.getSerializer());
+		return new Segment<T>(path, collection.getFileManager());
 	}
 
 	protected static List<File> getNonsegmentSubfoldersInRange(File folder, long minValue, long maxValue) {

@@ -24,6 +24,7 @@ import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.collection.task.UpdateTask;
+import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
@@ -38,16 +39,17 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	private Class<T> type;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path path;
-	private final BlueSerializer serializer;
+	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
 		this.type = type;
 		path = Paths.get(db.getPath().toString(), type.getName());
 		path.toFile().mkdirs();
-		recoveryManager = new RecoveryManager<T>(this);
+		BlueSerializer serializer = db.getSerializer();
+		fileManager = new FileManager(serializer);
+		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		recoveryManager.recover();
-		serializer = db.getSerializer();
 		segmentManager = new SegmentManager<T>(this);
 	}
 
@@ -158,8 +160,8 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return path;
 	}
 
-	public BlueSerializer getSerializer() {
-		return serializer;
+	public FileManager getFileManager() {
+		return fileManager;
 	}
 
 	public void shutdown() {
