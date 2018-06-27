@@ -1,19 +1,25 @@
 package io.bluedb.disk.recovery;
 
 import static org.junit.Assert.*;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import io.bluedb.api.Updater;
+import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbOnDisk;
+import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class PendingChangeTest {
 
+	BlueDbOnDisk DB = new BlueDbOnDiskBuilder().build();
+	BlueCollectionImpl<TestValue> COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 	BlueSerializer serializer;
 	
 	@Before
@@ -67,17 +73,59 @@ public class PendingChangeTest {
 
 	@Test
 	public void test_applyChange_insert() {
-		// TODO
+		BlueKey key = createKey(1, 2);
+		removeKey(key);
+		TestValue value = createValue("Joe");
+		PendingChange<TestValue> change = PendingChange.createInsert(key, value);
+		try {
+			assertNull(COLLECTION.get(key));
+			Segment<TestValue> segment = COLLECTION.getSegmentManager().getFirstSegment(key);
+			change.applyChange(segment);
+			assertEquals(value, COLLECTION.get(key));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		removeKey(key);
 	}
 
 	@Test
 	public void test_applyChange_delete() {
-		// TODO
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		insert(key, value);
+		PendingChange<TestValue> change = PendingChange.createDelete(key);
+		try {
+			assertEquals(value, COLLECTION.get(key));
+			Segment<TestValue> segment = COLLECTION.getSegmentManager().getFirstSegment(key);
+			change.applyChange(segment);
+			assertNull(COLLECTION.get(key));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		removeKey(key);
 	}
 
 	@Test
 	public void test_applyChange_update() {
-		// TODO
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		insert(key, value);
+		Updater<TestValue> updater = ((v) -> v.addCupcake());
+		TestValue newValue = serializer.clone(value);
+		updater.update(newValue);
+		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, newValue);
+		try {
+			assertEquals(value, COLLECTION.get(key));
+			Segment<TestValue> segment = COLLECTION.getSegmentManager().getFirstSegment(key);
+			change.applyChange(segment);
+			assertEquals(newValue, COLLECTION.get(key));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		removeKey(key);
 	}
 
 	private TestValue createValue(String name){
@@ -86,5 +134,25 @@ public class PendingChangeTest {
 
 	private BlueKey createKey(long keyId, long time){
 		return new TimeKey(keyId, time);
+	}
+
+	private void insert(BlueKey key, TestValue value) {
+		try {
+			if (!COLLECTION.contains(key)) {
+				COLLECTION.insert(key, value);
+			}
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	private void removeKey(BlueKey key) {
+		try {
+			COLLECTION.delete(key);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 }
