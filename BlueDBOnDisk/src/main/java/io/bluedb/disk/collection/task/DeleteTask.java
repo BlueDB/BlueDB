@@ -21,20 +21,16 @@ public class DeleteTask<T extends Serializable> implements Runnable {
 	public void run() {
 		try {
 			PendingChange<T> change = PendingChange.createDelete(key);
-			applyUpdateWithRecovery(key, change);
+			collection.getRecoveryManager().saveDelete(key);
+			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
+			for (Segment<T> segment: segments) {
+				change.applyChange(segment);
+			}
+			collection.getRecoveryManager().removeChange(change);
 		} catch (Throwable t) {
 			// TODO rollback or try again?
 		} finally {
 		}
 
-	}
-
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
-		collection.getRecoveryManager().saveChange(change);
-		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-		for (Segment<T> segment: segments) {
-			change.applyChange(segment);
-		}
-		collection.getRecoveryManager().removeChange(change);
 	}
 }
