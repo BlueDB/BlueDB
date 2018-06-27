@@ -1,10 +1,11 @@
 package io.bluedb.disk.segment;
 
-import static org.junit.Assert.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.junit.Test;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
@@ -12,11 +13,18 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import junit.framework.TestCase;
 
-public class SegmentTest {
+public class SegmentTest extends TestCase {
 
-	BlueDbOnDisk DB = new BlueDbOnDiskBuilder().build();
-	BlueCollectionImpl<TestValue> COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
+	BlueDbOnDisk DB;
+	BlueCollectionImpl<TestValue> COLLECTION;
+	
+	@Override
+	protected void setUp() throws Exception {
+		DB = new BlueDbOnDiskBuilder().build();
+		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
+	}
 
 	private static final long SEGMENT_ID = 42;
 

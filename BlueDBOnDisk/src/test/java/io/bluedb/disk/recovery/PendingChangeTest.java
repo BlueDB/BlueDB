@@ -18,12 +18,14 @@ import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class PendingChangeTest {
 
-	BlueDbOnDisk DB = new BlueDbOnDiskBuilder().build();
-	BlueCollectionImpl<TestValue> COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
+	BlueDbOnDisk DB;
+	BlueCollectionImpl<TestValue> COLLECTION;
 	BlueSerializer serializer;
 	
 	@Before
 	public void setUp() throws Exception {
+		DB = new BlueDbOnDiskBuilder().build();
+		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
 	}
 

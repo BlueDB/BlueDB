@@ -16,14 +16,16 @@ import junit.framework.TestCase;
 
 public class RecoveryManagerTest extends TestCase {
 
-	BlueDbOnDisk DB = new BlueDbOnDiskBuilder().build();
-	BlueCollectionImpl<TestValue> COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
+	BlueDbOnDisk DB;
+	BlueCollectionImpl<TestValue> COLLECTION;
 	RecoveryManager<TestValue> recoveryManager;
 	BlueSerializer serializer;
 	
 	
 	@Override
 	public void setUp() throws Exception {
+		DB = new BlueDbOnDiskBuilder().build();
+		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 		recoveryManager = COLLECTION.getRecoveryManager();
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
 

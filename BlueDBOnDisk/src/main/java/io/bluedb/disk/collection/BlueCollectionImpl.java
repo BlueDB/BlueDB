@@ -31,22 +31,21 @@ import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.serialization.BlueSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
-	private Class<T> type;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path path;
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
-		this.type = type;
 		path = Paths.get(db.getPath().toString(), type.getName());
 		path.toFile().mkdirs();
-		BlueSerializer serializer = db.getSerializer();
+		BlueSerializer serializer = new ThreadLocalFstSerializer(type);
 		fileManager = new FileManager(serializer);
 		segmentManager = new SegmentManager<T>(this);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
