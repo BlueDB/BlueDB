@@ -7,7 +7,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.nustaq.serialization.FSTConfiguration;
+
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
@@ -18,11 +20,14 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 
-class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
-
+class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, Serializable {
+	private static final long serialVersionUID = 1L;
+	
 	private Class<T> type;
 	private Map<BlueKey, byte[]> data = new ConcurrentHashMap<>();
-	FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
+	
+	private final Object serializerLock = "Serializer Lock";
+	private transient FSTConfiguration serializer;
 
 	public BlueCollectionImpl(Class<T> type) {
 		this.type = type;
@@ -149,12 +154,21 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
 	}
 
 	private byte[] serialize(T object) {
-		return conf.asByteArray(object);
+		return getSerializer().asByteArray(object);
 	}
 
 	@SuppressWarnings("unchecked")
 	private T deserialize(byte[] bytes) {
-		return (T) conf.asObject(bytes);
+		return (T) getSerializer().asObject(bytes);
+	}
+	
+	private FSTConfiguration getSerializer() {
+		synchronized (serializerLock) {
+			if(serializer == null) {
+				serializer = FSTConfiguration.createDefaultConfiguration();
+			}
+			return serializer;
+		}
 	}
 
 	private static void sort(List<BlueKey> keys) {

@@ -1,10 +1,18 @@
 package io.bluedb.memory;
 
 import static org.junit.Assert.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+
 import org.junit.Test;
+
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.BlueQuery;
@@ -17,14 +25,25 @@ import junit.framework.TestCase;
 
 public class BlueDbInMemoryTest extends TestCase {
 
+	Path tempDir;
 	BlueDb db;
 	BlueCollection<TestValue> collection;
 	
 	@Override
 	protected void setUp() throws Exception {
-		super.setUp();
-		db = new BlueDbInMemory();
+		tempDir = Files.createTempDirectory("BlueDbInMemoryTest");
+		db = new BlueDbInMemory(tempDir);
 		collection = db.getCollection(TestValue.class, "testing");
+	}
+	
+	@Override
+	protected void tearDown() throws Exception {
+		Files.walk(tempDir)
+			.sorted(Comparator.reverseOrder())
+			.map(Path::toFile)
+			.forEach(File::delete);
+
+		assertFalse("Directory still exists", Files.exists(tempDir));
 	}
 	
 	@Test
@@ -38,7 +57,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			fail();
 		} catch (BlueDbException e) {
 		}
-		cleanup();
 	}
 
 	@Test
@@ -60,7 +78,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -74,7 +91,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -89,7 +105,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -104,7 +119,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -124,7 +138,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -148,7 +161,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -172,7 +184,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -200,7 +211,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -226,7 +236,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -254,7 +263,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -278,7 +286,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -310,7 +317,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -336,7 +342,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -375,7 +380,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -395,7 +399,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 	
 	@Test
@@ -416,7 +419,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 	
 	@Test
@@ -450,7 +452,6 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 	
 	@Test
@@ -486,7 +487,21 @@ public class BlueDbInMemoryTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
+	}
+	
+	@Test
+	public void testSerializeAndDeserialize() throws IOException, BlueDbException {
+		TestValue value = new TestValue("Joe");
+		BlueKey key = createTimeKey(10, value);
+		insert(key, value);
+		assertValueAtKey(key, value);
+		
+		db.shutdown();
+		
+		db = new BlueDbInMemory(tempDir);
+		collection = db.getCollection(TestValue.class, "testing");
+		
+		assertValueAtKey(key, value);
 	}
 
 	private void assertCupcakes(BlueKey key, int cupcakes) {
@@ -555,14 +570,5 @@ public class BlueDbInMemoryTest extends TestCase {
 	private TimeKey createTimeKey(long time, TestValue obj) {
 		StringKey stringKey = new StringKey(obj.getName());
 		return new TimeKey(stringKey, time);
-	}
-
-	private void cleanup() {
-		try {
-			getCollection().query().delete();
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
 	}
 }
