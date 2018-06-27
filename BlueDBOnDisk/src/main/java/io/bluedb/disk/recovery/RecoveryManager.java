@@ -33,19 +33,25 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public PendingChange<T> saveUpdate(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
-		PendingChange<T> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
+		T oldValue = serializer.clone(originalValue);
+		T newValue = serializer.clone(originalValue);
+		updater.update(newValue);
+		PendingChange<T> change = PendingChange.createUpdate(key, oldValue, newValue);
 		saveChange(change);
 		return change;
 	}
 
-	public PendingChange<T> saveDelete(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
-		// TODO
-		return null;
+	public PendingChange<T> saveDelete(BlueKey key) throws BlueDbException {
+		PendingChange<T> change = PendingChange.createDelete(key);
+		saveChange(change);
+		return change;
 	}
 
-	public PendingChange<T> saveInsert(BlueKey key, T originalValue, Updater<T> updater) throws BlueDbException {
-		// TODO
-		return null;
+	public PendingChange<T> saveInsert(BlueKey key, T value) throws BlueDbException {
+		T insertValue = serializer.clone(value);
+		PendingChange<T> change = PendingChange.createInsert(key, insertValue);
+		saveChange(change);
+		return change;
 	}
 
 	public void saveChange(PendingChange<T> change) throws BlueDbException {
@@ -72,7 +78,14 @@ public class RecoveryManager<T extends Serializable> {
 		List<File> pendingChangeFiles = fileManager.listFiles(recoveryPath, SUFFIX);
 		List<PendingChange<T>> changes = new ArrayList<>();
 		for (File file: pendingChangeFiles) {
-			// TODO also remember to throw out corrupted files
+			try {
+				@SuppressWarnings("unchecked")
+				PendingChange<T> change = (PendingChange<T>) fileManager.loadObject(file.toPath());
+				changes.add(change);
+			} catch (BlueDbException e) {
+				e.printStackTrace();
+				file.delete();
+			}
 		}
 		return changes;
 	}
@@ -83,10 +96,14 @@ public class RecoveryManager<T extends Serializable> {
 		for (PendingChange<T> change: pendingChanges) {
 			BlueKey key = change.getKey();
 			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-			for (Segment<T> segment: segments) {
-//				change.applyChange(segment);
+			try {
+				for (Segment<T> segment: segments) {
+					change.applyChange(segment);
+				}
+				removeChange(change);
+			} catch (BlueDbException e) {
+				e.printStackTrace();
 			}
-//			recoveryManager.removeChange(change);
 		}
 	}
 }
