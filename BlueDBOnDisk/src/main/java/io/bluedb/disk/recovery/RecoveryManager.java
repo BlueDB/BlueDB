@@ -96,10 +96,14 @@ public class RecoveryManager<T extends Serializable> {
 		for (PendingChange<T> change: pendingChanges) {
 			BlueKey key = change.getKey();
 			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-			for (Segment<T> segment: segments) {
-//				change.applyChange(segment);
+			try {
+				for (Segment<T> segment: segments) {
+					change.applyChange(segment);
+				}
+				removeChange(change);
+			} catch (BlueDbException e) {
+				e.printStackTrace();
 			}
-//			recoveryManager.removeChange(change);
 		}
 	}
 }

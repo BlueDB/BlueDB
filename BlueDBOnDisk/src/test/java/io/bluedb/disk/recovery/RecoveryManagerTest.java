@@ -1,10 +1,6 @@
 package io.bluedb.disk.recovery;
 
-import static org.junit.Assert.*;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
@@ -35,14 +31,18 @@ public class RecoveryManagerTest extends TestCase {
 		for (PendingChange<TestValue> change: changes) {
 			recoveryManager.removeChange(change);
 		}
+		
+		COLLECTION.query().delete();
 	}
 
-	@After
+	@Override
 	public void tearDown() throws Exception {
 		List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
 		for (PendingChange<TestValue> change: changes) {
 			recoveryManager.removeChange(change);
 		}
+
+		COLLECTION.query().delete();
 	}
 
 	@Test
@@ -197,13 +197,70 @@ public class RecoveryManagerTest extends TestCase {
 	}
 
 	@Test
-	public void test_recover_noChanges() {
-		// TODO
+	public void test_recover_pendingInsert() {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		try {
+			PendingChange<TestValue> change = recoveryManager.saveInsert(key, value);
+			List<TestValue> allValues = COLLECTION.query().getList();
+			assertEquals(0, allValues.size());
+			
+			recoveryManager.recover();
+			allValues = COLLECTION.query().getList();
+			assertEquals(1, allValues.size());
+			assertEquals(value, allValues.get(0));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	@Test
-	public void test_recover_pendingChanges() {
-		// TODO
+	public void test_recover_pendingDelete() {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		try {
+			COLLECTION.insert(key, value);
+			List<TestValue> allValues = COLLECTION.query().getList();
+			assertEquals(1, allValues.size());
+			
+			PendingChange<TestValue> change = recoveryManager.saveDelete(key);
+			recoveryManager.recover();
+			allValues = COLLECTION.query().getList();
+			assertEquals(0, allValues.size());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_recover_pendingUpdate() {
+		BlueKey key = createKey(1, 2);
+		TestValue originalValue = createValue("Joe", 0);
+		Updater<TestValue> updater = ((v) -> v.addCupcake());
+		TestValue newValue = serializer.clone(originalValue);
+		updater.update(newValue);
+		try {
+			COLLECTION.insert(key, originalValue);
+			PendingChange<TestValue> change = recoveryManager.saveUpdate(key, originalValue, updater);
+
+			List<TestValue> allValues = COLLECTION.query().getList();
+			assertEquals(1, allValues.size());
+			assertEquals(0, allValues.get(0).getCupcakes());
+
+			recoveryManager.recover();
+			allValues = COLLECTION.query().getList();
+			assertEquals(1, allValues.size());
+			assertEquals(1, allValues.get(0).getCupcakes());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	private TestValue createValue(String name, int cupcakes){
+		return new TestValue(name, cupcakes);
 	}
 
 	private TestValue createValue(String name){
