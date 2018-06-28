@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
@@ -57,7 +58,10 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public List<T> getList() throws BlueDbException {
-		return collection.getList(minTime, maxTime, objectConditions);
+		return collection.findMatches(minTime, maxTime, objectConditions)
+				.stream()
+				.map((e) -> e.getObject())
+				.collect(Collectors.toList());
 	}
 
 	@Override

@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
@@ -64,12 +63,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	public T get(BlueKey key) throws BlueDbException {
 		Segment<T> firstSegment = segmentManager.getFirstSegment(key);
 		return firstSegment.get(key);
-	}
-
-	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		 return (List<T>) findMatches(minTime, maxTime, conditions).stream()
-				 .map((e) -> e.getObject())
-				 .collect(Collectors.toList());
 	}
 
 	@Override
