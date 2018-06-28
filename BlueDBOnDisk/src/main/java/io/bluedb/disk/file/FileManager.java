@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
@@ -46,6 +47,14 @@ public class FileManager {
 		} finally {
 			lockManager.release(path);
 		}
+	}
+
+	public static List<File> getFolderContents(File folder) {
+		File[] folderContentsArray = folder.listFiles();
+		if (folderContentsArray == null) {
+			return new ArrayList<>();
+		}
+		return Arrays.asList(folderContentsArray);
 	}
 
 	private byte[] getLatchAndReadBytes(Path path) throws BlueDbException {
