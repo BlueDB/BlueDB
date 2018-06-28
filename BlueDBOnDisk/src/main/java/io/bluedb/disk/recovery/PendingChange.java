@@ -85,6 +85,6 @@ public class PendingChange<T extends Serializable> implements Serializable {
 
 	@Override
 	public String toString() {
-		return "<" + key +": " + String.valueOf(oldValue) + "=> " + String.valueOf(newValue) + ">";
+		return "<PendingChange for " + key +": " + String.valueOf(oldValue) + "=> " + String.valueOf(newValue) + ">";
 	}
 }

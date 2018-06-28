@@ -29,9 +29,6 @@ public class PendingChangeTest {
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
 	}
 
-//	@After
-//	public void tearDown() throws Exception {}
-//
 	@Test
 	public void test_createDelete() {
 		BlueKey key = createKey(1, 2);
@@ -130,6 +127,20 @@ public class PendingChangeTest {
 		removeKey(key);
 	}
 
+	@Test
+	public void test_DeleteMultipleTask_toString() {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		Updater<TestValue> updater = ((v) -> v.addCupcake());
+		TestValue newValue = serializer.clone(value);
+		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, updater, serializer);
+		String changeString = change.toString();
+		assertTrue(changeString.contains(change.getClass().getSimpleName()));
+		assertTrue(changeString.contains(key.toString()));
+		assertTrue(changeString.contains(value.toString()));
+		assertTrue(changeString.contains(newValue.toString()));
+	}
+	
 	private TestValue createValue(String name){
 		return new TestValue(name);
 	}
