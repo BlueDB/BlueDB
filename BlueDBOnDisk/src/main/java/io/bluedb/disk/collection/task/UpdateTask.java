@@ -9,7 +9,7 @@ import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
-public class UpdateTask<T extends Serializable> implements Runnable {
+public class UpdateTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionImpl<T> collection;
 	private final BlueKey key;
 	private final Updater<T> updater;
@@ -21,19 +21,14 @@ public class UpdateTask<T extends Serializable> implements Runnable {
 	}
 
 	@Override
-	public void run() {
-		try {
-			BlueSerializer serializer = collection.getSerializer();
-			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-			T value = collection.get(key);
-			PendingChange<T> change = PendingChange.createUpdate(key, value, updater, serializer);
-			recoveryManager.saveChange(change);
-			collection.applyChange(change);
-			recoveryManager.removeChange(change);
-		} catch (BlueDbException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void execute() throws BlueDbException {
+		BlueSerializer serializer = collection.getSerializer();
+		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+		T value = collection.get(key);
+		PendingChange<T> change = PendingChange.createUpdate(key, value, updater, serializer);
+		recoveryManager.saveChange(change);
+		collection.applyChange(change);
+		recoveryManager.removeChange(change);
 	}
 
 	@Override

@@ -11,7 +11,7 @@ import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 
-public class DeleteMultipleTask<T extends Serializable> implements Runnable {
+public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionImpl<T> collection;
 	private final long minGroupingValue;
 	private final long maxGroupingValue;
@@ -25,19 +25,14 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 	}
 
 	@Override
-	public void run() {
-		try {
-			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-			List<BlueEntity<T>> entities = collection.findMatches(minGroupingValue, maxGroupingValue, conditions);
-			List<PendingChange<T>> changes = createDeletePendingChanges(entities);
-			for (PendingChange<T> change: changes) {
-				recoveryManager.saveChange(change);
-				collection.applyChange(change);
-				recoveryManager.removeChange(change);
-			}
-		} catch (BlueDbException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	public void execute() throws BlueDbException {
+		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+		List<BlueEntity<T>> entities = collection.findMatches(minGroupingValue, maxGroupingValue, conditions);
+		List<PendingChange<T>> changes = createDeletePendingChanges(entities);
+		for (PendingChange<T> change: changes) {
+			recoveryManager.saveChange(change);
+			collection.applyChange(change);
+			recoveryManager.removeChange(change);
 		}
 	}
 

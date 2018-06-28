@@ -13,7 +13,7 @@ import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 
-public class UpdateMultipleTask<T extends Serializable> implements Runnable {
+public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionImpl<T> collection;
 	private final Updater<T> updater;
 	private final long min;
@@ -30,20 +30,15 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 	}
 
 	@Override
-	public void run() {
-		try {
-			List<BlueEntity<T>> entities = collection.findMatches(min, max, conditions);
-			List<PendingChange<T>> updates = createUpdates(entities, updater);
+	public void execute() throws BlueDbException {
+		List<BlueEntity<T>> entities = collection.findMatches(min, max, conditions);
+		List<PendingChange<T>> updates = createUpdates(entities, updater);
 
-			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-			for (PendingChange<T> update: updates) {
-				recoveryManager.saveChange(update);
-				collection.applyChange(update);
-				recoveryManager.removeChange(update);
-			}
-		} catch (BlueDbException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+		for (PendingChange<T> update: updates) {
+			recoveryManager.saveChange(update);
+			collection.applyChange(update);
+			recoveryManager.removeChange(update);
 		}
 	}
 
