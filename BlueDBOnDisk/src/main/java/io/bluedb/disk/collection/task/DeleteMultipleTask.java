@@ -2,6 +2,9 @@ package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
@@ -10,16 +13,23 @@ import io.bluedb.disk.segment.Segment;
 
 public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 	private final BlueCollectionImpl<T> collection;
-	private final List<BlueKey> keys;
+	private final long minGroupingValue;
+	private final long maxGroupingValue;
+	private final List<Condition<T>> conditions;
 	
-	public DeleteMultipleTask(BlueCollectionImpl<T> collection, List<BlueKey> keys) {
+	public DeleteMultipleTask(BlueCollectionImpl<T> collection, long min, long max, List<Condition<T>> conditions) {
 		this.collection = collection;
-		this.keys = keys;
+		this.minGroupingValue = min;
+		this.maxGroupingValue = max;
+		this.conditions = conditions;
 	}
 
 	@Override
 	public void run() {
 		try {
+			List<BlueKey> keys = collection.findMatches(minGroupingValue, maxGroupingValue, conditions).stream()
+					.map((e) -> e.getKey())
+					.collect(Collectors.toList());
 			for (BlueKey key: keys) {
 				PendingChange<T> change = PendingChange.createDelete(key);
 				applyUpdateWithRecovery(key, change);
@@ -41,6 +51,6 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 
 	@Override
 	public String toString() {
-		return "<DeleteMultipleTask with " + keys.size() + ">";
+		return "<DeleteMultipleTask (" + minGroupingValue + ", " + maxGroupingValue + ") with " + conditions.size() + " conditions>";
 	}
 }

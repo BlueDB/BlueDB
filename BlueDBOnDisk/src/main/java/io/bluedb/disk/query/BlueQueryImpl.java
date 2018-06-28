@@ -9,6 +9,8 @@ import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.task.DeleteMultipleTask;
+import io.bluedb.disk.collection.task.UpdateMultipleTask;
 
 public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
@@ -65,12 +67,14 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public void delete() throws BlueDbException {
-		collection.deleteAll(minTime, maxTime, objectConditions);
+		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, minTime, maxTime, objectConditions);
+		collection.executeTask(deleteAllTask);
 	}
 
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
-		collection.updateAll(minTime, maxTime, objectConditions, updater);
+		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, minTime, maxTime, objectConditions, updater);
+		collection.executeTask(updateMultipleTask);
 	}
 
 	@Override

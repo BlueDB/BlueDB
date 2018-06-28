@@ -19,10 +19,8 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
-import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.collection.task.UpdateTask;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
@@ -69,7 +67,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	}
 
 	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		 return (List<T>) findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getObject()).collect(Collectors.toList());
+		 return (List<T>) findMatches(minTime, maxTime, conditions).stream()
+				 .map((e) -> e.getObject())
+				 .collect(Collectors.toList());
 	}
 
 	@Override
@@ -90,19 +90,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		executeTask(deleteTask);
 	}
 
-	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
-		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
-		Runnable updateTask = new UpdateMultipleTask<T>(this, entities, updater);
-		executeTask(updateTask);
-	}
-
-	public void deleteAll(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		List<BlueKey> keys = findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getKey()).collect(Collectors.toList());
-		Runnable deleteAllTask = new DeleteMultipleTask<T>(this, keys);
-		executeTask(deleteAllTask);
-	}
-
-	private List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
 		List<Segment<T>> segments = segmentManager.getExistingSegments(minTime, maxTime);
 		for (Segment<T> segment: segments) {
@@ -137,7 +125,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		executor.shutdown();
 	}
 
-	private void executeTask(Runnable task) throws BlueDbException{
+	public void executeTask(Runnable task) throws BlueDbException{
 		Future<?> future = executor.submit(task);
 		try {
 			future.get();
