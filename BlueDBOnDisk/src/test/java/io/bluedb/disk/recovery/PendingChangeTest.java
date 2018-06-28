@@ -29,9 +29,6 @@ public class PendingChangeTest {
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
 	}
 
-//	@After
-//	public void tearDown() throws Exception {}
-//
 	@Test
 	public void test_createDelete() {
 		BlueKey key = createKey(1, 2);
@@ -48,7 +45,7 @@ public class PendingChangeTest {
 	public void test_createInsert() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		PendingChange<TestValue> change = PendingChange.createInsert(key, value);
+		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		assertNull(change.getOldValue());
 		assertEquals(value, change.getNewValue());
 		assertFalse(change.isDelete());
@@ -62,9 +59,9 @@ public class PendingChangeTest {
 		BlueKey key = createKey(1, 2);
 		TestValue initialValue = createValue("Joe");
 		Updater<TestValue> updater = ((v) -> v.addCupcake());
+		PendingChange<TestValue> change = PendingChange.createUpdate(key, initialValue, updater, serializer);
 		TestValue newValue = serializer.clone(initialValue);
 		updater.update(newValue);
-		PendingChange<TestValue> change = PendingChange.createUpdate(key, initialValue, newValue);
 		assertEquals(initialValue, change.getOldValue());
 		assertEquals(newValue, change.getNewValue());
 		assertFalse(change.isDelete());
@@ -78,7 +75,7 @@ public class PendingChangeTest {
 		BlueKey key = createKey(1, 2);
 		removeKey(key);
 		TestValue value = createValue("Joe");
-		PendingChange<TestValue> change = PendingChange.createInsert(key, value);
+		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		try {
 			assertNull(COLLECTION.get(key));
 			Segment<TestValue> segment = COLLECTION.getSegmentManager().getFirstSegment(key);
@@ -117,7 +114,7 @@ public class PendingChangeTest {
 		Updater<TestValue> updater = ((v) -> v.addCupcake());
 		TestValue newValue = serializer.clone(value);
 		updater.update(newValue);
-		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, newValue);
+		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, updater, serializer);
 		try {
 			assertEquals(value, COLLECTION.get(key));
 			Segment<TestValue> segment = COLLECTION.getSegmentManager().getFirstSegment(key);
@@ -130,6 +127,20 @@ public class PendingChangeTest {
 		removeKey(key);
 	}
 
+	@Test
+	public void test_DeleteMultipleTask_toString() {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		Updater<TestValue> updater = ((v) -> v.addCupcake());
+		TestValue newValue = serializer.clone(value);
+		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, updater, serializer);
+		String changeString = change.toString();
+		assertTrue(changeString.contains(change.getClass().getSimpleName()));
+		assertTrue(changeString.contains(key.toString()));
+		assertTrue(changeString.contains(value.toString()));
+		assertTrue(changeString.contains(newValue.toString()));
+	}
+	
 	private TestValue createValue(String name){
 		return new TestValue(name);
 	}

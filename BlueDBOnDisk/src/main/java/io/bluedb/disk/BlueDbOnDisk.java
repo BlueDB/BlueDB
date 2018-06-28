@@ -21,12 +21,11 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
 		synchronized (collections) {
 			BlueCollectionImpl<T> collection = (BlueCollectionImpl<T>) collections.get(name);
 			if(collection == null) {
-				collection = new BlueCollectionImpl<>(this, type);
+				collection = new BlueCollectionImpl<>(this, name, type);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(type)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + type + "]");
@@ -38,15 +37,14 @@ public class BlueDbOnDisk implements BlueDb {
 
 	@Override
 	public void shutdown() throws BlueDbException {
-		// TODO Auto-generated method stub
+		for (BlueCollection<?> collection: collections.values()) {
+			BlueCollectionImpl<?> diskCollection = (BlueCollectionImpl<?>) collection;
+			diskCollection.shutdown();
+		}
 	}
 
 	public Path getPath() {
 		return path;
-	}
-
-	private void recover() {
-		// TODO implement and also add to startup
 	}
 	
 }

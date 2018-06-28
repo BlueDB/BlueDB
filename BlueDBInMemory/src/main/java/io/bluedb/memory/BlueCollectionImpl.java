@@ -43,7 +43,7 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 	public void insert(BlueKey key, T object) throws BlueDbException {
 		// TODO lock on update, insert or delete
 		if (data.containsKey(key)) {
-			throw new DuplicateKeyException("key already exists: " + key);
+			throw new DuplicateKeyException("key already exists: " + key, key);
 		}
 		byte[] bytes = serialize(object);
 		data.put(key, bytes);

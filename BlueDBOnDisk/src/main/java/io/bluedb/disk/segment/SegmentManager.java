@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.file.FileManager;
 
 public class SegmentManager<T extends Serializable> {
 
@@ -25,9 +26,11 @@ public class SegmentManager<T extends Serializable> {
 	protected static final long LEVEL_0 = LEVEL_1 * 12;
 
 	private final BlueCollectionImpl<T> collection;
+	private final FileManager fileManager;
 	
 	public SegmentManager(BlueCollectionImpl<T> collection) {
 		this.collection = collection;
+		this.fileManager = collection.getFileManager();
 	}
 
 	public Segment<T> getFirstSegment(BlueKey key) {
@@ -83,16 +86,6 @@ public class SegmentManager<T extends Serializable> {
 		return paths;
 	}
 
-	protected List<File> getExistingSegmentFiles(BlueKey key) {
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
-			return getExistingSegmentFiles(timeFrameKey.getStartTime(), timeFrameKey.getEndTime());
-		} else {
-			return getExistingSegmentFiles(key.getGroupingNumber(), key.getGroupingNumber());
-		}
-		
-	}
-
 	protected List<File> getExistingSegmentFiles(long minValue, long maxValue) {
 		Deque<File> foldersToSearch = new ArrayDeque<>();
 		File collectionFolder = collection.getPath().toFile();
@@ -109,11 +102,11 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected Segment<T> toSegment(Path path) {
-		return new Segment<T>(path, collection.getFileManager());
+		return new Segment<T>(path, fileManager);
 	}
 
 	protected static List<File> getNonsegmentSubfoldersInRange(File folder, long minValue, long maxValue) {
-		return getFolderContents(folder)
+		return FileManager.getFolderContents(folder)
             .stream()
 			.filter((f) -> f.isDirectory())
 			.filter((f) -> !isSegment(f))
@@ -122,19 +115,11 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected static List<File> getSegmentFilesInRange(File folder, long minValue, long maxValue) {
-		return getFolderContents(folder)
+		return FileManager.getFolderContents(folder)
             .stream()
 			.filter((f) -> isSegment(f))
 			.filter((f) -> folderNameRangeContainsRange(f, minValue, maxValue))
 			.collect(Collectors.toList());
-	}
-
-	protected static List<File> getFolderContents(File folder) {
-		File[] folderContentsArray = folder.listFiles();
-		if (folderContentsArray == null) {
-			return new ArrayList<>();
-		}
-		return Arrays.asList(folderContentsArray);
 	}
 
 	protected static boolean isSegment(File folder) {

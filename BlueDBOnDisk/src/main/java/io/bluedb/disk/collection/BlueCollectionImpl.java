@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
@@ -19,13 +18,12 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
-import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.collection.task.UpdateTask;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
+import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
@@ -38,16 +36,17 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
 	private final Class<T> type;
+	private final BlueSerializer serializer;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path path;
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 
-	public BlueCollectionImpl(BlueDbOnDisk db, Class<T> type) {
+	public BlueCollectionImpl(BlueDbOnDisk db, String name, Class<T> type) {
 		this.type = type;
-		path = Paths.get(db.getPath().toString(), type.getName());
+		path = Paths.get(db.getPath().toString(), name);
 		path.toFile().mkdirs();
-		BlueSerializer serializer = new ThreadLocalFstSerializer(type);
+		serializer = new ThreadLocalFstSerializer(type);
 		fileManager = new FileManager(serializer);
 		segmentManager = new SegmentManager<T>(this);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
@@ -70,71 +69,25 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return firstSegment.get(key);
 	}
 
-	public List<T> getList(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		 return (List<T>) findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getObject()).collect(Collectors.toList());
-	}
-
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		Runnable insertTask = new InsertTask<T>(this, key, value);
-		Future<?> future = executor.submit(insertTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("insert failed for key " + key.toString(), e);
-		}
+		executeTask(insertTask);
 	}
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
 		Runnable updateTask = new UpdateTask<T>(this, key, updater);
-		Future<?> future = executor.submit(updateTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("update failed for key " + key.toString(), e);
-		}
+		executeTask(updateTask);
 	}
 
 	@Override
 	public void delete(BlueKey key) throws BlueDbException {
 		Runnable deleteTask = new DeleteTask<T>(this, key);
-		Future<?> future = executor.submit(deleteTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("delete failed for key " + key.toString(), e);
-		}
+		executeTask(deleteTask);
 	}
 
-	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
-		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
-		Runnable updateTask = new UpdateMultipleTask<T>(this, entities, updater);
-		Future<?> future = executor.submit(updateTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("update query failed", e);
-		}
-	}
-
-	public void deleteAll(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-		List<BlueKey> keys = findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getKey()).collect(Collectors.toList());
-		Runnable deleteAllTask = new DeleteMultipleTask<T>(this, keys);
-		Future<?> future = executor.submit(deleteAllTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("delete query failed", e);
-		}
-	}
-
-	private List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
 		List<Segment<T>> segments = segmentManager.getExistingSegments(minTime, maxTime);
 		for (Segment<T> segment: segments) {
@@ -165,8 +118,30 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return fileManager;
 	}
 
+	public BlueSerializer getSerializer() {
+		return serializer;
+	}
+
 	public void shutdown() {
-		// TODO shutdown executors? what else?
+		executor.shutdown();
+	}
+
+	public void applyChange(PendingChange<T> change) throws BlueDbException {
+		BlueKey key = change.getKey();
+		List<Segment<T>> segments = segmentManager.getAllSegments(key);
+		for (Segment<T> segment: segments) {
+			change.applyChange(segment);
+		}
+	}
+
+	public void executeTask(Runnable task) throws BlueDbException{
+		Future<?> future = executor.submit(task);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("BlueDB task failed " + task.toString(), e);
+		}
 	}
 
 	public Class<T> getType() {

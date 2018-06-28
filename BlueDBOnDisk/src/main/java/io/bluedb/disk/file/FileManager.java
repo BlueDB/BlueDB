@@ -8,17 +8,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class FileManager {
 	private final BlueSerializer serializer;
-	private final LatchManager<Path> lockManager;
+	private final LockManager<Path> lockManager;
 
 	public FileManager(BlueSerializer serializer) {
 		this.serializer = serializer;
-		lockManager = new LatchManager<Path>(); 
+		lockManager = new LockManager<Path>(); 
 	}
 
 	public List<File> listFiles(Path path, String suffix) {
@@ -40,20 +41,28 @@ public class FileManager {
 
 	public void saveObject(Path path, Object o) throws BlueDbException {
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		lockManager.requestLatchFor(path);
+		lockManager.acquire(path);
 		try {
 			writeBytes(path, bytes);
 		} finally {
-			lockManager.releaseLatch(path);
+			lockManager.release(path);
 		}
 	}
 
+	public static List<File> getFolderContents(File folder) {
+		File[] folderContentsArray = folder.listFiles();
+		if (folderContentsArray == null) {
+			return new ArrayList<>();
+		}
+		return Arrays.asList(folderContentsArray);
+	}
+
 	private byte[] getLatchAndReadBytes(Path path) throws BlueDbException {
-		lockManager.requestLatchFor(path);
+		lockManager.acquire(path);
 		try {
 			return readBytes(path);
 		} finally {
-			lockManager.releaseLatch(path);
+			lockManager.release(path);
 		}
 	}
 
