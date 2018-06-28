@@ -21,13 +21,13 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
 		synchronized (collections) {
 			String key = type.getName() + "-" + name;
+			@SuppressWarnings("unchecked")
 			BlueCollection<T> collection = (BlueCollection<T>) collections.get(key);
 			if(collection == null) {
-				collection = new BlueCollectionImpl<>(this, type);
+				collection = new BlueCollectionImpl<>(this, name, type);
 				collections.put(key, collection);
 			}
 			return collection;
@@ -36,14 +36,13 @@ public class BlueDbOnDisk implements BlueDb {
 
 	@Override
 	public void shutdown() throws BlueDbException {
-		// TODO Auto-generated method stub
+		for (BlueCollection<?> collection: collections.values()) {
+			BlueCollectionImpl<?> diskCollection = (BlueCollectionImpl<?>) collection;
+			diskCollection.shutdown();
+		}
 	}
 
 	public Path getPath() {
 		return path;
-	}
-
-	private void recover() {
-		// TODO implement and also add to startup
 	}
 }

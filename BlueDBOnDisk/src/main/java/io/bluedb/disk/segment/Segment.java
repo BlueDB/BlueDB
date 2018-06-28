@@ -98,18 +98,16 @@ public class Segment <T extends Serializable> {
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 
-	// TODO handle locking?
-	@SuppressWarnings("unchecked")
 	private ArrayList<BlueEntity<T>> fetch(File file) throws BlueDbException {
 		if (!file.exists())
 			return new ArrayList<BlueEntity<T>>();
+		@SuppressWarnings("unchecked")
 		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
 		if (fileContents == null)
 			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
 	}
 
-	// TODO handle locking?
 	private void persist(File file, ArrayList<BlueEntity<T>> entites) throws BlueDbException {
 		if (entites.isEmpty()) {
 			file.delete();

@@ -14,11 +14,11 @@ import io.bluedb.disk.serialization.BlueSerializer;
 
 public class FileManager {
 	private final BlueSerializer serializer;
-	private final LatchManager<Path> lockManager;
+	private final LockManager<Path> lockManager;
 
 	public FileManager(BlueSerializer serializer) {
 		this.serializer = serializer;
-		lockManager = new LatchManager<Path>(); 
+		lockManager = new LockManager<Path>(); 
 	}
 
 	public List<File> listFiles(Path path, String suffix) {
@@ -40,20 +40,20 @@ public class FileManager {
 
 	public void saveObject(Path path, Object o) throws BlueDbException {
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		lockManager.requestLatchFor(path);
+		lockManager.acquire(path);
 		try {
 			writeBytes(path, bytes);
 		} finally {
-			lockManager.releaseLatch(path);
+			lockManager.release(path);
 		}
 	}
 
 	private byte[] getLatchAndReadBytes(Path path) throws BlueDbException {
-		lockManager.requestLatchFor(path);
+		lockManager.acquire(path);
 		try {
 			return readBytes(path);
 		} finally {
-			lockManager.releaseLatch(path);
+			lockManager.release(path);
 		}
 	}
 

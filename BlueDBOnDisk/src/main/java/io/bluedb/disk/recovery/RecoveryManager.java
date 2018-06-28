@@ -64,10 +64,7 @@ public class RecoveryManager<T extends Serializable> {
 		String filename = getFileName(change);
 		Path path = Paths.get(recoveryPath.toString(), filename);
 		File file = new File(path.toString());
-		if (!file.delete()) {
-			// TODO do we want to throw an exception
-			throw new BlueDbException("failed to remove pending change from recovery folder: " + change);
-		}
+		file.delete();
 	}
 
 	public static String getFileName(PendingChange<?> change) {
