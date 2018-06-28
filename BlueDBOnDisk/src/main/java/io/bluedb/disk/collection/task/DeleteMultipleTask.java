@@ -2,14 +2,14 @@ package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
-import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.BlueEntity;
 
 public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 	private final BlueCollectionImpl<T> collection;
@@ -27,26 +27,19 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 	@Override
 	public void run() {
 		try {
-			List<BlueKey> keys = collection.findMatches(minGroupingValue, maxGroupingValue, conditions).stream()
-					.map((e) -> e.getKey())
-					.collect(Collectors.toList());
-			for (BlueKey key: keys) {
+			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+			List<BlueEntity<T>> entities = collection.findMatches(minGroupingValue, maxGroupingValue, conditions);
+			for (BlueEntity<T> entity: entities) {
+				BlueKey key = entity.getKey();
 				PendingChange<T> change = PendingChange.createDelete(key);
-				applyUpdateWithRecovery(key, change);
+				recoveryManager.saveChange(change);
+				collection.applyChange(change);
+				recoveryManager.removeChange(change);
 			}
 		} catch (BlueDbException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-
-	private void applyUpdateWithRecovery(BlueKey key, PendingChange<T> change) throws BlueDbException {
-		collection.getRecoveryManager().saveChange(change);
-		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-		for (Segment<T> segment: segments) {
-			change.applyChange(segment);
-		}
-		collection.getRecoveryManager().removeChange(change);
 	}
 
 	@Override

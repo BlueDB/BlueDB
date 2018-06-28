@@ -89,14 +89,9 @@ public class RecoveryManager<T extends Serializable> {
 
 
 	public void recover() {
-		List<PendingChange<T>> pendingChanges = getPendingChanges();
-		for (PendingChange<T> change: pendingChanges) {
-			BlueKey key = change.getKey();
-			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
+		for (PendingChange<T> change: getPendingChanges()) {
 			try {
-				for (Segment<T> segment: segments) {
-					change.applyChange(segment);
-				}
+				collection.applyChange(change);
 				removeChange(change);
 			} catch (BlueDbException e) {
 				e.printStackTrace();

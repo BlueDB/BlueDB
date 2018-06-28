@@ -1,6 +1,7 @@
 package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.bluedb.api.Condition;
@@ -11,7 +12,7 @@ import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
-import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.serialization.BlueSerializer;
 
 public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 	private final BlueCollectionImpl<T> collection;
@@ -33,22 +34,33 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 	public void run() {
 		try {
 			List<BlueEntity<T>> entities = collection.findMatches(min, max, conditions);
-			for (BlueEntity<T> entity: entities) {
-				BlueKey key = entity.getKey();
-				T value = (T) entity.getObject();
-				RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-				PendingChange<T> change = recoveryManager.saveUpdate(key, value, updater);
-				List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-				for (Segment<T> segment: segments) {
-					change.applyChange(segment);
-				}
-				collection.getRecoveryManager().removeChange(change);
-				// TODO probably make it fail before doing any updates if any update fails?
+			List<PendingChange<T>> updates = createUpdates(entities, updater);
+
+			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+			for (PendingChange<T> update: updates) {
+				recoveryManager.saveChange(update);
+				collection.applyChange(update);
+				recoveryManager.removeChange(update);
 			}
 		} catch (BlueDbException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	private List<PendingChange<T>> createUpdates(List<BlueEntity<T>> entities, Updater<T> updater) {
+		BlueSerializer serializer = collection.getSerializer();
+		
+		List<PendingChange<T>> updates = new ArrayList<>();
+		for (BlueEntity<T> entity: entities) {
+			BlueKey key = entity.getKey();
+			T oldValue = serializer.clone(entity.getObject());
+			T newValue = serializer.clone(oldValue);
+			updater.update(newValue);
+			PendingChange<T> update = PendingChange.createUpdate(key, oldValue, newValue);
+			updates.add(update);
+		}
+		return updates;
 	}
 
 	@Override

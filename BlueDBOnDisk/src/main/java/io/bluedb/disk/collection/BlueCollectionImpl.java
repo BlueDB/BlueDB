@@ -23,6 +23,7 @@ import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateTask;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
+import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
@@ -34,6 +35,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
+	private final BlueSerializer serializer;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path path;
 	private final FileManager fileManager;
@@ -42,7 +44,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	public BlueCollectionImpl(BlueDbOnDisk db, String name, Class<T> type) {
 		path = Paths.get(db.getPath().toString(), name);
 		path.toFile().mkdirs();
-		BlueSerializer serializer = new ThreadLocalFstSerializer(type);
+		serializer = new ThreadLocalFstSerializer(type);
 		fileManager = new FileManager(serializer);
 		segmentManager = new SegmentManager<T>(this);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
@@ -114,8 +116,20 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return fileManager;
 	}
 
+	public BlueSerializer getSerializer() {
+		return serializer;
+	}
+
 	public void shutdown() {
 		executor.shutdown();
+	}
+
+	public void applyChange(PendingChange<T> change) throws BlueDbException {
+		BlueKey key = change.getKey();
+		List<Segment<T>> segments = segmentManager.getAllSegments(key);
+		for (Segment<T> segment: segments) {
+			change.applyChange(segment);
+		}
 	}
 
 	public void executeTask(Runnable task) throws BlueDbException{
