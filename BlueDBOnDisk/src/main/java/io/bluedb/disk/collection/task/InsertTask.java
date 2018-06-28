@@ -1,15 +1,15 @@
 package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
-import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
-import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.serialization.BlueSerializer;
 
-public class InsertTask<T extends Serializable> implements Runnable {
+public class InsertTask<T extends Serializable> extends QueryTask {
 
 	private final BlueCollectionImpl<T> collection;
 	private final BlueKey key;
@@ -22,22 +22,20 @@ public class InsertTask<T extends Serializable> implements Runnable {
 	}
 
 	@Override
-	public void run() {
-		try {
-			if (collection.contains(key)) {
-				throw new DuplicateKeyException("key already exists: " + key);
-			}
-			PendingChange<T> change = collection.getRecoveryManager().saveInsert(key, value);
-			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-			for (Segment<T> segment: segments) {
-				change.applyChange(segment);
-			}
-			collection.getRecoveryManager().removeChange(change);
-		} catch (Throwable t) {
-			// TODO rollback or try again?
-			t.printStackTrace();
-			throw new RuntimeException(); // TODO
-		} finally {
+	public void execute() throws BlueDbException {
+		BlueSerializer serializer = collection.getSerializer();
+		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+		if (collection.contains(key)) {
+			throw new DuplicateKeyException("key already exists", key);
 		}
+		PendingChange<T> change = PendingChange.createInsert(key, value, serializer);
+		recoveryManager.saveChange(change);
+		collection.applyChange(change);
+		recoveryManager.removeChange(change);
+	}
+
+	@Override
+	public String toString() {
+		return "<InsertTask for key " + key + " and value " + value + ">";
 	}
 }

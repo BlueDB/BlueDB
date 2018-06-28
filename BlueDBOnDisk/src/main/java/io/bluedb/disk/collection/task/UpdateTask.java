@@ -1,16 +1,15 @@
 package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
-import java.util.List;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.serialization.BlueSerializer;
 
-public class UpdateTask<T extends Serializable> implements Runnable {
+public class UpdateTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionImpl<T> collection;
 	private final BlueKey key;
 	private final Updater<T> updater;
@@ -22,19 +21,18 @@ public class UpdateTask<T extends Serializable> implements Runnable {
 	}
 
 	@Override
-	public void run() {
-		try {
-			T value = collection.get(key);
-			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-			PendingChange<T> change = recoveryManager.saveUpdate(key, value, updater);
-			List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-			for (Segment<T> segment: segments) {
-				change.applyChange(segment);
-			}
-			collection.getRecoveryManager().removeChange(change);
-		} catch (BlueDbException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void execute() throws BlueDbException {
+		BlueSerializer serializer = collection.getSerializer();
+		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+		T value = collection.get(key);
+		PendingChange<T> change = PendingChange.createUpdate(key, value, updater, serializer);
+		recoveryManager.saveChange(change);
+		collection.applyChange(change);
+		recoveryManager.removeChange(change);
+	}
+
+	@Override
+	public String toString() {
+		return "<UpdateTask for key " + key + ">";
 	}
 }

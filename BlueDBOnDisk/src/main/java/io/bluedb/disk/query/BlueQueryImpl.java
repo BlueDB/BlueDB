@@ -4,11 +4,14 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.task.DeleteMultipleTask;
+import io.bluedb.disk.collection.task.UpdateMultipleTask;
 
 public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
@@ -55,7 +58,10 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public List<T> getList() throws BlueDbException {
-		return collection.getList(minTime, maxTime, objectConditions);
+		return collection.findMatches(minTime, maxTime, objectConditions)
+				.stream()
+				.map((e) -> e.getObject())
+				.collect(Collectors.toList());
 	}
 
 	@Override
@@ -65,12 +71,14 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public void delete() throws BlueDbException {
-		collection.deleteAll(minTime, maxTime, objectConditions);
+		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, minTime, maxTime, objectConditions);
+		collection.executeTask(deleteAllTask);
 	}
 
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
-		collection.updateAll(minTime, maxTime, objectConditions, updater);
+		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, minTime, maxTime, objectConditions, updater);
+		collection.executeTask(updateMultipleTask);
 	}
 
 	@Override
