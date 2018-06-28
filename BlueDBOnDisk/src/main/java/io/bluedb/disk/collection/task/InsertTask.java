@@ -40,4 +40,9 @@ public class InsertTask<T extends Serializable> implements Runnable {
 		} finally {
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "<InsertTask for key " + key + " and value " + value + ">";
+	}
 }

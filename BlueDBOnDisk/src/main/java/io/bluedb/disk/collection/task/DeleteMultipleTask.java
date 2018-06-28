@@ -38,4 +38,9 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 		}
 		collection.getRecoveryManager().removeChange(change);
 	}
+
+	@Override
+	public String toString() {
+		return "<DeleteMultipleTask with " + keys.size() + ">";
+	}
 }

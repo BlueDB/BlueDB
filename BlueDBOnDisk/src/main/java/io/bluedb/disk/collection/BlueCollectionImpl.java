@@ -75,61 +75,31 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		Runnable insertTask = new InsertTask<T>(this, key, value);
-		Future<?> future = executor.submit(insertTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("insert failed for key " + key.toString(), e);
-		}
+		executeTask(insertTask);
 	}
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
 		Runnable updateTask = new UpdateTask<T>(this, key, updater);
-		Future<?> future = executor.submit(updateTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("update failed for key " + key.toString(), e);
-		}
+		executeTask(updateTask);
 	}
 
 	@Override
 	public void delete(BlueKey key) throws BlueDbException {
 		Runnable deleteTask = new DeleteTask<T>(this, key);
-		Future<?> future = executor.submit(deleteTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("delete failed for key " + key.toString(), e);
-		}
+		executeTask(deleteTask);
 	}
 
 	public void updateAll(long minTime, long maxTime, List<Condition<T>> conditions, Updater<T> updater) throws BlueDbException {
 		List<BlueEntity<T>> entities = findMatches(minTime, maxTime, conditions);
 		Runnable updateTask = new UpdateMultipleTask<T>(this, entities, updater);
-		Future<?> future = executor.submit(updateTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("update query failed", e);
-		}
+		executeTask(updateTask);
 	}
 
 	public void deleteAll(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueKey> keys = findMatches(minTime, maxTime, conditions).stream().map((e) -> e.getKey()).collect(Collectors.toList());
 		Runnable deleteAllTask = new DeleteMultipleTask<T>(this, keys);
-		Future<?> future = executor.submit(deleteAllTask);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("delete query failed", e);
-		}
+		executeTask(deleteAllTask);
 	}
 
 	private List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
@@ -165,5 +135,15 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	public void shutdown() {
 		executor.shutdown();
+	}
+
+	private void executeTask(Runnable task) throws BlueDbException{
+		Future<?> future = executor.submit(task);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("BlueDB task failed " + task.toString(), e);
+		}
 	}
 }

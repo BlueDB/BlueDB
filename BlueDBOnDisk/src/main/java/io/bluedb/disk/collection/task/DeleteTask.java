@@ -33,4 +33,9 @@ public class DeleteTask<T extends Serializable> implements Runnable {
 		}
 
 	}
+
+	@Override
+	public String toString() {
+		return "<DeleteTask for key " + key + ">";
+	}
 }

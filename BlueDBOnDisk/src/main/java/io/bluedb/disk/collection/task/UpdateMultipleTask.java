@@ -42,4 +42,9 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "<UpdateMultipleTask for " + entities.size() + " keys>";
+	}
 }
