@@ -7,7 +7,6 @@ import java.util.List;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
@@ -53,11 +52,7 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 		
 		List<PendingChange<T>> updates = new ArrayList<>();
 		for (BlueEntity<T> entity: entities) {
-			BlueKey key = entity.getKey();
-			T oldValue = serializer.clone(entity.getObject());
-			T newValue = serializer.clone(oldValue);
-			updater.update(newValue);
-			PendingChange<T> update = PendingChange.createUpdate(key, oldValue, newValue);
+			PendingChange<T> update = PendingChange.createUpdate(entity, updater, serializer);
 			updates.add(update);
 		}
 		return updates;

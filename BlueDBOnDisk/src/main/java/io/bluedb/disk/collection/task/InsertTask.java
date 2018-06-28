@@ -6,6 +6,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.serialization.BlueSerializer;
 
 public class InsertTask<T extends Serializable> implements Runnable {
 
@@ -22,11 +23,13 @@ public class InsertTask<T extends Serializable> implements Runnable {
 	@Override
 	public void run() {
 		try {
+			BlueSerializer serializer = collection.getSerializer();
 			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 			if (collection.contains(key)) {
 				throw new DuplicateKeyException("key already exists: " + key);
 			}
-			PendingChange<T> change = recoveryManager.saveInsert(key, value);
+			PendingChange<T> change = PendingChange.createInsert(key, value, serializer);
+			recoveryManager.saveChange(change);
 			collection.applyChange(change);
 			recoveryManager.removeChange(change);
 		} catch (Throwable t) {

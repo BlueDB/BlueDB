@@ -20,7 +20,7 @@ public class DeleteTask<T extends Serializable> implements Runnable {
 		try {
 			RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 			PendingChange<T> change = PendingChange.createDelete(key);
-			recoveryManager.saveDelete(key);
+			recoveryManager.saveChange(change);
 			collection.applyChange(change);
 			recoveryManager.removeChange(change);
 		} catch (Throwable t) {

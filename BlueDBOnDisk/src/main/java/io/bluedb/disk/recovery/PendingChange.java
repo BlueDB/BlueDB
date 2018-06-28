@@ -1,10 +1,12 @@
 package io.bluedb.disk.recovery;
 
 import java.io.Serializable;
-
+import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.serialization.BlueSerializer;
 
 public class PendingChange<T extends Serializable> implements Serializable {
 
@@ -26,11 +28,21 @@ public class PendingChange<T extends Serializable> implements Serializable {
 		return new PendingChange<X>(key, null, null);
 	}
 
-	public static <T extends Serializable> PendingChange<T> createInsert(BlueKey key, T newValue){
+	public static <T extends Serializable> PendingChange<T> createInsert(BlueKey key, T value, BlueSerializer serializer){
+		T newValue = serializer.clone(value);
 		return new PendingChange<T>(key, null, newValue);
 	}
 
-	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T oldValue, T newValue){
+	public static <T extends Serializable> PendingChange<T> createUpdate(BlueEntity<T> entity, Updater<T> updater, BlueSerializer serializer){
+		BlueKey key = entity.getKey();
+		T value = entity.getObject();
+		return createUpdate(key, value, updater, serializer);
+	}
+
+	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T value, Updater<T> updater, BlueSerializer serializer){
+		T oldValue = serializer.clone(value);
+		T newValue = serializer.clone(oldValue);
+		updater.update(newValue);
 		return new PendingChange<T>(key, oldValue, newValue);
 	}
 
