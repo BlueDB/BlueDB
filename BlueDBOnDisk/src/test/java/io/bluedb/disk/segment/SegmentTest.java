@@ -269,7 +269,28 @@ public class SegmentTest extends TestCase {
 		}
 		cleanup(segment);
 	}
-	
+
+	@Test
+	public void testToString() {
+		Segment<TestValue> segment = createSegment();
+		assertTrue(segment.toString().contains(segment.getPath().toString()));
+		assertTrue(segment.toString().contains(segment.getClass().getSimpleName()));
+	}
+
+	@Test
+	public void testEquals() {
+		Segment<TestValue> segment1 = createSegment(1);
+		Segment<TestValue> segment1copy = createSegment(1);
+		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
+		Segment<TestValue> segmentNullPath = new Segment(null, null);
+		assertEquals(segment1, segment1copy);
+		assertFalse(segment1.equals(segmentMax));
+		assertFalse(segment1.equals(null));
+		assertFalse(segmentNullPath.equals(segment1));
+		assertFalse(segment1.equals(segmentNullPath));
+		assertFalse(segment1.equals("this is a String"));
+	}
+
 	private TestValue createValue(String name){
 		return new TestValue(name);
 	}
