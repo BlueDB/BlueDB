@@ -51,6 +51,7 @@ public class DeleteMultipleTask<T extends Serializable> implements Runnable {
 
 	@Override
 	public String toString() {
-		return "<DeleteMultipleTask (" + minGroupingValue + ", " + maxGroupingValue + ") with " + conditions.size() + " conditions>";
+		return "<DeleteMultipleTask [" + minGroupingValue + ", " + maxGroupingValue + "] with " + conditions.size() + " conditions>";
+		return "<DeleteMultipleTask [" + minGroupingValue + ", " + maxGroupingValue + "] with " + conditions.size() + " conditions>";
 	}
 }

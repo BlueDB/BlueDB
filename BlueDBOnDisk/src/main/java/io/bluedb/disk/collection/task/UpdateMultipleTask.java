@@ -53,6 +53,6 @@ public class UpdateMultipleTask<T extends Serializable> implements Runnable {
 
 	@Override
 	public String toString() {
-		return "<UpdateMultipleTask (" + min + ", " + max + ") with " + conditions.size() + " conditions>";
+		return "<UpdateMultipleTask [" + min + ", " + max + "] with " + conditions.size() + " conditions>";
 	}
 }
