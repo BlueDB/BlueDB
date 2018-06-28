@@ -1,18 +1,33 @@
 package io.bluedb.disk.collection;
 
-import static org.junit.Assert.*;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import io.bluedb.api.BlueDb;
+import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.StringKey;
+import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbOnDiskBuilder;
+import io.bluedb.disk.TestValue;
+import junit.framework.TestCase;
 
-public class BlueCollectionImplTest {
+public class BlueCollectionImplTest extends TestCase {
 
-//	@Before
-//	public void setUp() throws Exception {}
-//
-//	@After
-//	public void tearDown() throws Exception {}
-//
+	BlueDb db;
+	BlueCollectionImpl<TestValue> collection;
+
+	@Override
+	protected void setUp() throws Exception {
+		super.setUp();
+		db = new BlueDbOnDiskBuilder().build();
+		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "testing");
+		collection.query().delete();
+	}
+
+	@Override
+	protected void tearDown() throws Exception {
+		collection.query().delete();
+	}
 
 	@Test
 	public void testQuery() {
@@ -40,6 +55,17 @@ public class BlueCollectionImplTest {
 	}
 
 	@Test
+	public void test_update_invalid() {
+		TestValue value = new TestValue("Joe", 0);
+		BlueKey key = insert(1, value);
+		try {
+			getCollection().update(key, (v) -> v.doSomethingNaughty());
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
 	public void testDelete() {
 		// TODO
 	}
@@ -50,8 +76,14 @@ public class BlueCollectionImplTest {
 	}
 
 	@Test
-	public void testUpdateAll() {
-		// TODO
+	public void test_updateAll_invalid() {
+		TestValue value = new TestValue("Joe", 0);
+		BlueKey key = insert(1, value);
+		try {
+			getCollection().query().update((v) -> v.doSomethingNaughty());
+			fail();
+		} catch (BlueDbException e) {
+		}
 	}
 
 	@Test
@@ -89,4 +121,32 @@ public class BlueCollectionImplTest {
 		// TODO
 	}
 
+	private BlueKey insert(long time, TestValue value) {
+		BlueKey key = createTimeKey(time, value);
+		insert(key, value);
+		return key;
+	}
+
+	private void insert(BlueKey key, TestValue value) {
+		try {
+			getCollection().insert(key, value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	private TimeKey createTimeFrameKey(long start, long end, TestValue obj) {
+		StringKey stringKey = new StringKey(obj.getName());
+		return new TimeFrameKey(stringKey, start, end);
+	}
+
+	private TimeKey createTimeKey(long time, TestValue obj) {
+		StringKey stringKey = new StringKey(obj.getName());
+		return new TimeKey(stringKey, time);
+	}
+
+	private BlueCollectionImpl<TestValue> getCollection() {
+		return collection;
+	}
 }

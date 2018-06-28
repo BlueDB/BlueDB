@@ -47,7 +47,17 @@ public class BlueDbOnDiskTest extends TestCase {
 
 		assertFalse("Directory still exists", Files.exists(tempDir));
 	}
-	
+
+	@Test
+	public void test_shutdown() {
+		try {
+			db.shutdown();
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
 	@Test
 	public void testInvalidTypeOnExistingCollection() {
 		insert(10, new TestValue("Bob"));

@@ -13,7 +13,7 @@ public class UpdateTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionImpl<T> collection;
 	private final BlueKey key;
 	private final Updater<T> updater;
-	
+
 	public UpdateTask(BlueCollectionImpl<T> collection, BlueKey key, Updater<T> updater) {
 		this.collection = collection;
 		this.key = key;
@@ -25,7 +25,13 @@ public class UpdateTask<T extends Serializable> extends QueryTask {
 		BlueSerializer serializer = collection.getSerializer();
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 		T value = collection.get(key);
-		PendingChange<T> change = PendingChange.createUpdate(key, value, updater, serializer);
+		PendingChange<T> change;
+		try {
+			change = PendingChange.createUpdate(key, value, updater, serializer);
+		} catch(Throwable t) {
+			t.printStackTrace();
+			throw new BlueDbException("Error updating value", t);
+		}
 		recoveryManager.saveChange(change);
 		collection.applyChange(change);
 		recoveryManager.removeChange(change);
