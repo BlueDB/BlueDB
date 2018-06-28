@@ -14,7 +14,7 @@ public class BlueDbOnDisk implements BlueDb {
 
 	private final Path path;
 	
-	private final Map<String, BlueCollection<?>> collections = new HashMap<>();
+	private final Map<String, BlueCollectionImpl<? extends Serializable>> collections = new HashMap<>();
 	
 	BlueDbOnDisk(Path path, Class<?>...registeredSerializableClasses) {
 		this.path = path;
@@ -23,13 +23,14 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
 		synchronized (collections) {
-			String key = type.getName() + "-" + name;
-			@SuppressWarnings("unchecked")
-			BlueCollection<T> collection = (BlueCollection<T>) collections.get(key);
+			BlueCollectionImpl<T> collection = (BlueCollectionImpl<T>) collections.get(name);
 			if(collection == null) {
 				collection = new BlueCollectionImpl<>(this, name, type);
-				collections.put(key, collection);
+				collections.put(name, collection);
+			} else if(!collection.getType().equals(type)) {
+				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + type + "]");
 			}
+				
 			return collection;
 		}
 	}
@@ -45,4 +46,5 @@ public class BlueDbOnDisk implements BlueDb {
 	public Path getPath() {
 		return path;
 	}
+	
 }

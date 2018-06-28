@@ -2,7 +2,11 @@ package io.bluedb.disk;
 
 import static org.junit.Assert.assertNotEquals;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,19 +24,42 @@ import junit.framework.TestCase;
 
 public class BlueDbOnDiskTest extends TestCase {
 
-	BlueDb db;
-	BlueCollection<TestValue> collection;
+	private Path tempDir;
+	private BlueDb db;
+	private BlueCollection<TestValue> collection;
 	
 	@Override
 	protected void setUp() throws Exception {
-		super.setUp();
-		db = new BlueDbOnDiskBuilder().build();
+		tempDir = Files.createTempDirectory("BlueDbOnDiskTest");
+		db = new BlueDbOnDiskBuilder()
+				.setPath(tempDir)
+				.setRegisteredClasses(TestValue.class)
+				.build();
 		collection = db.getCollection(TestValue.class, "testing");
+	}
+	
+	@Override
+	protected void tearDown() throws Exception {
+		Files.walk(tempDir)
+			.sorted(Comparator.reverseOrder())
+			.map(Path::toFile)
+			.forEach(File::delete);
+
+		assertFalse("Directory still exists", Files.exists(tempDir));
+	}
+	
+	@Test
+	public void testInvalidTypeOnExistingCollection() {
+		insert(10, new TestValue("Bob"));
+		try {
+			db.getCollection(TestValue2.class, "testing");
+			fail();
+		} catch(BlueDbException e) {
+		}
 	}
 	
 	@Test
 	public void testInsert() {
-		cleanup();
 		TestValue value = new TestValue("Joe");
 		BlueKey key = createTimeKey(10, value);
 		insert(key, value);
@@ -42,12 +69,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			fail();
 		} catch (BlueDbException e) {
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testGet() {
-		cleanup();
 		TestValue value = new TestValue("Joe");
 		TestValue differentValue = new TestValue("Bob");
 		BlueKey key = createTimeKey(10, value);
@@ -65,12 +90,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testUpdate() {
-		cleanup();
 		BlueKey key = insert(10, new TestValue("Joe", 0));
 		try {
 			assertCupcakes(key, 0);
@@ -80,7 +103,6 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -95,7 +117,6 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -110,7 +131,6 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
@@ -130,12 +150,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testBeforeTimeFrame() {
-		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -155,12 +173,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testBeforeTime() {
-		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -180,12 +196,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testBeforeOrAtTimeFrame() {
-		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -209,12 +223,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testBeforeOrAtTime() {
-		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -236,12 +248,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testAfterTimeFrame() {
-		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -265,12 +275,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testAfterTime() {
-		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -290,12 +298,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testAfterOrAtTimeFrame() {
-		cleanup();
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -323,12 +329,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testAfterOrAtTime() {
-		cleanup();
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -350,12 +354,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testBetween() {
-		cleanup();
 		TestValue valueAt2 = new TestValue("Joe");
 		TestValue valueAt3 = new TestValue("Bob");
 		insert(2, valueAt2);
@@ -390,12 +392,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	@Test
 	public void testGetList() {
-		cleanup();
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insert(1, valueJoe);
@@ -411,12 +411,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 	
 	@Test
 	public void testGetIterator() {
-		cleanup();
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insert(1, valueJoe);
@@ -433,12 +431,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 	
 	@Test
 	public void testQueryUpdate() {
-		cleanup();
 		BlueKey keyJoe   = insert(1, new TestValue("Joe", 0));
 		BlueKey keyBob   = insert(2, new TestValue("Bob", 0));
 		BlueKey keyJosey = insert(2,  new TestValue("Josey", 0));
@@ -468,12 +464,10 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 	
 	@Test
 	public void testQueryDelete() {
-		cleanup();
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		TestValue valueJosey = new TestValue("Josey");
@@ -505,7 +499,6 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup();
 	}
 
 	private void assertCupcakes(BlueKey key, int cupcakes) {
@@ -574,14 +567,5 @@ public class BlueDbOnDiskTest extends TestCase {
 	private TimeKey createTimeKey(long time, TestValue obj) {
 		StringKey stringKey = new StringKey(obj.getName());
 		return new TimeKey(stringKey, time);
-	}
-
-	private void cleanup() {
-		try {
-			getCollection().query().delete();
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
 	}
 }

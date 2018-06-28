@@ -35,6 +35,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
+	private final Class<T> type;
 	private final BlueSerializer serializer;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path path;
@@ -42,6 +43,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	private final SegmentManager<T> segmentManager;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, String name, Class<T> type) {
+		this.type = type;
 		path = Paths.get(db.getPath().toString(), name);
 		path.toFile().mkdirs();
 		serializer = new ThreadLocalFstSerializer(type);
@@ -140,5 +142,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 			e.printStackTrace();
 			throw new BlueDbException("BlueDB task failed " + task.toString(), e);
 		}
+	}
+
+	public Class<T> getType() {
+		return type;
 	}
 }
