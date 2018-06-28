@@ -42,8 +42,6 @@ public class PendingChange<T extends Serializable> implements Serializable {
 			segment.delete(key);
 		} else if (isUpdate()) {
 			segment.put(key, newValue);
-		} else {
-			throw new BlueDbException("maleformed PendingChange: " + this.toString());
 		}
 	}
 

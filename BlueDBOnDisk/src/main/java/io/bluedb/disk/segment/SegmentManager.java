@@ -83,16 +83,6 @@ public class SegmentManager<T extends Serializable> {
 		return paths;
 	}
 
-	protected List<File> getExistingSegmentFiles(BlueKey key) {
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
-			return getExistingSegmentFiles(timeFrameKey.getStartTime(), timeFrameKey.getEndTime());
-		} else {
-			return getExistingSegmentFiles(key.getGroupingNumber(), key.getGroupingNumber());
-		}
-		
-	}
-
 	protected List<File> getExistingSegmentFiles(long minValue, long maxValue) {
 		Deque<File> foldersToSearch = new ArrayDeque<>();
 		File collectionFolder = collection.getPath().toFile();
