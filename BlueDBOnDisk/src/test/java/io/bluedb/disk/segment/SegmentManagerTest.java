@@ -16,6 +16,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import junit.framework.TestCase;
@@ -32,15 +33,6 @@ public class SegmentManagerTest extends TestCase {
 		db = new BlueDbOnDiskBuilder().build();
 		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "test_segment_manager");
 		segmentManager = new SegmentManager<TestValue>(collection);
-	}
-
-	@Test
-	public void test_roundDownToMultiple() {
-		assertEquals(0, SegmentManager.roundDownToMultiple(0, 2));  // test zero
-		assertEquals(4, SegmentManager.roundDownToMultiple(5, 2));  // test greater than a multiple
-		assertEquals(0, SegmentManager.roundDownToMultiple(41, 42));  // test equal to a multiple
-		assertEquals(42, SegmentManager.roundDownToMultiple(42, 42));  // test equal to a multiple
-		// TODO test at Long.MAX_VALUE, Long.MIN_VALUE
 	}
 
 	@Test
