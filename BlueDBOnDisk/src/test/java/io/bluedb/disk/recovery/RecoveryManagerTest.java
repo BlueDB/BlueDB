@@ -1,5 +1,11 @@
 package io.bluedb.disk.recovery;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.Updater;
@@ -10,6 +16,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import junit.framework.TestCase;
@@ -267,6 +274,24 @@ public class RecoveryManagerTest extends TestCase {
 		}
 	}
 
+	@Test
+	public void test_recover_invalidPendingChange() {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+
+		Path pathForGarbage = Paths.get(COLLECTION.getPath().toString(), RecoveryManager.SUBFOLDER, "123" + RecoveryManager.SUFFIX);
+		byte[] bytes = new byte[]{1, 2, 3};
+		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
+			fos.write(bytes);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail();
+		}
+
+		pathForGarbage.toFile().delete();
+		recoveryManager.recover();
+	}
 	private TestValue createValue(String name, int cupcakes){
 		return new TestValue(name, cupcakes);
 	}
