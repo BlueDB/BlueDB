@@ -4,8 +4,8 @@ import java.io.Serializable;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class PendingChange<T extends Serializable> implements Serializable {
@@ -35,7 +35,7 @@ public class PendingChange<T extends Serializable> implements Serializable {
 
 	public static <T extends Serializable> PendingChange<T> createUpdate(BlueEntity<T> entity, Updater<T> updater, BlueSerializer serializer){
 		BlueKey key = entity.getKey();
-		T value = entity.getObject();
+		T value = entity.getValue();
 		return createUpdate(key, value, updater, serializer);
 	}
 

@@ -25,9 +25,9 @@ import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.BlueEntity;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
+import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
@@ -93,7 +93,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		for (Segment<T> segment: segments) {
 			List<BlueEntity<T>> entitesInSegment = segment.getRange(minTime, maxTime);
 			for (BlueEntity<T> entity: entitesInSegment) {
-				T value = entity.getObject();
+				T value = entity.getValue();
 				if(Blutils.meetsConditions(conditions, value)) {
 					results.add(entity);
 				}
