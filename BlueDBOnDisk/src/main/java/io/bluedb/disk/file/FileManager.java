@@ -41,11 +41,11 @@ public class FileManager {
 
 	public void saveObject(Path path, Object o) throws BlueDbException {
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		lockManager.acquire(path);
+		lockManager.acquireWriteLock(path);
 		try {
 			writeBytes(path, bytes);
 		} finally {
-			lockManager.release(path);
+			lockManager.releaseWriteLock(path);
 		}
 	}
 
@@ -58,11 +58,11 @@ public class FileManager {
 	}
 
 	private byte[] getLatchAndReadBytes(Path path) throws BlueDbException {
-		lockManager.acquire(path);
+		lockManager.acquireReadLock(path);
 		try {
 			return readBytes(path);
 		} finally {
-			lockManager.release(path);
+			lockManager.releaseReadLock(path);
 		}
 	}
 
