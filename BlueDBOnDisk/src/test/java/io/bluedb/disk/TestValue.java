@@ -7,7 +7,7 @@ public class TestValue implements Serializable {
 
 	private String name;
 	private int cupcakes = 0;
-	
+
 	public TestValue(String name) {
 		this.name = name;
 	}
@@ -35,6 +35,10 @@ public class TestValue implements Serializable {
 
 	public void setCupcakes(int cupcakes) {
 		this.cupcakes = cupcakes;
+	}
+
+	public void doSomethingNaughty() {
+		throw new RuntimeException("you shall not pass!");
 	}
 
 	@Override

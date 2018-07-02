@@ -9,7 +9,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.BlueEntity;
+import io.bluedb.disk.serialization.BlueEntity;
 
 public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionImpl<T> collection;

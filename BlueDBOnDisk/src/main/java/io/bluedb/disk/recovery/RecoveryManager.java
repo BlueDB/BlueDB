@@ -14,7 +14,8 @@ import io.bluedb.disk.serialization.BlueSerializer;
 
 public class RecoveryManager<T extends Serializable> {
 	
-	private static String SUFFIX = ".chg";
+	protected static String SUBFOLDER = ".pending";
+	protected static String SUFFIX = ".chg";
 
 	private final BlueCollectionImpl<T> collection;
 	private final Path recoveryPath;
@@ -23,7 +24,7 @@ public class RecoveryManager<T extends Serializable> {
 	public RecoveryManager(BlueCollectionImpl<T> collection, FileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
 		this.fileManager = fileManager;
-		this.recoveryPath = Paths.get(collection.getPath().toString(), ".pending");
+		this.recoveryPath = Paths.get(collection.getPath().toString(), SUBFOLDER);
 	}
 
 	public void saveChange(PendingChange<T> change) throws BlueDbException {
@@ -51,9 +52,9 @@ public class RecoveryManager<T extends Serializable> {
 				@SuppressWarnings("unchecked")
 				PendingChange<T> change = (PendingChange<T>) fileManager.loadObject(file.toPath());
 				changes.add(change);
-			} catch (BlueDbException e) {
-				e.printStackTrace();
-				file.delete();
+			} catch (Throwable t) {
+				t.printStackTrace();
+				// ignore broken files for now
 			}
 		}
 		return changes;

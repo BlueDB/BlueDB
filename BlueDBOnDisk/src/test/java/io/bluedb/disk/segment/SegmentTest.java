@@ -13,6 +13,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.serialization.BlueEntity;
 import junit.framework.TestCase;
 
 public class SegmentTest extends TestCase {
@@ -278,17 +279,28 @@ public class SegmentTest extends TestCase {
 	}
 
 	@Test
-	public void testEquals() {
+	public void test_equals() {
 		Segment<TestValue> segment1 = createSegment(1);
 		Segment<TestValue> segment1copy = createSegment(1);
 		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
-		Segment<TestValue> segmentNullPath = new Segment(null, null);
+		Segment<TestValue> segmentNullPath = new Segment<TestValue>(null, null);
 		assertEquals(segment1, segment1copy);
 		assertFalse(segment1.equals(segmentMax));
 		assertFalse(segment1.equals(null));
 		assertFalse(segmentNullPath.equals(segment1));
 		assertFalse(segment1.equals(segmentNullPath));
 		assertFalse(segment1.equals("this is a String"));
+	}
+
+	@Test
+	public void test_hashCode() {
+		Segment<TestValue> segment1 = createSegment(1);
+		Segment<TestValue> segment1copy = createSegment(1);
+		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
+		Segment<TestValue> segmentNullPath = new Segment<TestValue>(null, null);
+		assertEquals(segment1.hashCode(), segment1copy.hashCode());
+		assertTrue(segment1.hashCode() != segmentMax.hashCode());
+		assertTrue(segment1.hashCode() != segmentNullPath.hashCode());
 	}
 
 	private TestValue createValue(String name){
@@ -321,7 +333,7 @@ public class SegmentTest extends TestCase {
 	private List<TestValue> extractValues(List<BlueEntity<TestValue>> entities) {
 		List<TestValue> values = new ArrayList<>();
 		for (BlueEntity<TestValue> entity: entities) {
-			values.add(entity.getObject());
+			values.add(entity.getValue());
 		}
 		return values;
 	}
