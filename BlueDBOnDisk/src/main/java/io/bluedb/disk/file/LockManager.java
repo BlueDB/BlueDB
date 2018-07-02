@@ -11,7 +11,7 @@ public class LockManager <T> {
 		locks = new HashMap<>();
 	}
 
-	public void acquireReadLock(T key) {
+	public BlueReadLock<T> acquireReadLock(T key) {
 		boolean success = false;
 		ReentrantReadWriteLock lock;
 		while (!success) {
@@ -26,6 +26,7 @@ public class LockManager <T> {
 				waitForLock(lock);
 			}
 		}
+		return new BlueReadLock<T>(this, key);
 	}
 
 	public void releaseReadLock(T key) {
@@ -41,7 +42,7 @@ public class LockManager <T> {
 		}
 	}
 
-	public void acquireWriteLock(T key) {
+	public BlueWriteLock<T> acquireWriteLock(T key) {
 		ReentrantReadWriteLock myLock = new ReentrantReadWriteLock();
 		myLock.writeLock().lock();
 		ReentrantReadWriteLock lockInMap = tryInsertMyLock(key, myLock);
@@ -49,6 +50,7 @@ public class LockManager <T> {
 			waitForLock(lockInMap);
 			lockInMap = tryInsertMyLock(key, myLock);
 		}
+		return new BlueWriteLock<T>(this, key);
 	}
 
 	public void releaseWriteLock(T key) {
