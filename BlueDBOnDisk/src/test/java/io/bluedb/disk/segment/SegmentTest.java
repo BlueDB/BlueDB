@@ -13,6 +13,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.serialization.BlueEntity;
 import junit.framework.TestCase;
 
 public class SegmentTest extends TestCase {
@@ -332,7 +333,7 @@ public class SegmentTest extends TestCase {
 	private List<TestValue> extractValues(List<BlueEntity<TestValue>> entities) {
 		List<TestValue> values = new ArrayList<>();
 		for (BlueEntity<TestValue> entity: entities) {
-			values.add(entity.getObject());
+			values.add(entity.getValue());
 		}
 		return values;
 	}

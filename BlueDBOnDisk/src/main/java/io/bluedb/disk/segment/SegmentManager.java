@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.file.FileManager;
 
@@ -138,12 +139,8 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected static String getRangeFileName(long groupingValue, long multiple) {
-		long low = roundDownToMultiple(groupingValue, multiple);
+		long low = Blutils.roundDownToMultiple(groupingValue, multiple);
 		long high = Math.min(Long.MAX_VALUE - multiple + 1, low) + multiple - 1;  // prevent overflow
 		return String.valueOf(low) + "_" + String.valueOf(high);
-	}
-
-	protected static long roundDownToMultiple(long value, long multiple) {
-		return value - (value % multiple);
 	}
 }
