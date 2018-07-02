@@ -10,6 +10,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
 
@@ -64,7 +65,7 @@ public class Segment <T extends Serializable> {
 		List<T> results = new ArrayList<>();
 		for (File file: filesInFolder) {
 			for (BlueEntity<T> entity: fetch(file)) {
-				results.add(entity.getObject());
+				results.add(entity.getValue());
 			}
 		}
 		return results;
@@ -101,8 +102,7 @@ public class Segment <T extends Serializable> {
 	private ArrayList<BlueEntity<T>> fetch(File file) throws BlueDbException {
 		if (!file.exists())
 			return new ArrayList<BlueEntity<T>>();
-		@SuppressWarnings("unchecked")
-		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
+		ArrayList<BlueEntity<T>> fileContents =  fileManager.loadList(file.toPath());
 		if (fileContents == null)
 			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
@@ -112,7 +112,7 @@ public class Segment <T extends Serializable> {
 		if (entites.isEmpty()) {
 			file.delete();
 		} else {
-			fileManager.saveObject(file.toPath(), entites);
+			fileManager.saveList(file.toPath(), entites);
 		}
 	}
 
@@ -130,7 +130,7 @@ public class Segment <T extends Serializable> {
 			BlueEntity<T> entity = entities.get(i);
 			if (entity.getKey().equals(key)) {
 				entities.remove(i);
-				return entity.getObject();
+				return entity.getValue();
 			}
 		}
 		return null;
@@ -143,7 +143,7 @@ public class Segment <T extends Serializable> {
 	protected static <T extends Serializable> T get(BlueKey key, List<BlueEntity<T>> entities) {
 		for (BlueEntity<T> entity: entities) {
 			if (entity.getKey().equals(key)) {
-				return entity.getObject();
+				return entity.getValue();
 			}
 		}
 		return null;

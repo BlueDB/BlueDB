@@ -8,7 +8,6 @@ import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.recovery.PendingChange;
-import io.bluedb.disk.segment.BlueEntity;
 
 public class FstConfigurationFactory {
 	public static FSTConfiguration createFstConfiguration(Class<?>...registeredSerializableClasses) {

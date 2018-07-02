@@ -60,7 +60,7 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	public List<T> getList() throws BlueDbException {
 		return collection.findMatches(minTime, maxTime, objectConditions)
 				.stream()
-				.map((e) -> e.getObject())
+				.map((e) -> e.getValue())
 				.collect(Collectors.toList());
 	}
 
