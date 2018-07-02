@@ -1,5 +1,6 @@
 package io.bluedb.disk.file;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,6 +28,50 @@ public class FileManagerTest  extends TestCase {
 	protected void setUp() throws Exception {
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
 		fileManager = new FileManager(serializer);
+	}
+
+	@Test
+	public void test_getOutputStream() {
+		Path path = Paths.get("test_getOutputStream");
+		String string1 = "la la la la";
+		String string2 = "1 2 3";
+		try (BlueObjectOutputStream<String> outStream = fileManager.getBlueOutputStream(path)) {
+			outStream.write(string1);
+			outStream.write(string2);
+			outStream.commit();
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			fail();
+		}
+		try (BlueObjectInputStream<String> inStream = fileManager.getBlueInputStream(path)) {
+			assertEquals(string1, inStream.next());
+			assertEquals(string2, inStream.next());
+			assertEquals("should never get here", inStream.next());
+			fail();
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		} catch (EOFException e1) {
+		} catch (IOException e2) {
+			e2.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_createTempFilePath() {
+		Path withParent = Paths.get("grandparent", "parent", "target");
+		Path tempWithParent = FileManager.createTempFilePath(withParent);
+		Path expectedTempWithParent = Paths.get("grandparent", "parent", "_tmp_target");
+		assertEquals(expectedTempWithParent, tempWithParent);
+
+		Path withoutParent = Paths.get("target");
+		Path tempWithoutParent = FileManager.createTempFilePath(withoutParent);
+		Path expectedTempWithoutParent = Paths.get("_tmp_target");
+		assertEquals(expectedTempWithoutParent, tempWithoutParent);
 	}
 
 	// TODO test multiple files and/or files with suffix not at the end
@@ -140,6 +185,41 @@ public class FileManagerTest  extends TestCase {
 		assertEquals(attemptsToOpen, successfulOpens.get());
 
 		recursiveDelete(file);
+	}
+
+	@Test
+	public void test_moveFile() {
+		Path targetFilePath = Paths.get(this.getClass().getSimpleName() + ".test_junk");
+		Path tempFilePath = FileManager.createTempFilePath(targetFilePath);
+		try {
+			FileManager.ensureDirectoryExists(tempFilePath.toFile());
+			tempFilePath.toFile().createNewFile();
+			assertTrue(tempFilePath.toFile().exists());
+			assertFalse(targetFilePath.toFile().exists());
+			fileManager.lockMoveFileUnlock(tempFilePath, targetFilePath);
+			assertFalse(tempFilePath.toFile().exists());
+			assertTrue(targetFilePath.toFile().exists());
+		} catch (IOException | BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		targetFilePath.toFile().delete();
+		tempFilePath.toFile().delete();
+	}
+
+	@Test
+	public void test_lockMoveFileUnlock() {
+		// TODO
+	}
+
+	@Test
+	public void test_loadList() {
+		// TODO
+	}
+
+	@Test
+	public void test_saveList() {
+		// TODO
 	}
 
 	private void recursiveDelete(File file) {

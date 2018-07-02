@@ -102,8 +102,7 @@ public class Segment <T extends Serializable> {
 	private ArrayList<BlueEntity<T>> fetch(File file) throws BlueDbException {
 		if (!file.exists())
 			return new ArrayList<BlueEntity<T>>();
-		@SuppressWarnings("unchecked")
-		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
+		ArrayList<BlueEntity<T>> fileContents =  fileManager.loadList(file.toPath());
 		if (fileContents == null)
 			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
@@ -113,7 +112,7 @@ public class Segment <T extends Serializable> {
 		if (entites.isEmpty()) {
 			file.delete();
 		} else {
-			fileManager.saveObject(file.toPath(), entites);
+			fileManager.saveList(file.toPath(), entites);
 		}
 	}
 
