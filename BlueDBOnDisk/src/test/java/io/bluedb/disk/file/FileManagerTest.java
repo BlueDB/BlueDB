@@ -23,16 +23,25 @@ public class FileManagerTest  extends TestCase {
 
 	BlueSerializer serializer;
 	FileManager fileManager;
+	List<File> filesAndFoldersToCleanUp;
 
 	@Override
 	protected void setUp() throws Exception {
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
 		fileManager = new FileManager(serializer);
+		filesAndFoldersToCleanUp = new ArrayList<>();
+	}
+
+	@Override
+	protected void tearDown() throws Exception {
+		for (File file: filesAndFoldersToCleanUp)
+			recursiveDelete(file);
 	}
 
 	@Test
 	public void test_getOutputStream() {
 		Path path = Paths.get("test_getOutputStream");
+		filesAndFoldersToCleanUp.add(path.toFile());
 		String string1 = "la la la la";
 		String string2 = "1 2 3";
 		try (BlueObjectOutputStream<String> outStream = fileManager.getBlueOutputStream(path)) {
@@ -93,9 +102,6 @@ public class FileManagerTest  extends TestCase {
 		List<File> filesWithSuffix = fileManager.listFiles(nonEmptyFolder.toPath(), suffix);
 		assertEquals(1, filesWithSuffix.size());
 		assertTrue(filesWithSuffix.contains(fileWithSuffix));
-		
-		recursiveDelete(emptyFolder);
-		recursiveDelete(nonEmptyFolder);
 	}
 
 	@Test
@@ -119,10 +125,6 @@ public class FileManagerTest  extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		
-		recursiveDelete(emptyFile);
-		recursiveDelete(corruptedFile);
-		recursiveDelete(fileWithValue);
 	}
 
 	@Test
@@ -130,6 +132,8 @@ public class FileManagerTest  extends TestCase {
 		TestValue value = new TestValue("joe", 1);
 		File fileWithNull = createFile("testFileWithNull");
 		File fileWithValue = new File("testFileWithValue");
+		filesAndFoldersToCleanUp.add(fileWithValue);
+		filesAndFoldersToCleanUp.add(fileWithNull);
 
 		try {
 			fileManager.saveObject(fileWithValue.toPath(), value);
@@ -143,9 +147,6 @@ public class FileManagerTest  extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-
-		recursiveDelete(fileWithNull);
-		recursiveDelete(fileWithValue);
 	}
 
 	@Test
@@ -183,14 +184,14 @@ public class FileManagerTest  extends TestCase {
 		}
 
 		assertEquals(attemptsToOpen, successfulOpens.get());
-
-		recursiveDelete(file);
 	}
 
 	@Test
 	public void test_moveFile() {
 		Path targetFilePath = Paths.get(this.getClass().getSimpleName() + ".test_junk");
 		Path tempFilePath = FileManager.createTempFilePath(targetFilePath);
+		filesAndFoldersToCleanUp.add(targetFilePath.toFile());
+		filesAndFoldersToCleanUp.add(tempFilePath.toFile());
 		try {
 			FileManager.ensureDirectoryExists(tempFilePath.toFile());
 			tempFilePath.toFile().createNewFile();
@@ -203,8 +204,6 @@ public class FileManagerTest  extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		targetFilePath.toFile().delete();
-		tempFilePath.toFile().delete();
 	}
 
 	@Test
@@ -237,6 +236,7 @@ public class FileManagerTest  extends TestCase {
 
 	private File createFile(String fileName) {
 		File file = new File(fileName);
+		filesAndFoldersToCleanUp.add(file);
 		try {
 			file.createNewFile();
 		} catch (IOException e) {
@@ -248,6 +248,7 @@ public class FileManagerTest  extends TestCase {
 
 	private File createCorruptedFile(String fileName) {
 		File file = new File(fileName);
+		filesAndFoldersToCleanUp.add(file);
 		byte[] junk = new byte[] {3, 1, 2};
 		try (FileOutputStream fos = new FileOutputStream(file)) {
 			fos.write(junk);
@@ -261,6 +262,7 @@ public class FileManagerTest  extends TestCase {
 
 	private File createFile(File parentFolder, String fileName) {
 		File file = Paths.get(parentFolder.toPath().toString(), fileName).toFile();
+		filesAndFoldersToCleanUp.add(file);
 		try {
 			file.createNewFile();
 		} catch (IOException e) {
@@ -272,6 +274,7 @@ public class FileManagerTest  extends TestCase {
 
 	private File createFileAndWriteTestValue(String pathString, TestValue value) {
 		File file = new File(pathString);
+		filesAndFoldersToCleanUp.add(file);
 		try {
 			fileManager.saveObject(file.toPath(), value);
 		} catch (BlueDbException e) {
