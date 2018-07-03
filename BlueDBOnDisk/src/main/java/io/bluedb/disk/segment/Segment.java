@@ -9,10 +9,15 @@ import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.disk.file.BlueReadLock;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.LockManager;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
+
+	private final static long SEGMENT_SIZE = SegmentManager.LEVEL_0;
+	private final static long[] ROLLUP_LEVELS = {1, 3125, SEGMENT_SIZE};
 
 	private final FileManager fileManager;
 	private final Path segmentPath;
@@ -28,17 +33,27 @@ public class Segment <T extends Serializable> {
 	}
 
 	public boolean contains(BlueKey key) throws BlueDbException {
-		File file = getFileFor(key);
-		if (!file.exists()) {
-			return false;
+		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
+			if (readLock == null ) {
+				return false;
+			}
+			List<BlueEntity<T>> entities = fetch(readLock);
+			return contains(key, entities);
 		}
-		List<BlueEntity<T>> entities = fetch(file);
-		return contains(key, entities);
 	}
 
-	public void put(BlueKey key, T value) throws BlueDbException {
-		File file = getFileFor(key);
-		ArrayList<BlueEntity<T>> entities = fetch(file);
+	public void save(BlueKey key, T value) throws BlueDbException {
+		ArrayList<BlueEntity<T>> entities = null;
+		File file;
+		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
+			if (readLock != null) {
+				entities = fetch(readLock);
+				file = readLock.getKey().toFile();
+			} else {
+				entities = new ArrayList<>();
+				file = 	getPathFor(key, 1).toFile();
+			}
+		}
 		BlueEntity<T> newEntity = new BlueEntity<T>(key, value);
 		remove(key, entities);
 		entities.add(newEntity);
@@ -46,18 +61,28 @@ public class Segment <T extends Serializable> {
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
-		File file = getFileFor(key);
-		if (file.exists()) {
-			ArrayList<BlueEntity<T>> entities = fetch(file);
-			remove(key, entities);
-			persist(file, entities);
+		ArrayList<BlueEntity<T>> entities = null;
+		File file;
+		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
+			if (readLock == null) {
+				return;
+			}
+			entities = fetch(readLock);
+			file = readLock.getKey().toFile();
 		}
+		remove(key, entities);
+		persist(file, entities);
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
-		File file = getFileFor(key);
-		ArrayList<BlueEntity<T>> entities = fetch(file);
-		return get(key, entities);
+		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
+			if (readLock == null ) {
+				return null;
+			} else {
+				ArrayList<BlueEntity<T>> entities = fetch(readLock);
+				return get(key, entities);
+			}
+		}
 	}
 
 	public List<T> getAll() throws BlueDbException {
@@ -86,24 +111,45 @@ public class Segment <T extends Serializable> {
 		return results;
 	}
 
-	protected File getFileFor(BlueKey key) {
-		return getPathFor(key).toFile();
+	protected BlueReadLock<Path> getReadLockFor(BlueKey key) {
+		LockManager<Path> lockManager = fileManager.getLockManager();
+		for (long rollupLevel: ROLLUP_LEVELS) {
+			Path path = getPathFor(key, rollupLevel);
+			BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
+			try {
+				if (lock.getKey().toFile().exists()) {
+					return lock;
+				}
+			} catch (Throwable t) { // make sure we don't hold onto the lock if there's an exception
+			}
+			lock.release();
+		}
+		return null;
 	}
 
 	protected Path getPath() {
 		return segmentPath;
 	}
 
-	private Path getPathFor(BlueKey key) {
-		String fileName = String.valueOf(key.getGroupingNumber());
+	private Path getPathFor(BlueKey key, long rollupLevel) {
+		long groupingNumber = key.getGroupingNumber();
+		String fileName = SegmentManager.getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 
 	private ArrayList<BlueEntity<T>> fetch(File file) throws BlueDbException {
-		if (!file.exists())
+		Path path = file.toPath();
+		LockManager<Path> lockManager = fileManager.getLockManager();
+		try (BlueReadLock<Path> pathReadLock = lockManager.acquireReadLock(path)) {
+			return fetch(pathReadLock);
+		}
+	}
+
+	private ArrayList<BlueEntity<T>> fetch(BlueReadLock<Path> pathLock) throws BlueDbException {
+		if (pathLock == null || !pathLock.getKey().toFile().exists()) // TODO better handling of possible exceptions
 			return new ArrayList<BlueEntity<T>>();
 		@SuppressWarnings("unchecked")
-		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(file.toPath());
+		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(pathLock);
 		if (fileContents == null)
 			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
