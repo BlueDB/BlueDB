@@ -31,22 +31,33 @@ public class FileManager {
 		return filterFilesWithSuffix(filesInFolder, suffix);
 	}
 
-	public Object loadObject(Path path) throws BlueDbException {
-		byte[] fileData = getLatchAndReadBytes(path);
+	public Object loadObject(BlueReadLock<Path> readLock) throws BlueDbException {
+		byte[] fileData = readBytes(readLock);
 		if (fileData == null || fileData.length == 0) {
 			return null;
 		}
 		return serializer.deserializeObjectFromByteArray(fileData);
 	}
 
+	public Object loadObject(Path path) throws BlueDbException {
+		try (BlueReadLock<Path> lock = lockManager.acquireReadLock(path)){
+			return loadObject(lock);
+		}
+	}
+
 	public void saveObject(Path path, Object o) throws BlueDbException {
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		BlueWriteLock<Path> lock = lockManager.acquireWriteLock(path);
-		try {
-			writeBytes(path, bytes);
-		} finally {
-			lock.release();
+		Path tmpPath = createTempFilePath(path);
+		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
+			writeBytes(tempFileLock, bytes);
 		}
+		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
+			moveFile(tmpPath, targetFileLock);
+		}
+	}
+
+	public LockManager<Path> getLockManager() {
+		return lockManager;
 	}
 
 	public static List<File> getFolderContents(File folder) {
@@ -55,15 +66,6 @@ public class FileManager {
 			return new ArrayList<>();
 		}
 		return Arrays.asList(folderContentsArray);
-	}
-
-	private byte[] getLatchAndReadBytes(Path path) throws BlueDbException {
-		BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
-		try {
-			return readBytes(path);
-		} finally {
-			lock.release();
-		}
 	}
 
 	protected static List<File> filterFilesWithSuffix(File[] files, String suffix) {
@@ -83,7 +85,33 @@ public class FileManager {
 		}
 	}
 
-	private byte[] readBytes(Path path) throws BlueDbException {
+	protected static Path createTempFilePath(Path originalPath) {
+		File parentFile = originalPath.toFile().getParentFile();
+		if (parentFile != null) {
+			return Paths.get(parentFile.toPath().toString(), "_tmp_" + originalPath.getFileName().toString());
+		} else {
+			return Paths.get("_tmp_" + originalPath.getFileName().toString());
+		}
+	}
+
+	public void lockMoveFileUnlock(Path src, Path dst) throws BlueDbException {
+		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(dst)) {
+			moveFile(src, lock);
+		}
+	}
+
+	protected static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
+		Path dst = lock.getKey();
+		try {
+			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
+		}		
+	}
+
+	private byte[] readBytes(BlueReadLock<Path> readLock) throws BlueDbException {
+		Path path = readLock.getKey();
 		try {
 			if (!path.toFile().exists()) {
 				return null;
@@ -95,14 +123,13 @@ public class FileManager {
 		}
 	}
 
-	private void writeBytes(Path path, byte[] bytes) throws BlueDbException {
-		File tmpFile = Paths.get(path.toString() + "_tmp").toFile();
-		File targetFile = path.toFile();
-		ensureDirectoryExists(targetFile);
-		try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
+	private void writeBytes(BlueWriteLock<Path> writeLock, byte[] bytes) throws BlueDbException {
+		Path path = writeLock.getKey();
+		File file = path.toFile();
+		ensureDirectoryExists(file);
+		try (FileOutputStream fos = new FileOutputStream(file)) {
 			fos.write(bytes);
 			fos.close();
-			Files.move(tmpFile.toPath(), path, StandardCopyOption.ATOMIC_MOVE);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("error writing to file " + path, e);

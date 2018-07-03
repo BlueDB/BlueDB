@@ -1,9 +1,12 @@
 package io.bluedb.disk.file;
 
-public class BlueWriteLock<T> {
+import java.io.Closeable;
+
+public class BlueWriteLock<T> implements Closeable {
 
 	private final LockManager<T> lockManager;
 	private final T key;
+	private boolean released = false;
 
 	public BlueWriteLock(LockManager<T> lockManager, T key) {
 		this.lockManager = lockManager;
@@ -15,6 +18,14 @@ public class BlueWriteLock<T> {
 	}
 
 	public void release() {
-		lockManager.releaseWriteLock(key);
+		if (!released) {
+			lockManager.releaseWriteLock(key);
+		}
+		released = true;
+	}
+
+	@Override
+	public void close() {
+		release();
 	}
 }

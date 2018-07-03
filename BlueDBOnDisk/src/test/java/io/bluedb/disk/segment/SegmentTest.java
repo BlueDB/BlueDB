@@ -41,15 +41,15 @@ public class SegmentTest extends TestCase {
 		TestValue value3 = createValue("Chuck");
 		try {
 			assertFalse(segment.contains(key1At1));
-			segment.put(key1At1, value1);
+			segment.save(key1At1, value1);
 			assertTrue(segment.contains(key1At1));
 			assertFalse(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
-			segment.put(key2At1, value2);
+			segment.save(key2At1, value2);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
-			segment.put(key3At3, value3);
+			segment.save(key3At3, value3);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
@@ -78,7 +78,7 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.put(key1At1, value1);
+			segment.save(key1At1, value1);
 			assertTrue(segment.contains(key1At1));
 			assertFalse(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
@@ -86,7 +86,7 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.put(key2At1, value2);
+			segment.save(key2At1, value2);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
@@ -94,7 +94,7 @@ public class SegmentTest extends TestCase {
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.put(key3At3, value3);
+			segment.save(key3At3, value3);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
@@ -119,9 +119,9 @@ public class SegmentTest extends TestCase {
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
 		try {
-			segment.put(key1At1, value1);
-			segment.put(key2At1, value2);
-			segment.put(key3At3, value3);
+			segment.save(key1At1, value1);
+			segment.save(key2At1, value2);
+			segment.save(key3At3, value3);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
@@ -171,17 +171,17 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.put(key3At3, value3);
+			segment.save(key3At3, value3);
 			assertEquals(null, segment.get(key1At1));
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
 
-			segment.put(key2At1, value2);
+			segment.save(key2At1, value2);
 			assertEquals(null, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
 
-			segment.put(key1At1, value1);
+			segment.save(key1At1, value1);
 			assertEquals(value1, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
@@ -202,9 +202,9 @@ public class SegmentTest extends TestCase {
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
 		try {
-			segment.put(key1At1, value1);
-			segment.put(key2At1, value2);
-			segment.put(key3At3, value3);
+			segment.save(key1At1, value1);
+			segment.save(key2At1, value2);
+			segment.save(key3At3, value3);
 			List<BlueEntity<TestValue>> entities0to0 = segment.getRange(0,0);
 			List<TestValue> values0to0 = extractValues(entities0to0);
 			assertEquals(0, values0to0.size());
@@ -247,18 +247,18 @@ public class SegmentTest extends TestCase {
 			values = segment.getAll();
 			assertEquals(0, values.size());
 
-			segment.put(key1At1, value1);
+			segment.save(key1At1, value1);
 			values = segment.getAll();
 			assertEquals(1, values.size());
 			assertTrue(values.contains(value1));
 
-			segment.put(key2At1, value2);
+			segment.save(key2At1, value2);
 			values = segment.getAll();
 			assertEquals(2, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));
 
-			segment.put(key3At3, value3);
+			segment.save(key3At3, value3);
 			values = segment.getAll();
 			assertEquals(3, values.size());
 			assertTrue(values.contains(value1));

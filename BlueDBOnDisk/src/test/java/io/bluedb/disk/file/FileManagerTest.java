@@ -104,6 +104,40 @@ public class FileManagerTest  extends TestCase {
 	}
 
 	@Test
+	public void test_createTempFilePath() {
+		Path withParent = Paths.get("grandparent", "parent", "target");
+		Path tempWithParent = FileManager.createTempFilePath(withParent);
+		Path expectedTempWithParent = Paths.get("grandparent", "parent", "_tmp_target");
+		assertEquals(expectedTempWithParent, tempWithParent);
+
+		Path withoutParent = Paths.get("target");
+		Path tempWithoutParent = FileManager.createTempFilePath(withoutParent);
+		Path expectedTempWithoutParent = Paths.get("_tmp_target");
+		assertEquals(expectedTempWithoutParent, tempWithoutParent);
+	}
+
+	@Test
+	public void test_moveFile() {
+		Path targetFilePath = Paths.get(this.getClass().getSimpleName() + ".test_junk");
+		Path tempFilePath = FileManager.createTempFilePath(targetFilePath);
+		try {
+			FileManager.ensureDirectoryExists(tempFilePath.toFile());
+			tempFilePath.toFile().createNewFile();
+			assertTrue(tempFilePath.toFile().exists());
+			assertFalse(targetFilePath.toFile().exists());
+			fileManager.lockMoveFileUnlock(tempFilePath, targetFilePath);
+			assertFalse(tempFilePath.toFile().exists());
+			assertTrue(targetFilePath.toFile().exists());
+		} catch (IOException | BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		
+		recursiveDelete(targetFilePath.toFile());
+		recursiveDelete(tempFilePath.toFile());
+	}
+	
+	@Test
 	public void test_multithreaded() {
 		TestValue value = new TestValue("joe", 0);
 		File file = createFileAndWriteTestValue("testMultithreaded", value);
