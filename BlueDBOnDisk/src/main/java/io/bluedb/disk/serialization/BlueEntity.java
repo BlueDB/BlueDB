@@ -9,9 +9,9 @@ public class BlueEntity<T extends Serializable> implements Serializable {
 	private BlueKey key;
 	private T value;
 
-	public BlueEntity(BlueKey key, T object) {
+	public BlueEntity(BlueKey key, T value) {
 		this.key = key;
-		this.value = object;
+		this.value = value;
 	}
 
 	public BlueKey getKey() {
