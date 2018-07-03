@@ -1,5 +1,6 @@
 package io.bluedb.disk.file;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,11 +23,13 @@ public class FileManagerTest  extends TestCase {
 
 	BlueSerializer serializer;
 	FileManager fileManager;
+	LockManager<Path> lockManager;
 
 	@Override
 	protected void setUp() throws Exception {
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
 		fileManager = new FileManager(serializer);
+		lockManager = fileManager.getLockManager();
 	}
 
 	// TODO test multiple files and/or files with suffix not at the end
@@ -136,7 +139,43 @@ public class FileManagerTest  extends TestCase {
 		recursiveDelete(targetFilePath.toFile());
 		recursiveDelete(tempFilePath.toFile());
 	}
-	
+
+	@Test
+	public void test_getOutputStream() {
+		Path path = Paths.get("test_getOutputStream");
+		String string1 = "la la la la";
+		String string2 = "1 2 3";
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(path)) {
+			try (BlueObjectOutputStream<String> outStream = fileManager.getBlueOutputStream(writeLock)) {
+				outStream.write(string1);
+				outStream.write(string2);
+			} catch (BlueDbException e) {
+				e.printStackTrace();
+				fail();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				fail();
+			}
+		}
+		LockManager<Path> lockManager = fileManager.getLockManager();
+		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(path)) {
+			try (BlueObjectInputStream<String> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertEquals(string1, inStream.next());
+				assertEquals(string2, inStream.next());
+				assertEquals("should never get here", inStream.next());
+				fail();
+			} catch (BlueDbException e) {
+				e.printStackTrace();
+				fail();
+			} catch (EOFException e1) {
+			} catch (IOException e2) {
+				e2.printStackTrace();
+				fail();
+			}
+		}
+		recursiveDelete(path.toFile());
+	}
+
 	@Test
 	public void test_multithreaded() {
 		TestValue value = new TestValue("joe", 0);
