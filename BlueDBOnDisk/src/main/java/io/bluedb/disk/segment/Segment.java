@@ -116,10 +116,8 @@ public class Segment <T extends Serializable> {
 		return results;
 	}
 
-	// TODO test
-	protected boolean doesfileNameRangeOverlap(File file, long min, long max ) {
+	protected static boolean doesfileNameRangeOverlap(File file, long min, long max ) {
 		try {
-			// TODO test that folder doesn't impact this result
 			String[] splits = file.getName().split("_");
 			if (splits.length < 2) {
 				return false;

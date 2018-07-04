@@ -3,6 +3,7 @@ package io.bluedb.disk.segment;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -40,6 +41,26 @@ public class SegmentTest extends TestCase {
 	}
 
 	private static final long SEGMENT_ID = 42;
+
+	@Test
+	public void test_doesfileNameRangeOverlap() {
+		File _x_to_1 = Paths.get("1_x").toFile();
+		File _1_to_x = Paths.get("1_x").toFile();
+		File _1_to_3 = Paths.get("1_3").toFile();
+		File _1 = Paths.get("1_").toFile();
+		File _1_to_3_in_subfolder = Paths.get("whatever", "1_3").toFile();
+		assertFalse(Segment.doesfileNameRangeOverlap(_1, 0, 10));
+		assertFalse(Segment.doesfileNameRangeOverlap(_x_to_1, 0, 10));
+		assertFalse(Segment.doesfileNameRangeOverlap(_1_to_x, 0, 10));
+		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 10));
+		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3_in_subfolder, 0, 10));
+		assertFalse(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 0));  // above range
+		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 1));  // top of range
+		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 2, 2));  // point
+		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 5));  // middle of range
+		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 3, 4));  // bottom of range
+		assertFalse(Segment.doesfileNameRangeOverlap(_1_to_3, 4, 5));  // below range
+	}
 
 	@Test
 	public void testContains() {
