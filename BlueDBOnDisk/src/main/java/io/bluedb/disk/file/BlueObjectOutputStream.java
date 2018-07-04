@@ -17,7 +17,7 @@ public class BlueObjectOutputStream<T> implements Closeable {
 	private final BlueSerializer serializer;
 	private final DataOutputStream dataOutputStream;
 
-	public BlueObjectOutputStream(BlueWriteLock<Path> writeLock, BlueSerializer serializer, FileManager fileManager) throws BlueDbException {
+	public BlueObjectOutputStream(BlueWriteLock<Path> writeLock, BlueSerializer serializer) throws BlueDbException {
 		Path path = writeLock.getKey();
 		this.path = path;
 		this.serializer = serializer;

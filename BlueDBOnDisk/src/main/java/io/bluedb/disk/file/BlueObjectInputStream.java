@@ -16,14 +16,11 @@ public class BlueObjectInputStream<T> implements Closeable {
 
 	private final Path path;
 	private final BlueSerializer serializer;
-	private final LockManager<Path> lockManager;
 	private final DataInputStream dataInputStream;
 			
-	public BlueObjectInputStream(BlueReadLock<Path> readLock, BlueSerializer serializer, LockManager<Path> lockManager) throws BlueDbException {
+	public BlueObjectInputStream(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
 		this.path = readLock.getKey();
 		this.serializer = serializer;
-		this.lockManager = lockManager;
-		lockManager.acquireReadLock(path);
 		dataInputStream = openDataInputStream(path.toFile());
 	}
 
@@ -51,7 +48,6 @@ public class BlueObjectInputStream<T> implements Closeable {
 
 	@Override
 	public void close() throws IOException {
-		lockManager.releaseReadLock(path);
 		if (dataInputStream != null) {
 			dataInputStream.close();
 		}

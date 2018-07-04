@@ -95,11 +95,11 @@ public class FileManager {
 	}
 
 	public <T> BlueObjectOutputStream<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
-		return new BlueObjectOutputStream<T>(writeLock, serializer, this);
+		return new BlueObjectOutputStream<T>(writeLock, serializer);
 	}
 
 	public <T> BlueObjectInputStream<T> getBlueInputStream(BlueReadLock<Path> readLock) throws BlueDbException {
-		return new BlueObjectInputStream<T>(readLock, serializer, lockManager);
+		return new BlueObjectInputStream<T>(readLock, serializer);
 	}
 
 	protected static List<File> filterFilesWithSuffix(File[] files, String suffix) {
