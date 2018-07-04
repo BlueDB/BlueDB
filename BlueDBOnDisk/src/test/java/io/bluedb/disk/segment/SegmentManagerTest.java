@@ -2,10 +2,12 @@ package io.bluedb.disk.segment;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -15,6 +17,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
@@ -26,13 +29,22 @@ public class SegmentManagerTest extends TestCase {
 	BlueDb db;
 	BlueCollectionImpl<TestValue> collection;
 	SegmentManager<TestValue> segmentManager;
-	
+	Path dbPath;
+
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		db = new BlueDbOnDiskBuilder().build();
 		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "test_segment_manager");
 		segmentManager = new SegmentManager<TestValue>(collection);
+		dbPath = ((BlueDbOnDisk) db).getPath();
+	}
+
+	public void tearDown() throws Exception {
+		Files.walk(dbPath)
+		.sorted(Comparator.reverseOrder())
+		.map(Path::toFile)
+		.forEach(File::delete);
 	}
 
 	@Test

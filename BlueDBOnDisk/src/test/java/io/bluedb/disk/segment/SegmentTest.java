@@ -1,7 +1,10 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Test;
@@ -20,11 +23,20 @@ public class SegmentTest extends TestCase {
 
 	BlueDbOnDisk DB;
 	BlueCollectionImpl<TestValue> COLLECTION;
+	Path dbPath;
 	
 	@Override
 	protected void setUp() throws Exception {
 		DB = new BlueDbOnDiskBuilder().build();
 		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
+		dbPath = DB.getPath();
+	}
+
+	public void tearDown() throws Exception {
+		Files.walk(dbPath)
+		.sorted(Comparator.reverseOrder())
+		.map(Path::toFile)
+		.forEach(File::delete);
 	}
 
 	private static final long SEGMENT_ID = 42;
@@ -32,7 +44,6 @@ public class SegmentTest extends TestCase {
 	@Test
 	public void testContains() {
 		Segment<TestValue> segment = createSegment();
-		cleanup(segment);
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -57,13 +68,11 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup(segment);
 	}
 
 	@Test
 	public void testPut() {
 		Segment<TestValue> segment = createSegment();
-		cleanup(segment);
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -105,13 +114,11 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup(segment);
 	}
 
 	@Test
 	public void testDelete() {
 		Segment<TestValue> segment = createSegment();
-		cleanup(segment);
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -153,13 +160,11 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup(segment);
 	}
 
 	@Test
 	public void testGet() {
 		Segment<TestValue> segment = createSegment();
-		cleanup(segment);
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -189,7 +194,6 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup(segment);
 	}
 
 	@Test
@@ -230,7 +234,6 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup(segment);
 	}
 
 	@Test
@@ -268,7 +271,6 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		cleanup(segment);
 	}
 
 	@Test
@@ -278,6 +280,7 @@ public class SegmentTest extends TestCase {
 		assertTrue(segment.toString().contains(segment.getClass().getSimpleName()));
 	}
 
+	@SuppressWarnings("unlikely-arg-type")
 	@Test
 	public void test_equals() {
 		Segment<TestValue> segment1 = createSegment(1);
@@ -318,16 +321,6 @@ public class SegmentTest extends TestCase {
 	private Segment<TestValue> createSegment(long segmentId) {
 		BlueKey keyInSegment = new TimeKey(1, segmentId);
 		return COLLECTION.getSegmentManager().getFirstSegment(keyInSegment);
-	}
-
-	private void cleanup(Segment<TestValue> segment) {
-		File segmentFolder = segment.getPath().toFile();
-		if (!segmentFolder.exists())
-			return;
-		for (File f: segmentFolder.listFiles()) {
-			f.delete();
-		}
-		
 	}
 
 	private List<TestValue> extractValues(List<BlueEntity<TestValue>> entities) {
