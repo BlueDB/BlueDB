@@ -9,6 +9,7 @@ import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueReadLock;
 import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
@@ -87,7 +88,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	public List<T> getAll() throws BlueDbException {
-		File[] filesInFolder = segmentPath.toFile().listFiles();
+		List<File> filesInFolder = FileManager.getFolderContents(segmentPath.toFile());
 		List<T> results = new ArrayList<>();
 		for (File file: filesInFolder) {
 			for (BlueEntity<T> entity: fetch(file)) {
@@ -98,9 +99,12 @@ public class Segment <T extends Serializable> {
 	}
 
     public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
-		File[] filesInFolder = segmentPath.toFile().listFiles();
 		List<BlueEntity<T>> results = new ArrayList<>();
-		for (File file: filesInFolder) {
+		List<File> filesInFolder = FileManager.getFolderContents(segmentPath.toFile());
+		// Note that we cannot bound this from below because a TimeRangeKey that overlaps the target range
+		//      will be stored at the start time;
+		List<File> relevantFiles = Blutils.filter(filesInFolder, (f) -> doesfileNameRangeOverlap(f, Long.MIN_VALUE, maxTime));
+		for (File file: relevantFiles) {
 			List<BlueEntity<T>> fileContents = fetch(file);
 			for (BlueEntity<T> entity: fileContents) {
 				BlueKey key = entity.getKey();
@@ -110,6 +114,22 @@ public class Segment <T extends Serializable> {
 			}
 		}
 		return results;
+	}
+
+	// TODO test
+	protected boolean doesfileNameRangeOverlap(File file, long min, long max ) {
+		try {
+			// TODO test that folder doesn't impact this result
+			String[] splits = file.getName().split("_");
+			if (splits.length < 2) {
+				return false;
+			}
+			long start = Long.valueOf(splits[0]);
+			long end = Long.valueOf(splits[1]);
+			return (start <= max) && (end >= min);
+		} catch (Throwable t) {
+			return false;
+		}
 	}
 
 	protected BlueReadLock<Path> getReadLockFor(BlueKey key) {

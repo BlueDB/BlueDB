@@ -20,10 +20,9 @@ public class BlutilsTest {
 
 	@Test
 	public void test_filter() {
-		Long[] values = new Long[]{7L, 5L, 1000L, 1L};
-		Long[] valuesBiggerThan2 = new Long[]{7L, 5L, 1000L};
-		List<Long> valuesBiggerThan2List = Arrays.asList(valuesBiggerThan2);
+		List<Long> values = Arrays.asList(7L, 5L, 1000L, 1L);
+		List<Long> valuesBiggerThan2 = Arrays.asList(7L, 5L, 1000L);
 		List<Long> filteredValues = Blutils.filter(values, (l) -> (l > 2));
-		assertEquals(valuesBiggerThan2List, filteredValues);
+		assertEquals(valuesBiggerThan2, filteredValues);
 	}
 }
