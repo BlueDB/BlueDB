@@ -1,5 +1,10 @@
 package io.bluedb.disk.collection;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+
 import org.junit.Test;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
@@ -7,6 +12,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import junit.framework.TestCase;
@@ -15,6 +21,7 @@ public class BlueCollectionImplTest extends TestCase {
 
 	BlueDb db;
 	BlueCollectionImpl<TestValue> collection;
+	Path dbPath;
 
 	@Override
 	protected void setUp() throws Exception {
@@ -22,10 +29,15 @@ public class BlueCollectionImplTest extends TestCase {
 		db = new BlueDbOnDiskBuilder().build();
 		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "testing");
 		collection.query().delete();
+		dbPath = ((BlueDbOnDisk) db).getPath();
 	}
 
-	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
+		Files.walk(dbPath)
+		.sorted(Comparator.reverseOrder())
+		.map(Path::toFile)
+		.forEach(File::delete);
+
 		collection.query().delete();
 	}
 

@@ -1,11 +1,13 @@
 package io.bluedb.disk.recovery;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.Updater;
@@ -27,7 +29,7 @@ public class RecoveryManagerTest extends TestCase {
 	BlueCollectionImpl<TestValue> COLLECTION;
 	RecoveryManager<TestValue> recoveryManager;
 	BlueSerializer serializer;
-	
+	Path dbPath;
 	
 	@Override
 	public void setUp() throws Exception {
@@ -42,16 +44,19 @@ public class RecoveryManagerTest extends TestCase {
 		}
 		
 		COLLECTION.query().delete();
+		dbPath = DB.getPath();
 	}
 
 	@Override
 	public void tearDown() throws Exception {
-		List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
-		for (PendingChange<TestValue> change: changes) {
-			recoveryManager.removeChange(change);
-		}
-
-		COLLECTION.query().delete();
+//		List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
+//		for (PendingChange<TestValue> change: changes) {
+//			recoveryManager.removeChange(change);
+//		}
+		Files.walk(dbPath)
+		.sorted(Comparator.reverseOrder())
+		.map(Path::toFile)
+		.forEach(File::delete);
 	}
 
 	@Test
@@ -126,88 +131,6 @@ public class RecoveryManagerTest extends TestCase {
 			fail();
 		}	}
 
-//	@Test
-//	public void test_saveInsert() {
-//		BlueKey key = createKey(1, 2);
-//		TestValue value = createValue("Joe");
-//		try {
-//			List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
-//			assertEquals(0, changes.size());
-//
-//			PendingChange<TestValue> change = recoveryManager.saveInsert(key, value);
-//			assertTrue(change.isInsert());
-//			assertEquals(key, change.getKey());
-//			assertEquals(value, change.getNewValue());
-//			assertTrue(value != change.getOldValue());  // clone, not original object
-//
-//			changes = recoveryManager.getPendingChanges();
-//			assertEquals(1, changes.size());
-//			PendingChange<TestValue> savedChange = changes.get(0);
-//			assertTrue(savedChange.isInsert());
-//			assertEquals(key, savedChange.getKey());
-//			assertEquals(value, savedChange.getNewValue());
-//		} catch (BlueDbException e) {
-//			e.printStackTrace();
-//			fail();
-//		}
-//	}
-//
-//	@Test
-//	public void test_saveDelete() {
-//		BlueKey key = createKey(1, 2);
-//		try {
-//			List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
-//			assertEquals(0, changes.size());
-//
-//			PendingChange<TestValue> change = recoveryManager.saveDelete(key);
-//			assertTrue(change.isDelete());
-//			assertEquals(key, change.getKey());
-//
-//			changes = recoveryManager.getPendingChanges();
-//			assertEquals(1, changes.size());
-//			PendingChange<TestValue> savedChange = changes.get(0);
-//			assertTrue(savedChange.isDelete());
-//			assertEquals(key, savedChange.getKey());
-//		} catch (BlueDbException e) {
-//			e.printStackTrace();
-//			fail();
-//		}
-//	}
-//
-//	@Test
-//	public void test_saveUpdate() {
-//		BlueKey key = createKey(1, 2);
-//		TestValue originalValue = createValue("Joe");
-//		Updater<TestValue> updater = ((v) -> v.addCupcake());
-//		TestValue newValue = serializer.clone(originalValue);
-//		updater.update(newValue);
-//		try {
-//			List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
-//			assertEquals(0, changes.size());
-//
-//			BlueEntity<TestValue> entity = new BlueEntity<>(key, originalValue);
-//			PendingChange<TestValue> change = PendingChange.createUpdate(entity, updater, serializer);
-//			recoveryManager.saveChange(change);
-////			PendingChange<TestValue> change = recoveryManager.saveUpdate(key, originalValue, updater);
-//			assertTrue(change.isUpdate());
-//			assertEquals(key, change.getKey());
-//			assertEquals(originalValue, change.getOldValue());
-//			assertTrue(originalValue != change.getOldValue());  // clone, not original object
-//			assertEquals(newValue, change.getNewValue());
-//
-//			changes = recoveryManager.getPendingChanges();
-//			assertEquals(1, changes.size());
-//			PendingChange<TestValue> savedChange = changes.get(0);
-//			assertTrue(savedChange.isUpdate());
-//			assertEquals(key, savedChange.getKey());
-//			assertEquals(originalValue, savedChange.getOldValue());
-//			assertEquals(newValue, savedChange.getNewValue());
-//		} catch (BlueDbException e) {
-//			e.printStackTrace();
-//			fail();
-//		}
-//	}
-
 	@Test
 	public void test_recover_pendingInsert() {
 		BlueKey key = createKey(1, 2);
@@ -276,10 +199,8 @@ public class RecoveryManagerTest extends TestCase {
 
 	@Test
 	public void test_recover_invalidPendingChange() {
-		BlueKey key = createKey(1, 2);
-		TestValue value = createValue("Joe");
-
 		Path pathForGarbage = Paths.get(COLLECTION.getPath().toString(), RecoveryManager.SUBFOLDER, "123" + RecoveryManager.SUFFIX);
+		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};
 		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
 			fos.write(bytes);
@@ -292,6 +213,7 @@ public class RecoveryManagerTest extends TestCase {
 		pathForGarbage.toFile().delete();
 		recoveryManager.recover();
 	}
+
 	private TestValue createValue(String name, int cupcakes){
 		return new TestValue(name, cupcakes);
 	}
