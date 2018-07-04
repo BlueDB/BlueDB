@@ -71,7 +71,7 @@ public class FileManager {
 
 	public <T> ArrayList<T> loadList(BlueReadLock<Path> readLock) throws BlueDbException {
 		ArrayList<T> items = new ArrayList<>();
-		try(BlueObjectInputStream<T> inputStream = getBlueInputStream(readLock)) {
+		try(BlueObjectInput<T> inputStream = getBlueInputStream(readLock)) {
 			while(true) {
 				items.add(inputStream.next());
 			}
@@ -84,7 +84,7 @@ public class FileManager {
 	}
 
 	public <T> void saveList(BlueWriteLock<Path> writeLock, List<T> items) throws BlueDbException {
-		try(BlueObjectOutputStream<T> outputStream = getBlueOutputStream(writeLock)) {
+		try(BlueObjectOutput<T> outputStream = getBlueOutputStream(writeLock)) {
 			for (T item: items) {
 				outputStream.write(item);
 			}
@@ -94,12 +94,12 @@ public class FileManager {
 		}
 	}
 
-	public <T> BlueObjectOutputStream<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
-		return new BlueObjectOutputStream<T>(writeLock, serializer);
+	public <T> BlueObjectOutput<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
+		return new BlueObjectOutput<T>(writeLock, serializer);
 	}
 
-	public <T> BlueObjectInputStream<T> getBlueInputStream(BlueReadLock<Path> readLock) throws BlueDbException {
-		return new BlueObjectInputStream<T>(readLock, serializer);
+	public <T> BlueObjectInput<T> getBlueInputStream(BlueReadLock<Path> readLock) throws BlueDbException {
+		return new BlueObjectInput<T>(readLock, serializer);
 	}
 
 	protected static List<File> filterFilesWithSuffix(File[] files, String suffix) {

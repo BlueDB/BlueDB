@@ -1,5 +1,6 @@
 package io.bluedb.disk.file;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,7 +13,7 @@ import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import junit.framework.TestCase;
 
-public class BlueObjectOutputStreamTest extends TestCase {
+public class BlueObjectInputTest extends TestCase {
 
 	BlueSerializer serializer;
 	FileManager fileManager;
@@ -37,37 +38,34 @@ public class BlueObjectOutputStreamTest extends TestCase {
 
 	@Test
 	public void test_close() {
-		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
-			assertFalse(targetFilePath.toFile().exists());
-			BlueObjectOutputStream<TestValue> stream = fileManager.getBlueOutputStream(writeLock);
-			stream.write(null);
-			stream.close();
-			stream.close();  // make sure it doesn't throw an exception if you close it twice
-			assertTrue(targetFilePath.toFile().exists());
-		} catch (BlueDbException | IOException e) {
-			e.printStackTrace();
-			fail();
-		}
+		// TODO
 	}
 
 	@Test
-	public void test_write() {
+	public void test_next() {
 		TestValue value = new TestValue("Jobodo Monobodo");
+		BlueObjectInput<TestValue> inStream = null;
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
-			BlueObjectOutputStream<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
 			outStream.write(value);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
-
-		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
-			BlueObjectInputStream<TestValue> inStream = fileManager.getBlueInputStream(readLock);
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			inStream = fileManager.getBlueInputStream(readLock);
 			assertEquals(value, inStream.next());
 		} catch (BlueDbException | IOException e) {
 			e.printStackTrace();
 			fail();
 		}
-		// TODO test exception on write
+		try {
+			inStream.next();
+			fail(); // already took in the only value in there.
+		} catch (EOFException eof) {
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 }

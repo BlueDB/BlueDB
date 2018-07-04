@@ -11,13 +11,13 @@ import java.nio.file.Path;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
 
-public class BlueObjectOutputStream<T> implements Closeable {
+public class BlueObjectOutput<T> implements Closeable {
 
 	private final Path path;
 	private final BlueSerializer serializer;
 	private final DataOutputStream dataOutputStream;
 
-	public BlueObjectOutputStream(BlueWriteLock<Path> writeLock, BlueSerializer serializer) throws BlueDbException {
+	public BlueObjectOutput(BlueWriteLock<Path> writeLock, BlueSerializer serializer) throws BlueDbException {
 		Path path = writeLock.getKey();
 		this.path = path;
 		this.serializer = serializer;

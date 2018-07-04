@@ -146,7 +146,7 @@ public class FileManagerTest  extends TestCase {
 		String string1 = "la la la la";
 		String string2 = "1 2 3";
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(path)) {
-			try (BlueObjectOutputStream<String> outStream = fileManager.getBlueOutputStream(writeLock)) {
+			try (BlueObjectOutput<String> outStream = fileManager.getBlueOutputStream(writeLock)) {
 				outStream.write(string1);
 				outStream.write(string2);
 			} catch (BlueDbException e) {
@@ -159,7 +159,7 @@ public class FileManagerTest  extends TestCase {
 		}
 		LockManager<Path> lockManager = fileManager.getLockManager();
 		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(path)) {
-			try (BlueObjectInputStream<String> inStream = fileManager.getBlueInputStream(readLock)) {
+			try (BlueObjectInput<String> inStream = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(string1, inStream.next());
 				assertEquals(string2, inStream.next());
 				assertEquals("should never get here", inStream.next());

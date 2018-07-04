@@ -12,13 +12,13 @@ import java.nio.file.Path;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
 
-public class BlueObjectInputStream<T> implements Closeable {
+public class BlueObjectInput<T> implements Closeable {
 
 	private final Path path;
 	private final BlueSerializer serializer;
 	private final DataInputStream dataInputStream;
 			
-	public BlueObjectInputStream(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
+	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
 		this.path = readLock.getKey();
 		this.serializer = serializer;
 		dataInputStream = openDataInputStream(path.toFile());
