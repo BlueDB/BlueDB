@@ -41,15 +41,15 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	private final Class<T> type;
 	private final BlueSerializer serializer;
 	private final RecoveryManager<T> recoveryManager;
-	private final Path path;
+	private final Path collectionPath;
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
 
 	public BlueCollectionImpl(BlueDbOnDisk db, String name, Class<T> type) {
 		this.type = type;
-		path = Paths.get(db.getPath().toString(), name);
-		path.toFile().mkdirs();
+		collectionPath = Paths.get(db.getPath().toString(), name);
+		collectionPath.toFile().mkdirs();
 		serializer = new ThreadLocalFstSerializer(type);
 		fileManager = new FileManager(serializer);
 		segmentManager = new SegmentManager<T>(this);
@@ -121,7 +121,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	}
 
 	public Path getPath() {
-		return path;
+		return collectionPath;
 	}
 
 	public FileManager getFileManager() {

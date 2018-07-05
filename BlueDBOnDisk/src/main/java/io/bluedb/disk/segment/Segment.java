@@ -209,8 +209,6 @@ public class Segment <T extends Serializable> {
 		if (pathLock == null || !pathLock.getKey().toFile().exists()) // TODO better handling of possible exceptions
 			return new ArrayList<BlueEntity<T>>();
 		ArrayList<BlueEntity<T>> fileContents =  fileManager.loadList(pathLock);
-		if (fileContents == null)
-			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
 	}
 
