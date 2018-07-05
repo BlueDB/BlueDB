@@ -116,6 +116,47 @@ public class Segment <T extends Serializable> {
 		return results;
 	}
 
+	// TODO make private?  or somehow enforce standard levels
+	public void rollup(long start, long end) throws BlueDbException {
+		List<File> filesToRollup = getFilesInRange(start, end);
+		Path path = Paths.get(segmentPath.toString(), start + "_" + end);
+		Path tmpPath = FileManager.createTempFilePath(path);
+		List<BlueEntity<T>> entities = new ArrayList<>();
+
+		// TODO switch to streaming
+		// TODO keep sorted, here and everywhere you write
+		for (File file: filesToRollup) {
+			List<BlueEntity<T>> es = fetch(file);
+			entities.addAll(es);
+		}
+		LockManager<Path> lockManager = fileManager.getLockManager();
+		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
+			fileManager.saveList(tempFileLock, entities);
+		}
+
+		List<BlueWriteLock<Path>> sourceFileWriteLocks = new ArrayList<>();
+		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)){
+			for (File file: filesToRollup) {
+				sourceFileWriteLocks.add(lockManager.acquireWriteLock(file.toPath()));
+			}
+
+			FileManager.moveFile(tmpPath, targetFileLock);
+			for (BlueWriteLock<Path> writeLock: sourceFileWriteLocks) {
+				FileManager.deleteFile(writeLock);
+			}
+		} finally {
+			for (BlueWriteLock<Path> lock: sourceFileWriteLocks) {
+				lock.release();
+			}
+		}
+	}
+
+	// TODO test
+	protected List<File> getFilesInRange(long min, long max) {
+		List<File> filesInFolder = FileManager.getFolderContents(segmentPath.toFile());
+		return Blutils.filter(filesInFolder, (f) -> doesfileNameRangeOverlap(f, min, max));
+	}
+
 	protected static boolean doesfileNameRangeOverlap(File file, long min, long max ) {
 		try {
 			String[] splits = file.getName().split("_");

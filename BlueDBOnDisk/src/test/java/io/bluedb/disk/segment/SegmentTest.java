@@ -295,6 +295,37 @@ public class SegmentTest extends TestCase {
 	}
 
 	@Test
+	public void testRollup() {
+		Segment<TestValue> segment = createSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value3 = createValue("Chuck");
+		List<TestValue> values;
+		try {
+			values = segment.getAll();
+			assertEquals(0, values.size());
+
+			segment.save(key1At1, value1);
+			segment.save(key3At3, value3);
+			values = segment.getAll();
+			assertEquals(2, values.size());
+			File[] directoryContents = segment.getPath().toFile().listFiles();
+			assertEquals(2, directoryContents.length);
+
+			segment.rollup(0, 3);
+			values = segment.getAll();
+			assertEquals(2, values.size());
+			directoryContents = segment.getPath().toFile().listFiles();
+			assertEquals(1, directoryContents.length);
+
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
 	public void testToString() {
 		Segment<TestValue> segment = createSegment();
 		assertTrue(segment.toString().contains(segment.getPath().toString()));
