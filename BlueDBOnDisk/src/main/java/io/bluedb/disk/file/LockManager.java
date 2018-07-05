@@ -34,10 +34,9 @@ public class LockManager <T> {
 		synchronized(locks) {
 			lock = locks.get(key);
 			lock.readLock().unlock();
-			boolean noOtherThreadsAreReading = lock.writeLock().tryLock();
+			boolean noOtherThreadsAreReading = lock.getReadLockCount() == 0;
 			if (noOtherThreadsAreReading) {
-				lock = locks.remove(key);
-				lock.writeLock().unlock();
+				locks.remove(key);
 			}
 		}
 	}

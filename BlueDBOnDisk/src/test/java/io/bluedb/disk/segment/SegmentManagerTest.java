@@ -19,7 +19,6 @@ import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import junit.framework.TestCase;

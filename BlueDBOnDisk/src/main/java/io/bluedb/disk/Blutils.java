@@ -18,7 +18,11 @@ public class Blutils {
 	}
 
 	public static long roundDownToMultiple(long value, long multiple) {
-		return value - (value % multiple);
+		if (value >= 0) {
+			return value - (value % multiple);
+		} else {
+			return value - (value % multiple) - multiple;
+		}
 	}
 
 	public static <X extends Serializable> List<X> filter(List<X> values, Predicate<X> condition) {

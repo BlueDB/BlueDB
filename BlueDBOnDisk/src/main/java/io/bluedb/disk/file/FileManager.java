@@ -51,9 +51,9 @@ public class FileManager {
 		Path tmpPath = createTempFilePath(path);
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
 			writeBytes(tempFileLock, bytes);
-		}
-		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
-			moveFile(tmpPath, targetFileLock);
+			try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
+				moveFile(tmpPath, targetFileLock);
+			}
 		}
 	}
 

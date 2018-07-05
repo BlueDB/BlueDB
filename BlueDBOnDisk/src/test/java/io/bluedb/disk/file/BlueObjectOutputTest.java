@@ -38,7 +38,6 @@ public class BlueObjectOutputTest extends TestCase {
 	@Test
 	public void test_close() {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
-			assertFalse(targetFilePath.toFile().exists());
 			BlueObjectOutput<TestValue> stream = fileManager.getBlueOutputStream(writeLock);
 			stream.write(null);
 			stream.close();
