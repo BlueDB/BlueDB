@@ -5,13 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 
 public class RollupScheduler {
 
-	private static final long WAIT_BETWEEN_REVIEWS = 3_000; // TODO something more sophisticated than just wait ?
-	private static final long WAIT_BEFORE_ROLLUP = 3_000; // TODO 
+	private static final long WAIT_BETWEEN_REVIEWS = 30_000; // TODO something more sophisticated than just wait ?
+	private static final long WAIT_BEFORE_ROLLUP = 3600_000; // TODO something more sophisticated?
 
 	private final BlueCollectionImpl<?> collection;
 	private final Map<TimeRange, Long> lastInsertTimes;
@@ -28,7 +27,6 @@ public class RollupScheduler {
 	}
 
 	public void reportInsert(TimeRange timeRange) {
-		System.out.println("RollupScheduler.reportInsert(" + timeRange + ")");
 		lastInsertTimes.put(timeRange, System.currentTimeMillis());
 	}
 
@@ -48,18 +46,15 @@ public class RollupScheduler {
 	}
 
 	private void start() {
-		System.out.println("starting RollupScheduler");
 		Runnable runnable = new Runnable(){
 			@Override
 			public void run() {
 				while (!isStopped) {
 					try {
 						for (TimeRange timeRange: timeRangesReadyForRollup()) {
-							System.out.println("RollupScheduler scheduling rollup for " + timeRange);
 							collection.scheduleRollup(timeRange);
 							lastInsertTimes.remove(timeRange);
 						}
-						System.out.println("RollupScheduler reviewed");
 						Thread.sleep(WAIT_BETWEEN_REVIEWS);
 					} catch (InterruptedException e) {
 						e.printStackTrace();

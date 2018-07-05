@@ -76,6 +76,9 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
+		// TODO roll up to a smaller time range?
+		// TODO report insert when the insert task actually runs?
+		// TODO delay on other writes?
 		TimeRange timeRange = SegmentManager.getSegmentTimeRange(key.getGroupingNumber());
 		rollupScheduler.reportInsert(timeRange);
 		Runnable insertTask = new InsertTask<T>(this, key, value);
