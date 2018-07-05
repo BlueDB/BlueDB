@@ -1,6 +1,10 @@
 package io.bluedb.disk;
 
 import static org.junit.Assert.*;
+
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
 
 public class BlutilsTest {
@@ -14,4 +18,11 @@ public class BlutilsTest {
 		// TODO test at Long.MAX_VALUE, Long.MIN_VALUE
 	}
 
+	@Test
+	public void test_filter() {
+		List<Long> values = Arrays.asList(7L, 5L, 1000L, 1L);
+		List<Long> valuesBiggerThan2 = Arrays.asList(7L, 5L, 1000L);
+		List<Long> filteredValues = Blutils.filter(values, (l) -> (l > 2));
+		assertEquals(valuesBiggerThan2, filteredValues);
+	}
 }

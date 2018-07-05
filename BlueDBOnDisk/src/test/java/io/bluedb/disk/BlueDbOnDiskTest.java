@@ -27,6 +27,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	private Path tempDir;
 	private BlueDb db;
 	private BlueCollection<TestValue> collection;
+	Path dbPath;
 	
 	@Override
 	protected void setUp() throws Exception {
@@ -36,6 +37,7 @@ public class BlueDbOnDiskTest extends TestCase {
 				.setRegisteredClasses(TestValue.class)
 				.build();
 		collection = db.getCollection(TestValue.class, "testing");
+		dbPath = ((BlueDbOnDisk) db).getPath();
 	}
 	
 	@Override
@@ -44,6 +46,13 @@ public class BlueDbOnDiskTest extends TestCase {
 			.sorted(Comparator.reverseOrder())
 			.map(Path::toFile)
 			.forEach(File::delete);
+
+		if (dbPath.toFile().exists()) {
+			Files.walk(dbPath)
+			.sorted(Comparator.reverseOrder())
+			.map(Path::toFile)
+			.forEach(File::delete);
+		}
 
 		assertFalse("Directory still exists", Files.exists(tempDir));
 	}

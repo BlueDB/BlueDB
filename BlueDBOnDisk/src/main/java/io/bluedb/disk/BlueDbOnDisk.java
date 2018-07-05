@@ -23,6 +23,7 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
 		synchronized (collections) {
+			@SuppressWarnings("unchecked")
 			BlueCollectionImpl<T> collection = (BlueCollectionImpl<T>) collections.get(name);
 			if(collection == null) {
 				collection = new BlueCollectionImpl<>(this, name, type);

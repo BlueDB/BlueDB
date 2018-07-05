@@ -1,6 +1,14 @@
 package io.bluedb.disk.recovery;
 
 import static org.junit.Assert.*;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,12 +29,22 @@ public class PendingChangeTest {
 	BlueDbOnDisk DB;
 	BlueCollectionImpl<TestValue> COLLECTION;
 	BlueSerializer serializer;
+	Path dbPath;
 	
 	@Before
 	public void setUp() throws Exception {
-		DB = new BlueDbOnDiskBuilder().build();
+		dbPath = Paths.get("testing");
+		DB = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		Files.walk(dbPath)
+		.sorted(Comparator.reverseOrder())
+		.map(Path::toFile)
+		.forEach(File::delete);
 	}
 
 	@Test

@@ -144,6 +144,11 @@ public class FileManager {
 		}		
 	}
 
+	public static boolean deleteFile(BlueWriteLock<Path> writeLock) {
+		Path path = writeLock.getKey();
+		return path.toFile().delete();
+	}
+
 	private byte[] readBytes(BlueReadLock<Path> readLock) throws BlueDbException {
 		Path path = readLock.getKey();
 		try {
