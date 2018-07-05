@@ -36,6 +36,10 @@ public class SegmentManager<T extends Serializable> {
 
 	public Segment<T> getFirstSegment(BlueKey key) {
 		long groupingNumber = key.getGroupingNumber();
+		return getSegment(groupingNumber);
+	}
+
+	public Segment<T> getSegment(long groupingNumber) {
 		Path segmentPath = getPath(groupingNumber);
 		return toSegment(segmentPath);
 	}
@@ -139,8 +143,24 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected static String getRangeFileName(long groupingValue, long multiple) {
+		TimeRange timeRange = getTimeRange(groupingValue, multiple);
+		return getRangeFileName(timeRange);
+	}
+
+	// TODO test
+	public static TimeRange getSegmentTimeRange(long groupingValue) {
+		return getTimeRange(groupingValue, LEVEL_3);
+	}
+
+	// TODO test
+	public static TimeRange getTimeRange(long groupingValue, long multiple) {
 		long low = Blutils.roundDownToMultiple(groupingValue, multiple);
 		long high = Math.min(Long.MAX_VALUE - multiple + 1, low) + multiple - 1;  // prevent overflow
-		return String.valueOf(low) + "_" + String.valueOf(high);
+		return new TimeRange(low, high);
+	}
+
+	// TODO test
+	protected static String getRangeFileName(TimeRange timeRange) {
+		return String.valueOf(timeRange.getStart()) + "_" + String.valueOf(timeRange.getEnd());
 	}
 }
