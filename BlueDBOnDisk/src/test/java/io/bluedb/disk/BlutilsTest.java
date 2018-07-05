@@ -6,8 +6,22 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
+import io.bluedb.api.Condition;
 
 public class BlutilsTest {
+
+	@Test
+	public void test_meetsConditions() {
+		List<Condition<Long>> empty = Arrays.asList();
+		List<Condition<Long>> greaterThan1 = Arrays.asList((l) -> l > 1);
+		List<Condition<Long>> between1and3 = Arrays.asList((l) -> l > 1, (l) -> l < 3);
+		assertTrue(Blutils.meetsConditions(empty, 1L));
+		assertFalse(Blutils.meetsConditions(greaterThan1, 1L));
+		assertTrue(Blutils.meetsConditions(greaterThan1, 2L));
+		assertFalse(Blutils.meetsConditions(between1and3, 1L));
+		assertFalse(Blutils.meetsConditions(between1and3, 3L));
+		assertTrue(Blutils.meetsConditions(between1and3, 2L));
+	}
 
 	@Test
 	public void test_roundDownToMultiple() {
@@ -15,7 +29,9 @@ public class BlutilsTest {
 		assertEquals(4, Blutils.roundDownToMultiple(5, 2));  // test greater than a multiple
 		assertEquals(0, Blutils.roundDownToMultiple(41, 42));  // test equal to a multiple
 		assertEquals(42, Blutils.roundDownToMultiple(42, 42));  // test equal to a multiple
-		// TODO test at Long.MAX_VALUE, Long.MIN_VALUE
+		assertTrue(Blutils.roundDownToMultiple(Long.MAX_VALUE, 100) > 0); // make sure we don't overflow
+//		assertTrue(Blutils.roundDownToMultiple(-Long.MAX_VALUE, 100) < 0); // overflow
+		assertEquals(-100L, Blutils.roundDownToMultiple(-10, 100));
 	}
 
 	@Test
