@@ -10,6 +10,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.file.BlueReadLock;
+import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.file.LockManager;
 import io.bluedb.disk.serialization.BlueEntity;
@@ -57,7 +58,7 @@ public class Segment <T extends Serializable> {
 		BlueEntity<T> newEntity = new BlueEntity<T>(key, value);
 		remove(key, entities);
 		entities.add(newEntity);
-		persist(file, entities);
+		persist(file.toPath(), entities);
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
@@ -71,7 +72,7 @@ public class Segment <T extends Serializable> {
 			file = readLock.getKey().toFile();
 		}
 		remove(key, entities);
-		persist(file, entities);
+		persist(file.toPath(), entities);
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
@@ -148,19 +149,22 @@ public class Segment <T extends Serializable> {
 	private ArrayList<BlueEntity<T>> fetch(BlueReadLock<Path> pathLock) throws BlueDbException {
 		if (pathLock == null || !pathLock.getKey().toFile().exists()) // TODO better handling of possible exceptions
 			return new ArrayList<BlueEntity<T>>();
-		@SuppressWarnings("unchecked")
-		ArrayList<BlueEntity<T>> fileContents =  (ArrayList<BlueEntity<T>>) fileManager.loadObject(pathLock);
+		ArrayList<BlueEntity<T>> fileContents =  fileManager.loadList(pathLock);
 		if (fileContents == null)
 			return new ArrayList<BlueEntity<T>>();
 		return fileContents;
 	}
 
-	private void persist(File file, ArrayList<BlueEntity<T>> entites) throws BlueDbException {
-		if (entites.isEmpty()) {
-			file.delete();
-		} else {
-			fileManager.saveObject(file.toPath(), entites);
+	private void persist(Path path, ArrayList<BlueEntity<T>> entites) throws BlueDbException {
+		Path tmpPath = FileManager.createTempFilePath(path);
+		LockManager<Path> lockManager = fileManager.getLockManager();
+		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
+			fileManager.saveList(tempFileLock, entites);
 		}
+		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
+			FileManager.moveFile(tmpPath, targetFileLock);
+		}
+		
 	}
 
 	private static boolean inTimeRange(long minTime, long maxTime, BlueKey key) {

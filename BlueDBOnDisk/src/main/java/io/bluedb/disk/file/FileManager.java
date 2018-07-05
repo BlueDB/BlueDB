@@ -1,5 +1,6 @@
 package io.bluedb.disk.file;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -68,6 +69,39 @@ public class FileManager {
 		return Arrays.asList(folderContentsArray);
 	}
 
+	public <T> ArrayList<T> loadList(BlueReadLock<Path> readLock) throws BlueDbException {
+		ArrayList<T> items = new ArrayList<>();
+		try(BlueObjectInput<T> inputStream = getBlueInputStream(readLock)) {
+			while(true) {
+				items.add(inputStream.next());
+			}
+		} catch(EOFException e) {
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			throw new BlueDbException("IOException while loading list", e1); // TODO handle this better
+		}
+		return items;
+	}
+
+	public <T> void saveList(BlueWriteLock<Path> writeLock, List<T> items) throws BlueDbException {
+		try(BlueObjectOutput<T> outputStream = getBlueOutputStream(writeLock)) {
+			for (T item: items) {
+				outputStream.write(item);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("IOException while saving list", e); // TODO handle this better
+		}
+	}
+
+	public <T> BlueObjectOutput<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
+		return new BlueObjectOutput<T>(writeLock, serializer);
+	}
+
+	public <T> BlueObjectInput<T> getBlueInputStream(BlueReadLock<Path> readLock) throws BlueDbException {
+		return new BlueObjectInput<T>(readLock, serializer);
+	}
+
 	protected static List<File> filterFilesWithSuffix(File[] files, String suffix) {
 		List<File> results = new ArrayList<>();
 		for (File file: files) {
@@ -85,7 +119,7 @@ public class FileManager {
 		}
 	}
 
-	protected static Path createTempFilePath(Path originalPath) {
+	public static Path createTempFilePath(Path originalPath) {
 		File parentFile = originalPath.toFile().getParentFile();
 		if (parentFile != null) {
 			return Paths.get(parentFile.toPath().toString(), "_tmp_" + originalPath.getFileName().toString());
@@ -100,7 +134,7 @@ public class FileManager {
 		}
 	}
 
-	protected static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
+	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
 		Path dst = lock.getKey();
 		try {
 			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
