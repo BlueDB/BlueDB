@@ -1,7 +1,6 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -113,39 +112,41 @@ public class Segment <T extends Serializable> {
 		return results;
 	}
 
-	// TODO make private?  or somehow enforce standard levels
+    // TODO make private?  or somehow enforce standard levels
 	public void rollup(long start, long end) throws BlueDbException {
 		List<File> filesToRollup = getFilesInRange(start, end);
 		Path path = Paths.get(segmentPath.toString(), start + "_" + end);
 		Path tmpPath = FileManager.createTempFilePath(path);
-		List<BlueEntity<T>> entities = new ArrayList<>();
 
-		// TODO switch to streaming
-		// TODO keep sorted, here and everywhere you write
+		copy(tmpPath, filesToRollup);
+		moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
+	}
+
+	// TODO keep sorted, here and everywhere you write
+	private void copy(Path destination, List<File> sources) throws BlueDbException {
 		LockManager<Path> lockManager = fileManager.getLockManager();
-		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
+		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(destination)) {
 			try(BlueObjectOutput<BlueEntity<T>> outputStream = fileManager.getBlueOutputStream(tempFileLock)) {
-				for (File file: filesToRollup) {
+				for (File file: sources) {
 					try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(file.toPath())) {
 						try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
-							while(inputStream.hasNext()) {
-								BlueEntity<T> next = inputStream.next();
-								outputStream.write(next);
-							}
+							transferAllObjects(inputStream, outputStream);
 						}
 					}
 				}
 			}
 		}
-	
+	}
+
+	private void moveRolledUpFileAndDeleteSourceFiles(Path newRolledupPath, Path tempRolledupPath, List<File> filesToRollup) throws BlueDbException {
+		LockManager<Path> lockManager = fileManager.getLockManager();
 		List<BlueWriteLock<Path>> sourceFileWriteLocks = new ArrayList<>();
-		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)){
-//			try(BlueObjectOutput<T> outputStream = fileManager.getBlueOutputStream(targetFileLock)) {
+		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(newRolledupPath)){
 			for (File file: filesToRollup) {
 				sourceFileWriteLocks.add(lockManager.acquireWriteLock(file.toPath()));
 			}
 
-			FileManager.moveFile(tmpPath, targetFileLock);
+			FileManager.moveFile(tempRolledupPath, targetFileLock);
 			for (BlueWriteLock<Path> writeLock: sourceFileWriteLocks) {
 				FileManager.deleteFile(writeLock);
 			}
@@ -195,6 +196,13 @@ public class Segment <T extends Serializable> {
 	protected Path getPath() {
 		return segmentPath;
 	}
+
+    protected static <X> void transferAllObjects(BlueObjectInput<X> input, BlueObjectOutput<X> output) throws BlueDbException {
+		while(input.hasNext()) {
+			X next = input.next();
+			output.write(next);
+		}
+    }
 
 	private Path getPathFor(BlueKey key, long rollupLevel) {
 		long groupingNumber = key.getGroupingNumber();
