@@ -1,6 +1,5 @@
 package io.bluedb.disk.file;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

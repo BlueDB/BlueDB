@@ -48,12 +48,12 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	private DataOutputStream openDataOutputStream(File file) throws BlueDbException {
+	protected static DataOutputStream openDataOutputStream(File file) throws BlueDbException {
 		try {
 			return new DataOutputStream(new FileOutputStream(file));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-			throw new BlueDbException("cannot open write to file " + path, e);
+			throw new BlueDbException("cannot open write to file " + file.toPath(), e);
 		}
 	}
 }

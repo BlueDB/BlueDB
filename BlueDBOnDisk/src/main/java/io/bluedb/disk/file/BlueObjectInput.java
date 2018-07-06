@@ -26,24 +26,6 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		dataInputStream = openDataInputStream(path.toFile());
 	}
 
-	public T nextFromFile() {
-		int objectLength;
-		try {
-			objectLength = dataInputStream.readInt();
-			byte[] buffer = new byte[objectLength];
-			dataInputStream.readFully(buffer,0, objectLength);
-			Object object = serializer.deserializeObjectFromByteArray(buffer);
-			@SuppressWarnings("unchecked")
-			T t = (T) object;
-			return t;
-		} catch (EOFException e) {
-			return null;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
 	@Override
 	public void close() {
 		if (dataInputStream != null) {
@@ -52,15 +34,6 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
-	}
-
-	private DataInputStream openDataInputStream(File file) throws BlueDbException{
-		try {
-			return new DataInputStream(new FileInputStream(file));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			throw new BlueDbException("cannot open input stream on file " + path, e);
 		}
 	}
 
@@ -80,5 +53,32 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		T response = next;
 		next = null;
 		return response;
+	}
+
+	protected T nextFromFile() {
+		int objectLength;
+		try {
+			objectLength = dataInputStream.readInt();
+			byte[] buffer = new byte[objectLength];
+			dataInputStream.readFully(buffer,0, objectLength);
+			Object object = serializer.deserializeObjectFromByteArray(buffer);
+			@SuppressWarnings("unchecked")
+			T t = (T) object;
+			return t;
+		} catch (EOFException e) {
+			return null;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	protected static DataInputStream openDataInputStream(File file) throws BlueDbException {
+		try {
+			return new DataInputStream(new FileInputStream(file));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			throw new BlueDbException("cannot open input stream on file " + file.toPath(), e);
+		}
 	}
 }

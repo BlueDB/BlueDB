@@ -34,6 +34,7 @@ public class SegmentTest extends TestCase {
 		dbPath = DB.getPath();
 	}
 
+	@Override
 	public void tearDown() throws Exception {
 		Files.walk(dbPath)
 		.sorted(Comparator.reverseOrder())
