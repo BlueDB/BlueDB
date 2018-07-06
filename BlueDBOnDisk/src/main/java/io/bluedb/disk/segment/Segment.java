@@ -12,6 +12,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
+import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.BlueReadLock;
 import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
@@ -79,10 +80,6 @@ public class Segment <T extends Serializable> {
 			}
 			try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
 				return get(key, inputStream);
-			} catch (IOException e) {
-				e.printStackTrace();
-				Path path = readLock.getKey();
-				throw new BlueDbException("error reading file " + path , e);
 			}
 		}
 	}
@@ -125,17 +122,25 @@ public class Segment <T extends Serializable> {
 
 		// TODO switch to streaming
 		// TODO keep sorted, here and everywhere you write
-		for (File file: filesToRollup) {
-			List<BlueEntity<T>> es = fetch(file);
-			entities.addAll(es);
-		}
 		LockManager<Path> lockManager = fileManager.getLockManager();
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
-			fileManager.saveList(tempFileLock, entities);
+			try(BlueObjectOutput<BlueEntity<T>> outputStream = fileManager.getBlueOutputStream(tempFileLock)) {
+				for (File file: filesToRollup) {
+					try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(file.toPath())) {
+						try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
+							while(inputStream.hasNext()) {
+								BlueEntity<T> next = inputStream.next();
+								outputStream.write(next);
+							}
+						}
+					}
+				}
+			}
 		}
-
+	
 		List<BlueWriteLock<Path>> sourceFileWriteLocks = new ArrayList<>();
 		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)){
+//			try(BlueObjectOutput<T> outputStream = fileManager.getBlueOutputStream(targetFileLock)) {
 			for (File file: filesToRollup) {
 				sourceFileWriteLocks.add(lockManager.acquireWriteLock(file.toPath()));
 			}

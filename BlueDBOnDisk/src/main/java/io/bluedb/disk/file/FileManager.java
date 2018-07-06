@@ -85,10 +85,6 @@ public class FileManager {
 			while(inputStream.hasNext()) {
 				items.add(inputStream.next());
 			}
-		} catch(EOFException e) {
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			throw new BlueDbException("IOException while loading list", e1); // TODO handle this better
 		}
 		return items;
 	}
@@ -98,9 +94,6 @@ public class FileManager {
 			for (T item: items) {
 				outputStream.write(item);
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new BlueDbException("IOException while saving list", e); // TODO handle this better
 		}
 	}
 

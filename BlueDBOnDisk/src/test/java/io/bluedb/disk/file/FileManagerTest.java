@@ -152,9 +152,6 @@ public class FileManagerTest  extends TestCase {
 			} catch (BlueDbException e) {
 				e.printStackTrace();
 				fail();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-				fail();
 			}
 		}
 		LockManager<Path> lockManager = fileManager.getLockManager();
@@ -165,10 +162,6 @@ public class FileManagerTest  extends TestCase {
 				assertNull(inStream.next());
 			} catch (BlueDbException e) {
 				e.printStackTrace();
-				fail();
-			} catch (EOFException e1) {
-			} catch (IOException e2) {
-				e2.printStackTrace();
 				fail();
 			}
 		}

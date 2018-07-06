@@ -45,9 +45,13 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		if (dataInputStream != null) {
-			dataInputStream.close();
+			try {
+				dataInputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

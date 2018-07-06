@@ -40,8 +40,12 @@ public class BlueObjectOutput<T> implements Closeable {
 	}
 
 	@Override
-	public void close() throws IOException {
-		dataOutputStream.close();
+	public void close() {
+		try {
+			dataOutputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private DataOutputStream openDataOutputStream(File file) throws BlueDbException {

@@ -43,7 +43,7 @@ public class BlueObjectOutputTest extends TestCase {
 			stream.close();
 			stream.close();  // make sure it doesn't throw an exception if you close it twice
 			assertTrue(targetFilePath.toFile().exists());
-		} catch (BlueDbException | IOException e) {
+		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
