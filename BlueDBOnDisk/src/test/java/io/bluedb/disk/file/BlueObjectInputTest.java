@@ -1,7 +1,5 @@
 package io.bluedb.disk.file;
 
-import java.io.EOFException;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -55,17 +53,12 @@ public class BlueObjectInputTest extends TestCase {
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			inStream = fileManager.getBlueInputStream(readLock);
 			assertEquals(value, inStream.next());
-		} catch (BlueDbException | IOException e) {
-			e.printStackTrace();
-			fail();
-		}
-		try {
-			inStream.next();
-			fail(); // already took in the only value in there.
-		} catch (EOFException eof) {
+			inStream = fileManager.getBlueInputStream(readLock);
+			assertEquals(value, inStream.next());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
+		assertNull(inStream.next());
 	}
 }

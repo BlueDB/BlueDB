@@ -1,6 +1,7 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,6 +11,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueReadLock;
 import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
@@ -35,13 +37,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	public boolean contains(BlueKey key) throws BlueDbException {
-		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
-			if (readLock == null ) {
-				return false;
-			}
-			List<BlueEntity<T>> entities = fetch(readLock);
-			return contains(key, entities);
-		}
+		return get(key) != null;
 	}
 
 	public void save(BlueKey key, T value) throws BlueDbException {
@@ -80,9 +76,13 @@ public class Segment <T extends Serializable> {
 		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
 			if (readLock == null ) {
 				return null;
-			} else {
-				ArrayList<BlueEntity<T>> entities = fetch(readLock);
-				return get(key, entities);
+			}
+			try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
+				return get(key, inputStream);
+			} catch (IOException e) {
+				e.printStackTrace();
+				Path path = readLock.getKey();
+				throw new BlueDbException("error reading file " + path , e);
 			}
 		}
 	}
@@ -221,7 +221,7 @@ public class Segment <T extends Serializable> {
 		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
 			FileManager.moveFile(tmpPath, targetFileLock);
 		}
-		
+
 	}
 
 	private static boolean inTimeRange(long minTime, long maxTime, BlueKey key) {
@@ -248,6 +248,15 @@ public class Segment <T extends Serializable> {
 		return get(key, entities) != null;
 	}
 
+	protected static <T extends Serializable> T get(BlueKey key, BlueObjectInput<BlueEntity<T>> inputStream) {
+		while(inputStream.hasNext()) {
+			BlueEntity<T> next = inputStream.next();
+			if (next.getKey().equals(key)) {
+				return next.getValue();
+			}
+		}
+		return null;
+	}
 	protected static <T extends Serializable> T get(BlueKey key, List<BlueEntity<T>> entities) {
 		for (BlueEntity<T> entity: entities) {
 			if (entity.getKey().equals(key)) {

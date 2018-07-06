@@ -20,7 +20,7 @@ public class FileManager {
 
 	public FileManager(BlueSerializer serializer) {
 		this.serializer = serializer;
-		lockManager = new LockManager<Path>(); 
+		lockManager = new LockManager<Path>();
 	}
 
 	public List<File> listFiles(Path path, String suffix) {
@@ -72,7 +72,7 @@ public class FileManager {
 	public <T> ArrayList<T> loadList(BlueReadLock<Path> readLock) throws BlueDbException {
 		ArrayList<T> items = new ArrayList<>();
 		try(BlueObjectInput<T> inputStream = getBlueInputStream(readLock)) {
-			while(true) {
+			while(inputStream.hasNext()) {
 				items.add(inputStream.next());
 			}
 		} catch(EOFException e) {
@@ -141,7 +141,7 @@ public class FileManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
-		}		
+		}
 	}
 
 	public static boolean deleteFile(BlueWriteLock<Path> writeLock) {

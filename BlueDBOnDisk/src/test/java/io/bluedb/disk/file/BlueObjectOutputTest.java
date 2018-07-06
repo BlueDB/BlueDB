@@ -63,7 +63,7 @@ public class BlueObjectOutputTest extends TestCase {
 		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock);
 			assertEquals(value, inStream.next());
-		} catch (BlueDbException | IOException e) {
+		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}

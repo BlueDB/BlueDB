@@ -8,41 +8,42 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-
+import java.util.Iterator;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
 
-public class BlueObjectInput<T> implements Closeable {
+public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 
 	private final Path path;
 	private final BlueSerializer serializer;
 	private final DataInputStream dataInputStream;
 			
+	private T next = null;
+
 	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
 		this.path = readLock.getKey();
 		this.serializer = serializer;
 		dataInputStream = openDataInputStream(path.toFile());
 	}
 
-	public T next() throws EOFException, BlueDbException {
+	public T nextFromFile() {
 		int objectLength;
 		try {
 			objectLength = dataInputStream.readInt();
 			byte[] buffer = new byte[objectLength];
 			int bytesRead = dataInputStream.read(buffer,0, objectLength);
 			if (bytesRead != objectLength) {
-				// TODO throw an exception ?
+				return null; // TODO throw an exception ?
 			}
 			Object object = serializer.deserializeObjectFromByteArray(buffer);
 			@SuppressWarnings("unchecked")
 			T t = (T) object;
 			return t;
 		} catch (EOFException e) {
-			throw e;
-			// TODO or return null?
+			return null;
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new BlueDbException("error reading next from file " + path, e);
+			return null;
 		}
 	}
 
@@ -60,5 +61,23 @@ public class BlueObjectInput<T> implements Closeable {
 			e.printStackTrace();
 			throw new BlueDbException("cannot open input stream on file " + path, e);
 		}
+	}
+
+	@Override
+	public boolean hasNext() {
+		if (next == null) {
+			next = nextFromFile();
+		}
+		return next != null;
+	}
+
+	@Override
+	public T next() {
+		if (next == null) {
+			next = nextFromFile();
+		}
+		T response = next;
+		next = null;
+		return response;
 	}
 }

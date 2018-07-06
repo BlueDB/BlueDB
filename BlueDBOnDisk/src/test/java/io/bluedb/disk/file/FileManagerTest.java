@@ -162,8 +162,7 @@ public class FileManagerTest  extends TestCase {
 			try (BlueObjectInput<String> inStream = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(string1, inStream.next());
 				assertEquals(string2, inStream.next());
-				assertEquals("should never get here", inStream.next());
-				fail();
+				assertNull(inStream.next());
 			} catch (BlueDbException e) {
 				e.printStackTrace();
 				fail();
@@ -200,7 +199,7 @@ public class FileManagerTest  extends TestCase {
 			Thread readerThread = new Thread(reader);
 			threads.add(readerThread);
 		}
-		
+
 		// interleave writing and reading
 		while(doneSignal.getCount() > 0) {
 			if (!threads.isEmpty()) {
