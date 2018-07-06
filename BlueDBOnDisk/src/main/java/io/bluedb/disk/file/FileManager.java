@@ -2,6 +2,7 @@ package io.bluedb.disk.file;
 
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,6 +12,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
 
@@ -59,6 +61,14 @@ public class FileManager {
 
 	public LockManager<Path> getLockManager() {
 		return lockManager;
+	}
+
+	public static List<File> getFolderContents(File folder, FileFilter filter) {
+		File[] folderContentsArray = folder.listFiles(filter);
+		if (folderContentsArray == null) {
+			return new ArrayList<>();
+		}
+		return Arrays.asList(folderContentsArray);
 	}
 
 	public static List<File> getFolderContents(File folder) {

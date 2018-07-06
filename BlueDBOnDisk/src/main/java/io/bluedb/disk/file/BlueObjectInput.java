@@ -31,10 +31,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		try {
 			objectLength = dataInputStream.readInt();
 			byte[] buffer = new byte[objectLength];
-			int bytesRead = dataInputStream.read(buffer,0, objectLength);
-			if (bytesRead != objectLength) {
-				return null; // TODO throw an exception ?
-			}
+			dataInputStream.readFully(buffer,0, objectLength);
 			Object object = serializer.deserializeObjectFromByteArray(buffer);
 			@SuppressWarnings("unchecked")
 			T t = (T) object;

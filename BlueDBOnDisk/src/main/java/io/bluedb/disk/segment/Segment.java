@@ -100,10 +100,10 @@ public class Segment <T extends Serializable> {
 
     public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		List<File> filesInFolder = FileManager.getFolderContents(segmentPath.toFile());
+		File folder = segmentPath.toFile();
 		// Note that we cannot bound this from below because a TimeRangeKey that overlaps the target range
 		//      will be stored at the start time;
-		List<File> relevantFiles = Blutils.filter(filesInFolder, (f) -> doesfileNameRangeOverlap(f, Long.MIN_VALUE, maxTime));
+		List<File> relevantFiles = FileManager.getFolderContents(folder, (f) -> doesfileNameRangeOverlap(f, Long.MIN_VALUE, maxTime));
 		for (File file: relevantFiles) {
 			List<BlueEntity<T>> fileContents = fetch(file);
 			for (BlueEntity<T> entity: fileContents) {
