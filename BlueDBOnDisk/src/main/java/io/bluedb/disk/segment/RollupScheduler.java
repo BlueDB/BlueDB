@@ -62,7 +62,7 @@ public class RollupScheduler {
 				}
 			}
 		};
-		Thread thread = new Thread(runnable);
+		Thread thread = new Thread(runnable, "RollupScheduler");
 		thread.start();
 	}
 }
