@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.Blutils;
@@ -40,41 +41,104 @@ public class Segment <T extends Serializable> {
 		return get(key) != null;
 	}
 
-	public void save(BlueKey key, T value) throws BlueDbException {
-		ArrayList<BlueEntity<T>> entities = null;
-		File file;
-		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
-			if (readLock != null) {
-				entities = fetch(readLock);
-				file = readLock.getKey().toFile();
-			} else {
-				entities = new ArrayList<>();
-				file = 	getPathFor(key, 1).toFile();
+	public void update(BlueKey newKey, T newValue) throws BlueDbException {
+		long groupingNumber = newKey.getGroupingNumber();
+		modifyChunk(groupingNumber, new Processor<T>() {
+			@Override
+			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
+				BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
+				while (input.hasNext()) {
+					BlueEntity<T> iterEntity = input.next();
+					BlueKey iterKey = iterEntity.getKey();
+					if (iterKey.equals(newKey)) {
+						output.write(newEntity);
+						newEntity = null;
+					} else if (newEntity != null && iterKey.getGroupingNumber() > groupingNumber) {
+						output.write(newEntity);
+						newEntity = null;
+						output.write(iterEntity);
+					} else {
+						output.write(iterEntity);
+					}
+				}
+				if (newEntity != null) {
+					output.write(newEntity);
+				}
 			}
-		}
-		BlueEntity<T> newEntity = new BlueEntity<T>(key, value);
-		remove(key, entities);
-		entities.add(newEntity);
-		persist(file.toPath(), entities);
+		});
+	}
+
+	public void insert(BlueKey newKey, T newValue) throws BlueDbException {
+		BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
+		long groupingNumber = newKey.getGroupingNumber();
+		modifyChunk(groupingNumber, new Processor<T>() {
+			@Override
+			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
+				BlueEntity<T> toInsert = newEntity;
+				while (input.hasNext()) {
+					BlueEntity<T> iterEntity = input.next();
+					BlueKey iterKey = iterEntity.getKey();
+					if (iterKey.equals(newKey)) {
+						throw new DuplicateKeyException("attempt to insert duplicate key", newKey);
+					} else if (toInsert != null && iterKey.getGroupingNumber() > groupingNumber) {
+						output.write(newEntity);
+						toInsert = null;
+						output.write(iterEntity);
+					} else {
+						output.write(iterEntity);
+					}
+				}
+				if (toInsert != null) {
+					output.write(newEntity);
+				}
+			}
+		});
+	}
+
+	interface Processor<X extends Serializable> {
+		public void process(BlueObjectInput<BlueEntity<X>> input, BlueObjectOutput<BlueEntity<X>> output) throws BlueDbException;
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
-		ArrayList<BlueEntity<T>> entities = null;
-		File file;
-		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
-			if (readLock == null) {
-				return;
+		long groupingNumber = key.getGroupingNumber();
+		modifyChunk(groupingNumber, new Processor<T>() {
+			@Override
+			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
+				while (input.hasNext()) {
+					BlueEntity<T> entry = input.next();
+					if (!entry.getKey().equals(key)) {
+						output.write(entry);
+					}
+				}
 			}
-			entities = fetch(readLock);
-			file = readLock.getKey().toFile();
+		});
+	}
+
+	public void modifyChunk(long groupingNumber, Processor<T> processor) throws BlueDbException {
+		LockManager<Path> lockManager = fileManager.getLockManager();
+		Path targetPath, tmpPath;
+
+		try (BlueReadLock<Path> readLock = getReadLockFor(groupingNumber)) {
+			targetPath = readLock.getKey();
+			FileManager.ensureFileExists(targetPath);
+			tmpPath = FileManager.createTempFilePath(targetPath);
+			try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
+				try(BlueObjectOutput<BlueEntity<T>> output = fileManager.getBlueOutputStream(tempFileLock)) {
+					try(BlueObjectInput<BlueEntity<T>> input = fileManager.getBlueInputStream(readLock)) {
+						processor.process(input, output);
+					}
+				}
+			}
 		}
-		remove(key, entities);
-		persist(file.toPath(), entities);
+
+		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(targetPath)) {
+			FileManager.moveFile(tmpPath, targetFileLock);
+		}
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
 		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
-			if (readLock == null ) {
+			if (!readLock.getKey().toFile().exists()) {
 				return null;
 			}
 			try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
@@ -178,9 +242,14 @@ public class Segment <T extends Serializable> {
 	}
 
 	protected BlueReadLock<Path> getReadLockFor(BlueKey key) {
+		long groupingNumber = key.getGroupingNumber();
+		return getReadLockFor(groupingNumber);
+	}
+
+	protected BlueReadLock<Path> getReadLockFor(long groupingNumber) {
 		LockManager<Path> lockManager = fileManager.getLockManager();
 		for (long rollupLevel: ROLLUP_LEVELS) {
-			Path path = getPathFor(key, rollupLevel);
+			Path path = getPathFor(groupingNumber, rollupLevel);
 			BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
 			try {
 				if (lock.getKey().toFile().exists()) {
@@ -190,7 +259,8 @@ public class Segment <T extends Serializable> {
 			}
 			lock.release();
 		}
-		return null;
+		Path path = getPathFor(groupingNumber, 1);
+		return lockManager.acquireReadLock(path);
 	}
 
 	protected Path getPath() {
@@ -204,8 +274,12 @@ public class Segment <T extends Serializable> {
 		}
     }
 
-	private Path getPathFor(BlueKey key, long rollupLevel) {
-		long groupingNumber = key.getGroupingNumber();
+//	private Path getPathFor(BlueKey key, long rollupLevel) {
+//		long groupingNumber = key.getGroupingNumber();
+//		return getPathFor(groupingNumber, rollupLevel);
+//	}
+//
+	private Path getPathFor(long groupingNumber, long rollupLevel) {
 		String fileName = SegmentManager.getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
 	}
@@ -257,10 +331,6 @@ public class Segment <T extends Serializable> {
 		return null;
 	}
 
-	protected static <T extends Serializable> boolean contains(BlueKey key, List<BlueEntity<T>> entities) {
-		return get(key, entities) != null;
-	}
-
 	protected static <T extends Serializable> T get(BlueKey key, BlueObjectInput<BlueEntity<T>> inputStream) {
 		while(inputStream.hasNext()) {
 			BlueEntity<T> next = inputStream.next();
@@ -270,15 +340,6 @@ public class Segment <T extends Serializable> {
 		}
 		return null;
 	}
-	protected static <T extends Serializable> T get(BlueKey key, List<BlueEntity<T>> entities) {
-		for (BlueEntity<T> entity: entities) {
-			if (entity.getKey().equals(key)) {
-				return entity.getValue();
-			}
-		}
-		return null;
-	}
-
 	@Override
 	public int hashCode() {
 		return 31 + ((segmentPath == null) ? 0 : segmentPath.hashCode());

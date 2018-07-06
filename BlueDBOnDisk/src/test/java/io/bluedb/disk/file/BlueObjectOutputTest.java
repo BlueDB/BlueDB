@@ -45,7 +45,6 @@ public class BlueObjectOutputTest extends TestCase {
 	public void test_close() {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			BlueObjectOutput<TestValue> stream = fileManager.getBlueOutputStream(writeLock);
-			stream.write(null);
 			stream.close();
 			stream.close();  // make sure it doesn't throw an exception if you close it twice
 			assertTrue(targetFilePath.toFile().exists());
@@ -94,7 +93,14 @@ public class BlueObjectOutputTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-		// TODO test exception on write
+
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			try (BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock)) {
+				outStream.write(null);
+				fail();
+			}
+		} catch (BlueDbException e) {
+		}
 	}
 
 	private void recursiveDelete(File file) {

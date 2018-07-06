@@ -48,12 +48,11 @@ public class PendingChange<T extends Serializable> implements Serializable {
 
 	public void applyChange(Segment<T> segment) throws BlueDbException {
 		if (isInsert()) {
-			// TODO check for already existing?  probably not, probably do that in the calling function
-			segment.save(key, newValue);
+			segment.insert(key, newValue);
 		} else if (isDelete()) {
 			segment.delete(key);
 		} else if (isUpdate()) {
-			segment.save(key, newValue);
+			segment.update(key, newValue);
 		}
 	}
 

@@ -27,7 +27,9 @@ public class BlueObjectOutput<T> implements Closeable {
 	}
 
 	public void write(T value) throws BlueDbException {
-		// TODO early return or exception on nulls ?
+		if (value == null) {
+			throw new BlueDbException("cannot write null to " + this.getClass().getSimpleName());
+		}
 		try {
 			byte[] bytes = serializer.serializeObjectToByteArray(value);
 			int len = bytes.length;
