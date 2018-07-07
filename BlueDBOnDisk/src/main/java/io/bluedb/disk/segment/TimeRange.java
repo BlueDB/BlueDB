@@ -1,11 +1,6 @@
 package io.bluedb.disk.segment;
 
-public class TimeRange implements Comparable<TimeRange> {
-
-	@Override
-	public String toString() {
-		return "TimeRange [start=" + start + ", end=" + end + "]";
-	}
+public final class TimeRange implements Comparable<TimeRange> {
 
 	private final long start;
 	private final long end;
@@ -31,12 +26,16 @@ public class TimeRange implements Comparable<TimeRange> {
 		try {
 			String[] parts = string.split("_");
 			long start = Long.valueOf(parts[0]);
-			long end = Long.valueOf(parts[0]);
+			long end = Long.valueOf(parts[1]);
 			return new TimeRange(start, end);
 		} catch (Throwable t) {
-			// TODO throw exception ?
 			return null;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "TimeRange [start=" + start + ", end=" + end + "]";
 	}
 
 	@Override
@@ -50,18 +49,12 @@ public class TimeRange implements Comparable<TimeRange> {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
+		if (obj instanceof TimeRange) {
+			TimeRange other = (TimeRange) obj;
+			return (end == other.end) && (start == other.start); 
+		} else {
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		TimeRange other = (TimeRange) obj;
-		if (end != other.end)
-			return false;
-		if (start != other.start)
-			return false;
-		return true;
+		}
 	}
 
 	@Override
