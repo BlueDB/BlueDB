@@ -1,10 +1,13 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -162,6 +165,7 @@ public class Segment <T extends Serializable> {
     public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
 		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
 		List<File> relevantFiles = getOrderedFilesInRange(Long.MIN_VALUE, maxTime);
+		// TODO we need to make this work when rollups or deletes might be happening in the background
 		List<BlueEntity<T>> results = new ArrayList<>();
 		for (File file: relevantFiles) {
 			Path path = file.toPath();
@@ -213,7 +217,7 @@ public class Segment <T extends Serializable> {
 				sourceFileWriteLocks.add(lockManager.acquireWriteLock(file.toPath()));
 			}
 
-			// TODO figure out how to recover if we crash here
+			// TODO figure out how to recover if we crash here, must be done before any writes
 			FileManager.moveFile(tempRolledupPath, targetFileLock);
 			for (BlueWriteLock<Path> writeLock: sourceFileWriteLocks) {
 				FileManager.deleteFile(writeLock);
@@ -228,9 +232,18 @@ public class Segment <T extends Serializable> {
 	// TODO test
 	protected List<File> getOrderedFilesInRange(long min, long max) {
 		File segmentFolder = segmentPath.toFile();
-		List<File> filesInFolder = FileManager.getFolderContents(segmentFolder, (f) -> doesfileNameRangeOverlap(f, min, max));
-		// TODO order them
-		return Blutils.filter(filesInFolder, (f) -> doesfileNameRangeOverlap(f, min, max));
+		FileFilter filter = (f) -> doesfileNameRangeOverlap(f, min, max);
+		List<File> filesInFolder = FileManager.getFolderContents(segmentFolder, filter);
+		Comparator<File> comparator = new Comparator<>() {
+			@Override
+			public int compare(File o1, File o2) {
+				TimeRange r1 = TimeRange.fromUnderscoreDelmimitedString(o1.getName());
+				TimeRange r2 = TimeRange.fromUnderscoreDelmimitedString(o2.getName());
+				return r1.compareTo(r2);
+			}
+		};
+		Collections.sort(filesInFolder, comparator);
+		return filesInFolder;
 	}
 
 	protected static boolean doesfileNameRangeOverlap(File file, long min, long max ) {
