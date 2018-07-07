@@ -53,13 +53,34 @@ public class SegmentManagerTest extends TestCase {
 		assertEquals("4_5", SegmentManager.getRangeFileName(5, 2));  // test greater than a multiple
 		assertEquals("0_41", SegmentManager.getRangeFileName(41, 42));  // test equal to a multiple
 		assertEquals("42_83", SegmentManager.getRangeFileName(42, 42));  // test equal to a multiple
-		// TODO test at Long.MAX_VALUE, Long.MIN_VALUE
+		assertEquals("42_83", SegmentManager.getRangeFileName(42, 42));  // test equal to a multiple
+		assertEquals("-2_-1", SegmentManager.getRangeFileName(-1, 2));  // test zero
+		
+		String maxLongFileName = SegmentManager.getRangeFileName(Long.MAX_VALUE, 100);
+		TimeRange maxLongRange = TimeRange.fromUnderscoreDelmimitedString(maxLongFileName);
+		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
+		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
+
+		String minLongFileName = SegmentManager.getRangeFileName(Long.MIN_VALUE, 100);
+		TimeRange minLongRange = TimeRange.fromUnderscoreDelmimitedString(minLongFileName);
+		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
+		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
 
 	@Test
 	public void test_getSegmentTimeRange() {
-		// TODO
-	}
+		TimeRange segmentRangeStartingAtZero = SegmentManager.getSegmentTimeRange(0);
+		assertEquals(0, segmentRangeStartingAtZero.getStart());
+		assertEquals(SegmentManager.getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
+
+		TimeRange maxLongRange = SegmentManager.getSegmentTimeRange(Long.MAX_VALUE);
+		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
+		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
+
+		TimeRange minLongRange = SegmentManager.getSegmentTimeRange(Long.MIN_VALUE);
+		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
+		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
+}
 
 	@Test
 	public void test_getTimeRange() {

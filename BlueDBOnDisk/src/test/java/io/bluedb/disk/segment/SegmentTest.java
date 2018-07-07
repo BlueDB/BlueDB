@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -17,6 +18,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.serialization.BlueEntity;
 import junit.framework.TestCase;
 
@@ -332,6 +334,40 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
+	}
+
+	@Test
+	public void test_getOrderedFilesInRange() {
+		File _12_13 = Paths.get(dbPath.toString(), "12_13").toFile();
+		File _12_15 = Paths.get(dbPath.toString(), "12_15").toFile();
+		File _2_3 = Paths.get(dbPath.toString(), "2_3").toFile();
+		File _100_101 = Paths.get(dbPath.toString(), "100_101").toFile();
+		List<File> expected = Arrays.asList(_2_3, _12_13, _12_15);
+
+		try {
+			FileManager.ensureFileExists(_12_13.toPath());
+			FileManager.ensureFileExists(_12_15.toPath());
+			FileManager.ensureFileExists(_2_3.toPath());
+			FileManager.ensureFileExists(_100_101.toPath());
+			TimeRange timeRange = new TimeRange(0, 20);
+			assertEquals(expected, Segment.getOrderedFilesInRange(dbPath, timeRange));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_sortByRange() {
+		File _12_13 = Paths.get(dbPath.toString(), "12_13").toFile();
+		File _12_15 = Paths.get(dbPath.toString(), "12_15").toFile();
+		File _2_3 = Paths.get(dbPath.toString(), "2_3").toFile();
+		List<File> unsorted = Arrays.asList(_12_15, _2_3, _12_13);
+		List<File> sorted = Arrays.asList(_2_3, _12_13, _12_15);
+
+		assertFalse(unsorted.equals(sorted));
+		Segment.sortByRange(unsorted);
+		assertTrue(unsorted.equals(sorted));
 	}
 
 	@Test

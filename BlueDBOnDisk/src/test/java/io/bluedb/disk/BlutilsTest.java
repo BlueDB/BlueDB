@@ -9,6 +9,9 @@ import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.BlueReadLock;
@@ -51,6 +54,21 @@ public class BlutilsTest {
 
 	@Test
 	public void test_inRange() {
-		// TODO
-	}
+		BlueKey _2_to_4 = new TimeFrameKey(1, 2, 4);
+		BlueKey _4 = new TimeKey(4, 4);
+		assertFalse(Blutils.isInRange(_2_to_4, 0, 1));
+		assertTrue(Blutils.isInRange(_2_to_4, 0, 2));
+		assertTrue(Blutils.isInRange(_2_to_4, 0, 3));
+		assertTrue(Blutils.isInRange(_2_to_4, 3, 3));
+		assertTrue(Blutils.isInRange(_2_to_4, 0, 6));
+		assertTrue(Blutils.isInRange(_2_to_4, 3, 6));
+		assertTrue(Blutils.isInRange(_2_to_4, 4, 6));
+		assertFalse(Blutils.isInRange(_2_to_4, 5, 6));
+		
+		assertFalse(Blutils.isInRange(_4, 0, 3));
+		assertTrue(Blutils.isInRange(_4, 0, 4));
+		assertTrue(Blutils.isInRange(_4, 0, 6));
+		assertTrue(Blutils.isInRange(_4, 4, 6));
+		assertFalse(Blutils.isInRange(_4, 5, 6));
+}
 }

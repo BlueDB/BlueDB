@@ -241,8 +241,11 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	// TODO test
 	protected List<File> getOrderedFilesInRange(TimeRange range) {
+		return getOrderedFilesInRange(segmentPath, range);
+	}
+
+	protected static List<File> getOrderedFilesInRange(Path segmentPath, TimeRange range) {
 		long min = range.getStart();
 		long max = range.getEnd();
 		File segmentFolder = segmentPath.toFile();
@@ -252,7 +255,6 @@ public class Segment <T extends Serializable> {
 		return filesInFolder;
 	}
 
-	// TODO test
 	protected static void sortByRange(List<File> files) {
 		Comparator<File> comparator = new Comparator<>() {
 			@Override
