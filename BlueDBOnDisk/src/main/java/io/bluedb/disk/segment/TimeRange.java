@@ -1,6 +1,6 @@
 package io.bluedb.disk.segment;
 
-public class TimeRange {
+public class TimeRange implements Comparable<TimeRange> {
 
 	@Override
 	public String toString() {
@@ -62,5 +62,22 @@ public class TimeRange {
 		if (start != other.start)
 			return false;
 		return true;
+	}
+
+	@Override
+	public int compareTo(TimeRange other) {
+		if (this.start > other.start) {
+			return 1;
+		} else if (this.start < other.start) {
+			return -1;
+		} else {
+			if (this.end > other.end) {
+				return 1;
+			} else if (this.end < other.end){
+				return -1;
+			} else {
+				return 0;
+			}
+		}
 	}
 }
