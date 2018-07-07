@@ -115,34 +115,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return results;
 	}
 
-	public class CollectionScanner implements Closeable {
-		private final List<Segment<T>> segments;
-		private final long minTime;
-		private final long maxTime;
-		private final List<Condition<T>> conditions;
-
-		public CollectionScanner(long minTime, long maxTime, List<Condition<T>> conditions) {
-			this.segments = segmentManager.getExistingSegments(minTime, maxTime);
-			this.minTime = minTime;
-			this.maxTime = maxTime;
-			this.conditions = conditions;
-		}
-
-		@Override
-		public void close() throws IOException {
-		}
-	}
-//	public Iterator<T> getIterator(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
-//		return new Iterator() {
-//			@Override
-//			public boolean hasNext() {
-//			}
-//
-//			@Override
-//			public Object next() {
-//			}};
-//	}
-//
 	public SegmentManager<T> getSegmentManager() {
 		return segmentManager;
 	}
