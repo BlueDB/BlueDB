@@ -25,7 +25,7 @@ public class Blutils {
 		} else if (Long.MIN_VALUE + multiple > value) {  // don't overflow
 			return Long.MIN_VALUE;
 		} else {
-			return value - (value % multiple) - multiple;
+			return (value + 1) - ((value + 1) % multiple) - multiple;
 		}
 	}
 

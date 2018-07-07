@@ -42,6 +42,8 @@ public class BlutilsTest {
 		assertTrue(Blutils.roundDownToMultiple(Long.MAX_VALUE, 100) > 0); // make sure we don't overflow
 		assertTrue(Blutils.roundDownToMultiple(Long.MIN_VALUE, 100) < 0); // make sure we don't overflow
 		assertEquals(-100L, Blutils.roundDownToMultiple(-10, 100));
+		assertEquals(-100L, Blutils.roundDownToMultiple(-1, 100));
+		assertEquals(-100L, Blutils.roundDownToMultiple(-100, 100));
 	}
 
 	@Test
