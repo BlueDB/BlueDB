@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
@@ -37,11 +36,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	// for testing only
-	protected Segment() {
-		segmentPath = null;
-		fileManager = null;
-		lockManager = null;
-	}
+	protected Segment() {segmentPath = null;fileManager = null;lockManager = null;}
 
 	@Override
 	public String toString() {
@@ -165,10 +160,8 @@ public class Segment <T extends Serializable> {
 	}
 
     public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
-		File folder = segmentPath.toFile();
-		// Note that we cannot bound this from below because a TimeRangeKey that overlaps the target range
-		//      will be stored at the start time;
-		List<File> relevantFiles = FileManager.getFolderContents(folder, (f) -> doesfileNameRangeOverlap(f, Long.MIN_VALUE, maxTime));
+		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
+		List<File> relevantFiles = getOrderedFilesInRange(Long.MIN_VALUE, maxTime);
 		List<BlueEntity<T>> results = new ArrayList<>();
 		for (File file: relevantFiles) {
 			Path path = file.toPath();
@@ -179,7 +172,7 @@ public class Segment <T extends Serializable> {
 					while(inputStream.hasNext()) {
 						BlueEntity<T> next = inputStream.next();
 						BlueKey key = next.getKey();
-						if (inTimeRange(minTime, maxTime, key))
+						if (Blutils.isInRange(key, minTime, maxTime))
 							results.add(next);
 					}
 				}
@@ -190,7 +183,7 @@ public class Segment <T extends Serializable> {
 
     // TODO make private?  or somehow enforce standard levels
 	public void rollup(long start, long end) throws BlueDbException {
-		List<File> filesToRollup = getFilesInRange(start, end);
+		List<File> filesToRollup = getOrderedFilesInRange(start, end);
 		Path path = Paths.get(segmentPath.toString(), start + "_" + end);
 		Path tmpPath = FileManager.createTempFilePath(path);
 
@@ -205,7 +198,7 @@ public class Segment <T extends Serializable> {
 				for (File file: sources) {
 					try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(file.toPath())) {
 						try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
-							transferAllObjects(inputStream, outputStream);
+							Blutils.copyObjects(inputStream, outputStream);
 						}
 					}
 				}
@@ -233,8 +226,10 @@ public class Segment <T extends Serializable> {
 	}
 
 	// TODO test
-	protected List<File> getFilesInRange(long min, long max) {
-		List<File> filesInFolder = FileManager.getFolderContents(segmentPath.toFile());
+	protected List<File> getOrderedFilesInRange(long min, long max) {
+		File segmentFolder = segmentPath.toFile();
+		List<File> filesInFolder = FileManager.getFolderContents(segmentFolder, (f) -> doesfileNameRangeOverlap(f, min, max));
+		// TODO order them
 		return Blutils.filter(filesInFolder, (f) -> doesfileNameRangeOverlap(f, min, max));
 	}
 
@@ -277,25 +272,9 @@ public class Segment <T extends Serializable> {
 		return segmentPath;
 	}
 
-    protected static <X> void transferAllObjects(BlueObjectInput<X> input, BlueObjectOutput<X> output) throws BlueDbException {
-		while(input.hasNext()) {
-			X next = input.next();
-			output.write(next);
-		}
-    }
-
 	private Path getPathFor(long groupingNumber, long rollupLevel) {
 		String fileName = SegmentManager.getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
-	}
-
-	private static boolean inTimeRange(long minTime, long maxTime, BlueKey key) {
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeFrameKey = (TimeFrameKey) key;
-			return timeFrameKey.getEndTime() >= minTime && timeFrameKey.getStartTime() <= maxTime;
-		} else {
-			return key.getGroupingNumber() >= minTime && key.getGroupingNumber() <= maxTime;
-		}
 	}
 
 	protected static <T extends Serializable> T get(BlueKey key, BlueObjectInput<BlueEntity<T>> inputStream) {

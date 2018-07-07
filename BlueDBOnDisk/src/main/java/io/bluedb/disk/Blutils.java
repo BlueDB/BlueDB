@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import io.bluedb.api.Condition;
+import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.TimeFrameKey;
+import io.bluedb.disk.file.BlueObjectInput;
+import io.bluedb.disk.file.BlueObjectOutput;
 
 public class Blutils {
 	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
@@ -34,4 +39,22 @@ public class Blutils {
 		}
 		return results;
 	}
+
+	// TODO test
+	public static boolean isInRange(BlueKey key, long min, long max) {
+		if (key instanceof TimeFrameKey) {
+			TimeFrameKey timeFrameKey = (TimeFrameKey) key;
+			return timeFrameKey.getEndTime() >= min && timeFrameKey.getStartTime() <= max;
+		} else {
+			return key.getGroupingNumber() >= min && key.getGroupingNumber() <= max;
+		}
+	}
+
+	// TODO test
+    public static <X> void copyObjects(BlueObjectInput<X> objectInput, BlueObjectOutput<X> objectOutput) throws BlueDbException {
+		while(objectInput.hasNext()) {
+			X next = objectInput.next();
+			objectOutput.write(next);
+		}
+    }
 }
