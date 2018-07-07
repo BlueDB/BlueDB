@@ -78,24 +78,6 @@ public class FileManager {
 		return Arrays.asList(folderContentsArray);
 	}
 
-	public <T> ArrayList<T> loadList(BlueReadLock<Path> readLock) throws BlueDbException {
-		ArrayList<T> items = new ArrayList<>();
-		try(BlueObjectInput<T> inputStream = getBlueInputStream(readLock)) {
-			while(inputStream.hasNext()) {
-				items.add(inputStream.next());
-			}
-		}
-		return items;
-	}
-
-	public <T> void saveList(BlueWriteLock<Path> writeLock, List<T> items) throws BlueDbException {
-		try(BlueObjectOutput<T> outputStream = getBlueOutputStream(writeLock)) {
-			for (T item: items) {
-				outputStream.write(item);
-			}
-		}
-	}
-
 	public <T> BlueObjectOutput<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
 		return new BlueObjectOutput<T>(writeLock, serializer);
 	}
