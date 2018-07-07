@@ -67,17 +67,17 @@ public class Segment <T extends Serializable> {
 					if (iterKey.equals(newKey)) {
 						output.write(newEntity);
 						newEntity = null;
-					} else if (newEntity != null && iterKey.getGroupingNumber() > groupingNumber) {
-						output.write(newEntity);
-						newEntity = null;
-						output.write(iterEntity);
+//					} else if (newEntity != null && iterKey.getGroupingNumber() > groupingNumber) {
+//						output.write(newEntity);
+//						newEntity = null;
+//						output.write(iterEntity);
 					} else {
 						output.write(iterEntity);
 					}
 				}
-				if (newEntity != null) {
-					output.write(newEntity);
-				}
+//				if (newEntity != null) {
+//					output.write(newEntity);
+//				}
 			}
 		});
 	}

@@ -67,7 +67,7 @@ public class SegmentTest extends TestCase {
 	}
 
 	@Test
-	public void testContains() {
+	public void test_contains() {
 		Segment<TestValue> segment = createSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -112,33 +112,51 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.insert(key1At1, value1);
-			assertTrue(segment.contains(key1At1));
+			segment.insert(key3At3, value3);
+			assertFalse(segment.contains(key1At1));
 			assertFalse(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			assertEquals(value1, segment.get(key1At1));
+			assertTrue(segment.contains(key3At3));
+			assertEquals(null, segment.get(key1At1));
 			assertEquals(null, segment.get(key2At1));
-			assertEquals(null, segment.get(key3At3));
+			assertEquals(value3, segment.get(key3At3));
 
 			segment.insert(key2At1, value2);
-			assertTrue(segment.contains(key1At1));
+			assertFalse(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			assertEquals(value1, segment.get(key1At1));
+			assertTrue(segment.contains(key3At3));
+			assertEquals(null, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
-			assertEquals(null, segment.get(key3At3));
+			assertEquals(value3, segment.get(key3At3));
 
-			segment.insert(key3At3, value3);
+			segment.insert(key1At1, value1);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
 			assertEquals(value1, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
+
+			// make sure insert works after rollup
+			segment.rollup(SegmentManager.getSegmentTimeRange(0));
+			BlueKey key4At2 = createKey(4, 2);
+			TestValue value4 = createValue("Dan");
+			segment.insert(key4At2, value4);
+			assertTrue(segment.contains(key1At1));
+			assertTrue(segment.contains(key2At1));
+			assertTrue(segment.contains(key3At3));
+			assertTrue(segment.contains(key4At2));
+
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
+
+		try {
+			segment.insert(key2At1, value2);
+			fail();  // double insert
+		} catch (BlueDbException e) {
+		}
+
 	}
 
 	@Test
