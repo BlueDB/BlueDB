@@ -1,10 +1,13 @@
 package io.bluedb.disk.collection;
 
+import static org.junit.Assert.assertNotEquals;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List;
 
 import org.junit.Test;
 import io.bluedb.api.BlueDb;
@@ -32,6 +35,7 @@ public class BlueCollectionImplTest extends TestCase {
 		collection.query().delete();
 	}
 
+	@Override
 	public void tearDown() throws Exception {
 		Files.walk(dbPath)
 		.sorted(Comparator.reverseOrder())
@@ -42,28 +46,78 @@ public class BlueCollectionImplTest extends TestCase {
 	}
 
 	@Test
-	public void testQuery() {
-		// TODO
+	public void test_query() {
+		TestValue value = new TestValue("Joe");
+		insert(1, value);
+		try {
+			List<TestValue> values = getCollection().query().getList();
+			assertEquals(1, values.size());
+			assertTrue(values.contains(value));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	@Test
-	public void testContains() {
-		// TODO
+	public void test_contains() {
+		TestValue value = new TestValue("Joe");
+		insert(1, value);
+		try {
+			List<TestValue> values = getCollection().query().getList();
+			assertEquals(1, values.size());
+			assertTrue(values.contains(value));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	@Test
-	public void testGet() {
-		// TODO
+	public void test_get() {
+		TestValue value = new TestValue("Joe");
+		TestValue differentValue = new TestValue("Bob");
+		BlueKey key = createTimeKey(10, value);
+		BlueKey sameTimeDifferentValue = createTimeKey(10, differentValue);
+		BlueKey sameValueDifferentTime = createTimeKey(20, value);
+		BlueKey differentValueAndTime = createTimeKey(20, differentValue);
+		insert(key, value);
+		try {
+			assertEquals(value, getCollection().get(key));
+			assertNotEquals(value, differentValue);
+			assertNotEquals(value, getCollection().get(sameTimeDifferentValue));
+			assertNotEquals(value, getCollection().get(sameValueDifferentTime));
+			assertNotEquals(value, getCollection().get(differentValueAndTime));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	@Test
-	public void testInsert() {
-		// TODO
+	public void test_insert() {
+		TestValue value = new TestValue("Joe");
+		BlueKey key = createTimeKey(10, value);
+		insert(key, value);
+		assertValueAtKey(key, value);
+		try {
+			getCollection().insert(key, value); // insert duplicate
+			fail();
+		} catch (BlueDbException e) {
+		}
 	}
 
 	@Test
-	public void testUpdate() {
-		// TODO
+	public void test_update() {
+		BlueKey key = insert(10, new TestValue("Joe", 0));
+		try {
+			assertCupcakes(key, 0);
+			getCollection().update(key, (v) -> v.addCupcake());
+			assertCupcakes(key, 1);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	@Test
@@ -78,19 +132,48 @@ public class BlueCollectionImplTest extends TestCase {
 	}
 
 	@Test
-	public void testDelete() {
+	public void test_delete() {
+		TestValue value = new TestValue("Joe");
+		BlueKey key = insert(10, value);
+		try {
+			assertValueAtKey(key, value);
+			getCollection().delete(key);
+			assertValueNotAtKey(key, value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_findMatches() {
 		// TODO
 	}
 
 	@Test
-	public void testGetList() {
+	public void test_applyChange() {
+		// TODO
+	}
+
+	@Test
+	public void test_executeTask() {
+		// TODO
+	}
+
+	@Test
+	public void test_rollup() {
+		// TODO
+	}
+
+	@Test
+	public void test_scheduleRollup() {
 		// TODO
 	}
 
 	@Test
 	public void test_updateAll_invalid() {
 		TestValue value = new TestValue("Joe", 0);
-		BlueKey key = insert(1, value);
+		insert(1, value);
 		try {
 			getCollection().query().update((v) -> v.doSomethingNaughty());
 			fail();
@@ -98,39 +181,37 @@ public class BlueCollectionImplTest extends TestCase {
 		}
 	}
 
-	@Test
-	public void testDeleteAll() {
-		// TODO
+	private void assertCupcakes(BlueKey key, int cupcakes) {
+		try {
+			TestValue value = getCollection().get(key);
+			if (value == null)
+				fail();
+			assertEquals(cupcakes, value.getCupcakes());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
-	@Test
-	public void testGetFirstSegment() {
-		// TODO
+	private void assertValueNotAtKey(BlueKey key, TestValue value) {
+		try {
+			assertNotEquals(value, getCollection().get(key));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
-	@Test
-	public void testGetSegments() {
-		// TODO
-	}
-
-	@Test
-	public void testGetRecoveryManager() {
-		// TODO
-	}
-
-	@Test
-	public void testGetPath() {
-		// TODO
-	}
-
-	@Test
-	public void testGetSerializer() {
-		// TODO
-	}
-
-	@Test
-	public void testShutdown() {
-		// TODO
+	private void assertValueAtKey(BlueKey key, TestValue value) {
+		TestValue differentValue = new TestValue("Bob");
+		differentValue.setCupcakes(42);
+		try {
+			assertEquals(value, getCollection().get(key));
+			assertNotEquals(value, differentValue);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	private BlueKey insert(long time, TestValue value) {

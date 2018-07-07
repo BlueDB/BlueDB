@@ -1,12 +1,9 @@
 package io.bluedb.disk.collection;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -81,7 +78,6 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		// TODO roll up to a smaller time range?
 		// TODO report insert when the insert task actually runs?
-		// TODO delay on other writes?
 		TimeRange timeRange = SegmentManager.getSegmentTimeRange(key.getGroupingNumber());
 		rollupScheduler.reportInsert(timeRange);
 		Runnable insertTask = new InsertTask<T>(this, key, value);
@@ -115,6 +111,34 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		return results;
 	}
 
+	public void applyChange(PendingChange<T> change) throws BlueDbException {
+		BlueKey key = change.getKey();
+		List<Segment<T>> segments = segmentManager.getAllSegments(key);
+		for (Segment<T> segment: segments) {
+			change.applyChange(segment);
+		}
+	}
+
+	public void executeTask(Runnable task) throws BlueDbException{
+		Future<?> future = executor.submit(task);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("BlueDB task failed " + task.toString(), e);
+		}
+	}
+
+	public void rollup(TimeRange timeRange) throws BlueDbException {
+		Segment<T> segment = segmentManager.getSegment(timeRange.getStart());
+		segment.rollup(timeRange.getStart(), timeRange.getEnd());
+	}
+
+	public void scheduleRollup(TimeRange timeRange) {
+		Runnable rollupRunnable = new RollupTask(this, timeRange);
+		executor.submit(rollupRunnable);
+	}
+
 	public SegmentManager<T> getSegmentManager() {
 		return segmentManager;
 	}
@@ -140,35 +164,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		executor.shutdown();
 	}
 
-	public void applyChange(PendingChange<T> change) throws BlueDbException {
-		BlueKey key = change.getKey();
-		List<Segment<T>> segments = segmentManager.getAllSegments(key);
-		for (Segment<T> segment: segments) {
-			change.applyChange(segment);
-		}
-	}
-
-	public void executeTask(Runnable task) throws BlueDbException{
-		Future<?> future = executor.submit(task);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("BlueDB task failed " + task.toString(), e);
-		}
-	}
-
 	public Class<T> getType() {
 		return type;
-	}
-
-	public void rollup(TimeRange timeRange) throws BlueDbException {
-		Segment<T> segment = segmentManager.getSegment(timeRange.getStart());
-		segment.rollup(timeRange.getStart(), timeRange.getEnd());
-	}
-
-	public void scheduleRollup(TimeRange timeRange) {
-		Runnable rollupRunnable = new RollupTask(this, timeRange);
-		executor.submit(rollupRunnable);
 	}
 }

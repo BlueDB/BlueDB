@@ -68,7 +68,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testInvalidTypeOnExistingCollection() {
+	public void test_getCollection_invalid_type() {
 		insert(10, new TestValue("Bob"));
 		try {
 			db.getCollection(TestValue2.class, "testing");
@@ -78,54 +78,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 	
 	@Test
-	public void testInsert() {
-		TestValue value = new TestValue("Joe");
-		BlueKey key = createTimeKey(10, value);
-		insert(key, value);
-		assertValueAtKey(key, value);
-		try {
-			getCollection().insert(key, value); // insert duplicate
-			fail();
-		} catch (BlueDbException e) {
-		}
-	}
-
-	@Test
-	public void testGet() {
-		TestValue value = new TestValue("Joe");
-		TestValue differentValue = new TestValue("Bob");
-		BlueKey key = createTimeKey(10, value);
-		BlueKey sameTimeDifferentValue = createTimeKey(10, differentValue);
-		BlueKey sameValueDifferentTime = createTimeKey(20, value);
-		BlueKey differentValueAndTime = createTimeKey(20, differentValue);
-		insert(key, value);
-		try {
-			assertEquals(value, getCollection().get(key));
-			assertNotEquals(value, differentValue);
-			assertNotEquals(value, getCollection().get(sameTimeDifferentValue));
-			assertNotEquals(value, getCollection().get(sameValueDifferentTime));
-			assertNotEquals(value, getCollection().get(differentValueAndTime));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	@Test
-	public void testUpdate() {
-		BlueKey key = insert(10, new TestValue("Joe", 0));
-		try {
-			assertCupcakes(key, 0);
-			getCollection().update(key, (v) -> v.addCupcake());
-			assertCupcakes(key, 1);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	@Test
-	public void testCount() {
+	public void test_query_count() {
 		try {
 			assertEquals(0, getCollection().query().count());
 			BlueKey key = insert(10, new TestValue("Joe", 0));
@@ -139,21 +92,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testDelete() {
-		TestValue value = new TestValue("Joe");
-		BlueKey key = insert(10, value);
-		try {
-			assertValueAtKey(key, value);
-			getCollection().delete(key);
-			assertValueNotAtKey(key, value);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	@Test
-	public void testWhere() {
+	public void test_query_where() {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insert(1, valueJoe);
@@ -172,7 +111,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testBeforeTimeFrame() {
+	public void test_query_beforeTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -195,7 +134,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testBeforeTime() {
+	public void test_query_beforeTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -218,7 +157,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testBeforeOrAtTimeFrame() {
+	public void test_query_beforeOrAtTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -245,7 +184,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testBeforeOrAtTime() {
+	public void test_query_beforeOrAtTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -270,7 +209,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testAfterTimeFrame() {
+	public void test_query_AfterTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -297,7 +236,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testAfterTime() {
+	public void test_query_AfterTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -320,7 +259,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testAfterOrAtTimeFrame() {
+	public void test_query_AfterOrAtTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
 		insert(1, 2, value1to2);
@@ -351,7 +290,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testAfterOrAtTime() {
+	public void test_query_AfterOrAtTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
 		insert(1, valueAt1);
@@ -376,7 +315,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testBetween() {
+	public void test_query_Between() {
 		TestValue valueAt2 = new TestValue("Joe");
 		TestValue valueAt3 = new TestValue("Bob");
 		insert(2, valueAt2);
@@ -414,7 +353,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 
 	@Test
-	public void testGetList() {
+	public void test_getList() {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insert(1, valueJoe);
@@ -433,7 +372,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 	
 	@Test
-	public void testGetIterator() {
+	public void test_getIterator() {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insert(1, valueJoe);
@@ -453,7 +392,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 	
 	@Test
-	public void testQueryUpdate() {
+	public void test_query_update() {
 		BlueKey keyJoe   = insert(1, new TestValue("Joe", 0));
 		BlueKey keyBob   = insert(2, new TestValue("Bob", 0));
 		BlueKey keyJosey = insert(2,  new TestValue("Josey", 0));
@@ -486,7 +425,7 @@ public class BlueDbOnDiskTest extends TestCase {
 	}
 	
 	@Test
-	public void testQueryDelete() {
+	public void test_query_delete() {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		TestValue valueJosey = new TestValue("Josey");
