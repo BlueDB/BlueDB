@@ -245,6 +245,12 @@ public class Segment <T extends Serializable> {
 		File segmentFolder = segmentPath.toFile();
 		FileFilter filter = (f) -> doesfileNameRangeOverlap(f, min, max);
 		List<File> filesInFolder = FileManager.getFolderContents(segmentFolder, filter);
+		sortByRange(filesInFolder);
+		return filesInFolder;
+	}
+
+	// TODO test
+	protected static void sortByRange(List<File> files) {
 		Comparator<File> comparator = new Comparator<>() {
 			@Override
 			public int compare(File o1, File o2) {
@@ -253,8 +259,7 @@ public class Segment <T extends Serializable> {
 				return r1.compareTo(r2);
 			}
 		};
-		Collections.sort(filesInFolder, comparator);
-		return filesInFolder;
+		Collections.sort(files, comparator);
 	}
 
 	protected static boolean doesfileNameRangeOverlap(File file, long min, long max ) {
