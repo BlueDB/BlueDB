@@ -2,11 +2,18 @@ package io.bluedb.disk;
 
 import static org.junit.Assert.*;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
 import io.bluedb.api.Condition;
+import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.file.BlueObjectInput;
+import io.bluedb.disk.file.BlueObjectOutput;
+import io.bluedb.disk.file.BlueReadLock;
+import io.bluedb.disk.file.BlueWriteLock;
+import io.bluedb.disk.file.LockManager;
 
 public class BlutilsTest {
 
@@ -30,7 +37,7 @@ public class BlutilsTest {
 		assertEquals(0, Blutils.roundDownToMultiple(41, 42));  // test equal to a multiple
 		assertEquals(42, Blutils.roundDownToMultiple(42, 42));  // test equal to a multiple
 		assertTrue(Blutils.roundDownToMultiple(Long.MAX_VALUE, 100) > 0); // make sure we don't overflow
-//		assertTrue(Blutils.roundDownToMultiple(-Long.MAX_VALUE, 100) < 0); // overflow
+		assertTrue(Blutils.roundDownToMultiple(Long.MIN_VALUE, 100) < 0); // make sure we don't overflow
 		assertEquals(-100L, Blutils.roundDownToMultiple(-10, 100));
 	}
 
@@ -40,5 +47,10 @@ public class BlutilsTest {
 		List<Long> valuesBiggerThan2 = Arrays.asList(7L, 5L, 1000L);
 		List<Long> filteredValues = Blutils.filter(values, (l) -> (l > 2));
 		assertEquals(valuesBiggerThan2, filteredValues);
+	}
+
+	@Test
+	public void test_inRange() {
+		// TODO
 	}
 }

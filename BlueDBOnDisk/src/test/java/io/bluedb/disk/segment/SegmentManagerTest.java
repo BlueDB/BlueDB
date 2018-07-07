@@ -57,6 +57,16 @@ public class SegmentManagerTest extends TestCase {
 	}
 
 	@Test
+	public void test_getSegmentTimeRange() {
+		// TODO
+	}
+
+	@Test
+	public void test_getTimeRange() {
+		// TODO
+	}
+
+	@Test
 	public void test_folderNameRangeContainsRange() {
 		File file2to4 = Paths.get("2_4").toFile();
 		assertFalse(SegmentManager.folderNameRangeContainsRange(file2to4, 0, 1));  // below range

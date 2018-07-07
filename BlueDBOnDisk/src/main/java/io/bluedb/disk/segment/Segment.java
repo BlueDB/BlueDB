@@ -214,7 +214,7 @@ public class Segment <T extends Serializable> {
 				for (File file: sources) {
 					try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(file.toPath())) {
 						try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
-							Blutils.copyObjects(inputStream, outputStream);
+							outputStream.writeAll(inputStream);
 						}
 					}
 				}

@@ -26,6 +26,13 @@ public class BlueObjectOutput<T> implements Closeable {
 		dataOutputStream = openDataOutputStream(file);
 	}
 
+	// for testing only
+	protected BlueObjectOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
+		this.path = path;
+		this.serializer = serializer;
+		this.dataOutputStream = dataOutputStream;
+	}
+
 	public void write(T value) throws BlueDbException {
 		if (value == null) {
 			throw new BlueDbException("cannot write null to " + this.getClass().getSimpleName());
@@ -38,6 +45,13 @@ public class BlueObjectOutput<T> implements Closeable {
 		} catch (Throwable t) {
 			t.printStackTrace();
 			throw new BlueDbException("error writing to file " + path, t);
+		}
+	}
+
+	public void writeAll(BlueObjectInput<T> input) throws BlueDbException {
+		while(input.hasNext()) {
+			T next = input.next();
+			write(next);
 		}
 	}
 

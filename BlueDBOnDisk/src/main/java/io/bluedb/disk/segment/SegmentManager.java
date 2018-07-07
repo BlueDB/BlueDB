@@ -148,23 +148,16 @@ public class SegmentManager<T extends Serializable> {
 
 	protected static String getRangeFileName(long groupingValue, long multiple) {
 		TimeRange timeRange = getTimeRange(groupingValue, multiple);
-		return getRangeFileName(timeRange);
+		return timeRange.toUnderscoreDelimitedString();
 	}
 
-	// TODO test
 	public static TimeRange getSegmentTimeRange(long groupingValue) {
-		return getTimeRange(groupingValue, LEVEL_3);
+		return getTimeRange(groupingValue, getSegmentSize());
 	}
 
-	// TODO test
 	public static TimeRange getTimeRange(long groupingValue, long multiple) {
 		long low = Blutils.roundDownToMultiple(groupingValue, multiple);
 		long high = Math.min(Long.MAX_VALUE - multiple + 1, low) + multiple - 1;  // prevent overflow
 		return new TimeRange(low, high);
-	}
-
-	// TODO test
-	protected static String getRangeFileName(TimeRange timeRange) {
-		return String.valueOf(timeRange.getStart()) + "_" + String.valueOf(timeRange.getEnd());
 	}
 }
