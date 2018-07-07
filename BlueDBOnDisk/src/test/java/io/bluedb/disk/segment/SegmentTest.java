@@ -297,7 +297,7 @@ public class SegmentTest extends TestCase {
 	}
 
 	@Test
-	public void testRollup() {
+	public void test_rollup() {
 		Segment<TestValue> segment = createSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -314,6 +314,11 @@ public class SegmentTest extends TestCase {
 			assertEquals(2, values.size());
 			File[] directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, directoryContents.length);
+
+			try {
+				segment.rollup(0, 3);
+				fail();  // rollups must be 
+			} catch (BlueDbException e) {}
 
 			segment.rollup(0, SegmentManager.LEVEL_0 - 1);
 			values = segment.getAll();

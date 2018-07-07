@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -25,8 +26,8 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
 
-	private final static long SEGMENT_SIZE = SegmentManager.LEVEL_0;
-	private final static long[] ROLLUP_LEVELS = {1, 3125, SEGMENT_SIZE};
+	private final static Long SEGMENT_SIZE = SegmentManager.LEVEL_0;
+	private final static Long[] ROLLUP_LEVELS = {1L, 3125L, SEGMENT_SIZE};
 
 	private final FileManager fileManager;
 	private final Path segmentPath;
@@ -192,8 +193,12 @@ public class Segment <T extends Serializable> {
 		return results;
     }
 
-    // TODO make private?  or somehow enforce standard levels
 	public void rollup(long start, long end) throws BlueDbException {
+		long rollupSize = end - start + 1;
+		boolean isValidRollupSize = Arrays.asList(ROLLUP_LEVELS).contains(rollupSize);
+		if (!isValidRollupSize) {
+			throw new BlueDbException("Rollup range [" + start + "," + end + "] not a valid rollup size");
+		}
 		List<File> filesToRollup = getOrderedFilesInRange(start, end);
 		Path path = Paths.get(segmentPath.toString(), start + "_" + end);
 		Path tmpPath = FileManager.createTempFilePath(path);
@@ -202,7 +207,6 @@ public class Segment <T extends Serializable> {
 		moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
 	}
 
-	// TODO keep sorted, here and everywhere you write
 	private void copy(Path destination, List<File> sources) throws BlueDbException {
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(destination)) {
 			try(BlueObjectOutput<BlueEntity<T>> outputStream = fileManager.getBlueOutputStream(tempFileLock)) {
