@@ -162,25 +162,32 @@ public class Segment <T extends Serializable> {
 				.collect(Collectors.toList());
 	}
 
-    public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
+	public List<BlueEntity<T>> getRange(long min, long max) throws BlueDbException {
 		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
-		List<File> relevantFiles = getOrderedFilesInRange(Long.MIN_VALUE, maxTime);
-		// TODO we need to make this work when rollups or deletes might be happening in the background
+		long minGroupingNumber = Long.MIN_VALUE;
+		List<File> relevantFiles = getOrderedFilesInRange(Long.MIN_VALUE, max);
 		List<BlueEntity<T>> results = new ArrayList<>();
 		for (File file: relevantFiles) {
-			Path path = file.toPath();
-			try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(path)) {
+			TimeRange rangeForThisFile = TimeRange.fromUnderscoreDelmimitedString(file.getName());
+			if (minGroupingNumber > rangeForThisFile.getEnd()) {
+				continue;  // we've already read the rolled up file that includes this range
+			}
+			try (BlueReadLock<Path> readLock = getReadLockFor(rangeForThisFile.getStart())) { // get the rolled up file if applicable
 				if (!readLock.getKey().toFile().exists())
 					continue;
 				try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
 					while(inputStream.hasNext()) {
 						BlueEntity<T> next = inputStream.next();
 						BlueKey key = next.getKey();
-						if (Blutils.isInRange(key, minTime, maxTime))
+						if (key.getGroupingNumber() < minGroupingNumber) {
+							continue;
+						}
+						if (Blutils.isInRange(key, min, max))
 							results.add(next);
 					}
 				}
 			}
+			minGroupingNumber = rangeForThisFile.getEnd() + 1;
 		}
 		return results;
     }

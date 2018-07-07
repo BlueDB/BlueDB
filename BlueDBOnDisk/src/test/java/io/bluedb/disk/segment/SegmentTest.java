@@ -315,7 +315,7 @@ public class SegmentTest extends TestCase {
 			File[] directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, directoryContents.length);
 
-			segment.rollup(0, 3);
+			segment.rollup(0, SegmentManager.LEVEL_0 - 1);
 			values = segment.getAll();
 			assertEquals(2, values.size());
 			directoryContents = segment.getPath().toFile().listFiles();
