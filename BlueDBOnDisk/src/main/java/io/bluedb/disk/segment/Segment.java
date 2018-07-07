@@ -28,10 +28,19 @@ public class Segment <T extends Serializable> {
 
 	private final FileManager fileManager;
 	private final Path segmentPath;
+	private final LockManager<Path> lockManager;
 
 	public Segment(Path segmentPath, FileManager fileManager) {
 		this.segmentPath = segmentPath;
 		this.fileManager = fileManager;
+		lockManager = fileManager.getLockManager();
+	}
+
+	// for testing only
+	protected Segment() {
+		segmentPath = null;
+		fileManager = null;
+		lockManager = null;
 	}
 
 	@Override
@@ -117,7 +126,6 @@ public class Segment <T extends Serializable> {
 	}
 
 	public void modifyChunk(long groupingNumber, Processor<T> processor) throws BlueDbException {
-		LockManager<Path> lockManager = fileManager.getLockManager();
 		Path targetPath, tmpPath;
 
 		try (BlueReadLock<Path> readLock = getReadLockFor(groupingNumber)) {
@@ -157,7 +165,6 @@ public class Segment <T extends Serializable> {
 	}
 
     public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
-		LockManager<Path> lockManager = fileManager.getLockManager();
 		File folder = segmentPath.toFile();
 		// Note that we cannot bound this from below because a TimeRangeKey that overlaps the target range
 		//      will be stored at the start time;
@@ -193,7 +200,6 @@ public class Segment <T extends Serializable> {
 
 	// TODO keep sorted, here and everywhere you write
 	private void copy(Path destination, List<File> sources) throws BlueDbException {
-		LockManager<Path> lockManager = fileManager.getLockManager();
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(destination)) {
 			try(BlueObjectOutput<BlueEntity<T>> outputStream = fileManager.getBlueOutputStream(tempFileLock)) {
 				for (File file: sources) {
@@ -208,7 +214,6 @@ public class Segment <T extends Serializable> {
 	}
 
 	private void moveRolledUpFileAndDeleteSourceFiles(Path newRolledupPath, Path tempRolledupPath, List<File> filesToRollup) throws BlueDbException {
-		LockManager<Path> lockManager = fileManager.getLockManager();
 		List<BlueWriteLock<Path>> sourceFileWriteLocks = new ArrayList<>();
 		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(newRolledupPath)){
 			for (File file: filesToRollup) {
@@ -253,7 +258,6 @@ public class Segment <T extends Serializable> {
 	}
 
 	protected BlueReadLock<Path> getReadLockFor(long groupingNumber) {
-		LockManager<Path> lockManager = fileManager.getLockManager();
 		for (long rollupLevel: ROLLUP_LEVELS) {
 			Path path = getPathFor(groupingNumber, rollupLevel);
 			BlueReadLock<Path> lock = lockManager.acquireReadLock(path);

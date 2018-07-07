@@ -340,7 +340,7 @@ public class SegmentTest extends TestCase {
 		Segment<TestValue> segment1 = createSegment(1);
 		Segment<TestValue> segment1copy = createSegment(1);
 		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
-		Segment<TestValue> segmentNullPath = new Segment<TestValue>(null, null);
+		Segment<TestValue> segmentNullPath = new Segment<TestValue>();
 		assertEquals(segment1, segment1copy);
 		assertFalse(segment1.equals(segmentMax));
 		assertFalse(segment1.equals(null));
@@ -354,7 +354,7 @@ public class SegmentTest extends TestCase {
 		Segment<TestValue> segment1 = createSegment(1);
 		Segment<TestValue> segment1copy = createSegment(1);
 		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
-		Segment<TestValue> segmentNullPath = new Segment<TestValue>(null, null);
+		Segment<TestValue> segmentNullPath = new Segment<TestValue>();
 		assertEquals(segment1.hashCode(), segment1copy.hashCode());
 		assertTrue(segment1.hashCode() != segmentMax.hashCode());
 		assertTrue(segment1.hashCode() != segmentNullPath.hashCode());
