@@ -26,7 +26,7 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
 
-	private final static Long SEGMENT_SIZE = SegmentManager.LEVEL_0;
+	private final static Long SEGMENT_SIZE = SegmentManager.LEVEL_3;
 	private final static Long[] ROLLUP_LEVELS = {1L, 3125L, SEGMENT_SIZE};
 
 	private final FileManager fileManager;
@@ -166,7 +166,8 @@ public class Segment <T extends Serializable> {
 	public List<BlueEntity<T>> getRange(long min, long max) throws BlueDbException {
 		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
 		long minGroupingNumber = Long.MIN_VALUE;
-		List<File> relevantFiles = getOrderedFilesInRange(Long.MIN_VALUE, max);
+		TimeRange timeRange = new TimeRange(Long.MIN_VALUE, max);
+		List<File> relevantFiles = getOrderedFilesInRange(timeRange);
 		List<BlueEntity<T>> results = new ArrayList<>();
 		for (File file: relevantFiles) {
 			TimeRange rangeForThisFile = TimeRange.fromUnderscoreDelmimitedString(file.getName());
@@ -193,14 +194,14 @@ public class Segment <T extends Serializable> {
 		return results;
     }
 
-	public void rollup(long start, long end) throws BlueDbException {
-		long rollupSize = end - start + 1;
+	public void rollup(TimeRange timeRange) throws BlueDbException {
+		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
 		boolean isValidRollupSize = Arrays.asList(ROLLUP_LEVELS).contains(rollupSize);
 		if (!isValidRollupSize) {
-			throw new BlueDbException("Rollup range [" + start + "," + end + "] not a valid rollup size");
+			throw new BlueDbException("Not a valid rollup size: " + timeRange);
 		}
-		List<File> filesToRollup = getOrderedFilesInRange(start, end);
-		Path path = Paths.get(segmentPath.toString(), start + "_" + end);
+		List<File> filesToRollup = getOrderedFilesInRange(timeRange);
+		Path path = Paths.get(segmentPath.toString(), timeRange.toUnderscoreDelimitedString());
 		Path tmpPath = FileManager.createTempFilePath(path);
 
 		copy(tmpPath, filesToRollup);
@@ -241,7 +242,9 @@ public class Segment <T extends Serializable> {
 	}
 
 	// TODO test
-	protected List<File> getOrderedFilesInRange(long min, long max) {
+	protected List<File> getOrderedFilesInRange(TimeRange range) {
+		long min = range.getStart();
+		long max = range.getEnd();
 		File segmentFolder = segmentPath.toFile();
 		FileFilter filter = (f) -> doesfileNameRangeOverlap(f, min, max);
 		List<File> filesInFolder = FileManager.getFolderContents(segmentFolder, filter);
@@ -297,7 +300,7 @@ public class Segment <T extends Serializable> {
 		return lockManager.acquireReadLock(path);
 	}
 
-	protected Path getPath() {
+	public Path getPath() {
 		return segmentPath;
 	}
 

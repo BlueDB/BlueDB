@@ -131,7 +131,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 
 	public void rollup(TimeRange timeRange) throws BlueDbException {
 		Segment<T> segment = segmentManager.getSegment(timeRange.getStart());
-		segment.rollup(timeRange.getStart(), timeRange.getEnd());
+		segment.rollup(timeRange);
 	}
 
 	public void scheduleRollup(TimeRange timeRange) {

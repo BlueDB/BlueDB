@@ -315,12 +315,14 @@ public class SegmentTest extends TestCase {
 			File[] directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, directoryContents.length);
 
+			TimeRange invalidRollupTimeRange = new TimeRange(0, 3);
 			try {
-				segment.rollup(0, 3);
+				segment.rollup(invalidRollupTimeRange);
 				fail();  // rollups must be 
 			} catch (BlueDbException e) {}
 
-			segment.rollup(0, SegmentManager.LEVEL_0 - 1);
+			TimeRange validRollupTimeRange = new TimeRange(0, SegmentManager.getSegmentSize() - 1);
+			segment.rollup(validRollupTimeRange);
 			values = segment.getAll();
 			assertEquals(2, values.size());
 			directoryContents = segment.getPath().toFile().listFiles();

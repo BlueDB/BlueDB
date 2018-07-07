@@ -18,6 +18,9 @@ import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.segment.SegmentManager;
+import io.bluedb.disk.segment.TimeRange;
 import junit.framework.TestCase;
 
 public class BlueCollectionImplTest extends TestCase {
@@ -162,8 +165,48 @@ public class BlueCollectionImplTest extends TestCase {
 
 	@Test
 	public void test_rollup() {
-		// TODO
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value3 = createValue("Chuck");
+		List<TestValue> values;
+		try {
+			values = getCollection().query().getList();
+			assertEquals(0, values.size());
+
+			getCollection().insert(key1At1, value1);
+			getCollection().insert(key3At3, value3);
+			values = getCollection().query().getList();
+			assertEquals(2, values.size());
+			
+			Segment<TestValue> segment = getCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
+			File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
+			assertEquals(2, segmentDirectoryContents.length);
+
+			long segmentSize = SegmentManager.getSegmentSize();
+			TimeRange offByOneSegmentTimeRange = new TimeRange(0, segmentSize);
+			TimeRange entireFirstSegmentTimeRange = new TimeRange(0, segmentSize -1);
+			try {
+				getCollection().rollup(offByOneSegmentTimeRange);
+				fail();
+			} catch (BlueDbException e) {}
+			try {
+				getCollection().rollup(entireFirstSegmentTimeRange);
+			} catch (BlueDbException e) {
+				fail();
+			}
+
+			values = getCollection().query().getList();
+			assertEquals(2, values.size());
+			segmentDirectoryContents = segment.getPath().toFile().listFiles();
+			assertEquals(1, segmentDirectoryContents.length);
+
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
+
 
 	@Test
 	public void test_scheduleRollup() {
@@ -237,6 +280,14 @@ public class BlueCollectionImplTest extends TestCase {
 	private TimeKey createTimeKey(long time, TestValue obj) {
 		StringKey stringKey = new StringKey(obj.getName());
 		return new TimeKey(stringKey, time);
+	}
+
+	private TestValue createValue(String name){
+		return new TestValue(name);
+	}
+
+	private BlueKey createKey(long keyId, long time){
+		return new TimeKey(keyId, time);
 	}
 
 	private BlueCollectionImpl<TestValue> getCollection() {

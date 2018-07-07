@@ -110,6 +110,10 @@ public class SegmentManager<T extends Serializable> {
 		return new Segment<T>(path, fileManager);
 	}
 
+	public static long getSegmentSize() {
+		return LEVEL_3;
+	}
+
 	protected static List<File> getNonsegmentSubfoldersInRange(File folder, long minValue, long maxValue) {
 		return FileManager.getFolderContents(folder)
             .stream()
