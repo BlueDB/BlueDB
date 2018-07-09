@@ -256,7 +256,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	protected static void sortByRange(List<File> files) {
-		Comparator<File> comparator = new Comparator<>() {
+		Comparator<File> comparator = new Comparator<File>() {
 			@Override
 			public int compare(File o1, File o2) {
 				TimeRange r1 = TimeRange.fromUnderscoreDelmimitedString(o1.getName());
