@@ -19,7 +19,22 @@ public class RollupScheduler {
 	public RollupScheduler(BlueCollectionImpl<?> collection) {
 		lastInsertTimes = new ConcurrentHashMap<>();
 		this.collection = collection;
-		start();
+	}
+
+	public void start() {
+		Runnable runnable = new Runnable(){
+			@Override
+			public void run() {
+				while (!isStopped) {
+					for (TimeRange timeRange: timeRangesReadyForRollup()) {
+						scheduleRollup(timeRange);
+					}
+					trySleep(WAIT_BETWEEN_REVIEWS);
+				}
+			}
+		};
+		Thread thread = new Thread(runnable, "RollupScheduler");
+		thread.start();
 	}
 
 	public void stop() {
@@ -27,7 +42,17 @@ public class RollupScheduler {
 	}
 
 	public void reportInsert(TimeRange timeRange) {
-		lastInsertTimes.put(timeRange, System.currentTimeMillis());
+		reportInsert(timeRange, System.currentTimeMillis());
+	}
+
+	public void reportInsert(TimeRange timeRange, long timeMillis) {
+		if (getLastInsertTime(timeRange) < timeMillis) {
+			lastInsertTimes.put(timeRange, timeMillis);
+		}
+	}
+
+	public long getLastInsertTime(TimeRange timeRange) {
+		return lastInsertTimes.getOrDefault(timeRange, Long.MIN_VALUE);
 	}
 
 	private boolean isReadyForRollup(long lastInsert) {
@@ -35,7 +60,7 @@ public class RollupScheduler {
 		return (now - lastInsert) > WAIT_BEFORE_ROLLUP;
 	}
 
-	private List<TimeRange> timeRangesReadyForRollup() {
+	protected List<TimeRange> timeRangesReadyForRollup() {
 		List<TimeRange> results = new ArrayList<>();
 		for (Entry<TimeRange, Long> entry: lastInsertTimes.entrySet()) {
 			if (isReadyForRollup(entry.getValue())) {
@@ -45,24 +70,16 @@ public class RollupScheduler {
 		return results;
 	}
 
-	private void start() {
-		Runnable runnable = new Runnable(){
-			@Override
-			public void run() {
-				while (!isStopped) {
-					try {
-						for (TimeRange timeRange: timeRangesReadyForRollup()) {
-							collection.scheduleRollup(timeRange);
-							lastInsertTimes.remove(timeRange);
-						}
-						Thread.sleep(WAIT_BETWEEN_REVIEWS);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		};
-		Thread thread = new Thread(runnable, "RollupScheduler");
-		thread.start();
+	protected static void trySleep(long millis) {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void scheduleRollup(TimeRange timeRange) {
+		collection.scheduleRollup(timeRange);
+		lastInsertTimes.remove(timeRange);
 	}
 }

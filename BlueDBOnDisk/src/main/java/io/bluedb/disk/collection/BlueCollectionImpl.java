@@ -56,6 +56,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		recoveryManager.recover();  // everything else has to be in place before running this
 		rollupScheduler = new RollupScheduler(this);
+		rollupScheduler.start();
 	}
 
 	@Override
