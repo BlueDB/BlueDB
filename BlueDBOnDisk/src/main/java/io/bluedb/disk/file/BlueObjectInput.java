@@ -14,6 +14,7 @@ import io.bluedb.disk.serialization.BlueSerializer;
 
 public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 
+	private final BlueReadLock<Path> readLock;
 	private final Path path;
 	private final BlueSerializer serializer;
 	private final DataInputStream dataInputStream;
@@ -21,9 +22,18 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	private T next = null;
 
 	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
+		this.readLock = readLock;
 		this.path = readLock.getKey();
 		this.serializer = serializer;
-		dataInputStream = openDataInputStream(path.toFile());
+		if (path.toFile().exists()) {
+			dataInputStream = openDataInputStream(path.toFile());
+		} else {
+			dataInputStream = null;
+		}
+	}
+
+	public Path getPath() {
+		return path;
 	}
 
 	@Override
@@ -35,6 +45,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 				e.printStackTrace();
 			}
 		}
+		readLock.close();
 	}
 
 	@Override
@@ -56,6 +67,9 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	}
 
 	protected T nextFromFile() {
+		if (dataInputStream == null) {
+			return null;
+		}
 		int objectLength;
 		try {
 			objectLength = dataInputStream.readInt();
