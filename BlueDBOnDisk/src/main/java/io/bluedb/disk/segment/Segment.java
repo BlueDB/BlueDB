@@ -155,30 +155,38 @@ public class Segment <T extends Serializable> {
 	}
 
 	public List<BlueEntity<T>> getRange(long min, long max) throws BlueDbException {
-		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
-		long minGroupingNumber = Long.MIN_VALUE;
-		TimeRange timeRange = new TimeRange(Long.MIN_VALUE, max);
-		List<File> relevantFiles = getOrderedFilesInRange(timeRange);
-		List<TimeRange> timeRanges = relevantFiles.stream().map((f) -> TimeRange.fromUnderscoreDelmimitedString(f.getName())).collect(Collectors.toList());
 		List<BlueEntity<T>> results = new ArrayList<>();
-		for (TimeRange rangeForThisFile: timeRanges) {
-			if (minGroupingNumber > rangeForThisFile.getEnd()) {
-				continue;  // we've already read the rolled up file that includes this range
+		try (ChunkIterator<T> chunker = new ChunkIterator<>(this, min, max)) {
+			while (chunker.hasNext()) {
+				results.add(chunker.next());
 			}
-			try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(rangeForThisFile.getStart())) { // get the rolled up file if applicable
-				while(input.hasNext()) {
-					BlueEntity<T> next = input.next();
-					BlueKey key = next.getKey();
-					if (key.getGroupingNumber() < minGroupingNumber) {
-						continue;
-					}
-					if (Blutils.isInRange(key, min, max))
-						results.add(next);
-				}
-			}
-			minGroupingNumber = rangeForThisFile.getEnd() + 1;
 		}
 		return results;
+
+//		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
+//		long minGroupingNumber = Long.MIN_VALUE;
+//		TimeRange timeRange = new TimeRange(Long.MIN_VALUE, max);
+//		List<File> relevantFiles = getOrderedFilesInRange(timeRange);
+//		List<TimeRange> timeRanges = relevantFiles.stream().map((f) -> TimeRange.fromUnderscoreDelmimitedString(f.getName())).collect(Collectors.toList());
+//		List<BlueEntity<T>> results = new ArrayList<>();
+//		for (TimeRange rangeForThisFile: timeRanges) {
+//			if (minGroupingNumber > rangeForThisFile.getEnd()) {
+//				continue;  // we've already read the rolled up file that includes this range
+//			}
+//			try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(rangeForThisFile.getStart())) { // get the rolled up file if applicable
+//				while(input.hasNext()) {
+//					BlueEntity<T> next = input.next();
+//					BlueKey key = next.getKey();
+//					if (key.getGroupingNumber() < minGroupingNumber) {
+//						continue;
+//					}
+//					if (Blutils.isInRange(key, min, max))
+//						results.add(next);
+//				}
+//			}
+//			minGroupingNumber = rangeForThisFile.getEnd() + 1;
+//		}
+//		return results;
     }
 
 	public void rollup(TimeRange timeRange) throws BlueDbException {
@@ -277,11 +285,6 @@ public class Segment <T extends Serializable> {
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
 		return fileManager.getBlueInputStream(lock);
-	}
-
-	protected BlueReadLock<Path> getReadLockFor(BlueKey key) {
-		long groupingNumber = key.getGroupingNumber();
-		return getReadLockFor(groupingNumber);
 	}
 
 	protected BlueReadLock<Path> getReadLockFor(long groupingNumber) {
