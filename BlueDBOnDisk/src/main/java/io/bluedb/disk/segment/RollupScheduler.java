@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 
 public class RollupScheduler implements Runnable {
@@ -32,12 +33,7 @@ public class RollupScheduler implements Runnable {
 	public void run() {
 		while (!isStopped) {
 			scheduleReadyRollups();
-			try {
-				System.out.println("done scheduling, now sleeping");
-				Thread.sleep(WAIT_BETWEEN_REVIEWS);
-			} catch (InterruptedException e) {
-				return;  // shutting down
-			}
+			isStopped |= !Blutils.trySleep(WAIT_BETWEEN_REVIEWS);
 		}
 	}
 

@@ -47,4 +47,13 @@ public class Blutils {
 			return key.getGroupingNumber() >= min && key.getGroupingNumber() <= max;
 		}
 	}
+
+	public static boolean trySleep(long timeMillis) {
+		try {
+			Thread.sleep(timeMillis);
+			return true;
+		} catch (InterruptedException e) {
+			return false;
+		}
+	}
 }

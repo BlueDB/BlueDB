@@ -139,10 +139,14 @@ public class FileManager {
 
 	protected byte[] readBytes(BlueReadLock<Path> readLock) throws BlueDbException {
 		Path path = readLock.getKey();
+		if (!path.toFile().exists()) {
+			return null;
+		}
+		return readBytes(path);
+	}
+
+	protected byte[] readBytes(Path path) throws BlueDbException {
 		try {
-			if (!path.toFile().exists()) {
-				return null;
-			}
 			return Files.readAllBytes(path);
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -5,7 +5,7 @@ import static org.junit.Assert.*;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
@@ -72,5 +72,28 @@ public class BlutilsTest {
 		assertTrue(Blutils.isInRange(_4, 0, 6));
 		assertTrue(Blutils.isInRange(_4, 4, 6));
 		assertFalse(Blutils.isInRange(_4, 5, 6));
-}
+	}
+
+	@Test
+	public void test_trySleep() {
+		AtomicBoolean isDoneSleeping = new AtomicBoolean(false);
+		Thread sleepingThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				Blutils.trySleep(20_000);
+				isDoneSleeping.set(true);
+			}
+		});
+		sleepingThread.start();
+		assertFalse(isDoneSleeping.get());
+		Blutils.trySleep(10);
+		assertFalse(isDoneSleeping.get());
+		sleepingThread.interrupt();
+		try {
+			sleepingThread.join(2_000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		assertTrue(isDoneSleeping.get());
+	}
 }

@@ -109,12 +109,13 @@ public class RollupSchedulerTest {
 		rollupSchedulerThread.start();
 
 		for (int i = 0; i < 100; i++) {
+			try { Thread.sleep(10);} catch (InterruptedException e) {e.printStackTrace();}
 			if(rollupsRequested.size() > 0)
 				break;
-			try { Thread.sleep(10);} catch (InterruptedException e) {e.printStackTrace();}
 		}
 		
-		rollupScheduler.stop();
+		rollupSchedulerThread.stop();
+//		rollupScheduler.stop();
 
 		assertEquals(1, rollupsRequested.size());
 		assertTrue(rollupsRequested.contains(timeRange));

@@ -297,12 +297,22 @@ public class FileManagerTest extends TestCase {
 	}
 
 	@Test
-	public void test_readBytes_invalid() {
+	public void test_readBytes_lock_invalid() {
 		Path nonExistingFile = Paths.get(testPath.toString(), "test_move_non_existing");
 		try (BlueReadLock<Path> lock = lockManager.acquireReadLock(nonExistingFile)) {
 			assertNull(fileManager.readBytes(lock));
 		} catch ( BlueDbException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	public void test_readBytes_path_invalid() {
+		Path nonExistingFile = Paths.get(testPath.toString(), "test_move_non_existing");
+		try {
+			fileManager.readBytes(nonExistingFile);
+			fail();
+		} catch ( BlueDbException e) {
 		}
 	}
 	
