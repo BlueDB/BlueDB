@@ -25,6 +25,7 @@ import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.ChunkIterator;
 import io.bluedb.disk.segment.RollupScheduler;
 import io.bluedb.disk.segment.RollupTask;
 import io.bluedb.disk.segment.Segment;
@@ -97,15 +98,17 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		executeTask(deleteTask);
 	}
 
-	public List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(long min, long max, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		List<Segment<T>> segments = segmentManager.getExistingSegments(minTime, maxTime);
+		List<Segment<T>> segments = segmentManager.getExistingSegments(min, max);
 		for (Segment<T> segment: segments) {
-			List<BlueEntity<T>> entitesInSegment = segment.getRange(minTime, maxTime);
-			for (BlueEntity<T> entity: entitesInSegment) {
-				T value = entity.getValue();
-				if(Blutils.meetsConditions(conditions, value)) {
-					results.add(entity);
+			try (ChunkIterator<T> chunk = segment.getIterator(min, max)) {
+				while (chunk.hasNext()) {
+					BlueEntity<T> entity = chunk.next();
+					T value = entity.getValue();
+					if(Blutils.meetsConditions(conditions, value)) {
+						results.add(entity);
+					}
 				}
 			}
 		}

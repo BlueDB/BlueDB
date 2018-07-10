@@ -10,12 +10,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.BlueReadLock;
@@ -147,47 +145,9 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	public List<T> getAll() throws BlueDbException {
-		return getRange(Long.MIN_VALUE, Long.MAX_VALUE)
-				.stream()
-				.map((e) -> e.getValue())
-				.collect(Collectors.toList());
+	public ChunkIterator<T> getIterator(long min, long max) {
+		return new ChunkIterator<>(this, min, max);
 	}
-
-	public List<BlueEntity<T>> getRange(long min, long max) throws BlueDbException {
-		List<BlueEntity<T>> results = new ArrayList<>();
-		try (ChunkIterator<T> chunker = new ChunkIterator<>(this, min, max)) {
-			while (chunker.hasNext()) {
-				results.add(chunker.next());
-			}
-		}
-		return results;
-
-//		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
-//		long minGroupingNumber = Long.MIN_VALUE;
-//		TimeRange timeRange = new TimeRange(Long.MIN_VALUE, max);
-//		List<File> relevantFiles = getOrderedFilesInRange(timeRange);
-//		List<TimeRange> timeRanges = relevantFiles.stream().map((f) -> TimeRange.fromUnderscoreDelmimitedString(f.getName())).collect(Collectors.toList());
-//		List<BlueEntity<T>> results = new ArrayList<>();
-//		for (TimeRange rangeForThisFile: timeRanges) {
-//			if (minGroupingNumber > rangeForThisFile.getEnd()) {
-//				continue;  // we've already read the rolled up file that includes this range
-//			}
-//			try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(rangeForThisFile.getStart())) { // get the rolled up file if applicable
-//				while(input.hasNext()) {
-//					BlueEntity<T> next = input.next();
-//					BlueKey key = next.getKey();
-//					if (key.getGroupingNumber() < minGroupingNumber) {
-//						continue;
-//					}
-//					if (Blutils.isInRange(key, min, max))
-//						results.add(next);
-//				}
-//			}
-//			minGroupingNumber = rangeForThisFile.getEnd() + 1;
-//		}
-//		return results;
-    }
 
 	public void rollup(TimeRange timeRange) throws BlueDbException {
 		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow

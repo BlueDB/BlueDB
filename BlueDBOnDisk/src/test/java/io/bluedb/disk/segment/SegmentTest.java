@@ -239,45 +239,45 @@ public class SegmentTest extends TestCase {
 		}
 	}
 
-	@Test
-	public void testGetRange() {
-		Segment<TestValue> segment = createSegment();
-		BlueKey key1At1 = createKey(1, 1);
-		BlueKey key2At1 = createKey(2, 1);
-		BlueKey key3At3 = createKey(3, 3);
-		TestValue value1 = createValue("Anna");
-		TestValue value2 = createValue("Bob");
-		TestValue value3 = createValue("Chuck");
-		try {
-			segment.insert(key1At1, value1);
-			segment.insert(key2At1, value2);
-			segment.insert(key3At3, value3);
-			List<BlueEntity<TestValue>> entities0to0 = segment.getRange(0,0);
-			List<TestValue> values0to0 = extractValues(entities0to0);
-			assertEquals(0, values0to0.size());
-			List<BlueEntity<TestValue>> entities0to1 = segment.getRange(0,1);
-			List<TestValue> values0to1 = extractValues(entities0to1);
-			assertEquals(2, values0to1.size());
-			assertTrue(values0to1.contains(value1));
-			assertTrue(values0to1.contains(value2));
-			List<BlueEntity<TestValue>> entities1to3 = segment.getRange(1,3);
-			List<TestValue> values1to3 = extractValues(entities1to3);
-			assertEquals(3, values1to3.size());
-			assertTrue(values1to3.contains(value1));
-			assertTrue(values1to3.contains(value2));
-			assertTrue(values1to3.contains(value3));
-			List<BlueEntity<TestValue>> entities2to4 = segment.getRange(2,4);
-			List<TestValue> values2to4 = extractValues(entities2to4);
-			assertEquals(1, values2to4.size());
-			assertTrue(values1to3.contains(value3));
-			List<BlueEntity<TestValue>> entities4to5 = segment.getRange(4, 5);
-			List<TestValue> values4to5 = extractValues(entities4to5);
-			assertEquals(0, values4to5.size());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
+//	@Test
+//	public void testGetRange() {
+//		Segment<TestValue> segment = createSegment();
+//		BlueKey key1At1 = createKey(1, 1);
+//		BlueKey key2At1 = createKey(2, 1);
+//		BlueKey key3At3 = createKey(3, 3);
+//		TestValue value1 = createValue("Anna");
+//		TestValue value2 = createValue("Bob");
+//		TestValue value3 = createValue("Chuck");
+//		try {
+//			segment.insert(key1At1, value1);
+//			segment.insert(key2At1, value2);
+//			segment.insert(key3At3, value3);
+//			List<BlueEntity<TestValue>> entities0to0 = segment.getRange(0,0);
+//			List<TestValue> values0to0 = extractValues(entities0to0);
+//			assertEquals(0, values0to0.size());
+//			List<BlueEntity<TestValue>> entities0to1 = segment.getRange(0,1);
+//			List<TestValue> values0to1 = extractValues(entities0to1);
+//			assertEquals(2, values0to1.size());
+//			assertTrue(values0to1.contains(value1));
+//			assertTrue(values0to1.contains(value2));
+//			List<BlueEntity<TestValue>> entities1to3 = segment.getRange(1,3);
+//			List<TestValue> values1to3 = extractValues(entities1to3);
+//			assertEquals(3, values1to3.size());
+//			assertTrue(values1to3.contains(value1));
+//			assertTrue(values1to3.contains(value2));
+//			assertTrue(values1to3.contains(value3));
+//			List<BlueEntity<TestValue>> entities2to4 = segment.getRange(2,4);
+//			List<TestValue> values2to4 = extractValues(entities2to4);
+//			assertEquals(1, values2to4.size());
+//			assertTrue(values1to3.contains(value3));
+//			List<BlueEntity<TestValue>> entities4to5 = segment.getRange(4, 5);
+//			List<TestValue> values4to5 = extractValues(entities4to5);
+//			assertEquals(0, values4to5.size());
+//		} catch (BlueDbException e) {
+//			e.printStackTrace();
+//			fail();
+//		}
+//	}
 
 	@Test
 	public void testGetAll() {
@@ -290,22 +290,22 @@ public class SegmentTest extends TestCase {
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
 		try {
-			values = segment.getAll();
+			values = getAll(segment);
 			assertEquals(0, values.size());
 
 			segment.insert(key1At1, value1);
-			values = segment.getAll();
+			values = getAll(segment);
 			assertEquals(1, values.size());
 			assertTrue(values.contains(value1));
 
 			segment.insert(key2At1, value2);
-			values = segment.getAll();
+			values = getAll(segment);
 			assertEquals(2, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));
 
 			segment.insert(key3At3, value3);
-			values = segment.getAll();
+			values = getAll(segment);
 			assertEquals(3, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));
@@ -325,12 +325,12 @@ public class SegmentTest extends TestCase {
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
 		try {
-			values = segment.getAll();
+			values = getAll(segment);
 			assertEquals(0, values.size());
 
 			segment.insert(key1At1, value1);
 			segment.insert(key3At3, value3);
-			values = segment.getAll();
+			values = getAll(segment);
 			assertEquals(2, values.size());
 			File[] directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, directoryContents.length);
@@ -343,7 +343,7 @@ public class SegmentTest extends TestCase {
 
 			TimeRange validRollupTimeRange = new TimeRange(0, SegmentManager.getSegmentSize() - 1);
 			segment.rollup(validRollupTimeRange);
-			values = segment.getAll();
+			values = getAll(segment);
 			assertEquals(2, values.size());
 			directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(1, directoryContents.length);
@@ -444,5 +444,15 @@ public class SegmentTest extends TestCase {
 			values.add(entity.getValue());
 		}
 		return values;
+	}
+	
+	private List<TestValue> getAll(Segment<TestValue> segment) {
+		List<TestValue> results = new ArrayList<>();
+		try (ChunkIterator<TestValue> iterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
+			while (iterator.hasNext()) {
+				results.add(iterator.next().getValue());
+			}
+		}
+		return results;
 	}
 }
