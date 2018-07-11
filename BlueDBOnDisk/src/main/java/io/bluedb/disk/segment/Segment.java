@@ -65,17 +65,10 @@ public class Segment <T extends Serializable> {
 					if (iterKey.equals(newKey)) {
 						output.write(newEntity);
 						newEntity = null;
-//					} else if (newEntity != null && iterKey.getGroupingNumber() > groupingNumber) {
-//						output.write(newEntity);
-//						newEntity = null;
-//						output.write(iterEntity);
 					} else {
 						output.write(iterEntity);
 					}
 				}
-//				if (newEntity != null) {
-//					output.write(newEntity);
-//				}
 			}
 		});
 	}
@@ -91,7 +84,8 @@ public class Segment <T extends Serializable> {
 					BlueEntity<T> iterEntity = input.next();
 					BlueKey iterKey = iterEntity.getKey();
 					if (iterKey.equals(newKey)) {
-						throw new DuplicateKeyException("attempt to insert duplicate key", newKey);
+						output.write(newEntity);
+						toInsert = null;
 					} else if (toInsert != null && iterKey.getGroupingNumber() > groupingNumber) {
 						output.write(newEntity);
 						toInsert = null;

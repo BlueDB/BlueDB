@@ -150,13 +150,6 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-
-		try {
-			segment.insert(key2At1, value2);
-			fail();  // double insert
-		} catch (BlueDbException e) {
-		}
-
 	}
 
 	@Test
