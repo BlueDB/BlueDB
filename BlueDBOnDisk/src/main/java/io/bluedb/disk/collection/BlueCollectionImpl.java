@@ -97,12 +97,11 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		executeTask(deleteTask);
 	}
 
-	public List<BlueEntity<T>> findMatches(long minTime, long maxTime, List<Condition<T>> conditions) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(long min, long max, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		List<Segment<T>> segments = segmentManager.getExistingSegments(minTime, maxTime);
-		for (Segment<T> segment: segments) {
-			List<BlueEntity<T>> entitesInSegment = segment.getRange(minTime, maxTime);
-			for (BlueEntity<T> entity: entitesInSegment) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, min, max)) {
+			while (iterator.hasNext()) {
+				BlueEntity<T> entity = iterator.next();
 				T value = entity.getValue();
 				if(Blutils.meetsConditions(conditions, value)) {
 					results.add(entity);

@@ -13,13 +13,14 @@ import io.bluedb.disk.serialization.BlueSerializer;
 
 public class BlueObjectOutput<T> implements Closeable {
 
+	private final BlueWriteLock<Path> lock;
 	private final Path path;
 	private final BlueSerializer serializer;
 	private final DataOutputStream dataOutputStream;
 
 	public BlueObjectOutput(BlueWriteLock<Path> writeLock, BlueSerializer serializer) throws BlueDbException {
-		Path path = writeLock.getKey();
-		this.path = path;
+		lock = writeLock;
+		path = lock.getKey();
 		this.serializer = serializer;
 		File file = path.toFile();
 		FileManager.ensureDirectoryExists(file);
@@ -28,6 +29,8 @@ public class BlueObjectOutput<T> implements Closeable {
 
 	// for testing only
 	protected BlueObjectOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
+		LockManager<Path> lockManager = new LockManager<Path>();
+		lock = lockManager.acquireWriteLock(path);
 		this.path = path;
 		this.serializer = serializer;
 		this.dataOutputStream = dataOutputStream;
@@ -62,6 +65,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		lock.close();
 	}
 
 	protected static DataOutputStream openDataOutputStream(File file) throws BlueDbException {

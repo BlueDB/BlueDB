@@ -10,12 +10,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.BlueReadLock;
@@ -127,16 +125,11 @@ public class Segment <T extends Serializable> {
 	public void modifyChunk(long groupingNumber, Processor<T> processor) throws BlueDbException {
 		Path targetPath, tmpPath;
 
-		try (BlueReadLock<Path> readLock = getReadLockFor(groupingNumber)) {
-			targetPath = readLock.getKey();
-			FileManager.ensureFileExists(targetPath);
+		try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(groupingNumber)) {
+			targetPath = input.getPath();
 			tmpPath = FileManager.createTempFilePath(targetPath);
-			try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
-				try(BlueObjectOutput<BlueEntity<T>> output = fileManager.getBlueOutputStream(tempFileLock)) {
-					try(BlueObjectInput<BlueEntity<T>> input = fileManager.getBlueInputStream(readLock)) {
-						processor.process(input, output);
-					}
-				}
+			try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(tmpPath)) {
+				processor.process(input, output);
 			}
 		}
 
@@ -146,53 +139,15 @@ public class Segment <T extends Serializable> {
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
-		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
-			if (!readLock.getKey().toFile().exists()) {
-				return null;
-			}
-			try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
-				return get(key, inputStream);
-			}
+		long groupingNumber = key.getGroupingNumber();
+		try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(groupingNumber)) {
+			return get(key, inputStream);
 		}
 	}
 
-	public List<T> getAll() throws BlueDbException {
-		return getRange(Long.MIN_VALUE, Long.MAX_VALUE)
-				.stream()
-				.map((e) -> e.getValue())
-				.collect(Collectors.toList());
+	public SegmentEntityIterator<T> getIterator(long min, long max) {
+		return new SegmentEntityIterator<>(this, min, max);
 	}
-
-	public List<BlueEntity<T>> getRange(long min, long max) throws BlueDbException {
-		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
-		long minGroupingNumber = Long.MIN_VALUE;
-		TimeRange timeRange = new TimeRange(Long.MIN_VALUE, max);
-		List<File> relevantFiles = getOrderedFilesInRange(timeRange);
-		List<BlueEntity<T>> results = new ArrayList<>();
-		for (File file: relevantFiles) {
-			TimeRange rangeForThisFile = TimeRange.fromUnderscoreDelmimitedString(file.getName());
-			if (minGroupingNumber > rangeForThisFile.getEnd()) {
-				continue;  // we've already read the rolled up file that includes this range
-			}
-			try (BlueReadLock<Path> readLock = getReadLockFor(rangeForThisFile.getStart())) { // get the rolled up file if applicable
-				if (!readLock.getKey().toFile().exists())
-					continue;
-				try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
-					while(inputStream.hasNext()) {
-						BlueEntity<T> next = inputStream.next();
-						BlueKey key = next.getKey();
-						if (key.getGroupingNumber() < minGroupingNumber) {
-							continue;
-						}
-						if (Blutils.isInRange(key, min, max))
-							results.add(next);
-					}
-				}
-			}
-			minGroupingNumber = rangeForThisFile.getEnd() + 1;
-		}
-		return results;
-    }
 
 	public void rollup(TimeRange timeRange) throws BlueDbException {
 		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
@@ -209,14 +164,10 @@ public class Segment <T extends Serializable> {
 	}
 
 	private void copy(Path destination, List<File> sources) throws BlueDbException {
-		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(destination)) {
-			try(BlueObjectOutput<BlueEntity<T>> outputStream = fileManager.getBlueOutputStream(tempFileLock)) {
-				for (File file: sources) {
-					try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(file.toPath())) {
-						try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
-							outputStream.writeAll(inputStream);
-						}
-					}
+		try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(destination)) {
+			for (File file: sources) {
+				try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(file.toPath())) {
+					output.writeAll(inputStream);
 				}
 			}
 		}
@@ -281,9 +232,19 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	protected BlueReadLock<Path> getReadLockFor(BlueKey key) {
-		long groupingNumber = key.getGroupingNumber();
-		return getReadLockFor(groupingNumber);
+	protected BlueObjectOutput<BlueEntity<T>> getObjectOutputFor(Path path) throws BlueDbException {
+		BlueWriteLock<Path> lock = lockManager.acquireWriteLock(path);
+		return fileManager.getBlueOutputStream(lock);
+	}
+
+	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(Path path) throws BlueDbException {
+		BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
+		return fileManager.getBlueInputStream(lock);
+	}
+
+	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
+		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
+		return fileManager.getBlueInputStream(lock);
 	}
 
 	protected BlueReadLock<Path> getReadLockFor(long groupingNumber) {

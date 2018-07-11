@@ -1,15 +1,16 @@
 package io.bluedb.disk.query;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import io.bluedb.api.BlueQuery;
+import io.bluedb.api.CloseableIterator;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 
@@ -65,8 +66,8 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	}
 
 	@Override
-	public Iterator<T> getIterator() throws BlueDbException {
-		return  getList().iterator();
+	public CloseableIterator<T> getIterator() throws BlueDbException {
+		return new CollectionValueIterator<T>(collection, minTime, maxTime);
 	}
 
 	@Override
