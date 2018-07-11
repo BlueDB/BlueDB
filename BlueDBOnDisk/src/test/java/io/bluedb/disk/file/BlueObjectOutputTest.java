@@ -33,14 +33,11 @@ public class BlueObjectOutputTest extends TestCase {
 	protected void tearDown() throws Exception {
 		targetFilePath.toFile().delete();
 		tempFilePath.toFile().delete();
-		Files.walk(testingFolderPath)
-			.sorted(Comparator.reverseOrder())
-			.map(Path::toFile)
-			.forEach(File::delete);
-		testingFolderPath.toFile().delete();
 		recursiveDelete(testingFolderPath.toFile());
 	}
 
+	
+	
 	@Test
 	public void test_close() {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
@@ -52,27 +49,22 @@ public class BlueObjectOutputTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
+
 	}
 
-//	@Test
-//	public void test_openDataInputStream() {
-//		File unavailableFile = Paths.get(testingFolder.toString(), "your_heart").toFile();
-//		
-//		try (FileChannel channel = new RandomAccessFile(unavailableFile, "rw").getChannel() ) {
-//			try (FileLock lock = channel.lock()) {
-//				try {
-//					BlueObjectOutput.openDataOutputStream(unavailableFile);
-//					fail();
-//				} catch (BlueDbException e) {}
-//			} catch (IOException e1) {
-//				e1.printStackTrace();
-//				fail();
-//			}
-//		} catch (IOException e2) {
-//			e2.printStackTrace();
-//			fail();
-//		}
-//	}
+	@Test
+	public void test_openDataOutputStream() {
+		File missingFile = Paths.get(testingFolderPath.toString(), "far away", "not_home").toFile();
+		try {
+			BlueObjectOutput.openDataOutputStream(missingFile);
+			fail();
+		}  catch (BlueDbException e) {
+			e.printStackTrace();
+		} catch(Throwable t) {
+			
+		}
+	}
+
 
 	@Test
 	public void test_write() {
@@ -101,8 +93,57 @@ public class BlueObjectOutputTest extends TestCase {
 			}
 		} catch (BlueDbException e) {
 		}
+
+		try {
+			BlueObjectOutput<TestValue> invalidOut = new BlueObjectOutput<>(null, null, null);
+			invalidOut.write(value);
+			fail();
+		} catch (BlueDbException e) {
+		}
 	}
 
+	@Test
+	public void test_copyObjects() {
+		TestValue value = new TestValue("Jobodo Monobodo");
+		Path srcPath = targetFilePath;
+		Path dstPath = tempFilePath;
+		
+		// prepare the source file
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(srcPath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.write(value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+
+		// copy
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(srcPath)) {
+			try (BlueObjectInput<TestValue> input = fileManager.getBlueInputStream(readLock)) {
+				try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(dstPath)) {
+					try (BlueObjectOutput<TestValue> output = fileManager.getBlueOutputStream(writeLock)) {
+						output.writeAll(input);
+					}
+				}
+			}
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+
+		// confirm that it worked
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(dstPath)) {
+			try (BlueObjectInput<TestValue> input = fileManager.getBlueInputStream(readLock)) {
+				assertEquals(value, input.next());
+			}
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	
+	
 	private void recursiveDelete(File file) {
 		if (!file.exists()) {
 			return;

@@ -45,7 +45,7 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<PendingChange<T>> getPendingChanges() {
-		List<File> pendingChangeFiles = fileManager.listFiles(recoveryPath, SUFFIX);
+		List<File> pendingChangeFiles = FileManager.getFolderContents(recoveryPath, SUFFIX);
 		List<PendingChange<T>> changes = new ArrayList<>();
 		for (File file: pendingChangeFiles) {
 			try {

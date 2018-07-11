@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -17,6 +18,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.serialization.BlueEntity;
 import junit.framework.TestCase;
 
@@ -65,7 +67,7 @@ public class SegmentTest extends TestCase {
 	}
 
 	@Test
-	public void testContains() {
+	public void test_contains() {
 		Segment<TestValue> segment = createSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -110,33 +112,51 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.insert(key1At1, value1);
-			assertTrue(segment.contains(key1At1));
+			segment.insert(key3At3, value3);
+			assertFalse(segment.contains(key1At1));
 			assertFalse(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			assertEquals(value1, segment.get(key1At1));
+			assertTrue(segment.contains(key3At3));
+			assertEquals(null, segment.get(key1At1));
 			assertEquals(null, segment.get(key2At1));
-			assertEquals(null, segment.get(key3At3));
+			assertEquals(value3, segment.get(key3At3));
 
 			segment.insert(key2At1, value2);
-			assertTrue(segment.contains(key1At1));
+			assertFalse(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			assertEquals(value1, segment.get(key1At1));
+			assertTrue(segment.contains(key3At3));
+			assertEquals(null, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
-			assertEquals(null, segment.get(key3At3));
+			assertEquals(value3, segment.get(key3At3));
 
-			segment.insert(key3At3, value3);
+			segment.insert(key1At1, value1);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
 			assertEquals(value1, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
+
+			// make sure insert works after rollup
+			segment.rollup(SegmentManager.getSegmentTimeRange(0));
+			BlueKey key4At2 = createKey(4, 2);
+			TestValue value4 = createValue("Dan");
+			segment.insert(key4At2, value4);
+			assertTrue(segment.contains(key1At1));
+			assertTrue(segment.contains(key2At1));
+			assertTrue(segment.contains(key3At3));
+			assertTrue(segment.contains(key4At2));
+
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
+
+		try {
+			segment.insert(key2At1, value2);
+			fail();  // double insert
+		} catch (BlueDbException e) {
+		}
+
 	}
 
 	@Test
@@ -315,12 +335,14 @@ public class SegmentTest extends TestCase {
 			File[] directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, directoryContents.length);
 
+			TimeRange invalidRollupTimeRange = new TimeRange(0, 3);
 			try {
-				segment.rollup(0, 3);
+				segment.rollup(invalidRollupTimeRange);
 				fail();  // rollups must be 
 			} catch (BlueDbException e) {}
 
-			segment.rollup(0, SegmentManager.LEVEL_0 - 1);
+			TimeRange validRollupTimeRange = new TimeRange(0, SegmentManager.getSegmentSize() - 1);
+			segment.rollup(validRollupTimeRange);
 			values = segment.getAll();
 			assertEquals(2, values.size());
 			directoryContents = segment.getPath().toFile().listFiles();
@@ -330,6 +352,40 @@ public class SegmentTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
+	}
+
+	@Test
+	public void test_getOrderedFilesInRange() {
+		File _12_13 = Paths.get(dbPath.toString(), "12_13").toFile();
+		File _12_15 = Paths.get(dbPath.toString(), "12_15").toFile();
+		File _2_3 = Paths.get(dbPath.toString(), "2_3").toFile();
+		File _100_101 = Paths.get(dbPath.toString(), "100_101").toFile();
+		List<File> expected = Arrays.asList(_2_3, _12_13, _12_15);
+
+		try {
+			FileManager.ensureFileExists(_12_13.toPath());
+			FileManager.ensureFileExists(_12_15.toPath());
+			FileManager.ensureFileExists(_2_3.toPath());
+			FileManager.ensureFileExists(_100_101.toPath());
+			TimeRange timeRange = new TimeRange(0, 20);
+			assertEquals(expected, Segment.getOrderedFilesInRange(dbPath, timeRange));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_sortByRange() {
+		File _12_13 = Paths.get(dbPath.toString(), "12_13").toFile();
+		File _12_15 = Paths.get(dbPath.toString(), "12_15").toFile();
+		File _2_3 = Paths.get(dbPath.toString(), "2_3").toFile();
+		List<File> unsorted = Arrays.asList(_12_15, _2_3, _12_13);
+		List<File> sorted = Arrays.asList(_2_3, _12_13, _12_15);
+
+		assertFalse(unsorted.equals(sorted));
+		Segment.sortByRange(unsorted);
+		assertTrue(unsorted.equals(sorted));
 	}
 
 	@Test
