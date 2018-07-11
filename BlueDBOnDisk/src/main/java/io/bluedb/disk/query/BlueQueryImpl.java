@@ -67,7 +67,7 @@ public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
-		return new BlIterator(collection, minTime, maxTime);
+		return new BlIterator<T>(collection, minTime, maxTime);
 	}
 
 	@Override
