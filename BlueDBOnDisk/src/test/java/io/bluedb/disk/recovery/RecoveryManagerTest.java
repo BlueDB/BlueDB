@@ -1,66 +1,34 @@
 package io.bluedb.disk.recovery;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeKey;
-import io.bluedb.disk.BlueDbOnDisk;
-import io.bluedb.disk.BlueDbOnDiskBuilder;
+import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
-import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
-import junit.framework.TestCase;
 
-public class RecoveryManagerTest extends TestCase {
+public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
-	BlueDbOnDisk DB;
-	BlueCollectionImpl<TestValue> COLLECTION;
-	RecoveryManager<TestValue> recoveryManager;
 	BlueSerializer serializer;
-	Path dbPath;
-	
+
 	@Override
 	public void setUp() throws Exception {
-		dbPath = Paths.get("testing_RecoveryManagerTest");
-		DB = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
-		recoveryManager = COLLECTION.getRecoveryManager();
+		super.setUp();
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
-
-		List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
-		for (PendingChange<TestValue> change: changes) {
-			recoveryManager.removeChange(change);
-		}
-		
-		COLLECTION.query().delete();
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-//		List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
-//		for (PendingChange<TestValue> change: changes) {
-//			recoveryManager.removeChange(change);
-//		}
-		Files.walk(dbPath)
-		.sorted(Comparator.reverseOrder())
-		.map(Path::toFile)
-		.forEach(File::delete);
 	}
 
 	@Test
 	public void test_getFileName() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		String fileName1 = RecoveryManager.getFileName(change);
 		try {
@@ -80,10 +48,10 @@ public class RecoveryManagerTest extends TestCase {
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		try {
-			List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
+			List<PendingChange<TestValue>> changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
-			recoveryManager.saveChange(change);
-			changes = recoveryManager.getPendingChanges();
+			getRecoveryManager().saveChange(change);
+			changes = getRecoveryManager().getPendingChanges();
 			assertEquals(1, changes.size());
 			assertEquals(value, changes.get(0).getNewValue());
 		} catch (BlueDbException e) {
@@ -98,11 +66,11 @@ public class RecoveryManagerTest extends TestCase {
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		try {
-			recoveryManager.saveChange(change);
-			List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
+			getRecoveryManager().saveChange(change);
+			List<PendingChange<TestValue>> changes = getRecoveryManager().getPendingChanges();
 			assertEquals(1, changes.size());
-			recoveryManager.removeChange(change);
-			changes = recoveryManager.getPendingChanges();
+			getRecoveryManager().removeChange(change);
+			changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
@@ -116,13 +84,13 @@ public class RecoveryManagerTest extends TestCase {
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		try {
-			List<PendingChange<TestValue>> changes = recoveryManager.getPendingChanges();
+			List<PendingChange<TestValue>> changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
-			recoveryManager.saveChange(change);
-			changes = recoveryManager.getPendingChanges();
+			getRecoveryManager().saveChange(change);
+			changes = getRecoveryManager().getPendingChanges();
 			assertEquals(1, changes.size());
-			recoveryManager.removeChange(change);
-			changes = recoveryManager.getPendingChanges();
+			getRecoveryManager().removeChange(change);
+			changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
@@ -135,12 +103,12 @@ public class RecoveryManagerTest extends TestCase {
 		TestValue value = createValue("Joe");
 		try {
 			PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
-			recoveryManager.saveChange(change);
-			List<TestValue> allValues = COLLECTION.query().getList();
+			getRecoveryManager().saveChange(change);
+			List<TestValue> allValues = getCollection().query().getList();
 			assertEquals(0, allValues.size());
-			
-			recoveryManager.recover();
-			allValues = COLLECTION.query().getList();
+
+			getRecoveryManager().recover();
+			allValues = getCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(value, allValues.get(0));
 		} catch (BlueDbException e) {
@@ -154,14 +122,14 @@ public class RecoveryManagerTest extends TestCase {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		try {
-			COLLECTION.insert(key, value);
-			List<TestValue> allValues = COLLECTION.query().getList();
+			getCollection().insert(key, value);
+			List<TestValue> allValues = getCollection().query().getList();
 			assertEquals(1, allValues.size());
-			
+
 			PendingChange<TestValue> change = PendingChange.createDelete(key);
-			recoveryManager.saveChange(change);
-			recoveryManager.recover();
-			allValues = COLLECTION.query().getList();
+			getRecoveryManager().saveChange(change);
+			getRecoveryManager().recover();
+			allValues = getCollection().query().getList();
 			assertEquals(0, allValues.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
@@ -177,16 +145,16 @@ public class RecoveryManagerTest extends TestCase {
 		TestValue newValue = serializer.clone(originalValue);
 		updater.update(newValue);
 		try {
-			COLLECTION.insert(key, originalValue);
+			getCollection().insert(key, originalValue);
 			PendingChange<TestValue> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
-			recoveryManager.saveChange(change);
+			getRecoveryManager().saveChange(change);
 
-			List<TestValue> allValues = COLLECTION.query().getList();
+			List<TestValue> allValues = getCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(0, allValues.get(0).getCupcakes());
 
-			recoveryManager.recover();
-			allValues = COLLECTION.query().getList();
+			getRecoveryManager().recover();
+			allValues = getCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(1, allValues.get(0).getCupcakes());
 		} catch (BlueDbException e) {
@@ -197,7 +165,7 @@ public class RecoveryManagerTest extends TestCase {
 
 	@Test
 	public void test_recover_invalidPendingChange() {
-		Path pathForGarbage = Paths.get(COLLECTION.getPath().toString(), RecoveryManager.SUBFOLDER, "123" + RecoveryManager.SUFFIX);
+		Path pathForGarbage = Paths.get(getCollection().getPath().toString(), RecoveryManager.SUBFOLDER, "123" + RecoveryManager.SUFFIX);
 		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};
 		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
@@ -209,18 +177,6 @@ public class RecoveryManagerTest extends TestCase {
 		}
 
 		pathForGarbage.toFile().delete();
-		recoveryManager.recover();
-	}
-
-	private TestValue createValue(String name, int cupcakes){
-		return new TestValue(name, cupcakes);
-	}
-
-	private TestValue createValue(String name){
-		return new TestValue(name);
-	}
-
-	private BlueKey createKey(long keyId, long time){
-		return new TimeKey(keyId, time);
+		getRecoveryManager().recover();
 	}
 }
