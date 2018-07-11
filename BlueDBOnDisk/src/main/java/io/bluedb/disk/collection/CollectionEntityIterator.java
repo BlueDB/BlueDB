@@ -4,20 +4,20 @@ import java.io.Closeable;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
-import io.bluedb.disk.segment.ChunkIterator;
+import io.bluedb.disk.segment.SegmentEntityIterator;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.serialization.BlueEntity;
 
-public class Bliterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
+public class CollectionEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
 
 	final private BlueCollectionImpl<T> collection;
 	final private List<Segment<T>> segments;
 	final private long min;
 	final private long max;
-	private ChunkIterator<T> chunk;
+	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 
-	public Bliterator(final BlueCollectionImpl<T> collection, final long min, final long max) {
+	public CollectionEntityIterator(final BlueCollectionImpl<T> collection, final long min, final long max) {
 		this.collection = collection;
 		this.min = min;
 		this.max = max;
@@ -26,15 +26,15 @@ public class Bliterator<T extends Serializable> implements Iterator<BlueEntity<T
 
 	@Override
 	public void close() {
-		if (chunk != null) {
-			chunk.close();
+		if (segmentIterator != null) {
+			segmentIterator.close();
 		}
 	}
 
 	@Override
 	public boolean hasNext() {
 		if (next == null) {
-			next = nextFromChunk();
+			next = nextFromSegment();
 		}
 		return next != null;
 	}
@@ -42,27 +42,27 @@ public class Bliterator<T extends Serializable> implements Iterator<BlueEntity<T
 	@Override
 	public BlueEntity<T> next() {
 		if (next == null) {
-			next = nextFromChunk();
+			next = nextFromSegment();
 		}
 		BlueEntity<T> response = next;
 		next = null;
 		return response;
 	}
 
-	protected BlueEntity<T> nextFromChunk() {
-		while (!segments.isEmpty() || chunk != null) {
-			if (chunk != null && chunk.hasNext()) {
-				return chunk.next();
+	protected BlueEntity<T> nextFromSegment() {
+		while (!segments.isEmpty() || segmentIterator != null) {
+			if (segmentIterator != null && segmentIterator.hasNext()) {
+				return segmentIterator.next();
 			}
-			if (chunk != null) {
-				chunk.close();
+			if (segmentIterator != null) {
+				segmentIterator.close();
 			}
-			chunk = getNextChunk();
+			segmentIterator = getNextSegmentIterator();
 		}
 		return null;
 	}
 
-	protected ChunkIterator<T> getNextChunk() {
+	protected SegmentEntityIterator<T> getNextSegmentIterator() {
 		if (segments.isEmpty()) {
 			return null;
 		}

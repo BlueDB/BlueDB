@@ -448,7 +448,7 @@ public class SegmentTest extends TestCase {
 	
 	private List<TestValue> getAll(Segment<TestValue> segment) {
 		List<TestValue> results = new ArrayList<>();
-		try (ChunkIterator<TestValue> iterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
+		try (SegmentEntityIterator<TestValue> iterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
 			while (iterator.hasNext()) {
 				results.add(iterator.next().getValue());
 			}

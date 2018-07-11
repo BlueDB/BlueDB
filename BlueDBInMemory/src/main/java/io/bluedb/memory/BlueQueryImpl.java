@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import io.bluedb.api.BlueQuery;
+import io.bluedb.api.CloseableIterator;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
@@ -58,8 +59,8 @@ class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	}
 
 	@Override
-	public Iterator<T> getIterator() throws BlueDbException {
-		return  getList().iterator();
+	public CloseableIterator<T> getIterator() throws BlueDbException {
+		return  new CloseableIteratorInMemory<T>(getList());
 	}
 
 	@Override

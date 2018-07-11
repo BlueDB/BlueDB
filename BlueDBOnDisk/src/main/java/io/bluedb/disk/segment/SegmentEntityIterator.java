@@ -12,7 +12,7 @@ import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.serialization.BlueEntity;
 
-public class ChunkIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
+public class SegmentEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
 
 	long highestGroupingNumberPutIntoStream;
 	final Segment<T> segment;
@@ -23,7 +23,7 @@ public class ChunkIterator<T extends Serializable> implements Iterator<BlueEntit
 	BlueObjectInput<BlueEntity<T>> currentInput;
 	BlueEntity<T> next = null;
 	
-	public ChunkIterator(final Segment<T> segment, final long min, final long max) {
+	public SegmentEntityIterator(final Segment<T> segment, final long min, final long max) {
 		highestGroupingNumberPutIntoStream = Long.MIN_VALUE;
 		this.segment = segment;
 		this.min = min;

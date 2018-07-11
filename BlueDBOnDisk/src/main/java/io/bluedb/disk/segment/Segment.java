@@ -145,8 +145,8 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	public ChunkIterator<T> getIterator(long min, long max) {
-		return new ChunkIterator<>(this, min, max);
+	public SegmentEntityIterator<T> getIterator(long min, long max) {
+		return new SegmentEntityIterator<>(this, min, max);
 	}
 
 	public void rollup(TimeRange timeRange) throws BlueDbException {
