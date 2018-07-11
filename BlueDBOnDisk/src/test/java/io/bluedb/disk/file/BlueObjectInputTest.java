@@ -23,12 +23,15 @@ public class BlueObjectInputTest extends TestCase {
 	BlueSerializer serializer;
 	FileManager fileManager;
 	LockManager<Path> lockManager;
-	Path testingFolderPath = Paths.get(".", "BlueObjectInputTest");
-	Path targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
-	Path tempFilePath = FileManager.createTempFilePath(targetFilePath);
+	Path testingFolderPath;
+	Path targetFilePath;
+	Path tempFilePath;
 
 	@Override
 	protected void setUp() throws Exception {
+		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
+		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
+		tempFilePath = FileManager.createTempFilePath(targetFilePath);
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
 		fileManager = new FileManager(serializer);
 		lockManager = fileManager.getLockManager();

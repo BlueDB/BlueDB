@@ -1,50 +1,19 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Test;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeKey;
-import io.bluedb.disk.BlueDbOnDisk;
-import io.bluedb.disk.BlueDbOnDiskBuilder;
+import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
-import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.file.FileManager;
-import io.bluedb.disk.serialization.BlueEntity;
-import junit.framework.TestCase;
 
-public class SegmentTest extends TestCase {
-
-	BlueDbOnDisk DB;
-	BlueCollectionImpl<TestValue> COLLECTION;
-	Path dbPath;
-	
-	@Override
-	protected void setUp() throws Exception {
-		dbPath = Paths.get("testing_SegmentTest");
-		DB = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
-		dbPath = DB.getPath();
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-		Files.walk(dbPath)
-		.sorted(Comparator.reverseOrder())
-		.map(Path::toFile)
-		.forEach(File::delete);
-	}
-
-	private static final long SEGMENT_ID = 42;
+public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_doesfileNameRangeOverlap() {
@@ -68,7 +37,7 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void test_contains() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -97,7 +66,7 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void test_insert() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -154,7 +123,7 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void testDelete() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -200,7 +169,7 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void testGet() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -234,7 +203,7 @@ public class SegmentTest extends TestCase {
 
 //	@Test
 //	public void testGetRange() {
-//		Segment<TestValue> segment = createSegment();
+//		Segment<TestValue> segment = getSegment();
 //		BlueKey key1At1 = createKey(1, 1);
 //		BlueKey key2At1 = createKey(2, 1);
 //		BlueKey key3At3 = createKey(3, 3);
@@ -274,7 +243,7 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void testGetAll() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -311,7 +280,7 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void test_rollup() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
@@ -349,10 +318,10 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void test_getOrderedFilesInRange() {
-		File _12_13 = Paths.get(dbPath.toString(), "12_13").toFile();
-		File _12_15 = Paths.get(dbPath.toString(), "12_15").toFile();
-		File _2_3 = Paths.get(dbPath.toString(), "2_3").toFile();
-		File _100_101 = Paths.get(dbPath.toString(), "100_101").toFile();
+		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
+		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();
+		File _2_3 = Paths.get(getPath().toString(), "2_3").toFile();
+		File _100_101 = Paths.get(getPath().toString(), "100_101").toFile();
 		List<File> expected = Arrays.asList(_2_3, _12_13, _12_15);
 
 		try {
@@ -361,7 +330,7 @@ public class SegmentTest extends TestCase {
 			FileManager.ensureFileExists(_2_3.toPath());
 			FileManager.ensureFileExists(_100_101.toPath());
 			TimeRange timeRange = new TimeRange(0, 20);
-			assertEquals(expected, Segment.getOrderedFilesInRange(dbPath, timeRange));
+			assertEquals(expected, Segment.getOrderedFilesInRange(getPath(), timeRange));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -370,9 +339,9 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void test_sortByRange() {
-		File _12_13 = Paths.get(dbPath.toString(), "12_13").toFile();
-		File _12_15 = Paths.get(dbPath.toString(), "12_15").toFile();
-		File _2_3 = Paths.get(dbPath.toString(), "2_3").toFile();
+		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
+		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();
+		File _2_3 = Paths.get(getPath().toString(), "2_3").toFile();
 		List<File> unsorted = Arrays.asList(_12_15, _2_3, _12_13);
 		List<File> sorted = Arrays.asList(_2_3, _12_13, _12_15);
 
@@ -383,7 +352,7 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void testToString() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment();
 		assertTrue(segment.toString().contains(segment.getPath().toString()));
 		assertTrue(segment.toString().contains(segment.getClass().getSimpleName()));
 	}
@@ -391,9 +360,9 @@ public class SegmentTest extends TestCase {
 	@SuppressWarnings("unlikely-arg-type")
 	@Test
 	public void test_equals() {
-		Segment<TestValue> segment1 = createSegment(1);
-		Segment<TestValue> segment1copy = createSegment(1);
-		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
+		Segment<TestValue> segment1 = getSegment(1);
+		Segment<TestValue> segment1copy = getSegment(1);
+		Segment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
 		Segment<TestValue> segmentNullPath = new Segment<TestValue>();
 		assertEquals(segment1, segment1copy);
 		assertFalse(segment1.equals(segmentMax));
@@ -405,47 +374,12 @@ public class SegmentTest extends TestCase {
 
 	@Test
 	public void test_hashCode() {
-		Segment<TestValue> segment1 = createSegment(1);
-		Segment<TestValue> segment1copy = createSegment(1);
-		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
+		Segment<TestValue> segment1 = getSegment(1);
+		Segment<TestValue> segment1copy = getSegment(1);
+		Segment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
 		Segment<TestValue> segmentNullPath = new Segment<TestValue>();
 		assertEquals(segment1.hashCode(), segment1copy.hashCode());
 		assertTrue(segment1.hashCode() != segmentMax.hashCode());
 		assertTrue(segment1.hashCode() != segmentNullPath.hashCode());
-	}
-
-	private TestValue createValue(String name){
-		return new TestValue(name);
-	}
-
-	private BlueKey createKey(long keyId, long time){
-		return new TimeKey(keyId, time);
-	}
-
-	private Segment<TestValue> createSegment() {
-		return createSegment(SEGMENT_ID);
-	}
-	
-	private Segment<TestValue> createSegment(long segmentId) {
-		BlueKey keyInSegment = new TimeKey(1, segmentId);
-		return COLLECTION.getSegmentManager().getFirstSegment(keyInSegment);
-	}
-
-	private List<TestValue> extractValues(List<BlueEntity<TestValue>> entities) {
-		List<TestValue> values = new ArrayList<>();
-		for (BlueEntity<TestValue> entity: entities) {
-			values.add(entity.getValue());
-		}
-		return values;
-	}
-	
-	private List<TestValue> getAll(Segment<TestValue> segment) {
-		List<TestValue> results = new ArrayList<>();
-		try (SegmentEntityIterator<TestValue> iterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
-			while (iterator.hasNext()) {
-				results.add(iterator.next().getValue());
-			}
-		}
-		return results;
 	}
 }

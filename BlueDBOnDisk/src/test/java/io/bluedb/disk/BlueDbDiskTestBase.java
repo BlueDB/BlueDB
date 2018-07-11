@@ -1,5 +1,6 @@
 package io.bluedb.disk;
 
+import static org.junit.Assert.assertNotEquals;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,17 +11,22 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-
+import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.StringKey;
+import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionImpl;
 import io.bluedb.disk.file.LockManager;
+import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.RollupScheduler;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentEntityIterator;
 import io.bluedb.disk.serialization.BlueEntity;
+import io.bluedb.disk.serialization.BlueSerializer;
 import junit.framework.TestCase;
 
 public abstract class BlueDbDiskTestBase extends TestCase {
@@ -29,6 +35,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	BlueCollectionImpl<TestValue> collection;
 	Path dbPath;
 	LockManager<Path> lockManager;
+	RollupScheduler rollupScheduler;
 
 	@Override
 	protected void setUp() throws Exception {
@@ -37,6 +44,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "testing");
 		dbPath = db.getPath();
 		lockManager = collection.getFileManager().getLockManager();
+		rollupScheduler = new RollupScheduler(collection);
 	}
 
 	@Override
@@ -61,6 +69,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public BlueKey createKey(long keyId, long time){
 		return new TimeKey(keyId, time);
+	}
+
+	public Segment<TestValue> getSegment() {
+		return getSegment(42);
 	}
 
 	public Segment<TestValue> getSegment(long groupingId) {
@@ -104,5 +116,138 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 			results.add(next);
 		}
 		return results;
+	}
+
+	public TimeKey createTimeFrameKey(long start, long end, TestValue obj) {
+		StringKey stringKey = new StringKey(obj.getName());
+		return new TimeFrameKey(stringKey, start, end);
+	}
+
+	public BlueKey insert(long time, TestValue value) {
+		BlueKey key = createTimeKey(time, value);
+		insert(key, value);
+		return key;
+	}
+
+	public void insert(BlueKey key, TestValue value) {
+		try {
+			getCollection().insert(key, value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	public BlueKey insert(long start, long end, TestValue value) {
+		BlueKey key = createTimeFrameKey(start, end, value);
+		insert(key, value);
+		return key;
+	}
+
+	public TimeKey createTimeKey(long time, TestValue obj) {
+		StringKey stringKey = new StringKey(obj.getName());
+		return new TimeKey(stringKey, time);
+	}
+
+	public void assertCupcakes(BlueKey key, int cupcakes) {
+		try {
+			TestValue value = getCollection().get(key);
+			if (value == null)
+				fail();
+			assertEquals(cupcakes, value.getCupcakes());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	public void assertValueNotAtKey(BlueKey key, TestValue value) {
+		try {
+			assertNotEquals(value, getCollection().get(key));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	public void assertValueAtKey(BlueKey key, TestValue value) {
+		TestValue differentValue = new TestValue("Bob");
+		differentValue.setCupcakes(42);
+		try {
+			assertEquals(value, getCollection().get(key));
+			assertNotEquals(value, differentValue);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	public Path getPath() {
+		return dbPath;
+	}
+
+	public File createJunkFolder(File parentFolder, String folderName) {
+		File file = Paths.get(parentFolder.toPath().toString(), folderName).toFile();
+		file.mkdir();
+		return file;
+	}
+
+	public File createJunkFile(File parentFolder, String fileName) {
+		File file = Paths.get(parentFolder.toPath().toString(), fileName).toFile();
+		try {
+			file.createNewFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return file;
+	}
+
+	public File createNonsegmentSubfolder(File parentFolder, long low, long high) {
+		String subfolderName = String.valueOf(low) + "_" + String.valueOf(high);
+		File file = Paths.get(parentFolder.toPath().toString(), subfolderName).toFile();
+		file.mkdir();
+		return file;
+	}
+
+	public void emptyAndDelete(File folder) {
+		if (folder.exists()) {
+			for (File f: folder.listFiles()) {
+				if (f.isDirectory()) {
+					emptyAndDelete(f);
+				} else {
+					f.delete();
+				}
+			}
+			folder.delete();
+		}
+	}
+
+	public BlueDbOnDisk db() {
+		return db;
+	}
+
+	public RollupScheduler getRollupScheduler() {
+		return rollupScheduler;
+	}
+
+	public BlueSerializer getSerializer() {
+		return getCollection().getSerializer();
+	}
+
+	public void removeKey(BlueKey key) {
+		try {
+			getCollection().delete(key);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	public RecoveryManager<TestValue> getRecoveryManager() {
+		return collection.getRecoveryManager();
+	}
+
+	public TestValue createValue(String name, int cupcakes){
+		return new TestValue(name, cupcakes);
 	}
 }
