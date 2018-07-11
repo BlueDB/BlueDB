@@ -99,19 +99,30 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	}
 
 	public List<BlueEntity<T>> findMatches(long min, long max, List<Condition<T>> conditions) throws BlueDbException {
+		
+		
 		List<BlueEntity<T>> results = new ArrayList<>();
-		List<Segment<T>> segments = segmentManager.getExistingSegments(min, max);
-		for (Segment<T> segment: segments) {
-			try (ChunkIterator<T> chunk = segment.getIterator(min, max)) {
-				while (chunk.hasNext()) {
-					BlueEntity<T> entity = chunk.next();
-					T value = entity.getValue();
-					if(Blutils.meetsConditions(conditions, value)) {
-						results.add(entity);
-					}
+		try (Bliterator<T> bliterator = new Bliterator<T>(this, min, max)) {
+			while (bliterator.hasNext()) {
+				BlueEntity<T> entity = bliterator.next();
+				T value = entity.getValue();
+				if(Blutils.meetsConditions(conditions, value)) {
+					results.add(entity);
 				}
 			}
 		}
+//		List<Segment<T>> segments = segmentManager.getExistingSegments(min, max);
+//		for (Segment<T> segment: segments) {
+//			try (ChunkIterator<T> chunk = segment.getIterator(min, max)) {
+//				while (chunk.hasNext()) {
+//					BlueEntity<T> entity = chunk.next();
+//					T value = entity.getValue();
+//					if(Blutils.meetsConditions(conditions, value)) {
+//						results.add(entity);
+//					}
+//				}
+//			}
+//		}
 		return results;
 	}
 
