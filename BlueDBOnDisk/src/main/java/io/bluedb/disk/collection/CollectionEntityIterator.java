@@ -49,7 +49,7 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 		return response;
 	}
 
-	protected BlueEntity<T> nextFromSegment() {
+	private BlueEntity<T> nextFromSegment() {
 		while (!segments.isEmpty() || segmentIterator != null) {
 			if (segmentIterator != null && segmentIterator.hasNext()) {
 				return segmentIterator.next();
@@ -62,14 +62,11 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 		return null;
 	}
 
-	protected SegmentEntityIterator<T> getNextSegmentIterator() {
+	private SegmentEntityIterator<T> getNextSegmentIterator() {
 		if (segments.isEmpty()) {
 			return null;
 		}
 		Segment<T> segment = segments.remove(0);
-		if (segment == null) {
-			return null;
-		}
 		return segment.getIterator(min, max);
 	}
 }

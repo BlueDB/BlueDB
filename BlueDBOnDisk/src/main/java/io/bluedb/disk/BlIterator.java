@@ -15,7 +15,7 @@ public class BlIterator<T extends Serializable> implements CloseableIterator<T> 
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		entityIterator.close();
 	}
 

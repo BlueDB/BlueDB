@@ -25,7 +25,6 @@ import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.SegmentEntityIterator;
 import io.bluedb.disk.segment.RollupScheduler;
 import io.bluedb.disk.segment.RollupTask;
 import io.bluedb.disk.segment.Segment;

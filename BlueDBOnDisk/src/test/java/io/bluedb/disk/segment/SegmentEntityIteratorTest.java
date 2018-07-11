@@ -1,59 +1,22 @@
 package io.bluedb.disk.segment;
 
-import static org.junit.Assert.*;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeKey;
-import io.bluedb.disk.BlueDbOnDisk;
-import io.bluedb.disk.BlueDbOnDiskBuilder;
+import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
-import io.bluedb.disk.collection.BlueCollectionImpl;
-import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
-import io.bluedb.disk.file.BlueWriteLock;
-import io.bluedb.disk.file.LockManager;
 import io.bluedb.disk.serialization.BlueEntity;
-import junit.framework.TestCase;
 
-public class SegmentEntityIteratorTest extends TestCase {
-
-	BlueDbOnDisk db;
-	BlueCollectionImpl<TestValue> collection;
-	Path dbPath;
-	LockManager<Path> lockManager;
-	
-	private static final long SEGMENT_ID = 42;
-
-	@Override
-	public void setUp() throws Exception {
-		dbPath = Paths.get("testing_SegmentEntityIteratorTest");
-		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "testing");
-		dbPath = db.getPath();
-		lockManager = collection.getFileManager().getLockManager();
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-		Files.walk(dbPath)
-		.sorted(Comparator.reverseOrder())
-		.map(Path::toFile)
-		.forEach(File::delete);
-	}
+public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_close() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment(1);
 		BlueKey key = createKey(1, 1);
 		TestValue value = createValue("Anna");
 		try {
@@ -62,9 +25,9 @@ public class SegmentEntityIteratorTest extends TestCase {
 			assertNull(iterator.getCurrentPath());  // it should not have opened anything until it needs it
 			iterator.hasNext();  // force it to open the next file
 			assertNotNull(iterator.getCurrentPath());
-			assertTrue(lockManager.isLocked(iterator.getCurrentPath()));
+			assertTrue(getLockManager().isLocked(iterator.getCurrentPath()));
 			iterator.close();
-			assertFalse(lockManager.isLocked(iterator.getCurrentPath()));
+			assertFalse(getLockManager().isLocked(iterator.getCurrentPath()));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -73,7 +36,7 @@ public class SegmentEntityIteratorTest extends TestCase {
 
 	@Test
 	public void test_different_ranges() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -110,7 +73,7 @@ public class SegmentEntityIteratorTest extends TestCase {
 
 	@Test
 	public void test_hasNext() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -134,7 +97,7 @@ public class SegmentEntityIteratorTest extends TestCase {
 
 	@Test
 	public void test_next() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -157,7 +120,7 @@ public class SegmentEntityIteratorTest extends TestCase {
 
 	@Test
 	public void test_next_rollup_before_reads() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -185,7 +148,7 @@ public class SegmentEntityIteratorTest extends TestCase {
 
 	@Test
 	public void test_next_rollup_during_reads() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -226,7 +189,7 @@ public class SegmentEntityIteratorTest extends TestCase {
 
 	@Test
 	public void test_getNextStream_file_deleted() {
-		Segment<TestValue> segment = createSegment();
+		Segment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -261,57 +224,5 @@ public class SegmentEntityIteratorTest extends TestCase {
 	@Test
 	public void test_filesToRanges() {
 		// TODO
-	}
-
-	private TestValue createValue(String name){
-		return new TestValue(name);
-	}
-
-	private BlueKey createKey(long keyId, long time){
-		return new TimeKey(keyId, time);
-	}
-
-	private Segment<TestValue> createSegment() {
-		return createSegment(SEGMENT_ID);
-	}
-	
-	private Segment<TestValue> createSegment(long segmentId) {
-		BlueKey keyInSegment = new TimeKey(1, segmentId);
-		return collection.getSegmentManager().getFirstSegment(keyInSegment);
-	}
-
-	private List<TestValue> extractValues(List<BlueEntity<TestValue>> entities) {
-		List<TestValue> values = new ArrayList<>();
-		for (BlueEntity<TestValue> entity: entities) {
-			values.add(entity.getValue());
-		}
-		return values;
-	}
-
-	private List<BlueEntity<TestValue>> toList(SegmentEntityIterator<TestValue> iterator) {
-		List<BlueEntity<TestValue>> entities = new ArrayList<>();
-		iterator.forEachRemaining(entities::add);
-		return entities;
-	}
-
-	private List<TestValue> getAll(Segment<TestValue> segment) {
-		List<TestValue> results = new ArrayList<>();
-		try (SegmentEntityIterator<TestValue> iterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
-			while (iterator.hasNext()) {
-				results.add(iterator.next().getValue());
-			}
-		}
-		return results;
-	}
-
-	private void writeBytes(Path path, byte[] bytes) {
-		File file = path.toFile();
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			fail();
-		}
 	}
 }
