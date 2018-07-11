@@ -1,6 +1,5 @@
 package io.bluedb.disk.file;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
@@ -115,7 +114,22 @@ public class FileManager {
 		return results;
 	}
 
-	protected static void ensureDirectoryExists(File file) {
+	// TODO tests
+	public static void ensureFileExists(Path path) throws BlueDbException {
+		File file = path.toFile();
+		if (!file.exists()) {
+			ensureDirectoryExists(file);
+			try {
+				file.createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new BlueDbException("can't create file " + path);
+			}
+		}
+		
+	}
+
+	public static void ensureDirectoryExists(File file) {
 		File parent = file.getParentFile();
 		if (parent != null) {
 			parent.mkdirs();

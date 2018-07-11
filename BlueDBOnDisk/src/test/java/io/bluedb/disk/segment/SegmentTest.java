@@ -75,15 +75,15 @@ public class SegmentTest extends TestCase {
 		TestValue value3 = createValue("Chuck");
 		try {
 			assertFalse(segment.contains(key1At1));
-			segment.save(key1At1, value1);
+			segment.insert(key1At1, value1);
 			assertTrue(segment.contains(key1At1));
 			assertFalse(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
-			segment.save(key2At1, value2);
+			segment.insert(key2At1, value2);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
-			segment.save(key3At3, value3);
+			segment.insert(key3At3, value3);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
@@ -94,7 +94,7 @@ public class SegmentTest extends TestCase {
 	}
 
 	@Test
-	public void testPut() {
+	public void test_insert() {
 		Segment<TestValue> segment = createSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -110,7 +110,7 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.save(key1At1, value1);
+			segment.insert(key1At1, value1);
 			assertTrue(segment.contains(key1At1));
 			assertFalse(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
@@ -118,7 +118,7 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.save(key2At1, value2);
+			segment.insert(key2At1, value2);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertFalse(segment.contains(key3At3));
@@ -126,7 +126,7 @@ public class SegmentTest extends TestCase {
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.save(key3At3, value3);
+			segment.insert(key3At3, value3);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
@@ -149,9 +149,9 @@ public class SegmentTest extends TestCase {
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
 		try {
-			segment.save(key1At1, value1);
-			segment.save(key2At1, value2);
-			segment.save(key3At3, value3);
+			segment.insert(key1At1, value1);
+			segment.insert(key2At1, value2);
+			segment.insert(key3At3, value3);
 			assertTrue(segment.contains(key1At1));
 			assertTrue(segment.contains(key2At1));
 			assertTrue(segment.contains(key3At3));
@@ -199,17 +199,17 @@ public class SegmentTest extends TestCase {
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(null, segment.get(key3At3));
 
-			segment.save(key3At3, value3);
+			segment.insert(key3At3, value3);
 			assertEquals(null, segment.get(key1At1));
 			assertEquals(null, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
 
-			segment.save(key2At1, value2);
+			segment.insert(key2At1, value2);
 			assertEquals(null, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
 
-			segment.save(key1At1, value1);
+			segment.insert(key1At1, value1);
 			assertEquals(value1, segment.get(key1At1));
 			assertEquals(value2, segment.get(key2At1));
 			assertEquals(value3, segment.get(key3At3));
@@ -229,9 +229,9 @@ public class SegmentTest extends TestCase {
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
 		try {
-			segment.save(key1At1, value1);
-			segment.save(key2At1, value2);
-			segment.save(key3At3, value3);
+			segment.insert(key1At1, value1);
+			segment.insert(key2At1, value2);
+			segment.insert(key3At3, value3);
 			List<BlueEntity<TestValue>> entities0to0 = segment.getRange(0,0);
 			List<TestValue> values0to0 = extractValues(entities0to0);
 			assertEquals(0, values0to0.size());
@@ -273,18 +273,18 @@ public class SegmentTest extends TestCase {
 			values = segment.getAll();
 			assertEquals(0, values.size());
 
-			segment.save(key1At1, value1);
+			segment.insert(key1At1, value1);
 			values = segment.getAll();
 			assertEquals(1, values.size());
 			assertTrue(values.contains(value1));
 
-			segment.save(key2At1, value2);
+			segment.insert(key2At1, value2);
 			values = segment.getAll();
 			assertEquals(2, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));
 
-			segment.save(key3At3, value3);
+			segment.insert(key3At3, value3);
 			values = segment.getAll();
 			assertEquals(3, values.size());
 			assertTrue(values.contains(value1));
@@ -297,7 +297,7 @@ public class SegmentTest extends TestCase {
 	}
 
 	@Test
-	public void testRollup() {
+	public void test_rollup() {
 		Segment<TestValue> segment = createSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -308,14 +308,19 @@ public class SegmentTest extends TestCase {
 			values = segment.getAll();
 			assertEquals(0, values.size());
 
-			segment.save(key1At1, value1);
-			segment.save(key3At3, value3);
+			segment.insert(key1At1, value1);
+			segment.insert(key3At3, value3);
 			values = segment.getAll();
 			assertEquals(2, values.size());
 			File[] directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, directoryContents.length);
 
-			segment.rollup(0, 3);
+			try {
+				segment.rollup(0, 3);
+				fail();  // rollups must be 
+			} catch (BlueDbException e) {}
+
+			segment.rollup(0, SegmentManager.LEVEL_0 - 1);
 			values = segment.getAll();
 			assertEquals(2, values.size());
 			directoryContents = segment.getPath().toFile().listFiles();
@@ -340,7 +345,7 @@ public class SegmentTest extends TestCase {
 		Segment<TestValue> segment1 = createSegment(1);
 		Segment<TestValue> segment1copy = createSegment(1);
 		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
-		Segment<TestValue> segmentNullPath = new Segment<TestValue>(null, null);
+		Segment<TestValue> segmentNullPath = new Segment<TestValue>();
 		assertEquals(segment1, segment1copy);
 		assertFalse(segment1.equals(segmentMax));
 		assertFalse(segment1.equals(null));
@@ -354,7 +359,7 @@ public class SegmentTest extends TestCase {
 		Segment<TestValue> segment1 = createSegment(1);
 		Segment<TestValue> segment1copy = createSegment(1);
 		Segment<TestValue> segmentMax = createSegment(Long.MAX_VALUE);
-		Segment<TestValue> segmentNullPath = new Segment<TestValue>(null, null);
+		Segment<TestValue> segmentNullPath = new Segment<TestValue>();
 		assertEquals(segment1.hashCode(), segment1copy.hashCode());
 		assertTrue(segment1.hashCode() != segmentMax.hashCode());
 		assertTrue(segment1.hashCode() != segmentNullPath.hashCode());

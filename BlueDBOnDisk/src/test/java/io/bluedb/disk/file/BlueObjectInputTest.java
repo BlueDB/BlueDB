@@ -38,31 +38,18 @@ public class BlueObjectInputTest extends TestCase {
 	protected void tearDown() throws Exception {
 		targetFilePath.toFile().delete();
 		tempFilePath.toFile().delete();
-		System.out.println(testingFolderPath.toFile().listFiles());
-		Files.walk(testingFolderPath)
-			.sorted(Comparator.reverseOrder())
-			.map(Path::toFile)
-			.forEach(File::delete);
-		testingFolderPath.toFile().delete();
 		recursiveDelete(testingFolderPath.toFile());
-		System.out.println(testingFolderPath.toFile().listFiles());
 	}
 
 	@Test
 	public void test_close() {
-		File emptyFile = Paths.get(testingFolderPath.toString(), "your_cold_heart").toFile();
-		try {
-			emptyFile.createNewFile();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			fail();
-		}
+		File emptyFile = createEmptyFile("your_cold_heart");
 		
 		try (BlueReadLock<Path> writeLock = lockManager.acquireReadLock(emptyFile.toPath())) {
 			BlueObjectInput<TestValue> stream = fileManager.getBlueInputStream(writeLock);
 			stream.close();
 			stream.close();  // make sure it doesn't throw an exception if you close it twice
-			assertTrue(targetFilePath.toFile().exists());
+			assertTrue(emptyFile.exists());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -104,7 +91,8 @@ public class BlueObjectInputTest extends TestCase {
 
 	@Test
 	public void test_nextFromFile() {
-		File corruptedFile = Paths.get(testingFolderPath.toString(), "test_nextFromFile").toFile();
+		File corruptedFile = createEmptyFile("test_nextFromFile");
+		
 		try(DataOutputStream outStream = new DataOutputStream(new FileOutputStream(corruptedFile))) {
 			outStream.writeInt(20);
 			byte[] junk = new byte[]{1, 2, 3};
@@ -123,6 +111,18 @@ public class BlueObjectInputTest extends TestCase {
 			assertNull(inStream.next());
 		} catch (BlueDbException e) {
 		}
+	}
+
+	private File createEmptyFile(String filename) {
+		File file = Paths.get(testingFolderPath.toString(), filename).toFile();
+		try {
+			file.getParentFile().mkdirs();
+			file.createNewFile();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			fail();
+		}
+		return file;
 	}
 
 	private void recursiveDelete(File file) {
