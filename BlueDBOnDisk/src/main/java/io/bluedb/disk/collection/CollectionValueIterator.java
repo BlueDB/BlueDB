@@ -1,16 +1,14 @@
-package io.bluedb.disk;
+package io.bluedb.disk.collection;
 
 import java.io.IOException;
 import java.io.Serializable;
 import io.bluedb.api.CloseableIterator;
-import io.bluedb.disk.collection.BlueCollectionImpl;
-import io.bluedb.disk.collection.CollectionEntityIterator;
 
-public class BlIterator<T extends Serializable> implements CloseableIterator<T> {
+public class CollectionValueIterator<T extends Serializable> implements CloseableIterator<T> {
 
 	private final CollectionEntityIterator<T> entityIterator;
 	
-	public BlIterator(BlueCollectionImpl<T> collection, long min, long max) {
+	public CollectionValueIterator(BlueCollectionImpl<T> collection, long min, long max) {
 		entityIterator = new CollectionEntityIterator<T>(collection, min, max);
 	}
 
