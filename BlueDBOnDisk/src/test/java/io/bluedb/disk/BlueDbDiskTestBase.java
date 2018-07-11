@@ -32,7 +32,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	@Override
 	protected void setUp() throws Exception {
-		dbPath = Paths.get("testing_" + getClass().getSimpleName());
+		dbPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "testing");
 		dbPath = db.getPath();
