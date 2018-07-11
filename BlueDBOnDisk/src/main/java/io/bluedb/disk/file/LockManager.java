@@ -11,6 +11,12 @@ public class LockManager <T> {
 		locks = new HashMap<>();
 	}
 
+	public boolean isLocked(T key) {
+		synchronized(locks) {
+			return locks.containsKey(key);
+		}
+	}
+
 	public BlueReadLock<T> acquireReadLock(T key) {
 		boolean success = false;
 		ReentrantReadWriteLock lock;

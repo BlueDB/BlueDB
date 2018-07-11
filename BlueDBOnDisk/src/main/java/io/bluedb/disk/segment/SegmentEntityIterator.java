@@ -3,9 +3,10 @@ package io.bluedb.disk.segment;
 import java.io.Closeable;
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
@@ -14,24 +15,23 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class SegmentEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
 
-	long highestGroupingNumberPutIntoStream;
+	long highestGroupingNumberCompleted;
 	final Segment<T> segment;
 	final long min;
 	final long max;
 	final List<TimeRange> timeRanges;
-	TimeRange currentRange;
 	BlueObjectInput<BlueEntity<T>> currentInput;
 	BlueEntity<T> next = null;
 	
 	public SegmentEntityIterator(final Segment<T> segment, final long min, final long max) {
-		highestGroupingNumberPutIntoStream = Long.MIN_VALUE;
+		highestGroupingNumberCompleted = Long.MIN_VALUE;
 		this.segment = segment;
 		this.min = min;
 		this.max = max;
 		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
 		TimeRange timeRange = new TimeRange(Long.MIN_VALUE, max);
 		List<File> relevantFiles = segment.getOrderedFilesInRange(timeRange);
-		timeRanges = relevantFiles.stream().map((f) -> TimeRange.fromUnderscoreDelmimitedString(f.getName())).collect(Collectors.toList());
+		timeRanges = filesToRanges(relevantFiles);
 	}
 
 	@Override
@@ -60,20 +60,19 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 	}
 
 	protected BlueEntity<T> nextFromFile() {
-		BlueEntity<T> nextFromFile = null;
-		while (nextFromFile == null) {
+		while (true) {
 			while (currentInput != null && currentInput.hasNext()) {
 				BlueEntity<T> next = currentInput.next();
 				BlueKey key = next.getKey();
-				if (key.getGroupingNumber() < highestGroupingNumberPutIntoStream) {
+				if (key.getGroupingNumber() <= highestGroupingNumberCompleted) {
 					continue;
 				}
 				if (Blutils.isInRange(key, min, max)) {
 					return next;
 				}
-				highestGroupingNumberPutIntoStream = currentRange.getEnd() + 1;
 			}
 			if (currentInput != null) {
+				highestGroupingNumberCompleted = extractMaxGroupingNumber(currentInput);
 				currentInput.close();
 			}
 			currentInput = getNextStream();
@@ -81,17 +80,15 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 				return null;
 			}
 		}
-		return nextFromFile;
 	}
 
 	protected BlueObjectInput<BlueEntity<T>> getNextStream() {
 		TimeRange range;
 		while (!timeRanges.isEmpty()) {
 			range = timeRanges.remove(0);
-			if (highestGroupingNumberPutIntoStream > range.getEnd()) {
+			if (highestGroupingNumberCompleted >= range.getEnd()) {
 				continue;  // we've already read the rolled up file that includes this range
 			}
-			currentRange = range;
 			try {
 				return segment.getObjectInputFor(range.getStart());
 			} catch (BlueDbException e) {
@@ -100,5 +97,30 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 			}
 		}
 		return null;
+	}
+
+	protected Path getCurrentPath() {
+		if (currentInput == null) {
+			return null;
+		} else {
+			return currentInput.getPath();
+		}
+	}
+
+	protected LinkedList<TimeRange> filesToRanges(List<File> files) {
+		LinkedList<TimeRange> ranges = new LinkedList<TimeRange>();
+		for (File file: files) {
+			String fileName = file.getName();
+			TimeRange rangeForFile = TimeRange.fromUnderscoreDelmimitedString(fileName);
+			ranges.add(rangeForFile);
+		}
+		return ranges;
+	}
+
+	protected static <X extends Serializable> long extractMaxGroupingNumber(BlueObjectInput<BlueEntity<X>> input) {
+		Path path = input.getPath();
+		String fileName = path.getFileName().toString();
+		TimeRange range = TimeRange.fromUnderscoreDelmimitedString(fileName);
+		return range.getEnd();
 	}
 }
