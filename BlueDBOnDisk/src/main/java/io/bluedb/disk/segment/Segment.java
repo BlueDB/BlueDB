@@ -37,7 +37,10 @@ public class Segment <T extends Serializable> {
 		lockManager = fileManager.getLockManager();
 	}
 
-	// for testing only
+	protected static <T extends Serializable> Segment<T> getTestSegment () {
+		return new Segment<T>();
+	}
+
 	protected Segment() {segmentPath = null;fileManager = null;lockManager = null;}
 
 	@Override

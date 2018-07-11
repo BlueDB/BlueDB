@@ -98,7 +98,7 @@ public class BlueObjectOutputTest extends TestCase {
 		}
 
 		try {
-			BlueObjectOutput<TestValue> invalidOut = new BlueObjectOutput<>(null, null, null);
+			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null);
 			invalidOut.write(value);
 			fail();
 		} catch (BlueDbException e) {
