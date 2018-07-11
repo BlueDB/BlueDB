@@ -33,7 +33,7 @@ public class PendingChangeTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		dbPath = Paths.get("testing");
+		dbPath = Paths.get("testing_PendingChangeTest");
 		DB = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 		serializer = new ThreadLocalFstSerializer(new Class[] {});

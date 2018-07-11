@@ -1,6 +1,5 @@
 package io.bluedb.disk.file;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -152,9 +151,6 @@ public class FileManagerTest  extends TestCase {
 			} catch (BlueDbException e) {
 				e.printStackTrace();
 				fail();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-				fail();
 			}
 		}
 		LockManager<Path> lockManager = fileManager.getLockManager();
@@ -162,14 +158,9 @@ public class FileManagerTest  extends TestCase {
 			try (BlueObjectInput<String> inStream = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(string1, inStream.next());
 				assertEquals(string2, inStream.next());
-				assertEquals("should never get here", inStream.next());
-				fail();
+				assertNull(inStream.next());
 			} catch (BlueDbException e) {
 				e.printStackTrace();
-				fail();
-			} catch (EOFException e1) {
-			} catch (IOException e2) {
-				e2.printStackTrace();
 				fail();
 			}
 		}
@@ -200,7 +191,7 @@ public class FileManagerTest  extends TestCase {
 			Thread readerThread = new Thread(reader);
 			threads.add(readerThread);
 		}
-		
+
 		// interleave writing and reading
 		while(doneSignal.getCount() > 0) {
 			if (!threads.isEmpty()) {

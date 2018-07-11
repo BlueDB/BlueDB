@@ -10,6 +10,8 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.file.BlueObjectInput;
+import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.BlueReadLock;
 import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
@@ -35,13 +37,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	public boolean contains(BlueKey key) throws BlueDbException {
-		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
-			if (readLock == null ) {
-				return false;
-			}
-			List<BlueEntity<T>> entities = fetch(readLock);
-			return contains(key, entities);
-		}
+		return get(key) != null;
 	}
 
 	public void save(BlueKey key, T value) throws BlueDbException {
@@ -80,9 +76,9 @@ public class Segment <T extends Serializable> {
 		try (BlueReadLock<Path> readLock = getReadLockFor(key)) {
 			if (readLock == null ) {
 				return null;
-			} else {
-				ArrayList<BlueEntity<T>> entities = fetch(readLock);
-				return get(key, entities);
+			}
+			try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
+				return get(key, inputStream);
 			}
 		}
 	}
@@ -100,10 +96,10 @@ public class Segment <T extends Serializable> {
 
     public List<BlueEntity<T>> getRange(long minTime, long maxTime) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		List<File> filesInFolder = FileManager.getFolderContents(segmentPath.toFile());
+		File folder = segmentPath.toFile();
 		// Note that we cannot bound this from below because a TimeRangeKey that overlaps the target range
 		//      will be stored at the start time;
-		List<File> relevantFiles = Blutils.filter(filesInFolder, (f) -> doesfileNameRangeOverlap(f, Long.MIN_VALUE, maxTime));
+		List<File> relevantFiles = FileManager.getFolderContents(folder, (f) -> doesfileNameRangeOverlap(f, Long.MIN_VALUE, maxTime));
 		for (File file: relevantFiles) {
 			List<BlueEntity<T>> fileContents = fetch(file);
 			for (BlueEntity<T> entity: fileContents) {
@@ -116,31 +112,41 @@ public class Segment <T extends Serializable> {
 		return results;
 	}
 
-	// TODO make private?  or somehow enforce standard levels
+    // TODO make private?  or somehow enforce standard levels
 	public void rollup(long start, long end) throws BlueDbException {
 		List<File> filesToRollup = getFilesInRange(start, end);
 		Path path = Paths.get(segmentPath.toString(), start + "_" + end);
 		Path tmpPath = FileManager.createTempFilePath(path);
-		List<BlueEntity<T>> entities = new ArrayList<>();
 
-		// TODO switch to streaming
-		// TODO keep sorted, here and everywhere you write
-		for (File file: filesToRollup) {
-			List<BlueEntity<T>> es = fetch(file);
-			entities.addAll(es);
-		}
+		copy(tmpPath, filesToRollup);
+		moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
+	}
+
+	// TODO keep sorted, here and everywhere you write
+	private void copy(Path destination, List<File> sources) throws BlueDbException {
 		LockManager<Path> lockManager = fileManager.getLockManager();
-		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
-			fileManager.saveList(tempFileLock, entities);
+		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(destination)) {
+			try(BlueObjectOutput<BlueEntity<T>> outputStream = fileManager.getBlueOutputStream(tempFileLock)) {
+				for (File file: sources) {
+					try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(file.toPath())) {
+						try(BlueObjectInput<BlueEntity<T>> inputStream = fileManager.getBlueInputStream(readLock)) {
+							transferAllObjects(inputStream, outputStream);
+						}
+					}
+				}
+			}
 		}
+	}
 
+	private void moveRolledUpFileAndDeleteSourceFiles(Path newRolledupPath, Path tempRolledupPath, List<File> filesToRollup) throws BlueDbException {
+		LockManager<Path> lockManager = fileManager.getLockManager();
 		List<BlueWriteLock<Path>> sourceFileWriteLocks = new ArrayList<>();
-		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)){
+		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(newRolledupPath)){
 			for (File file: filesToRollup) {
 				sourceFileWriteLocks.add(lockManager.acquireWriteLock(file.toPath()));
 			}
 
-			FileManager.moveFile(tmpPath, targetFileLock);
+			FileManager.moveFile(tempRolledupPath, targetFileLock);
 			for (BlueWriteLock<Path> writeLock: sourceFileWriteLocks) {
 				FileManager.deleteFile(writeLock);
 			}
@@ -191,6 +197,13 @@ public class Segment <T extends Serializable> {
 		return segmentPath;
 	}
 
+    protected static <X> void transferAllObjects(BlueObjectInput<X> input, BlueObjectOutput<X> output) throws BlueDbException {
+		while(input.hasNext()) {
+			X next = input.next();
+			output.write(next);
+		}
+    }
+
 	private Path getPathFor(BlueKey key, long rollupLevel) {
 		long groupingNumber = key.getGroupingNumber();
 		String fileName = SegmentManager.getRangeFileName(groupingNumber, rollupLevel);
@@ -221,7 +234,7 @@ public class Segment <T extends Serializable> {
 		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
 			FileManager.moveFile(tmpPath, targetFileLock);
 		}
-		
+
 	}
 
 	private static boolean inTimeRange(long minTime, long maxTime, BlueKey key) {
@@ -248,6 +261,15 @@ public class Segment <T extends Serializable> {
 		return get(key, entities) != null;
 	}
 
+	protected static <T extends Serializable> T get(BlueKey key, BlueObjectInput<BlueEntity<T>> inputStream) {
+		while(inputStream.hasNext()) {
+			BlueEntity<T> next = inputStream.next();
+			if (next.getKey().equals(key)) {
+				return next.getValue();
+			}
+		}
+		return null;
+	}
 	protected static <T extends Serializable> T get(BlueKey key, List<BlueEntity<T>> entities) {
 		for (BlueEntity<T> entity: entities) {
 			if (entity.getKey().equals(key)) {

@@ -1,9 +1,10 @@
 package io.bluedb.disk.file;
 
-import java.io.IOException;
+import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
+import java.util.Comparator;
 import org.junit.Test;
 
 import io.bluedb.api.exceptions.BlueDbException;
@@ -17,8 +18,8 @@ public class BlueObjectOutputTest extends TestCase {
 	BlueSerializer serializer;
 	FileManager fileManager;
 	LockManager<Path> lockManager;
-	Path testingFolder = Paths.get(".testing");
-	Path targetFilePath = Paths.get(testingFolder.toString(), "BlueObjectOutputStreamTest.test_junk");
+	Path testingFolderPath = Paths.get(".", "BlueObjectOutputTest");
+	Path targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
 	Path tempFilePath = FileManager.createTempFilePath(targetFilePath);
 
 	@Override
@@ -32,7 +33,12 @@ public class BlueObjectOutputTest extends TestCase {
 	protected void tearDown() throws Exception {
 		targetFilePath.toFile().delete();
 		tempFilePath.toFile().delete();
-		testingFolder.toFile().delete();
+		Files.walk(testingFolderPath)
+			.sorted(Comparator.reverseOrder())
+			.map(Path::toFile)
+			.forEach(File::delete);
+		testingFolderPath.toFile().delete();
+		recursiveDelete(testingFolderPath.toFile());
 	}
 
 	@Test
@@ -43,11 +49,31 @@ public class BlueObjectOutputTest extends TestCase {
 			stream.close();
 			stream.close();  // make sure it doesn't throw an exception if you close it twice
 			assertTrue(targetFilePath.toFile().exists());
-		} catch (BlueDbException | IOException e) {
+		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
 	}
+
+//	@Test
+//	public void test_openDataInputStream() {
+//		File unavailableFile = Paths.get(testingFolder.toString(), "your_heart").toFile();
+//		
+//		try (FileChannel channel = new RandomAccessFile(unavailableFile, "rw").getChannel() ) {
+//			try (FileLock lock = channel.lock()) {
+//				try {
+//					BlueObjectOutput.openDataOutputStream(unavailableFile);
+//					fail();
+//				} catch (BlueDbException e) {}
+//			} catch (IOException e1) {
+//				e1.printStackTrace();
+//				fail();
+//			}
+//		} catch (IOException e2) {
+//			e2.printStackTrace();
+//			fail();
+//		}
+//	}
 
 	@Test
 	public void test_write() {
@@ -55,6 +81,7 @@ public class BlueObjectOutputTest extends TestCase {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
 			outStream.write(value);
+			outStream.close();
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -63,10 +90,23 @@ public class BlueObjectOutputTest extends TestCase {
 		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock);
 			assertEquals(value, inStream.next());
-		} catch (BlueDbException | IOException e) {
+		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
 		// TODO test exception on write
+	}
+
+	private void recursiveDelete(File file) {
+		if (!file.exists()) {
+			return;
+		} else if (file.isDirectory()) {
+			for (File f: file.listFiles()) {
+				recursiveDelete(f);
+			}
+			file.delete();
+		} else {
+			file.delete();
+		}
 	}
 }

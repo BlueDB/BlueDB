@@ -2,6 +2,7 @@ package io.bluedb.disk.file;
 
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,6 +12,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
 
@@ -20,7 +22,7 @@ public class FileManager {
 
 	public FileManager(BlueSerializer serializer) {
 		this.serializer = serializer;
-		lockManager = new LockManager<Path>(); 
+		lockManager = new LockManager<Path>();
 	}
 
 	public List<File> listFiles(Path path, String suffix) {
@@ -61,6 +63,14 @@ public class FileManager {
 		return lockManager;
 	}
 
+	public static List<File> getFolderContents(File folder, FileFilter filter) {
+		File[] folderContentsArray = folder.listFiles(filter);
+		if (folderContentsArray == null) {
+			return new ArrayList<>();
+		}
+		return Arrays.asList(folderContentsArray);
+	}
+
 	public static List<File> getFolderContents(File folder) {
 		File[] folderContentsArray = folder.listFiles();
 		if (folderContentsArray == null) {
@@ -72,13 +82,9 @@ public class FileManager {
 	public <T> ArrayList<T> loadList(BlueReadLock<Path> readLock) throws BlueDbException {
 		ArrayList<T> items = new ArrayList<>();
 		try(BlueObjectInput<T> inputStream = getBlueInputStream(readLock)) {
-			while(true) {
+			while(inputStream.hasNext()) {
 				items.add(inputStream.next());
 			}
-		} catch(EOFException e) {
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			throw new BlueDbException("IOException while loading list", e1); // TODO handle this better
 		}
 		return items;
 	}
@@ -88,9 +94,6 @@ public class FileManager {
 			for (T item: items) {
 				outputStream.write(item);
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new BlueDbException("IOException while saving list", e); // TODO handle this better
 		}
 	}
 
@@ -141,7 +144,7 @@ public class FileManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
-		}		
+		}
 	}
 
 	public static boolean deleteFile(BlueWriteLock<Path> writeLock) {

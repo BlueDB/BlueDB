@@ -28,11 +28,13 @@ public class SegmentTest extends TestCase {
 	
 	@Override
 	protected void setUp() throws Exception {
-		DB = new BlueDbOnDiskBuilder().build();
+		dbPath = Paths.get("testing_SegmentTest");
+		DB = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 		dbPath = DB.getPath();
 	}
 
+	@Override
 	public void tearDown() throws Exception {
 		Files.walk(dbPath)
 		.sorted(Comparator.reverseOrder())

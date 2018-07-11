@@ -8,57 +8,77 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-
+import java.util.Iterator;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.serialization.BlueSerializer;
 
-public class BlueObjectInput<T> implements Closeable {
+public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 
 	private final Path path;
 	private final BlueSerializer serializer;
 	private final DataInputStream dataInputStream;
 			
+	private T next = null;
+
 	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
 		this.path = readLock.getKey();
 		this.serializer = serializer;
 		dataInputStream = openDataInputStream(path.toFile());
 	}
 
-	public T next() throws EOFException, BlueDbException {
+	@Override
+	public void close() {
+		if (dataInputStream != null) {
+			try {
+				dataInputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public boolean hasNext() {
+		if (next == null) {
+			next = nextFromFile();
+		}
+		return next != null;
+	}
+
+	@Override
+	public T next() {
+		if (next == null) {
+			next = nextFromFile();
+		}
+		T response = next;
+		next = null;
+		return response;
+	}
+
+	protected T nextFromFile() {
 		int objectLength;
 		try {
 			objectLength = dataInputStream.readInt();
 			byte[] buffer = new byte[objectLength];
-			int bytesRead = dataInputStream.read(buffer,0, objectLength);
-			if (bytesRead != objectLength) {
-				// TODO throw an exception ?
-			}
+			dataInputStream.readFully(buffer,0, objectLength);
 			Object object = serializer.deserializeObjectFromByteArray(buffer);
 			@SuppressWarnings("unchecked")
 			T t = (T) object;
 			return t;
 		} catch (EOFException e) {
-			throw e;
-			// TODO or return null?
+			return null;
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new BlueDbException("error reading next from file " + path, e);
+			return null;
 		}
 	}
 
-	@Override
-	public void close() throws IOException {
-		if (dataInputStream != null) {
-			dataInputStream.close();
-		}
-	}
-
-	private DataInputStream openDataInputStream(File file) throws BlueDbException{
+	protected static DataInputStream openDataInputStream(File file) throws BlueDbException {
 		try {
 			return new DataInputStream(new FileInputStream(file));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-			throw new BlueDbException("cannot open input stream on file " + path, e);
+			throw new BlueDbException("cannot open input stream on file " + file.toPath(), e);
 		}
 	}
 }

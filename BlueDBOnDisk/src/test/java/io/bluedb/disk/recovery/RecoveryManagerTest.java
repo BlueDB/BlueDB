@@ -31,7 +31,8 @@ public class RecoveryManagerTest extends TestCase {
 	
 	@Override
 	public void setUp() throws Exception {
-		DB = new BlueDbOnDiskBuilder().build();
+		dbPath = Paths.get("testing_RecoveryManagerTest");
+		DB = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		COLLECTION = (BlueCollectionImpl<TestValue>) DB.getCollection(TestValue.class, "testing");
 		recoveryManager = COLLECTION.getRecoveryManager();
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
@@ -42,7 +43,6 @@ public class RecoveryManagerTest extends TestCase {
 		}
 		
 		COLLECTION.query().delete();
-		dbPath = DB.getPath();
 	}
 
 	@Override

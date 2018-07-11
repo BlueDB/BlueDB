@@ -33,10 +33,10 @@ public class SegmentManagerTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		db = new BlueDbOnDiskBuilder().build();
+		dbPath = Paths.get("testing_SegmentManagerTest");
+		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "test_segment_manager");
 		segmentManager = new SegmentManager<TestValue>(collection);
-		dbPath = ((BlueDbOnDisk) db).getPath();
 	}
 
 	public void tearDown() throws Exception {
