@@ -14,14 +14,14 @@ import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 
-public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
+public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
 	private BlueCollectionOnDisk<T> collection;
 	private List<Condition<T>> objectConditions = new LinkedList<>();
 	private long maxTime = Long.MAX_VALUE;
 	private long minTime = Long.MIN_VALUE;
 
-	public BlueQueryImpl(BlueCollectionOnDisk<T> collection) {
+	public BlueQueryOnDisk(BlueCollectionOnDisk<T> collection) {
 		this.collection = collection;
 	}
 

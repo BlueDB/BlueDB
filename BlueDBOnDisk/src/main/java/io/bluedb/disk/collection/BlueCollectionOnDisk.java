@@ -22,7 +22,7 @@ import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateTask;
 import io.bluedb.disk.file.FileManager;
-import io.bluedb.disk.query.BlueQueryImpl;
+import io.bluedb.disk.query.BlueQueryOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Segment;
@@ -61,7 +61,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	@Override
 	public BlueQuery<T> query() {
-		return new BlueQueryImpl<T>(this);
+		return new BlueQueryOnDisk<T>(this);
 	}
 
 	@Override
