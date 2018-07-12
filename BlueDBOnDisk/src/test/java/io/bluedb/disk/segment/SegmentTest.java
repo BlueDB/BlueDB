@@ -16,6 +16,27 @@ import io.bluedb.disk.file.FileManager;
 public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
+	public void test_getRangeFileName() {
+		assertEquals("0_1", Segment.getRangeFileName(0, 2));  // test zero
+		assertEquals("2_3", Segment.getRangeFileName(2, 2));  // test next doesn't overlap
+		assertEquals("4_5", Segment.getRangeFileName(5, 2));  // test greater than a multiple
+		assertEquals("0_41", Segment.getRangeFileName(41, 42));  // test equal to a multiple
+		assertEquals("42_83", Segment.getRangeFileName(42, 42));  // test equal to a multiple
+		assertEquals("42_83", Segment.getRangeFileName(42, 42));  // test equal to a multiple
+		assertEquals("-2_-1", Segment.getRangeFileName(-1, 2));  // test zero
+		
+		String maxLongFileName = Segment.getRangeFileName(Long.MAX_VALUE, 100);
+		Range maxLongRange = Range.fromUnderscoreDelmimitedString(maxLongFileName);
+		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
+		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
+
+		String minLongFileName = Segment.getRangeFileName(Long.MIN_VALUE, 100);
+		Range minLongRange = Range.fromUnderscoreDelmimitedString(minLongFileName);
+		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
+		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
+	}
+
+	@Test
 	public void test_doesfileNameRangeOverlap() {
 		File _x_to_1 = Paths.get("1_x").toFile();
 		File _1_to_x = Paths.get("1_x").toFile();
@@ -106,7 +127,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			assertEquals(value3, segment.get(key3At3));
 
 			// make sure insert works after rollup
-			segment.rollup(SegmentManager.getSegmentTimeRange(0));
+			segment.rollup(SegmentManager.getSegmentRange(0));
 			BlueKey key4At2 = createKey(4, 2);
 			TestValue value4 = createValue("Dan");
 			segment.insert(key4At2, value4);

@@ -18,56 +18,16 @@ import io.bluedb.disk.TestValue;
 public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_getRangeFileName() {
-		assertEquals("0_1", SegmentManager.getRangeFileName(0, 2));  // test zero
-		assertEquals("2_3", SegmentManager.getRangeFileName(2, 2));  // test next doesn't overlap
-		assertEquals("4_5", SegmentManager.getRangeFileName(5, 2));  // test greater than a multiple
-		assertEquals("0_41", SegmentManager.getRangeFileName(41, 42));  // test equal to a multiple
-		assertEquals("42_83", SegmentManager.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("42_83", SegmentManager.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("-2_-1", SegmentManager.getRangeFileName(-1, 2));  // test zero
-		
-		String maxLongFileName = SegmentManager.getRangeFileName(Long.MAX_VALUE, 100);
-		Range maxLongRange = Range.fromUnderscoreDelmimitedString(maxLongFileName);
-		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
-		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
-
-		String minLongFileName = SegmentManager.getRangeFileName(Long.MIN_VALUE, 100);
-		Range minLongRange = Range.fromUnderscoreDelmimitedString(minLongFileName);
-		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
-		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
-	}
-
-	@Test
-	public void test_getSegmentTimeRange() {
-		Range segmentRangeStartingAtZero = SegmentManager.getSegmentTimeRange(0);
+	public void test_getSegmentRange() {
+		Range segmentRangeStartingAtZero = SegmentManager.getSegmentRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());
 		assertEquals(SegmentManager.getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
 
-		Range maxLongRange = SegmentManager.getSegmentTimeRange(Long.MAX_VALUE);
+		Range maxLongRange = SegmentManager.getSegmentRange(Long.MAX_VALUE);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		Range minLongRange = SegmentManager.getSegmentTimeRange(Long.MIN_VALUE);
-		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
-		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
-	}
-
-	@Test
-	public void test_getTimeRange() {
-		Range rangeStartingAtZero = SegmentManager.getTimeRange(0, 100);
-		assertEquals(0, rangeStartingAtZero.getStart());
-		assertEquals(100 - 1, rangeStartingAtZero.getEnd());
-
-		Range rangeStartingAtMinus100 = SegmentManager.getTimeRange(-100, 100);
-		assertEquals(-100, rangeStartingAtMinus100.getStart());
-		assertEquals(-1, rangeStartingAtMinus100.getEnd());
-
-		Range maxLongRange = SegmentManager.getTimeRange(Long.MAX_VALUE, 100);
-		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
-		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
-
-		Range minLongRange = SegmentManager.getTimeRange(Long.MIN_VALUE, 100);
+		Range minLongRange = SegmentManager.getSegmentRange(Long.MIN_VALUE);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
@@ -233,17 +193,17 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_toSegment() {
 		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
-		Path path = getSegmentManager().getPath(key);
+		Path path = getSegmentManager().getSegmentPath(key);
 		Segment<TestValue> segment = getSegmentManager().toSegment(path);
 		assertEquals(path, segment.getPath());
 	}
 
 	@Test
-	public void test_getPath_key() {
+	public void test_getSegmentPath_key() {
 		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
 		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(key);
 		assertEquals(1, paths.size());
-		assertEquals(paths.get(0), getSegmentManager().getPath(key));
+		assertEquals(paths.get(0), getSegmentManager().getSegmentPath(key));
 	}
 
 

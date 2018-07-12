@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
 
@@ -30,14 +29,8 @@ public class SegmentManager<T extends Serializable> {
 		this.fileManager = collection.getFileManager();
 	}
 
-	public static Range getSegmentTimeRange(long groupingValue) {
-		return getTimeRange(groupingValue, getSegmentSize());
-	}
-
-	public static Range getTimeRange(long groupingValue, long multiple) {
-		long low = Blutils.roundDownToMultiple(groupingValue, multiple);
-		long high = Math.min(Long.MAX_VALUE - multiple + 1, low) + multiple - 1;  // prevent overflow
-		return new Range(low, high);
+	public static Range getSegmentRange(long groupingValue) {
+		return Range.forValueAndRangeSize(groupingValue, getSegmentSize());
 	}
 
 	public Segment<T> getFirstSegment(BlueKey key) {
@@ -46,7 +39,7 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	public Segment<T> getSegment(long groupingNumber) {
-		Path segmentPath = getPath(groupingNumber);
+		Path segmentPath = getSegmentPath(groupingNumber);
 		return toSegment(segmentPath);
 	}
 
@@ -62,12 +55,12 @@ public class SegmentManager<T extends Serializable> {
 				.collect(Collectors.toList());
 	}
 
-	protected Path getPath(BlueKey key) {
+	protected Path getSegmentPath(BlueKey key) {
 		long groupingNumber = key.getGroupingNumber();
-		return getPath(groupingNumber);
+		return getSegmentPath(groupingNumber);
 	}
 
-	protected Path getPath(long groupingNumber) {
+	protected Path getSegmentPath(long groupingNumber) {
 		return Paths.get(
 				collection.getPath().toString(),
 				String.valueOf(groupingNumber / SIZE_FOLDER_TOP),
@@ -81,7 +74,7 @@ public class SegmentManager<T extends Serializable> {
 			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
 			return getAllPossibleSegmentPaths(timeFrameKey.getStartTime(), timeFrameKey.getEndTime());
 		} else {
-			Path path = getPath(key);
+			Path path = getSegmentPath(key);
 			return Arrays.asList(path);
 		}
 	}
@@ -91,7 +84,7 @@ public class SegmentManager<T extends Serializable> {
 		minTime = minTime - (minTime % SIZE_SEGMENT);
 		long i = minTime;
 		while (i <= maxTime) {
-			Path path = getPath(i);
+			Path path = getSegmentPath(i);
 			paths.add(path);
 			i += SIZE_SEGMENT;
 		}
@@ -139,9 +132,4 @@ public class SegmentManager<T extends Serializable> {
 			return false;
 		}
 	}
-	protected static String getRangeFileName(long groupingValue, long multiple) {
-		Range timeRange = getTimeRange(groupingValue, multiple);
-		return timeRange.toUnderscoreDelimitedString();
-	}
-
 }

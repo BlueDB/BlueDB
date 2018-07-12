@@ -216,8 +216,13 @@ public class Segment <T extends Serializable> {
 		return segmentPath;
 	}
 
+	protected static String getRangeFileName(long groupingValue, long multiple) {
+		Range timeRange = Range.forValueAndRangeSize(groupingValue, multiple);
+		return timeRange.toUnderscoreDelimitedString();
+	}
+
 	private Path getPathFor(long groupingNumber, long rollupLevel) {
-		String fileName = SegmentManager.getRangeFileName(groupingNumber, rollupLevel);
+		String fileName = getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 

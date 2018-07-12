@@ -1,5 +1,7 @@
 package io.bluedb.disk.segment;
 
+import io.bluedb.disk.Blutils;
+
 public final class Range implements Comparable<Range> {
 
 	private final long start;
@@ -31,6 +33,12 @@ public final class Range implements Comparable<Range> {
 		} catch (Throwable t) {
 			return null;
 		}
+	}
+
+	public static Range forValueAndRangeSize(long value, long rangeSize) {
+		long low = Blutils.roundDownToMultiple(value, rangeSize);
+		long high = Math.min(Long.MAX_VALUE - rangeSize + 1, low) + rangeSize - 1;  // prevent overflow
+		return new Range(low, high);
 	}
 
 	@Override
