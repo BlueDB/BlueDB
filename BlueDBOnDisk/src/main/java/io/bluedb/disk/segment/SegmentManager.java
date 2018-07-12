@@ -100,10 +100,10 @@ public class SegmentManager<T extends Serializable> {
 
 	protected List<File> getExistingSegmentFiles(long minValue, long maxValue) {
 		File collectionFolder = collection.getPath().toFile();
-		List<File> topLevelFolders = getNonsegmentSubfoldersInRange(collectionFolder, minValue/SIZE_FOLDER_TOP, maxValue/SIZE_FOLDER_TOP);
-		List<File> midLevelFolders = getNonsegmentSubfoldersInRange(topLevelFolders, minValue/SIZE_FOLDER_MIDDLE, maxValue/SIZE_FOLDER_MIDDLE);
-		List<File> bottomLevelFolders = getNonsegmentSubfoldersInRange(midLevelFolders, minValue/SIZE_FOLDER_BOTTOM, maxValue/SIZE_FOLDER_BOTTOM);
-		List<File> segmentFolders = getNonsegmentSubfoldersInRange(bottomLevelFolders, minValue/SIZE_SEGMENT, maxValue/SIZE_SEGMENT);
+		List<File> topLevelFolders = getSubfoldersInRange(collectionFolder, minValue/SIZE_FOLDER_TOP, maxValue/SIZE_FOLDER_TOP);
+		List<File> midLevelFolders = getSubfoldersInRange(topLevelFolders, minValue/SIZE_FOLDER_MIDDLE, maxValue/SIZE_FOLDER_MIDDLE);
+		List<File> bottomLevelFolders = getSubfoldersInRange(midLevelFolders, minValue/SIZE_FOLDER_BOTTOM, maxValue/SIZE_FOLDER_BOTTOM);
+		List<File> segmentFolders = getSubfoldersInRange(bottomLevelFolders, minValue/SIZE_SEGMENT, maxValue/SIZE_SEGMENT);
 		return segmentFolders;
 	}
 
@@ -115,7 +115,7 @@ public class SegmentManager<T extends Serializable> {
 		return SIZE_SEGMENT;
 	}
 
-	protected static List<File> getNonsegmentSubfoldersInRange(File folder, long minValue, long maxValue) {
+	protected static List<File> getSubfoldersInRange(File folder, long minValue, long maxValue) {
 		return FileManager.getFolderContents(folder)
             .stream()
 			.filter((f) -> f.isDirectory())
@@ -123,10 +123,10 @@ public class SegmentManager<T extends Serializable> {
 			.collect(Collectors.toList());
 	}
 
-	protected static List<File> getNonsegmentSubfoldersInRange(List<File> folders, long minValue, long maxValue) {
+	protected static List<File> getSubfoldersInRange(List<File> folders, long minValue, long maxValue) {
 		List<File> results = new ArrayList<>();
 		for (File folder: folders) {
-			results.addAll(getNonsegmentSubfoldersInRange(folder, minValue, maxValue));
+			results.addAll(getSubfoldersInRange(folder, minValue, maxValue));
 		}
 		return results;
 	}

@@ -73,7 +73,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getNonsegmentSubfoldersInRange() {
+	public void test_getSubfoldersInRange() {
 		File folder = Paths.get(".", "test_folder").toFile();
 		emptyAndDelete(folder);
 		folder.mkdir();
@@ -86,11 +86,11 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		List<File> only2 = Arrays.asList(folder2);
 		List<File> both = Arrays.asList(folder2, folder7);
 		
-		assertEquals(empty, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 1L));  // folder above range
-		assertEquals(only2, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 2L));  // folder at top of range
-		assertEquals(only2, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 3L));  // folder overlaps top of range
-		assertEquals(empty, SegmentManager.getNonsegmentSubfoldersInRange(folder, 5L, 6L));  // folder below range
-		assertEquals(both, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 7L));  //works with multiple files
+		assertEquals(empty, SegmentManager.getSubfoldersInRange(folder, 0L, 1L));  // folder above range
+		assertEquals(only2, SegmentManager.getSubfoldersInRange(folder, 0L, 2L));  // folder at top of range
+		assertEquals(only2, SegmentManager.getSubfoldersInRange(folder, 0L, 3L));  // folder overlaps top of range
+		assertEquals(empty, SegmentManager.getSubfoldersInRange(folder, 5L, 6L));  // folder below range
+		assertEquals(both, SegmentManager.getSubfoldersInRange(folder, 0L, 7L));  //works with multiple files
 
 		emptyAndDelete(folder);
 	}
