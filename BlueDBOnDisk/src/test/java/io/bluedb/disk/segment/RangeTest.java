@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-public class TimeRangeTest {
+public class RangeTest {
 
 	@Test
 	public void test_timeRange() {
