@@ -4,10 +4,8 @@ import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -19,12 +17,10 @@ import io.bluedb.disk.file.FileManager;
 
 public class SegmentManager<T extends Serializable> {
 
-	protected static final String SEGMENT_SUFFIX = "_seg";
-	// TODO better split up
-	protected static final long LEVEL_3 = TimeUnit.HOURS.toMillis(1);
-	protected static final long LEVEL_2 = TimeUnit.DAYS.toMillis(1);
-	protected static final long LEVEL_1 = LEVEL_2 * 30;
-	protected static final long LEVEL_0 = LEVEL_1 * 12;
+	protected static final long SIZE_SEGMENT = TimeUnit.HOURS.toMillis(1);
+	protected static final long SIZE_FOLDER_BOTTOM = SIZE_SEGMENT * 24;
+	protected static final long SIZE_FOLDER_MIDDLE = SIZE_FOLDER_BOTTOM * 30;
+	protected static final long SIZE_FOLDER_TOP = SIZE_FOLDER_MIDDLE * 12;
 
 	private final BlueCollectionOnDisk<T> collection;
 	private final FileManager fileManager;
@@ -32,6 +28,16 @@ public class SegmentManager<T extends Serializable> {
 	public SegmentManager(BlueCollectionOnDisk<T> collection) {
 		this.collection = collection;
 		this.fileManager = collection.getFileManager();
+	}
+
+	public static Range getSegmentTimeRange(long groupingValue) {
+		return getTimeRange(groupingValue, getSegmentSize());
+	}
+
+	public static Range getTimeRange(long groupingValue, long multiple) {
+		long low = Blutils.roundDownToMultiple(groupingValue, multiple);
+		long high = Math.min(Long.MAX_VALUE - multiple + 1, low) + multiple - 1;  // prevent overflow
+		return new Range(low, high);
 	}
 
 	public Segment<T> getFirstSegment(BlueKey key) {
@@ -62,11 +68,12 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected Path getPath(long groupingNumber) {
-		String level0 = getRangeFileName(groupingNumber, LEVEL_0);
-		String level1 = getRangeFileName(groupingNumber, LEVEL_1);
-		String level2 = getRangeFileName(groupingNumber, LEVEL_2);
-		String level3 = getRangeFileName(groupingNumber, LEVEL_3);
-		return Paths.get(collection.getPath().toString(), level0, level1, level2, level3 + SEGMENT_SUFFIX);
+		return Paths.get(
+				collection.getPath().toString(),
+				String.valueOf(groupingNumber / SIZE_FOLDER_TOP),
+				String.valueOf(groupingNumber / SIZE_FOLDER_MIDDLE),
+				String.valueOf(groupingNumber / SIZE_FOLDER_BOTTOM),
+				String.valueOf(groupingNumber / SIZE_SEGMENT));
 	}
 
 	protected List<Path> getAllPossibleSegmentPaths(BlueKey key) {
@@ -81,29 +88,23 @@ public class SegmentManager<T extends Serializable> {
 
 	protected List<Path> getAllPossibleSegmentPaths(long minTime, long maxTime) {
 		List<Path> paths = new ArrayList<>();
-		minTime = minTime - (minTime % LEVEL_3);
+		minTime = minTime - (minTime % SIZE_SEGMENT);
 		long i = minTime;
 		while (i <= maxTime) {
 			Path path = getPath(i);
 			paths.add(path);
-			i += LEVEL_3;
+			i += SIZE_SEGMENT;
 		}
 		return paths;
 	}
 
 	protected List<File> getExistingSegmentFiles(long minValue, long maxValue) {
-		Deque<File> foldersToSearch = new ArrayDeque<>();
 		File collectionFolder = collection.getPath().toFile();
-		foldersToSearch.addLast(collectionFolder);
-		
-		List<File> results = new ArrayList<>();
-		while (!foldersToSearch.isEmpty()) {
-			File folder = foldersToSearch.pop();
-			results.addAll(getSegmentFilesInRange(folder, minValue, maxValue));
-			foldersToSearch.addAll(getNonsegmentSubfoldersInRange(folder, minValue, maxValue));
-		}
-		
-		return results;
+		List<File> topLevelFolders = getNonsegmentSubfoldersInRange(collectionFolder, minValue/SIZE_FOLDER_TOP, maxValue/SIZE_FOLDER_TOP);
+		List<File> midLevelFolders = getNonsegmentSubfoldersInRange(topLevelFolders, minValue/SIZE_FOLDER_MIDDLE, maxValue/SIZE_FOLDER_MIDDLE);
+		List<File> bottomLevelFolders = getNonsegmentSubfoldersInRange(midLevelFolders, minValue/SIZE_FOLDER_BOTTOM, maxValue/SIZE_FOLDER_BOTTOM);
+		List<File> segmentFolders = getNonsegmentSubfoldersInRange(bottomLevelFolders, minValue/SIZE_SEGMENT, maxValue/SIZE_SEGMENT);
+		return segmentFolders;
 	}
 
 	protected Segment<T> toSegment(Path path) {
@@ -111,53 +112,36 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	public static long getSegmentSize() {
-		return LEVEL_3;
+		return SIZE_SEGMENT;
 	}
 
 	protected static List<File> getNonsegmentSubfoldersInRange(File folder, long minValue, long maxValue) {
 		return FileManager.getFolderContents(folder)
             .stream()
 			.filter((f) -> f.isDirectory())
-			.filter((f) -> !isSegment(f))
-			.filter((f) -> folderNameRangeContainsRange(f, minValue, maxValue))
+			.filter((f) -> folderNameIsLongInRange(f, minValue, maxValue))
 			.collect(Collectors.toList());
 	}
 
-	protected static List<File> getSegmentFilesInRange(File folder, long minValue, long maxValue) {
-		return FileManager.getFolderContents(folder)
-            .stream()
-			.filter((f) -> isSegment(f))
-			.filter((f) -> folderNameRangeContainsRange(f, minValue, maxValue))
-			.collect(Collectors.toList());
-	}
-
-	protected static boolean isSegment(File folder) {
-		return folder.isDirectory() && folder.getName().contains(SEGMENT_SUFFIX);
+	protected static List<File> getNonsegmentSubfoldersInRange(List<File> folders, long minValue, long maxValue) {
+		List<File> results = new ArrayList<>();
+		for (File folder: folders) {
+			results.addAll(getNonsegmentSubfoldersInRange(folder, minValue, maxValue));
+		}
+		return results;
 	}
 	
-	protected static boolean folderNameRangeContainsRange(File file, long minValue, long maxValue) {
+	protected static boolean folderNameIsLongInRange(File file, long minValue, long maxValue) {
 		try {
-			String[] fileNameSplit = file.getName().split("_");
-			long folderMinValue = Long.valueOf(fileNameSplit[0]);
-			long folderMaxValue = Long.valueOf(fileNameSplit[1]);
-			return folderMaxValue >= minValue && folderMinValue <= maxValue;
+			long fileNameAsLong = Long.valueOf(file.getName());
+			return fileNameAsLong >= minValue && fileNameAsLong <= maxValue;
 		} catch(Exception e) {
 			return false;
 		}
 	}
-
 	protected static String getRangeFileName(long groupingValue, long multiple) {
 		Range timeRange = getTimeRange(groupingValue, multiple);
 		return timeRange.toUnderscoreDelimitedString();
 	}
 
-	public static Range getSegmentTimeRange(long groupingValue) {
-		return getTimeRange(groupingValue, getSegmentSize());
-	}
-
-	public static Range getTimeRange(long groupingValue, long multiple) {
-		long low = Blutils.roundDownToMultiple(groupingValue, multiple);
-		long high = Math.min(Long.MAX_VALUE - multiple + 1, low) + multiple - 1;  // prevent overflow
-		return new Range(low, high);
-	}
 }
