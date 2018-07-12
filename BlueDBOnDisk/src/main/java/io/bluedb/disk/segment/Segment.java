@@ -20,8 +20,10 @@ import io.bluedb.disk.file.BlueReadLock;
 import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.file.LockManager;
-import io.bluedb.disk.segment.writer.StreamingInsertWriter;
+import io.bluedb.disk.segment.writer.DeleteWriter;
+import io.bluedb.disk.segment.writer.InsertWriter;
 import io.bluedb.disk.segment.writer.StreamingWriter;
+import io.bluedb.disk.segment.writer.UpdateWriter;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
@@ -56,42 +58,17 @@ public class Segment <T extends Serializable> {
 
 	public void update(BlueKey newKey, T newValue) throws BlueDbException {
 		long groupingNumber = newKey.getGroupingNumber();
-		modifyChunk(groupingNumber, new StreamingWriter<T>() {
-			@Override
-			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
-				BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
-				while (input.hasNext()) {
-					BlueEntity<T> iterEntity = input.next();
-					BlueKey iterKey = iterEntity.getKey();
-					if (iterKey.equals(newKey)) {
-						output.write(newEntity);
-						newEntity = null;
-					} else {
-						output.write(iterEntity);
-					}
-				}
-			}
-		});
+		modifyChunk(groupingNumber, new UpdateWriter<T>(newKey, newValue));
 	}
 
 	public void insert(BlueKey newKey, T newValue) throws BlueDbException {
 		long groupingNumber = newKey.getGroupingNumber();
-		modifyChunk(groupingNumber, new StreamingInsertWriter<T>(newKey, newValue));
+		modifyChunk(groupingNumber, new InsertWriter<T>(newKey, newValue));
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
 		long groupingNumber = key.getGroupingNumber();
-		modifyChunk(groupingNumber, new StreamingWriter<T>() {
-			@Override
-			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
-				while (input.hasNext()) {
-					BlueEntity<T> entry = input.next();
-					if (!entry.getKey().equals(key)) {
-						output.write(entry);
-					}
-				}
-			}
-		});
+		modifyChunk(groupingNumber, new DeleteWriter<T>(key));
 	}
 
 	public void modifyChunk(long groupingNumber, StreamingWriter<T> processor) throws BlueDbException {

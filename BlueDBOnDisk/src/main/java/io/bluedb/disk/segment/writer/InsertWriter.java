@@ -7,12 +7,12 @@ import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.serialization.BlueEntity;
 
-public class StreamingInsertWriter<T extends Serializable> implements StreamingWriter<T> {
+public class InsertWriter<T extends Serializable> implements StreamingWriter<T> {
 
 	final BlueKey newKey;
 	final T newValue;
 
-	public StreamingInsertWriter(BlueKey key, T value) {
+	public InsertWriter(BlueKey key, T value) {
 		newKey = key;
 		newValue = value;
 	}
