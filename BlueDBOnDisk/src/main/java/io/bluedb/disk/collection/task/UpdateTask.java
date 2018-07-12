@@ -4,17 +4,17 @@ import java.io.Serializable;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class UpdateTask<T extends Serializable> extends QueryTask {
-	private final BlueCollectionImpl<T> collection;
+	private final BlueCollectionOnDisk<T> collection;
 	private final BlueKey key;
 	private final Updater<T> updater;
 
-	public UpdateTask(BlueCollectionImpl<T> collection, BlueKey key, Updater<T> updater) {
+	public UpdateTask(BlueCollectionOnDisk<T> collection, BlueKey key, Updater<T> updater) {
 		this.collection = collection;
 		this.key = key;
 		this.updater = updater;

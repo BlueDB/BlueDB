@@ -25,16 +25,16 @@ import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryImpl;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.RollupScheduler;
-import io.bluedb.disk.segment.RollupTask;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
-import io.bluedb.disk.segment.TimeRange;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
+import io.bluedb.disk.segment.rollup.RollupTask;
+import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
-public class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T> {
+public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T> {
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
@@ -46,7 +46,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
 
-	public BlueCollectionImpl(BlueDbOnDisk db, String name, Class<T> type) {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> type) {
 		this.type = type;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
@@ -79,7 +79,7 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		// TODO roll up to a smaller time range?
 		// TODO report insert when the insert task actually runs?
-		TimeRange timeRange = SegmentManager.getSegmentTimeRange(key.getGroupingNumber());
+		Range timeRange = SegmentManager.getSegmentTimeRange(key.getGroupingNumber());
 		rollupScheduler.reportInsert(timeRange);
 		Runnable insertTask = new InsertTask<T>(this, key, value);
 		executeTask(insertTask);
@@ -129,12 +129,12 @@ public class BlueCollectionImpl<T extends Serializable> implements BlueCollectio
 		}
 	}
 
-	public void rollup(TimeRange timeRange) throws BlueDbException {
+	public void rollup(Range timeRange) throws BlueDbException {
 		Segment<T> segment = segmentManager.getSegment(timeRange.getStart());
 		segment.rollup(timeRange);
 	}
 
-	public void scheduleRollup(TimeRange timeRange) {
+	public void scheduleRollup(Range timeRange) {
 		Runnable rollupRunnable = new RollupTask(this, timeRange);
 		executor.submit(rollupRunnable);
 	}

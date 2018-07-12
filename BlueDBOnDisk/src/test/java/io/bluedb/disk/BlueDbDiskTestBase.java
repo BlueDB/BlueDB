@@ -19,12 +19,12 @@ import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
-import io.bluedb.disk.collection.BlueCollectionImpl;
-import io.bluedb.disk.file.LockManager;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.RollupScheduler;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentEntityIterator;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 import junit.framework.TestCase;
@@ -32,7 +32,7 @@ import junit.framework.TestCase;
 public abstract class BlueDbDiskTestBase extends TestCase {
 
 	BlueDbOnDisk db;
-	BlueCollectionImpl<TestValue> collection;
+	BlueCollectionOnDisk<TestValue> collection;
 	Path dbPath;
 	LockManager<Path> lockManager;
 	RollupScheduler rollupScheduler;
@@ -41,7 +41,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	protected void setUp() throws Exception {
 		dbPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "testing");
+		collection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, "testing");
 		dbPath = db.getPath();
 		lockManager = collection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(collection);
@@ -55,7 +55,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		.forEach(File::delete);
 	}
 
-	public BlueCollectionImpl<TestValue> getCollection() {
+	public BlueCollectionOnDisk<TestValue> getCollection() {
 		return collection;
 	}
 

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
@@ -17,11 +17,11 @@ public class RecoveryManager<T extends Serializable> {
 	protected static String SUBFOLDER = ".pending";
 	protected static String SUFFIX = ".chg";
 
-	private final BlueCollectionImpl<T> collection;
+	private final BlueCollectionOnDisk<T> collection;
 	private final Path recoveryPath;
 	private final FileManager fileManager;
 	
-	public RecoveryManager(BlueCollectionImpl<T> collection, FileManager fileManager, BlueSerializer serializer) {
+	public RecoveryManager(BlueCollectionOnDisk<T> collection, FileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
 		this.fileManager = fileManager;
 		this.recoveryPath = Paths.get(collection.getPath().toString(), SUBFOLDER);

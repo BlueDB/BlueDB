@@ -1,17 +1,19 @@
-package io.bluedb.disk.segment;
+package io.bluedb.disk.segment.rollup;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
 
 public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_reportInsert() {
-		TimeRange timeRange = new TimeRange(2, 5);
+		Range timeRange = new Range(2, 5);
 		assertEquals(Long.MIN_VALUE, getRollupScheduler().getLastInsertTime(timeRange));
 		long insertTime = System.currentTimeMillis();
 		getRollupScheduler().reportInsert(timeRange, insertTime);
@@ -23,7 +25,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getLastInsertTime() {
-		TimeRange timeRange = new TimeRange(2, 5);
+		Range timeRange = new Range(2, 5);
 		assertEquals(Long.MIN_VALUE, getRollupScheduler().getLastInsertTime(timeRange));
 		long insertTime = System.currentTimeMillis();
 		getRollupScheduler().reportInsert(timeRange, insertTime);
@@ -32,13 +34,13 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_timeRangesReadyForRollup() {
-		TimeRange timeRange0to1 = new TimeRange(0, 1);
-		TimeRange timeRange2to3 = new TimeRange(2, 3);
-		TimeRange timeRange4to5 = new TimeRange(4, 5);
+		Range timeRange0to1 = new Range(0, 1);
+		Range timeRange2to3 = new Range(2, 3);
+		Range timeRange4to5 = new Range(4, 5);
 		getRollupScheduler().reportInsert(timeRange0to1, 0);
 		getRollupScheduler().reportInsert(timeRange2to3, 0);
 		getRollupScheduler().reportInsert(timeRange2to3, System.currentTimeMillis());
-		List<TimeRange> readyForRollup = getRollupScheduler().timeRangesReadyForRollup();
+		List<Range> readyForRollup = getRollupScheduler().timeRangesReadyForRollup();
 		assertEquals(1, readyForRollup.size());
 		assertTrue(readyForRollup.contains(timeRange0to1));
 	}
@@ -51,10 +53,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_scheduleReadyRollups() {
-		List<TimeRange> rollupsRequested = new ArrayList<>();
-		BlueCollectionImpl<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		List<Range> rollupsRequested = new ArrayList<>();
+		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
-		TimeRange timeRange = new TimeRange(0, 1);
+		Range timeRange = new Range(0, 1);
 		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastInsertTime(timeRange));
 		mockRollupScheduler.reportInsert(timeRange, 0);
 		assertEquals(0, mockRollupScheduler.getLastInsertTime(timeRange));
@@ -66,10 +68,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_run() {
-		List<TimeRange> rollupsRequested = new ArrayList<>();
-		BlueCollectionImpl<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		List<Range> rollupsRequested = new ArrayList<>();
+		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
-		TimeRange timeRange = new TimeRange(0, 1);
+		Range timeRange = new Range(0, 1);
 		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastInsertTime(timeRange));
 		mockRollupScheduler.reportInsert(timeRange, 0);
 		assertEquals(0, mockRollupScheduler.getLastInsertTime(timeRange));
@@ -90,10 +92,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		assertTrue(rollupsRequested.contains(timeRange));
 	}
 
-	private BlueCollectionImpl<TestValue> createMockCollection(List<TimeRange> rollupsRequested) {
-		return new BlueCollectionImpl<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
+	private BlueCollectionOnDisk<TestValue> createMockCollection(List<Range> rollupsRequested) {
+		return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
 			@Override
-			public void scheduleRollup(TimeRange t) {
+			public void scheduleRollup(Range t) {
 				rollupsRequested.add(t);
 			}
 		};

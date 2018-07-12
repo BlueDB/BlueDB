@@ -11,7 +11,7 @@ import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.segment.Segment;
-import io.bluedb.disk.segment.TimeRange;
+import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
@@ -31,7 +31,7 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 		BlueKey key = createKey(1, 1);
 		TestValue value = createValue("Anna");
 		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
-		TimeRange range = new TimeRange(1, 1);
+		Range range = new Range(1, 1);
 		Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 		try {
 			getCollection().insert(key, value);

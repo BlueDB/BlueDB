@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class BlueObjectOutput<T> implements Closeable {

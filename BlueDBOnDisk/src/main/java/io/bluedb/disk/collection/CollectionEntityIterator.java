@@ -10,14 +10,14 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
 
-	final private BlueCollectionImpl<T> collection;
+	final private BlueCollectionOnDisk<T> collection;
 	final private List<Segment<T>> segments;
 	final private long min;
 	final private long max;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 
-	public CollectionEntityIterator(final BlueCollectionImpl<T> collection, final long min, final long max) {
+	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, final long min, final long max) {
 		this.collection = collection;
 		this.min = min;
 		this.max = max;

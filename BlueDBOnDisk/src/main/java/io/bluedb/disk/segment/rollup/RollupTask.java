@@ -1,14 +1,15 @@
-package io.bluedb.disk.segment;
+package io.bluedb.disk.segment.rollup;
 
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.segment.Range;
 
 public class RollupTask implements Runnable {
 
-	private final BlueCollectionImpl<?> collection;
-	private final TimeRange timeRange;
+	private final BlueCollectionOnDisk<?> collection;
+	private final Range timeRange;
 	
-	public RollupTask(BlueCollectionImpl<?> collection, TimeRange timeRange) {
+	public RollupTask(BlueCollectionOnDisk<?> collection, Range timeRange) {
 		this.collection = collection;
 		this.timeRange = timeRange;
 	}
