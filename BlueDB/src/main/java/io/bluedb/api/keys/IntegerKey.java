@@ -53,12 +53,10 @@ public class IntegerKey implements ValueKey {
 	public int compareTo(BlueKey other) {
 		if(other == null) {
 			return -1;
-		}
-		
-		if(other instanceof IntegerKey) {
-			return id - ((IntegerKey)other).id;
-		}
-		
-		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		} else if(other instanceof IntegerKey) {
+			return Integer.compare(id, ((IntegerKey)other).id);
+		} else {
+			return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		}		
 	}
 }
