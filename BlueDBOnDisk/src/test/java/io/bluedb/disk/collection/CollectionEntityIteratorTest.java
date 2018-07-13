@@ -15,16 +15,6 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-		super.tearDown();
-	}
-
 	@Test
 	public void test_close() {
 		BlueKey key = createKey(1, 1);

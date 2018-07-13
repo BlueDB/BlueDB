@@ -2,21 +2,14 @@ package io.bluedb.disk;
 
 import static org.junit.Assert.*;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import io.bluedb.api.Condition;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
-import io.bluedb.disk.file.BlueObjectInput;
-import io.bluedb.disk.file.BlueObjectOutput;
-import io.bluedb.disk.file.BlueReadLock;
-import io.bluedb.disk.file.BlueWriteLock;
-import io.bluedb.disk.file.LockManager;
 
 public class BlutilsTest {
 

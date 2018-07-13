@@ -23,6 +23,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
@@ -31,30 +32,7 @@ import io.bluedb.disk.segment.TimeRange;
 import io.bluedb.disk.serialization.BlueEntity;
 import junit.framework.TestCase;
 
-public class BlueCollectionImplTest extends TestCase {
-
-	BlueDb db;
-	BlueCollectionImpl<TestValue> collection;
-	Path dbPath;
-
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
-		dbPath = Paths.get("test_BlueCollectionImplTest");
-		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		collection = (BlueCollectionImpl<TestValue>) db.getCollection(TestValue.class, "testing");
-		collection.query().delete();
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-		Files.walk(dbPath)
-		.sorted(Comparator.reverseOrder())
-		.map(Path::toFile)
-		.forEach(File::delete);
-
-		collection.query().delete();
-	}
+public class BlueCollectionImplTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_query() {
@@ -299,76 +277,6 @@ public class BlueCollectionImplTest extends TestCase {
 			fail();
 		} catch (BlueDbException e) {
 		}
-	}
-
-	private void assertCupcakes(BlueKey key, int cupcakes) {
-		try {
-			TestValue value = getCollection().get(key);
-			if (value == null)
-				fail();
-			assertEquals(cupcakes, value.getCupcakes());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private void assertValueNotAtKey(BlueKey key, TestValue value) {
-		try {
-			assertNotEquals(value, getCollection().get(key));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private void assertValueAtKey(BlueKey key, TestValue value) {
-		TestValue differentValue = new TestValue("Bob");
-		differentValue.setCupcakes(42);
-		try {
-			assertEquals(value, getCollection().get(key));
-			assertNotEquals(value, differentValue);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private BlueKey insert(long time, TestValue value) {
-		BlueKey key = createTimeKey(time, value);
-		insert(key, value);
-		return key;
-	}
-
-	private void insert(BlueKey key, TestValue value) {
-		try {
-			getCollection().insert(key, value);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private TimeKey createTimeFrameKey(long start, long end, TestValue obj) {
-		StringKey stringKey = new StringKey(obj.getName());
-		return new TimeFrameKey(stringKey, start, end);
-	}
-
-	private TimeKey createTimeKey(long time, TestValue obj) {
-		StringKey stringKey = new StringKey(obj.getName());
-		return new TimeKey(stringKey, time);
-	}
-
-	private TestValue createValue(String name){
-		return new TestValue(name);
-	}
-
-	private BlueKey createKey(long keyId, long time){
-		return new TimeKey(keyId, time);
-	}
-
-	private BlueCollectionImpl<TestValue> getCollection() {
-		return collection;
 	}
 
 	private void waitForExecutorToFinish() {

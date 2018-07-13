@@ -1,61 +1,16 @@
 package io.bluedb.disk;
 
-import static org.junit.Assert.assertNotEquals;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
 
-import io.bluedb.api.BlueCollection;
-import io.bluedb.api.BlueDb;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.StringKey;
-import io.bluedb.api.keys.TimeFrameKey;
-import io.bluedb.api.keys.TimeKey;
-import junit.framework.TestCase;
 
-public class BlueDbOnDiskTest extends TestCase {
-
-	private Path tempDir;
-	private BlueDb db;
-	private BlueCollection<TestValue> collection;
-	Path dbPath;
-	
-	@Override
-	protected void setUp() throws Exception {
-		tempDir = Files.createTempDirectory("BlueDbOnDiskTest");
-		db = new BlueDbOnDiskBuilder()
-				.setPath(tempDir)
-				.setRegisteredClasses(TestValue.class)
-				.build();
-		collection = db.getCollection(TestValue.class, "testing");
-		dbPath = ((BlueDbOnDisk) db).getPath();
-	}
-	
-	@Override
-	protected void tearDown() throws Exception {
-		Files.walk(tempDir)
-			.sorted(Comparator.reverseOrder())
-			.map(Path::toFile)
-			.forEach(File::delete);
-
-		if (dbPath.toFile().exists()) {
-			Files.walk(dbPath)
-			.sorted(Comparator.reverseOrder())
-			.map(Path::toFile)
-			.forEach(File::delete);
-		}
-
-		assertFalse("Directory still exists", Files.exists(tempDir));
-	}
+public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_shutdown() {
@@ -457,73 +412,5 @@ public class BlueDbOnDiskTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
-	}
-
-	private void assertCupcakes(BlueKey key, int cupcakes) {
-		try {
-			TestValue value = getCollection().get(key);
-			if (value == null)
-				fail();
-			assertEquals(cupcakes, value.getCupcakes());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private void assertValueNotAtKey(BlueKey key, TestValue value) {
-		try {
-			assertNotEquals(value, getCollection().get(key));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private void assertValueAtKey(BlueKey key, TestValue value) {
-		TestValue differentValue = new TestValue("Bob");
-		differentValue.setCupcakes(42);
-		try {
-			assertEquals(value, getCollection().get(key));
-			assertNotEquals(value, differentValue);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private BlueKey insert(long start, long end, TestValue value) {
-		BlueKey key = createTimeFrameKey(start, end, value);
-		insert(key, value);
-		return key;
-	}
-
-	private BlueKey insert(long time, TestValue value) {
-		BlueKey key = createTimeKey(time, value);
-		insert(key, value);
-		return key;
-	}
-
-	private void insert(BlueKey key, TestValue value) {
-		try {
-			getCollection().insert(key, value);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
-	private BlueCollection<TestValue> getCollection() {
-		return collection;
-	}
-	
-	private TimeKey createTimeFrameKey(long start, long end, TestValue obj) {
-		StringKey stringKey = new StringKey(obj.getName());
-		return new TimeFrameKey(stringKey, start, end);
-	}
-
-	private TimeKey createTimeKey(long time, TestValue obj) {
-		StringKey stringKey = new StringKey(obj.getName());
-		return new TimeKey(stringKey, time);
 	}
 }

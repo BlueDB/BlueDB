@@ -27,8 +27,11 @@ public class BlueObjectOutput<T> implements Closeable {
 		dataOutputStream = openDataOutputStream(file);
 	}
 
-	// for testing only
-	protected BlueObjectOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
+	protected static <T> BlueObjectOutput<T> getTestOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
+		return new BlueObjectOutput<T>(path, serializer, dataOutputStream);
+	}
+
+	private BlueObjectOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
 		LockManager<Path> lockManager = new LockManager<Path>();
 		lock = lockManager.acquireWriteLock(path);
 		this.path = path;

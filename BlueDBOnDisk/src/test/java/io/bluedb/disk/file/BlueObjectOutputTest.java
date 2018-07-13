@@ -18,12 +18,15 @@ public class BlueObjectOutputTest extends TestCase {
 	BlueSerializer serializer;
 	FileManager fileManager;
 	LockManager<Path> lockManager;
-	Path testingFolderPath = Paths.get(".", "BlueObjectOutputTest");
-	Path targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
-	Path tempFilePath = FileManager.createTempFilePath(targetFilePath);
+	Path testingFolderPath;
+	Path targetFilePath;
+	Path tempFilePath;
 
 	@Override
 	protected void setUp() throws Exception {
+		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
+		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
+		tempFilePath = FileManager.createTempFilePath(targetFilePath);
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
 		fileManager = new FileManager(serializer);
 		lockManager = fileManager.getLockManager();
@@ -95,7 +98,7 @@ public class BlueObjectOutputTest extends TestCase {
 		}
 
 		try {
-			BlueObjectOutput<TestValue> invalidOut = new BlueObjectOutput<>(null, null, null);
+			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null);
 			invalidOut.write(value);
 			fail();
 		} catch (BlueDbException e) {

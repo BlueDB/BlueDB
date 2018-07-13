@@ -20,6 +20,10 @@ import io.bluedb.disk.file.BlueReadLock;
 import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.file.LockManager;
+import io.bluedb.disk.segment.writer.DeleteWriter;
+import io.bluedb.disk.segment.writer.InsertWriter;
+import io.bluedb.disk.segment.writer.StreamingWriter;
+import io.bluedb.disk.segment.writer.UpdateWriter;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
@@ -37,7 +41,10 @@ public class Segment <T extends Serializable> {
 		lockManager = fileManager.getLockManager();
 	}
 
-	// for testing only
+	protected static <T extends Serializable> Segment<T> getTestSegment () {
+		return new Segment<T>();
+	}
+
 	protected Segment() {segmentPath = null;fileManager = null;lockManager = null;}
 
 	@Override
@@ -49,80 +56,22 @@ public class Segment <T extends Serializable> {
 		return get(key) != null;
 	}
 
-	interface Processor<X extends Serializable> {
-		public void process(BlueObjectInput<BlueEntity<X>> input, BlueObjectOutput<BlueEntity<X>> output) throws BlueDbException;
-	}
-
 	public void update(BlueKey newKey, T newValue) throws BlueDbException {
 		long groupingNumber = newKey.getGroupingNumber();
-		modifyChunk(groupingNumber, new Processor<T>() {
-			@Override
-			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
-				BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
-				while (input.hasNext()) {
-					BlueEntity<T> iterEntity = input.next();
-					BlueKey iterKey = iterEntity.getKey();
-					if (iterKey.equals(newKey)) {
-						output.write(newEntity);
-						newEntity = null;
-//					} else if (newEntity != null && iterKey.getGroupingNumber() > groupingNumber) {
-//						output.write(newEntity);
-//						newEntity = null;
-//						output.write(iterEntity);
-					} else {
-						output.write(iterEntity);
-					}
-				}
-//				if (newEntity != null) {
-//					output.write(newEntity);
-//				}
-			}
-		});
+		modifyChunk(groupingNumber, new UpdateWriter<T>(newKey, newValue));
 	}
 
 	public void insert(BlueKey newKey, T newValue) throws BlueDbException {
-		BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
 		long groupingNumber = newKey.getGroupingNumber();
-		modifyChunk(groupingNumber, new Processor<T>() {
-			@Override
-			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
-				BlueEntity<T> toInsert = newEntity;
-				while (input.hasNext()) {
-					BlueEntity<T> iterEntity = input.next();
-					BlueKey iterKey = iterEntity.getKey();
-					if (iterKey.equals(newKey)) {
-						throw new DuplicateKeyException("attempt to insert duplicate key", newKey);
-					} else if (toInsert != null && iterKey.getGroupingNumber() > groupingNumber) {
-						output.write(newEntity);
-						toInsert = null;
-						output.write(iterEntity);
-					} else {
-						output.write(iterEntity);
-					}
-				}
-				if (toInsert != null) {
-					output.write(newEntity);
-				}
-			}
-		});
+		modifyChunk(groupingNumber, new InsertWriter<T>(newKey, newValue));
 	}
 
 	public void delete(BlueKey key) throws BlueDbException {
 		long groupingNumber = key.getGroupingNumber();
-		modifyChunk(groupingNumber, new Processor<T>() {
-			@Override
-			public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
-				while (input.hasNext()) {
-					BlueEntity<T> entry = input.next();
-					if (!entry.getKey().equals(key)) {
-						output.write(entry);
-					}
-				}
-			}
-		});
+		modifyChunk(groupingNumber, new DeleteWriter<T>(key));
 	}
 
-	public void modifyChunk(long groupingNumber, Processor<T> processor) throws BlueDbException {
+	public void modifyChunk(long groupingNumber, StreamingWriter<T> processor) throws BlueDbException {
 		Path targetPath, tmpPath;
 
 		try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(groupingNumber)) {
