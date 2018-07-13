@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class BlueObjectInput<T> implements Closeable, Iterator<T> {

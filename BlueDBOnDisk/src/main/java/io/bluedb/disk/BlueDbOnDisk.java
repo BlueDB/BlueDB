@@ -8,13 +8,13 @@ import java.util.Map;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 
 public class BlueDbOnDisk implements BlueDb {
 
 	private final Path path;
 	
-	private final Map<String, BlueCollectionImpl<? extends Serializable>> collections = new HashMap<>();
+	private final Map<String, BlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
 	BlueDbOnDisk(Path path, Class<?>...registeredSerializableClasses) {
 		this.path = path;
@@ -24,9 +24,9 @@ public class BlueDbOnDisk implements BlueDb {
 	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
-			BlueCollectionImpl<T> collection = (BlueCollectionImpl<T>) collections.get(name);
+			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new BlueCollectionImpl<>(this, name, type);
+				collection = new BlueCollectionOnDisk<>(this, name, type);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(type)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + type + "]");
@@ -39,7 +39,7 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public void shutdown() throws BlueDbException {
 		for (BlueCollection<?> collection: collections.values()) {
-			BlueCollectionImpl<?> diskCollection = (BlueCollectionImpl<?>) collection;
+			BlueCollectionOnDisk<?> diskCollection = (BlueCollectionOnDisk<?>) collection;
 			diskCollection.shutdown();
 		}
 	}

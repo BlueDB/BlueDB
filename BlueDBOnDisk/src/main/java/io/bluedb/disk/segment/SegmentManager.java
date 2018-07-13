@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
 
 public class SegmentManager<T extends Serializable> {
@@ -26,10 +26,10 @@ public class SegmentManager<T extends Serializable> {
 	protected static final long LEVEL_1 = LEVEL_2 * 30;
 	protected static final long LEVEL_0 = LEVEL_1 * 12;
 
-	private final BlueCollectionImpl<T> collection;
+	private final BlueCollectionOnDisk<T> collection;
 	private final FileManager fileManager;
 	
-	public SegmentManager(BlueCollectionImpl<T> collection) {
+	public SegmentManager(BlueCollectionOnDisk<T> collection) {
 		this.collection = collection;
 		this.fileManager = collection.getFileManager();
 	}
@@ -147,17 +147,17 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected static String getRangeFileName(long groupingValue, long multiple) {
-		TimeRange timeRange = getTimeRange(groupingValue, multiple);
+		Range timeRange = getTimeRange(groupingValue, multiple);
 		return timeRange.toUnderscoreDelimitedString();
 	}
 
-	public static TimeRange getSegmentTimeRange(long groupingValue) {
+	public static Range getSegmentTimeRange(long groupingValue) {
 		return getTimeRange(groupingValue, getSegmentSize());
 	}
 
-	public static TimeRange getTimeRange(long groupingValue, long multiple) {
+	public static Range getTimeRange(long groupingValue, long multiple) {
 		long low = Blutils.roundDownToMultiple(groupingValue, multiple);
 		long high = Math.min(Long.MAX_VALUE - multiple + 1, low) + multiple - 1;  // prevent overflow
-		return new TimeRange(low, high);
+		return new Range(low, high);
 	}
 }

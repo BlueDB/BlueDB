@@ -9,19 +9,19 @@ import io.bluedb.api.CloseableIterator;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 
-public class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
+public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
-	private BlueCollectionImpl<T> collection;
+	private BlueCollectionOnDisk<T> collection;
 	private List<Condition<T>> objectConditions = new LinkedList<>();
 	private long maxTime = Long.MAX_VALUE;
 	private long minTime = Long.MIN_VALUE;
 
-	public BlueQueryImpl(BlueCollectionImpl<T> collection) {
+	public BlueQueryOnDisk(BlueCollectionOnDisk<T> collection) {
 		this.collection = collection;
 	}
 

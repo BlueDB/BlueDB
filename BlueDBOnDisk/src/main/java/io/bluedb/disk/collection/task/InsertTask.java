@@ -4,18 +4,18 @@ import java.io.Serializable;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class InsertTask<T extends Serializable> extends QueryTask {
 
-	private final BlueCollectionImpl<T> collection;
+	private final BlueCollectionOnDisk<T> collection;
 	private final BlueKey key;
 	private final T value;
 	
-	public InsertTask(BlueCollectionImpl<T> collection, BlueKey key, T value) {
+	public InsertTask(BlueCollectionOnDisk<T> collection, BlueKey key, T value) {
 		this.collection = collection;
 		this.key = key;
 		this.value = value;

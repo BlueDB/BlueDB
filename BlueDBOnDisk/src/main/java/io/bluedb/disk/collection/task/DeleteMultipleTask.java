@@ -6,18 +6,18 @@ import java.util.List;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.collection.BlueCollectionImpl;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
-	private final BlueCollectionImpl<T> collection;
+	private final BlueCollectionOnDisk<T> collection;
 	private final long minGroupingValue;
 	private final long maxGroupingValue;
 	private final List<Condition<T>> conditions;
 	
-	public DeleteMultipleTask(BlueCollectionImpl<T> collection, long min, long max, List<Condition<T>> conditions) {
+	public DeleteMultipleTask(BlueCollectionOnDisk<T> collection, long min, long max, List<Condition<T>> conditions) {
 		this.collection = collection;
 		this.minGroupingValue = min;
 		this.maxGroupingValue = max;

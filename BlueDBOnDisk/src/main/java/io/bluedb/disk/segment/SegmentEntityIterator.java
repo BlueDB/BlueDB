@@ -19,7 +19,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 	final Segment<T> segment;
 	final long min;
 	final long max;
-	final List<TimeRange> timeRanges;
+	final List<Range> timeRanges;
 	BlueObjectInput<BlueEntity<T>> currentInput;
 	BlueEntity<T> next = null;
 	
@@ -29,7 +29,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 		this.min = min;
 		this.max = max;
 		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
-		TimeRange timeRange = new TimeRange(Long.MIN_VALUE, max);
+		Range timeRange = new Range(Long.MIN_VALUE, max);
 		List<File> relevantFiles = segment.getOrderedFilesInRange(timeRange);
 		timeRanges = filesToRanges(relevantFiles);
 	}
@@ -83,7 +83,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 	}
 
 	protected BlueObjectInput<BlueEntity<T>> getNextStream() {
-		TimeRange range;
+		Range range;
 		while (!timeRanges.isEmpty()) {
 			range = timeRanges.remove(0);
 			if (highestGroupingNumberCompleted >= range.getEnd()) {
@@ -107,11 +107,11 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 		}
 	}
 
-	protected LinkedList<TimeRange> filesToRanges(List<File> files) {
-		LinkedList<TimeRange> ranges = new LinkedList<TimeRange>();
+	protected LinkedList<Range> filesToRanges(List<File> files) {
+		LinkedList<Range> ranges = new LinkedList<Range>();
 		for (File file: files) {
 			String fileName = file.getName();
-			TimeRange rangeForFile = TimeRange.fromUnderscoreDelmimitedString(fileName);
+			Range rangeForFile = Range.fromUnderscoreDelmimitedString(fileName);
 			ranges.add(rangeForFile);
 		}
 		return ranges;
@@ -120,7 +120,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 	protected static <X extends Serializable> long extractMaxGroupingNumber(BlueObjectInput<BlueEntity<X>> input) {
 		Path path = input.getPath();
 		String fileName = path.getFileName().toString();
-		TimeRange range = TimeRange.fromUnderscoreDelmimitedString(fileName);
+		Range range = Range.fromUnderscoreDelmimitedString(fileName);
 		return range.getEnd();
 	}
 }

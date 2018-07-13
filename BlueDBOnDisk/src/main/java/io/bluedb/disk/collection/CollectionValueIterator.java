@@ -8,7 +8,7 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 
 	private final CollectionEntityIterator<T> entityIterator;
 	
-	public CollectionValueIterator(BlueCollectionImpl<T> collection, long min, long max) {
+	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, long min, long max) {
 		entityIterator = new CollectionEntityIterator<T>(collection, min, max);
 	}
 

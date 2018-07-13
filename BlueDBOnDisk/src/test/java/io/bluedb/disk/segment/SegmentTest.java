@@ -257,13 +257,13 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			File[] directoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, directoryContents.length);
 
-			TimeRange invalidRollupTimeRange = new TimeRange(0, 3);
+			Range invalidRollupTimeRange = new Range(0, 3);
 			try {
 				segment.rollup(invalidRollupTimeRange);
 				fail();  // rollups must be 
 			} catch (BlueDbException e) {}
 
-			TimeRange validRollupTimeRange = new TimeRange(0, SegmentManager.getSegmentSize() - 1);
+			Range validRollupTimeRange = new Range(0, SegmentManager.getSegmentSize() - 1);
 			segment.rollup(validRollupTimeRange);
 			values = getAll(segment);
 			assertEquals(2, values.size());
@@ -289,7 +289,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			FileManager.ensureFileExists(_12_15.toPath());
 			FileManager.ensureFileExists(_2_3.toPath());
 			FileManager.ensureFileExists(_100_101.toPath());
-			TimeRange timeRange = new TimeRange(0, 20);
+			Range timeRange = new Range(0, 20);
 			assertEquals(expected, Segment.getOrderedFilesInRange(getPath(), timeRange));
 		} catch (BlueDbException e) {
 			e.printStackTrace();

@@ -1,4 +1,4 @@
-package io.bluedb.disk.file;
+package io.bluedb.disk.lock;
 
 import java.io.Closeable;
 

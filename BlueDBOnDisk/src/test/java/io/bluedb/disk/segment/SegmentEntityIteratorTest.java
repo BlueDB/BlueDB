@@ -134,7 +134,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 			
 			iterator = segment.getIterator(1, 2); // it should now have two ranges to search
 			long segmentSize = SegmentManager.getSegmentSize();
-			TimeRange range = new TimeRange(0, segmentSize -1);
+			Range range = new Range(0, segmentSize -1);
 			segment.rollup(range);
 			entities = toList(iterator);
 			assertEquals(2, entities.size());
@@ -162,13 +162,13 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 			// simulate a rollup from underneath us
 			long segmentSize = SegmentManager.getSegmentSize();
-			TimeRange range = new TimeRange(0, segmentSize -1);
+			Range range = new Range(0, segmentSize -1);
 			Path rolledUpPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 			try (BlueObjectOutput<BlueEntity<TestValue>> output = segment.getObjectOutputFor(rolledUpPath)) {
 				output.write(new BlueEntity<TestValue>(key1, value1));
 				output.write(new BlueEntity<TestValue>(key2, value2));
 			}
-			TimeRange rangeToRemove = new TimeRange(2,2);
+			Range rangeToRemove = new Range(2,2);
 			Path pathToRemove = Paths.get(segment.getPath().toString(), rangeToRemove.toUnderscoreDelimitedString());
 			assertTrue(pathToRemove.toFile().delete());
 
@@ -202,7 +202,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 			entities.add(iterator.next()); // read one from the first file;
 
 			// rip out the second file
-			TimeRange rangeToRemove = new TimeRange(2,2);
+			Range rangeToRemove = new Range(2,2);
 			Path pathToRemove = Paths.get(segment.getPath().toString(), rangeToRemove.toUnderscoreDelimitedString());
 			assertTrue(pathToRemove.toFile().delete());
 

@@ -13,6 +13,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.lock.BlueReadLock;
+import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class FileManager {

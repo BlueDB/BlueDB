@@ -9,6 +9,9 @@ import org.junit.Test;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.lock.BlueReadLock;
+import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import junit.framework.TestCase;

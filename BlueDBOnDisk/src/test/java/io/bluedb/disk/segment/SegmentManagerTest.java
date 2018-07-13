@@ -29,46 +29,46 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		assertEquals("-2_-1", SegmentManager.getRangeFileName(-1, 2));  // test zero
 		
 		String maxLongFileName = SegmentManager.getRangeFileName(Long.MAX_VALUE, 100);
-		TimeRange maxLongRange = TimeRange.fromUnderscoreDelmimitedString(maxLongFileName);
+		Range maxLongRange = Range.fromUnderscoreDelmimitedString(maxLongFileName);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
 		String minLongFileName = SegmentManager.getRangeFileName(Long.MIN_VALUE, 100);
-		TimeRange minLongRange = TimeRange.fromUnderscoreDelmimitedString(minLongFileName);
+		Range minLongRange = Range.fromUnderscoreDelmimitedString(minLongFileName);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
 
 	@Test
 	public void test_getSegmentTimeRange() {
-		TimeRange segmentRangeStartingAtZero = SegmentManager.getSegmentTimeRange(0);
+		Range segmentRangeStartingAtZero = SegmentManager.getSegmentTimeRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());
 		assertEquals(SegmentManager.getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
 
-		TimeRange maxLongRange = SegmentManager.getSegmentTimeRange(Long.MAX_VALUE);
+		Range maxLongRange = SegmentManager.getSegmentTimeRange(Long.MAX_VALUE);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		TimeRange minLongRange = SegmentManager.getSegmentTimeRange(Long.MIN_VALUE);
+		Range minLongRange = SegmentManager.getSegmentTimeRange(Long.MIN_VALUE);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
 
 	@Test
 	public void test_getTimeRange() {
-		TimeRange rangeStartingAtZero = SegmentManager.getTimeRange(0, 100);
+		Range rangeStartingAtZero = SegmentManager.getTimeRange(0, 100);
 		assertEquals(0, rangeStartingAtZero.getStart());
 		assertEquals(100 - 1, rangeStartingAtZero.getEnd());
 
-		TimeRange rangeStartingAtMinus100 = SegmentManager.getTimeRange(-100, 100);
+		Range rangeStartingAtMinus100 = SegmentManager.getTimeRange(-100, 100);
 		assertEquals(-100, rangeStartingAtMinus100.getStart());
 		assertEquals(-1, rangeStartingAtMinus100.getEnd());
 
-		TimeRange maxLongRange = SegmentManager.getTimeRange(Long.MAX_VALUE, 100);
+		Range maxLongRange = SegmentManager.getTimeRange(Long.MAX_VALUE, 100);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		TimeRange minLongRange = SegmentManager.getTimeRange(Long.MIN_VALUE, 100);
+		Range minLongRange = SegmentManager.getTimeRange(Long.MIN_VALUE, 100);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}

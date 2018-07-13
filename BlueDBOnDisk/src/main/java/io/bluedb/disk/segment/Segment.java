@@ -16,10 +16,10 @@ import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
-import io.bluedb.disk.file.BlueReadLock;
-import io.bluedb.disk.file.BlueWriteLock;
 import io.bluedb.disk.file.FileManager;
-import io.bluedb.disk.file.LockManager;
+import io.bluedb.disk.lock.BlueReadLock;
+import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.segment.writer.DeleteWriter;
 import io.bluedb.disk.segment.writer.InsertWriter;
 import io.bluedb.disk.segment.writer.StreamingWriter;
@@ -98,7 +98,7 @@ public class Segment <T extends Serializable> {
 		return new SegmentEntityIterator<>(this, min, max);
 	}
 
-	public void rollup(TimeRange timeRange) throws BlueDbException {
+	public void rollup(Range timeRange) throws BlueDbException {
 		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
 		boolean isValidRollupSize = Arrays.asList(ROLLUP_LEVELS).contains(rollupSize);
 		if (!isValidRollupSize) {
@@ -141,11 +141,11 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	protected List<File> getOrderedFilesInRange(TimeRange range) {
+	protected List<File> getOrderedFilesInRange(Range range) {
 		return getOrderedFilesInRange(segmentPath, range);
 	}
 
-	protected static List<File> getOrderedFilesInRange(Path segmentPath, TimeRange range) {
+	protected static List<File> getOrderedFilesInRange(Path segmentPath, Range range) {
 		long min = range.getStart();
 		long max = range.getEnd();
 		File segmentFolder = segmentPath.toFile();
@@ -159,8 +159,8 @@ public class Segment <T extends Serializable> {
 		Comparator<File> comparator = new Comparator<File>() {
 			@Override
 			public int compare(File o1, File o2) {
-				TimeRange r1 = TimeRange.fromUnderscoreDelmimitedString(o1.getName());
-				TimeRange r2 = TimeRange.fromUnderscoreDelmimitedString(o2.getName());
+				Range r1 = Range.fromUnderscoreDelmimitedString(o1.getName());
+				Range r2 = Range.fromUnderscoreDelmimitedString(o2.getName());
 				return r1.compareTo(r2);
 			}
 		};
