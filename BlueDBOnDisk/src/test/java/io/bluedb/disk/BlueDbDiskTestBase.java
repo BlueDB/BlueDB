@@ -20,6 +20,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.collection.CollectionMetaData;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.recovery.RecoveryManager;
@@ -37,6 +38,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	Path dbPath;
 	LockManager<Path> lockManager;
 	RollupScheduler rollupScheduler;
+	CollectionMetaData metaData;
 
 	@Override
 	protected void setUp() throws Exception {
@@ -46,6 +48,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		dbPath = db.getPath();
 		lockManager = collection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(collection);
+		metaData = getCollection().getMetaData();
 	}
 
 	@Override
@@ -237,6 +240,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public BlueSerializer getSerializer() {
 		return getCollection().getSerializer();
+	}
+
+	public CollectionMetaData getMetaData() {
+		return metaData;
 	}
 
 	public void removeKey(BlueKey key) {

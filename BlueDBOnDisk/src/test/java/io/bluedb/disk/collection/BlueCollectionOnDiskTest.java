@@ -20,17 +20,13 @@ import io.bluedb.api.BlueDb;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.StringKey;
-import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
-import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
-import junit.framework.TestCase;
 
 public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
@@ -132,6 +128,38 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			e.printStackTrace();
 			fail();
 		}
+	}
+
+	@Test
+	public void test_maxLong_maxInt() {
+		TestValue value = new TestValue("Joe");
+		BlueKey key = createTimeKey(10, value);
+		insert(key, value);
+		assertValueAtKey(key, value);
+
+		// test max long
+		try {
+			assertNull(getMetaData().getMaxLong());  // since the last insert was a String key;
+			BlueKey timeKeyWithLong3 = new TimeKey(3L, 4);
+			getCollection().insert(timeKeyWithLong3, value);
+			assertNotNull(getMetaData().getMaxLong());
+			assertEquals(3, getMetaData().getMaxLong().longValue());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}  
+
+		// test max integer
+		try {
+			assertNull(getMetaData().getMaxInteger());
+			BlueKey timeKeyWithInt5 = new TimeKey(5, 4);
+			getCollection().insert(timeKeyWithInt5, value);
+			assertNotNull(getMetaData().getMaxInteger());
+			assertEquals(5, getMetaData().getMaxInteger().intValue());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}  
 	}
 
 	@Test

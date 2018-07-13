@@ -16,6 +16,9 @@ import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.IntegerKey;
+import io.bluedb.api.keys.LongKey;
+import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.task.DeleteTask;
@@ -45,6 +48,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
+	private final CollectionMetaData metaData;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> type) {
 		this.type = type;
@@ -57,6 +61,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		recoveryManager.recover();  // everything else has to be in place before running this
 		rollupScheduler = new RollupScheduler(this);
 		rollupScheduler.start();
+		metaData = new CollectionMetaData(collectionPath, fileManager);
 	}
 
 	@Override
@@ -113,6 +118,18 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public void applyChange(PendingChange<T> change) throws BlueDbException {
 		BlueKey key = change.getKey();
+		// TODO refactor
+		BlueKey valueKey = key;
+		if (valueKey instanceof TimeKey) {
+			valueKey = ((TimeKey) valueKey).getId();
+		}
+		if (valueKey instanceof LongKey) {
+			LongKey longKey = (LongKey) valueKey;
+			metaData.updateMaxLong(longKey.getId());
+		} else if (valueKey instanceof IntegerKey) {
+			IntegerKey integerKey = (IntegerKey) valueKey;
+			metaData.updateMaxInteger(integerKey.getId());
+		}
 		List<Segment<T>> segments = segmentManager.getAllSegments(key);
 		for (Segment<T> segment: segments) {
 			change.applyChange(segment);
@@ -157,6 +174,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public BlueSerializer getSerializer() {
 		return serializer;
+	}
+
+	public CollectionMetaData getMetaData() {
+		return metaData;
 	}
 
 	public void shutdown() {
