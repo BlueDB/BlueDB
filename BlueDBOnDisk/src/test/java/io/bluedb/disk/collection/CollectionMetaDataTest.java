@@ -1,8 +1,12 @@
 package io.bluedb.disk.collection;
 
+import java.nio.file.Path;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbDiskTestBase;
+import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.serialization.BlueSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
@@ -11,7 +15,10 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		metaData = new CollectionMetaData(getPath(), getFileManager());
+		BlueSerializer serializer = new ThreadLocalFstSerializer(Long.class, Integer.class);
+		FileManager fileManager = new FileManager( serializer);
+		Path collectionPath = getPath();
+		metaData = new CollectionMetaData(collectionPath, fileManager);
 	}
 
 	@Test
