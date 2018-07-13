@@ -28,7 +28,7 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
 
-	private final static Long SEGMENT_SIZE = SegmentManager.LEVEL_3;
+	private final static Long SEGMENT_SIZE = SegmentManager.SIZE_SEGMENT;
 	private final static Long[] ROLLUP_LEVELS = {1L, 3125L, SEGMENT_SIZE};
 
 	private final FileManager fileManager;
@@ -216,8 +216,13 @@ public class Segment <T extends Serializable> {
 		return segmentPath;
 	}
 
+	protected static String getRangeFileName(long groupingValue, long multiple) {
+		Range timeRange = Range.forValueAndRangeSize(groupingValue, multiple);
+		return timeRange.toUnderscoreDelimitedString();
+	}
+
 	private Path getPathFor(long groupingNumber, long rollupLevel) {
-		String fileName = SegmentManager.getRangeFileName(groupingNumber, rollupLevel);
+		String fileName = getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 

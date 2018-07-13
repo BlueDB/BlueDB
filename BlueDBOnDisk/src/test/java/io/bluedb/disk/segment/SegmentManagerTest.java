@@ -4,7 +4,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -19,151 +18,39 @@ import io.bluedb.disk.TestValue;
 public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_getRangeFileName() {
-		assertEquals("0_1", SegmentManager.getRangeFileName(0, 2));  // test zero
-		assertEquals("2_3", SegmentManager.getRangeFileName(2, 2));  // test next doesn't overlap
-		assertEquals("4_5", SegmentManager.getRangeFileName(5, 2));  // test greater than a multiple
-		assertEquals("0_41", SegmentManager.getRangeFileName(41, 42));  // test equal to a multiple
-		assertEquals("42_83", SegmentManager.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("42_83", SegmentManager.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("-2_-1", SegmentManager.getRangeFileName(-1, 2));  // test zero
-		
-		String maxLongFileName = SegmentManager.getRangeFileName(Long.MAX_VALUE, 100);
-		Range maxLongRange = Range.fromUnderscoreDelmimitedString(maxLongFileName);
-		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
-		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
-
-		String minLongFileName = SegmentManager.getRangeFileName(Long.MIN_VALUE, 100);
-		Range minLongRange = Range.fromUnderscoreDelmimitedString(minLongFileName);
-		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
-		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
-	}
-
-	@Test
-	public void test_getSegmentTimeRange() {
-		Range segmentRangeStartingAtZero = SegmentManager.getSegmentTimeRange(0);
+	public void test_getSegmentRange() {
+		Range segmentRangeStartingAtZero = SegmentManager.getSegmentRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());
 		assertEquals(SegmentManager.getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
 
-		Range maxLongRange = SegmentManager.getSegmentTimeRange(Long.MAX_VALUE);
+		Range maxLongRange = SegmentManager.getSegmentRange(Long.MAX_VALUE);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		Range minLongRange = SegmentManager.getSegmentTimeRange(Long.MIN_VALUE);
+		Range minLongRange = SegmentManager.getSegmentRange(Long.MIN_VALUE);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
 
 	@Test
-	public void test_getTimeRange() {
-		Range rangeStartingAtZero = SegmentManager.getTimeRange(0, 100);
-		assertEquals(0, rangeStartingAtZero.getStart());
-		assertEquals(100 - 1, rangeStartingAtZero.getEnd());
-
-		Range rangeStartingAtMinus100 = SegmentManager.getTimeRange(-100, 100);
-		assertEquals(-100, rangeStartingAtMinus100.getStart());
-		assertEquals(-1, rangeStartingAtMinus100.getEnd());
-
-		Range maxLongRange = SegmentManager.getTimeRange(Long.MAX_VALUE, 100);
-		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
-		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
-
-		Range minLongRange = SegmentManager.getTimeRange(Long.MIN_VALUE, 100);
-		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
-		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
-	}
-
-	@Test
-	public void test_folderNameRangeContainsRange() {
-		File file2to4 = Paths.get("2_4").toFile();
-		assertFalse(SegmentManager.folderNameRangeContainsRange(file2to4, 0, 1));  // below range
-		assertTrue(SegmentManager.folderNameRangeContainsRange(file2to4, 0, 2));  // touches bottom of range
-		assertTrue(SegmentManager.folderNameRangeContainsRange(file2to4, 2, 3));  // at bottom of range
-		assertTrue(SegmentManager.folderNameRangeContainsRange(file2to4, 3, 4));  // at top of range
-		assertTrue(SegmentManager.folderNameRangeContainsRange(file2to4, 3, 3));  // middle of range
-		assertTrue(SegmentManager.folderNameRangeContainsRange(file2to4, 4, 5));  // touches top of range
-		assertFalse(SegmentManager.folderNameRangeContainsRange(file2to4, 5, 6));  // above range
-
-		String maxLongFileName = SegmentManager.getRangeFileName(Long.MAX_VALUE, 100);
-		File maxFile = Paths.get(maxLongFileName).toFile();
-		String minLongFileName = SegmentManager.getRangeFileName(Long.MIN_VALUE, 100);
-		File minFile = Paths.get(minLongFileName).toFile();
-		assertTrue(SegmentManager.folderNameRangeContainsRange(maxFile, 0, Long.MAX_VALUE));
-		assertFalse(SegmentManager.folderNameRangeContainsRange(maxFile,Long.MIN_VALUE, 0));
-
-		assertFalse(SegmentManager.folderNameRangeContainsRange(minFile, 0, Long.MAX_VALUE));
-		assertTrue(SegmentManager.folderNameRangeContainsRange(minFile,Long.MIN_VALUE, 0));
-}
-
-	@Test
-	public void test_getSegmentFilesInRange() {
+	public void test_getSubfoldersInRange() {
 		File folder = Paths.get(".", "test_folder").toFile();
 		emptyAndDelete(folder);
 		folder.mkdir();
 
-		File segmentAt2 = createSegment(folder, 2L, 2L);
-		File segmentAt5 = createSegment(folder, 5L, 5L);
-		createJunkFile(folder, "5t");  // make sure junk doesn't get included
-		createJunkFolder(folder, "7x");  // make sure junk doesn't get included
-		createNonsegmentSubfolder(folder, 2, 3);  // make sure non-segments don't get included
-
-		List<File> empty = Arrays.asList();
-		List<File> only2 = Arrays.asList(segmentAt2);
-		List<File> both = Arrays.asList(segmentAt2, segmentAt5);
-
-		assertEquals(empty, SegmentManager.getSegmentFilesInRange(folder, 0L, 1L));  // above range
-		assertEquals(only2, SegmentManager.getSegmentFilesInRange(folder, 0L, 2L));  // at top of range
-		assertEquals(only2, SegmentManager.getSegmentFilesInRange(folder, 0L, 3L));  // at middle of range
-		assertEquals(only2, SegmentManager.getSegmentFilesInRange(folder, 2L, 3L));  // at bottom of range
-		assertEquals(empty, SegmentManager.getSegmentFilesInRange(folder, 3L, 4L));  // below range
-		List<File> filesInWideRange = SegmentManager.getSegmentFilesInRange(folder, 0L, 6L);
-		Collections.sort(filesInWideRange);
-		assertEquals(both, filesInWideRange);  //works with multiple files
-
-		emptyAndDelete(folder);
-	}
-
-	@Test
-	public void test_getNonsegmentSubfoldersInRange() {
-		File folder = Paths.get(".", "test_folder").toFile();
-		emptyAndDelete(folder);
-		folder.mkdir();
-
-		File folder2to4 = createNonsegmentSubfolder(folder, 2, 4);
-		File folder7to8 = createNonsegmentSubfolder(folder, 7, 8);
+		File folder2 = createSubfolder(folder, 2);
+		File folder7 = createSubfolder(folder, 7);
 		createSegment(folder, 2L, 2L);  // to make sure segment doesn't get included
 		
 		List<File> empty = Arrays.asList();
-		List<File> only2to4 = Arrays.asList(folder2to4);
-		List<File> both = Arrays.asList(folder2to4, folder7to8);
+		List<File> only2 = Arrays.asList(folder2);
+		List<File> both = Arrays.asList(folder2, folder7);
 		
-		assertEquals(empty, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 1L));  // folder above range
-		assertEquals(only2to4, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 2L));  // folder at top of range
-		assertEquals(only2to4, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 3L));  // folder overlaps top of range
-		assertEquals(only2to4, SegmentManager.getNonsegmentSubfoldersInRange(folder, 3L, 3L));  // range at middle of folder
-		assertEquals(only2to4, SegmentManager.getNonsegmentSubfoldersInRange(folder, 3L, 5L));  // folder overlaps bottom of range
-		assertEquals(only2to4, SegmentManager.getNonsegmentSubfoldersInRange(folder, 4L, 6L));  // folder at bottom of range
-		assertEquals(empty, SegmentManager.getNonsegmentSubfoldersInRange(folder, 5L, 6L));  // folder below range
-		assertEquals(both, SegmentManager.getNonsegmentSubfoldersInRange(folder, 0L, 7L));  //works with multiple files
-
-		emptyAndDelete(folder);
-	}
-
-	@Test
-	public void test_isSegment() {
-		File folder = Paths.get(".", "test_folder").toFile();
-		emptyAndDelete(folder);
-		folder.mkdir();
-
-		File folder7to8 = createNonsegmentSubfolder(folder, 7, 8);
-		File segmentAt2 = createSegment(folder, 2L, 2L);
-		File junkFile = createJunkFile(folder, "5t");
-		File junkFolder = createJunkFolder(folder, "7x");
-		
-		assertFalse(SegmentManager.isSegment(folder7to8));
-		assertTrue(SegmentManager.isSegment(segmentAt2));
-		assertFalse(SegmentManager.isSegment(junkFile));
-		assertFalse(SegmentManager.isSegment(junkFolder));
+		assertEquals(empty, SegmentManager.getSubfoldersInRange(folder, 0L, 1L));  // folder above range
+		assertEquals(only2, SegmentManager.getSubfoldersInRange(folder, 0L, 2L));  // folder at top of range
+		assertEquals(only2, SegmentManager.getSubfoldersInRange(folder, 0L, 3L));  // folder overlaps top of range
+		assertEquals(empty, SegmentManager.getSubfoldersInRange(folder, 5L, 6L));  // folder below range
+		assertEquals(both, SegmentManager.getSubfoldersInRange(folder, 0L, 7L));  //works with multiple files
 
 		emptyAndDelete(folder);
 	}
@@ -184,7 +71,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		}
 		assertEquals(1, getSegmentManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
 
-		List<Path> fivePaths = getSegmentManager().getAllPossibleSegmentPaths(startTime, startTime + SegmentManager.LEVEL_3 * 4);
+		List<Path> fivePaths = getSegmentManager().getAllPossibleSegmentPaths(startTime, startTime + SegmentManager.SIZE_SEGMENT * 4);
 		assertEquals(5, fivePaths.size());
 		for (Path path: fivePaths) {
 			path.toFile().mkdirs();
@@ -202,7 +89,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 		long startTime = 987654321;
 		TimeKey timeKey = new TimeKey(1, startTime);
-		TimeFrameKey timeFrameKey = new TimeFrameKey(2, startTime, startTime + SegmentManager.LEVEL_3 * 4);
+		TimeFrameKey timeFrameKey = new TimeFrameKey(2, startTime, startTime + SegmentManager.SIZE_SEGMENT * 4);
 
 		List<Path> singlePathToAdd = getSegmentManager().getAllPossibleSegmentPaths(timeKey);
 		assertEquals(1, singlePathToAdd.size());
@@ -224,7 +111,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getAllPossibleSegmentPaths_range() {
-		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(0, SegmentManager.LEVEL_3);
+		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(0, SegmentManager.SIZE_SEGMENT);
 		assertEquals(2, paths.size());
 		
 		Path secondPath = paths.get(1);
@@ -232,10 +119,10 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		Path grandparent = parent.getParent();
 		Path greatGrandparent = grandparent.getParent();
 		
-		String fname = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_3) + SegmentManager.SEGMENT_SUFFIX;
-		String parentName = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_2);
-		String grandparentName = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_1);
-		String greatGrandparentName = SegmentManager.getRangeFileName(SegmentManager.LEVEL_3, SegmentManager.LEVEL_0);
+		String fname = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_SEGMENT) );
+		String parentName = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_FOLDER_BOTTOM) );
+		String grandparentName = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_FOLDER_MIDDLE) );
+		String greatGrandparentName = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_FOLDER_TOP) );
 		assertEquals(fname, secondPath.getFileName().toString());
 		assertEquals(parentName, parent.getFileName().toString());
 		assertEquals(grandparentName, grandparent.getFileName().toString());
@@ -244,27 +131,27 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getAllPossibleSegmentPaths_key() {
-		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.LEVEL_3);
+		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.SIZE_SEGMENT);
 		List<Path> timeFramePaths = getSegmentManager().getAllPossibleSegmentPaths(timeFrameKey);
-		List<Path> timeFramePaths_range = getSegmentManager().getAllPossibleSegmentPaths(0, SegmentManager.LEVEL_3);
+		List<Path> timeFramePaths_range = getSegmentManager().getAllPossibleSegmentPaths(0, SegmentManager.SIZE_SEGMENT);
 		assertEquals(timeFramePaths_range, timeFramePaths);
 		
-		BlueKey timeKey = new TimeKey(1, SegmentManager.LEVEL_3);
+		BlueKey timeKey = new TimeKey(1, SegmentManager.SIZE_SEGMENT);
 		List<Path> timePaths = getSegmentManager().getAllPossibleSegmentPaths(timeKey);
-		List<Path> timePaths_range = getSegmentManager().getAllPossibleSegmentPaths(SegmentManager.LEVEL_3, SegmentManager.LEVEL_3);
+		List<Path> timePaths_range = getSegmentManager().getAllPossibleSegmentPaths(SegmentManager.SIZE_SEGMENT, SegmentManager.SIZE_SEGMENT);
 		assertEquals(timePaths_range, timePaths);
 	}
 
 	@Test
 	public void test_getAllSegments() {
-		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.LEVEL_3);
+		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.SIZE_SEGMENT);
 		List<Path> timeFramePaths = getSegmentManager().getAllPossibleSegmentPaths(timeFrameKey);
 		List<Segment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
 		List<Path> timeFrameSegmentPaths = timeFrameSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
 
 		assertEquals(timeFramePaths, timeFrameSegmentPaths);
 		
-		BlueKey timeKey = new TimeKey(1, SegmentManager.LEVEL_3);
+		BlueKey timeKey = new TimeKey(1, SegmentManager.SIZE_SEGMENT);
 		List<Path> timePaths = getSegmentManager().getAllPossibleSegmentPaths(timeKey);
 		List<Segment<TestValue>> timeSegments = getSegmentManager().getAllSegments(timeKey);
 		List<Path> segmentPaths = timeSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
@@ -275,7 +162,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	public void test_getExistingSegments() {
 		emptyAndDelete(getCollection().getPath().toFile());
 		long minTime = 0;
-		long maxTime = SegmentManager.LEVEL_3 * 2;
+		long maxTime = SegmentManager.SIZE_SEGMENT * 2;
 		BlueKey timeFrameKey = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
 		TestValue value = new TestValue("Bob", 0);
 		try {
@@ -297,7 +184,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getFirstSegment() {
-		BlueKey timeFrameKey = new TimeFrameKey(1, SegmentManager.LEVEL_3, SegmentManager.LEVEL_3 * 2);
+		BlueKey timeFrameKey = new TimeFrameKey(1, SegmentManager.SIZE_SEGMENT, SegmentManager.SIZE_SEGMENT * 2);
 		List<Segment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
 		assertEquals(2, timeFrameSegments.size());
 		assertEquals(timeFrameSegments.get(0), getSegmentManager().getFirstSegment(timeFrameKey));
@@ -306,23 +193,23 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_toSegment() {
 		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
-		Path path = getSegmentManager().getPath(key);
+		Path path = getSegmentManager().getSegmentPath(key);
 		Segment<TestValue> segment = getSegmentManager().toSegment(path);
 		assertEquals(path, segment.getPath());
 	}
 
 	@Test
-	public void test_getPath_key() {
+	public void test_getSegmentPath_key() {
 		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
 		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(key);
 		assertEquals(1, paths.size());
-		assertEquals(paths.get(0), getSegmentManager().getPath(key));
+		assertEquals(paths.get(0), getSegmentManager().getSegmentPath(key));
 	}
 
 
 
 	public File createSegment(File parentFolder, long low, long high) {
-		String segmentName = String.valueOf(low) + "_" + String.valueOf(high) + SegmentManager.SEGMENT_SUFFIX;
+		String segmentName = String.valueOf(low) + "_" + String.valueOf(high);
 		File file = Paths.get(parentFolder.toPath().toString(), segmentName).toFile();
 		file.mkdir();
 		return file;
@@ -334,9 +221,9 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	private long createTime(long level0, long level1, long level2, long level3) {
 		return
-				level0 * SegmentManager.LEVEL_0 +
-				level1 * SegmentManager.LEVEL_1 +
-				level2 * SegmentManager.LEVEL_2 +
-				level3 * SegmentManager.LEVEL_3;
+				level0 * SegmentManager.SIZE_FOLDER_TOP +
+				level1 * SegmentManager.SIZE_FOLDER_MIDDLE +
+				level2 * SegmentManager.SIZE_FOLDER_BOTTOM +
+				level3 * SegmentManager.SIZE_SEGMENT;
 	}
 }

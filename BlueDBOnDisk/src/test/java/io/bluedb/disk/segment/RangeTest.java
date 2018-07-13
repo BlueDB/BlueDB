@@ -106,4 +106,24 @@ public class RangeTest {
 		Collections.sort(outOfOrder);
 		assertEquals(inOrder, outOfOrder);
 	}
+
+
+	@Test
+	public void test_forValueAndRangeSize() {
+		Range rangeStartingAtZero = Range.forValueAndRangeSize(0, 100);
+		assertEquals(0, rangeStartingAtZero.getStart());
+		assertEquals(100 - 1, rangeStartingAtZero.getEnd());
+
+		Range rangeStartingAtMinus100 = Range.forValueAndRangeSize(-100, 100);
+		assertEquals(-100, rangeStartingAtMinus100.getStart());
+		assertEquals(-1, rangeStartingAtMinus100.getEnd());
+
+		Range maxLongRange = Range.forValueAndRangeSize(Long.MAX_VALUE, 100);
+		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
+		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
+
+		Range minLongRange = Range.forValueAndRangeSize(Long.MIN_VALUE, 100);
+		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
+		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
+	}
 }

@@ -202,8 +202,8 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return file;
 	}
 
-	public File createNonsegmentSubfolder(File parentFolder, long low, long high) {
-		String subfolderName = String.valueOf(low) + "_" + String.valueOf(high);
+	public File createSubfolder(File parentFolder, long value) {
+		String subfolderName = String.valueOf(value);
 		File file = Paths.get(parentFolder.toPath().toString(), subfolderName).toFile();
 		file.mkdir();
 		return file;
