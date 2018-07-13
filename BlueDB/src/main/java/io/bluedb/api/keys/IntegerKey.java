@@ -59,4 +59,9 @@ public class IntegerKey implements ValueKey {
 			return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 		}		
 	}
+
+	@Override
+	public Integer getIntegerIdIfPresent() {
+		return id;
+	}
 }

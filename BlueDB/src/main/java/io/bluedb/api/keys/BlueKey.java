@@ -13,4 +13,16 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	public abstract int compareTo(BlueKey other);
 	
 	public long getGroupingNumber();
+	
+	default public Long getLongIdIfPresent() {
+		return null;
+	}
+
+	default public Integer getIntegerIdIfPresent() {
+		return null;
+	}
+
+	default boolean isInRange(long min, long max) {
+		return getGroupingNumber() >= min && getGroupingNumber() <= max;
+	}
 }

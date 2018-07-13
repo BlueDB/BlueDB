@@ -94,4 +94,15 @@ public class TimeKey implements BlueKey {
 		
 		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
+
+
+	@Override
+	public Integer getIntegerIdIfPresent() {
+		return id.getIntegerIdIfPresent();
+	}
+
+	@Override
+	public Long getLongIdIfPresent() {
+		return id.getLongIdIfPresent();
+	}
 }

@@ -121,4 +121,17 @@ public class TimeFrameKeyTest extends TestCase {
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
 	}
+
+	@Test
+	public void test_isInRange() {
+		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
+		assertFalse(_2_to_4.isInRange(0, 1));
+		assertTrue(_2_to_4.isInRange(0, 2));
+		assertTrue(_2_to_4.isInRange(0, 3));
+		assertTrue(_2_to_4.isInRange(3, 3));
+		assertTrue(_2_to_4.isInRange(0, 6));
+		assertTrue(_2_to_4.isInRange(3, 6));
+		assertTrue(_2_to_4.isInRange(4, 6));
+		assertFalse(_2_to_4.isInRange(5, 6));
+	}
 }

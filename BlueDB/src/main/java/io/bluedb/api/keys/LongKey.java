@@ -67,4 +67,9 @@ public class LongKey implements ValueKey {
 		
 		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
+
+	@Override
+	public Long getLongIdIfPresent() {
+		return id;
+	}
 }

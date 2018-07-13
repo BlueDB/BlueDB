@@ -122,4 +122,14 @@ public class TimeKeyTest extends TestCase {
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
 	}
+
+	@Test
+	public void test_isInRange() {
+		BlueKey _4 = new TimeKey(4, 4);
+		assertFalse(_4.isInRange(0, 3));
+		assertTrue(_4.isInRange(0, 4));
+		assertTrue(_4.isInRange(0, 6));
+		assertTrue(_4.isInRange(4, 6));
+		assertFalse(_4.isInRange(5, 6));
+	}
 }

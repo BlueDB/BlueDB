@@ -118,17 +118,12 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public void applyChange(PendingChange<T> change) throws BlueDbException {
 		BlueKey key = change.getKey();
-		// TODO refactor
-		BlueKey valueKey = key;
-		if (valueKey instanceof TimeKey) {
-			valueKey = ((TimeKey) valueKey).getId();
-		}
-		if (valueKey instanceof LongKey) {
-			LongKey longKey = (LongKey) valueKey;
-			metaData.updateMaxLong(longKey.getId());
-		} else if (valueKey instanceof IntegerKey) {
-			IntegerKey integerKey = (IntegerKey) valueKey;
-			metaData.updateMaxInteger(integerKey.getId());
+		Long longId = key.getLongIdIfPresent();
+		Integer intId = key.getIntegerIdIfPresent();
+		if (longId != null) {
+			metaData.updateMaxLong(longId);
+		} else if (intId != null) {
+			metaData.updateMaxInteger(intId);
 		}
 		List<Segment<T>> segments = segmentManager.getAllSegments(key);
 		for (Segment<T> segment: segments) {

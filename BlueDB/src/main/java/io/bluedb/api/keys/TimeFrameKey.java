@@ -25,6 +25,11 @@ public class TimeFrameKey extends TimeKey {
 		return true;
 	}
 
+	@Override
+	public boolean isInRange(long min, long max) {
+		return endTime >= min && getStartTime() <= max;
+	}
+
 	private static final long serialVersionUID = 1L;
 
 	private long endTime;

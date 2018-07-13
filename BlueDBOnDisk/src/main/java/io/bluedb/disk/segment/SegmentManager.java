@@ -70,20 +70,11 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected List<Path> getAllPossibleSegmentPaths(BlueKey key) {
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeFrameKey = (TimeFrameKey)key;
-			return getAllPossibleSegmentPaths(timeFrameKey.getStartTime(), timeFrameKey.getEndTime());
-		} else {
-			Path path = getSegmentPath(key);
-			return Arrays.asList(path);
-		}
-	}
-
-	protected List<Path> getAllPossibleSegmentPaths(long minTime, long maxTime) {
 		List<Path> paths = new ArrayList<>();
+		long minTime = key.getGroupingNumber();
 		minTime = minTime - (minTime % SIZE_SEGMENT);
 		long i = minTime;
-		while (i <= maxTime) {
+		while (key.isInRange(i, i + SIZE_SEGMENT - 1)) {
 			Path path = getSegmentPath(i);
 			paths.add(path);
 			i += SIZE_SEGMENT;
