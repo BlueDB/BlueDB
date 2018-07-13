@@ -20,6 +20,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Segment;
@@ -224,6 +225,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public BlueDbOnDisk db() {
 		return db;
+	}
+
+	public FileManager getFileManager() {
+		return collection.getFileManager();
 	}
 
 	public RollupScheduler getRollupScheduler() {
