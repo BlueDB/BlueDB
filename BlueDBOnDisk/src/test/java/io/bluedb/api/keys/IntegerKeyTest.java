@@ -93,4 +93,28 @@ public class IntegerKeyTest extends TestCase {
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
 	}
+
+	@Test
+	public void test_getLongIdIfPresent() {
+		IntegerKey integerKey = new IntegerKey(1);
+		assertNull(integerKey.getLongIdIfPresent());
+	}
+
+	@Test
+	public void test_getIntegerIdIfPresent() {
+		IntegerKey integerKey = new IntegerKey(1);
+		assertEquals(Integer.valueOf(1), integerKey.getIntegerIdIfPresent());
+	}
+
+	@Test
+	public void test_isInRange() {
+		LongKey longKey = new LongKey(1);
+		long groupingNumber = longKey.getGroupingNumber();
+		assertFalse(longKey.isInRange(groupingNumber - 1, groupingNumber - 1));
+		assertTrue(longKey.isInRange(groupingNumber - 1, groupingNumber));
+		assertTrue(longKey.isInRange(groupingNumber - 1, groupingNumber + 1));
+		assertTrue(longKey.isInRange(groupingNumber, groupingNumber));
+		assertTrue(longKey.isInRange(groupingNumber, groupingNumber + 1));
+		assertFalse(longKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+	}
 }

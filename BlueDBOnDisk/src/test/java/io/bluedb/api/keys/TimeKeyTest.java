@@ -124,6 +124,22 @@ public class TimeKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_getLongIdIfPresent() {
+		TimeKey fourLongAtOne = new TimeKey(4L, 1);
+		TimeKey fourIntegerAtOne = new TimeKey(4, 1);
+		assertEquals(Long.valueOf(4L), fourLongAtOne.getLongIdIfPresent());
+		assertNull(fourIntegerAtOne.getLongIdIfPresent());
+	}
+
+	@Test
+	public void test_getIntegerIdIfPresent() {
+		TimeKey fourLongAtOne = new TimeKey(4L, 1);
+		TimeKey fourIntegerAtOne = new TimeKey(4, 1);
+		assertNull(fourLongAtOne.getIntegerIdIfPresent());
+		assertEquals(Integer.valueOf(4), fourIntegerAtOne.getIntegerIdIfPresent());
+	}
+
+	@Test
 	public void test_isInRange() {
 		BlueKey _4 = new TimeKey(4, 4);
 		assertFalse(_4.isInRange(0, 3));

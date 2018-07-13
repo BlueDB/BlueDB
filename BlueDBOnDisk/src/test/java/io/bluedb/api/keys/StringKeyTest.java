@@ -90,4 +90,34 @@ public class StringKeyTest extends TestCase {
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(longKey) != 0);  // sanity check
 	}
+
+	@Test
+	public void test_getLongIdIfPresent() {
+		StringKey one = new StringKey("1");
+		StringKey empty = new StringKey("");
+		StringKey _null = new StringKey(null);
+		assertNull(one.getLongIdIfPresent());
+		assertNull(empty.getLongIdIfPresent());
+		assertNull(_null.getLongIdIfPresent());
+	}
+
+	@Test
+	public void test_getIntegerIdIfPresent() {
+		TimeKey fourLongAtOne = new TimeKey(4L, 1);
+		TimeKey fourIntegerAtOne = new TimeKey(4, 1);
+		assertNull(fourLongAtOne.getIntegerIdIfPresent());
+		assertEquals(Integer.valueOf(4), fourIntegerAtOne.getIntegerIdIfPresent());
+	}
+
+	@Test
+	public void test_isInRange() {
+		StringKey stringKey = new StringKey("1");
+		long groupingNumber = stringKey.getGroupingNumber();
+		assertFalse(stringKey.isInRange(groupingNumber - 1, groupingNumber - 1));
+		assertTrue(stringKey.isInRange(groupingNumber - 1, groupingNumber));
+		assertTrue(stringKey.isInRange(groupingNumber - 1, groupingNumber + 1));
+		assertTrue(stringKey.isInRange(groupingNumber, groupingNumber));
+		assertTrue(stringKey.isInRange(groupingNumber, groupingNumber + 1));
+		assertFalse(stringKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+	}
 }
