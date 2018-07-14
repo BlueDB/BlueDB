@@ -16,9 +16,6 @@ import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.IntegerKey;
-import io.bluedb.api.keys.LongKey;
-import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.task.DeleteTask;
@@ -182,5 +179,15 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public Class<T> getType() {
 		return type;
+	}
+
+	@Override
+	public Long getMaxLongId() throws BlueDbException {
+		return metaData.getMaxLong();
+	}
+
+	@Override
+	public Integer getMaxIntegerId() throws BlueDbException {
+		return metaData.getMaxInteger();
 	}
 }

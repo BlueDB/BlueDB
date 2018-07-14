@@ -3,20 +3,14 @@ package io.bluedb.disk.collection;
 import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-import io.bluedb.api.BlueDb;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
@@ -139,11 +133,11 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		// test max long
 		try {
-			assertNull(getMetaData().getMaxLong());  // since the last insert was a String key;
+			assertNull(getCollection().getMaxLongId());  // since the last insert was a String key;
 			BlueKey timeKeyWithLong3 = new TimeKey(3L, 4);
 			getCollection().insert(timeKeyWithLong3, value);
-			assertNotNull(getMetaData().getMaxLong());
-			assertEquals(3, getMetaData().getMaxLong().longValue());
+			assertNotNull(getCollection().getMaxLongId());
+			assertEquals(3, getCollection().getMaxLongId().longValue());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -151,11 +145,11 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		// test max integer
 		try {
-			assertNull(getMetaData().getMaxInteger());
+			assertNull(getCollection().getMaxIntegerId());
 			BlueKey timeKeyWithInt5 = new TimeKey(5, 4);
 			getCollection().insert(timeKeyWithInt5, value);
-			assertNotNull(getMetaData().getMaxInteger());
-			assertEquals(5, getMetaData().getMaxInteger().intValue());
+			assertNotNull(getCollection().getMaxIntegerId());
+			assertEquals(5, getCollection().getMaxIntegerId().intValue());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
