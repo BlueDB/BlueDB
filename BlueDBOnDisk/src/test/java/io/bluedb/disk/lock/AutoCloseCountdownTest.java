@@ -71,6 +71,7 @@ public class AutoCloseCountdownTest {
 		Closeable exceptionCloseable = new Closeable() {
 			@Override
 			public void close() throws IOException {
+				throw new IOException();
 			}
 		};
 
