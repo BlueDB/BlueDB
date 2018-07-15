@@ -30,7 +30,7 @@ public class InsertTask<T extends Serializable> extends QueryTask {
 		}
 		PendingChange<T> change = PendingChange.createInsert(key, value, serializer);
 		recoveryManager.saveChange(change);
-		collection.applyChange(change);
+		change.apply(collection);
 		recoveryManager.removeChange(change);
 	}
 

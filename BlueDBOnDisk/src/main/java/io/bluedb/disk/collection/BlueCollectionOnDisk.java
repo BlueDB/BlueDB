@@ -23,7 +23,6 @@ import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateTask;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.query.BlueQueryOnDisk;
-import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
@@ -113,21 +112,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return results;
 	}
 
-	public void applyChange(PendingChange<T> change) throws BlueDbException {
-		BlueKey key = change.getKey();
-		Long longId = key.getLongIdIfPresent();
-		Integer intId = key.getIntegerIdIfPresent();
-		if (longId != null) {
-			metaData.updateMaxLong(longId);
-		} else if (intId != null) {
-			metaData.updateMaxInteger(intId);
-		}
-		List<Segment<T>> segments = segmentManager.getAllSegments(key);
-		for (Segment<T> segment: segments) {
-			change.applyChange(segment);
-		}
-	}
-
 	public void executeTask(Runnable task) throws BlueDbException{
 		Future<?> future = executor.submit(task);
 		try {
@@ -144,7 +128,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public void scheduleRollup(Range timeRange) {
-		Runnable rollupRunnable = new RollupTask(this, timeRange);
+		Runnable rollupRunnable = new RollupTask<T>(this, timeRange);
 		executor.submit(rollupRunnable);
 	}
 

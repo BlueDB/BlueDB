@@ -47,14 +47,15 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	public void test_saveChange() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
+		Recoverable<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		try {
-			List<PendingChange<TestValue>> changes = getRecoveryManager().getPendingChanges();
+			List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
 			getRecoveryManager().saveChange(change);
 			changes = getRecoveryManager().getPendingChanges();
+			PendingChange<TestValue> savedChange = (PendingChange<TestValue>) changes.get(0);
 			assertEquals(1, changes.size());
-			assertEquals(value, changes.get(0).getNewValue());
+			assertEquals(value, savedChange.getNewValue());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -65,10 +66,10 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	public void test_removeChange() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
+		Recoverable<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		try {
 			getRecoveryManager().saveChange(change);
-			List<PendingChange<TestValue>> changes = getRecoveryManager().getPendingChanges();
+			List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 			assertEquals(1, changes.size());
 			getRecoveryManager().removeChange(change);
 			changes = getRecoveryManager().getPendingChanges();
@@ -85,7 +86,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		try {
-			List<PendingChange<TestValue>> changes = getRecoveryManager().getPendingChanges();
+			List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
 			getRecoveryManager().saveChange(change);
 			changes = getRecoveryManager().getPendingChanges();

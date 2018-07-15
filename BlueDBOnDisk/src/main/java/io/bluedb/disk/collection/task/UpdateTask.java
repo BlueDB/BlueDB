@@ -33,7 +33,7 @@ public class UpdateTask<T extends Serializable> extends QueryTask {
 			throw new BlueDbException("Error updating value", t);
 		}
 		recoveryManager.saveChange(change);
-		collection.applyChange(change);
+		change.apply(collection);
 		recoveryManager.removeChange(change);
 	}
 

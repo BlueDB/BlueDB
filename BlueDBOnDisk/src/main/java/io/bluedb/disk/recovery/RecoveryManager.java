@@ -27,30 +27,30 @@ public class RecoveryManager<T extends Serializable> {
 		this.recoveryPath = Paths.get(collection.getPath().toString(), SUBFOLDER);
 	}
 
-	public void saveChange(PendingChange<T> change) throws BlueDbException {
+	public void saveChange(Recoverable<?> change) throws BlueDbException {
 		String filename = getFileName(change);
 		Path path = Paths.get(recoveryPath.toString(), filename);
 		fileManager.saveObject(path, change);
 	}
 
-	public void removeChange(PendingChange<T> change) throws BlueDbException {
+	public void removeChange(Recoverable<?> change) throws BlueDbException {
 		String filename = getFileName(change);
 		Path path = Paths.get(recoveryPath.toString(), filename);
 		File file = new File(path.toString());
 		file.delete();
 	}
 
-	public static String getFileName(PendingChange<?> change) {
+	public static String getFileName(Recoverable<?> change) {
 		return  String.valueOf(change.getTimeCreated()) + SUFFIX;
 	}
 
-	public List<PendingChange<T>> getPendingChanges() {
+	public List<Recoverable<T>> getPendingChanges() {
 		List<File> pendingChangeFiles = FileManager.getFolderContents(recoveryPath, SUFFIX);
-		List<PendingChange<T>> changes = new ArrayList<>();
+		List<Recoverable<T>> changes = new ArrayList<>();
 		for (File file: pendingChangeFiles) {
 			try {
 				@SuppressWarnings("unchecked")
-				PendingChange<T> change = (PendingChange<T>) fileManager.loadObject(file.toPath());
+				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
 				changes.add(change);
 			} catch (Throwable t) {
 				t.printStackTrace();
@@ -62,9 +62,9 @@ public class RecoveryManager<T extends Serializable> {
 
 
 	public void recover() {
-		for (PendingChange<T> change: getPendingChanges()) {
+		for (Recoverable<T> change: getPendingChanges()) {
 			try {
-				collection.applyChange(change);
+				change.apply(collection);
 				removeChange(change);
 			} catch (BlueDbException e) {
 				e.printStackTrace();

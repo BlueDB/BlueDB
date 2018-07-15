@@ -107,8 +107,12 @@ public class Segment <T extends Serializable> {
 		Path path = Paths.get(segmentPath.toString(), timeRange.toUnderscoreDelimitedString());
 		Path tmpPath = FileManager.createTempFilePath(path);
 
-		copy(tmpPath, filesToRollup);
-		moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
+		if (path.toFile().exists()) { // we're recovering after a rollup failed while deleting the removed files
+			cleanupFiles(filesToRollup);
+		} else {
+			copy(tmpPath, filesToRollup);
+			moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
+		}
 	}
 
 	private void copy(Path destination, List<File> sources) throws BlueDbException {
@@ -117,6 +121,14 @@ public class Segment <T extends Serializable> {
 				try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(file.toPath())) {
 					output.writeAll(inputStream);
 				}
+			}
+		}
+	}
+
+	private void cleanupFiles(List<File> filesToRollup) throws BlueDbException {
+		for (File file: filesToRollup) {
+			try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(file.toPath())){
+				FileManager.deleteFile(writeLock);
 			}
 		}
 	}

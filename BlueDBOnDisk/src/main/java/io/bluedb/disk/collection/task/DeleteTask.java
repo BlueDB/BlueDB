@@ -21,7 +21,7 @@ public class DeleteTask<T extends Serializable> extends QueryTask {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 		PendingChange<T> change = PendingChange.createDelete(key);
 		recoveryManager.saveChange(change);
-		collection.applyChange(change);
+		change.apply(collection);
 		recoveryManager.removeChange(change);
 	}
 
