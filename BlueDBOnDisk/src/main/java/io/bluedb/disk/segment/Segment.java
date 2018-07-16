@@ -13,6 +13,7 @@ import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
@@ -108,6 +109,7 @@ public class Segment <T extends Serializable> {
 		Path tmpPath = FileManager.createTempFilePath(path);
 
 		if (path.toFile().exists()) { // we're recovering after a rollup failed while deleting the removed files
+			filesToRollup = Blutils.filter(filesToRollup, (f) -> !f.equals(path.toFile()));  // don't delete the rolled up file
 			cleanupFiles(filesToRollup);
 		} else {
 			copy(tmpPath, filesToRollup);
@@ -115,7 +117,7 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	private void copy(Path destination, List<File> sources) throws BlueDbException {
+	void copy(Path destination, List<File> sources) throws BlueDbException {
 		try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(destination)) {
 			for (File file: sources) {
 				try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(file.toPath())) {
