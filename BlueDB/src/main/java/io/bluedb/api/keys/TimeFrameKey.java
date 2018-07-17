@@ -1,6 +1,35 @@
 package io.bluedb.api.keys;
 
 public class TimeFrameKey extends TimeKey {
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + (int) (endTime ^ (endTime >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		if (this == obj)
+			return true;
+		if (getClass() != obj.getClass())
+			return false;
+		if (!super.equals(obj))
+			return false;
+		TimeFrameKey other = (TimeFrameKey) obj;
+		if (endTime != other.endTime)
+			return false;
+		return true;
+	}
+
+	@Override
+	public boolean isInRange(long min, long max) {
+		return endTime >= min && getStartTime() <= max;
+	}
+
 	private static final long serialVersionUID = 1L;
 
 	private long endTime;
@@ -21,5 +50,10 @@ public class TimeFrameKey extends TimeKey {
 
 	public long getEndTime() {
 		return endTime;
+	}
+
+	@Override
+	public String toString() {
+		return "TimeFrameKey [key=" + getId() + ", time=[" + getStartTime() + ", " + endTime + "] ]";
 	}
 }

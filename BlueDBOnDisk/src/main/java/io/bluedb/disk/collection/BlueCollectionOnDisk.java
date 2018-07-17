@@ -45,6 +45,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
+	private final CollectionMetaData metaData;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> type) {
 		this.type = type;
@@ -57,6 +58,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		recoveryManager.recover();  // everything else has to be in place before running this
 		rollupScheduler = new RollupScheduler(this);
 		rollupScheduler.start();
+		metaData = new CollectionMetaData(collectionPath, fileManager);
 	}
 
 	@Override
@@ -113,6 +115,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public void applyChange(PendingChange<T> change) throws BlueDbException {
 		BlueKey key = change.getKey();
+		Long longId = key.getLongIdIfPresent();
+		Integer intId = key.getIntegerIdIfPresent();
+		if (longId != null) {
+			metaData.updateMaxLong(longId);
+		} else if (intId != null) {
+			metaData.updateMaxInteger(intId);
+		}
 		List<Segment<T>> segments = segmentManager.getAllSegments(key);
 		for (Segment<T> segment: segments) {
 			change.applyChange(segment);
@@ -159,6 +168,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return serializer;
 	}
 
+	public CollectionMetaData getMetaData() {
+		return metaData;
+	}
+
 	public void shutdown() {
 		rollupScheduler.stop();
 		executor.shutdown();
@@ -166,5 +179,15 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public Class<T> getType() {
 		return type;
+	}
+
+	@Override
+	public Long getMaxLongId() throws BlueDbException {
+		return metaData.getMaxLong();
+	}
+
+	@Override
+	public Integer getMaxIntegerId() throws BlueDbException {
+		return metaData.getMaxInteger();
 	}
 }

@@ -11,6 +11,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.collection.CollectionMetaData;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
@@ -95,22 +96,26 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
-		}	}
+		}
+	}
 
 	@Test
 	public void test_recover_pendingInsert() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
+		CollectionMetaData metaData = getCollection().getMetaData();
 		try {
 			PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 			getRecoveryManager().saveChange(change);
 			List<TestValue> allValues = getCollection().query().getList();
 			assertEquals(0, allValues.size());
+			assertNull(metaData.getMaxLong());
 
 			getRecoveryManager().recover();
 			allValues = getCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(value, allValues.get(0));
+			assertEquals(1, metaData.getMaxLong().longValue());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();

@@ -12,7 +12,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
@@ -200,11 +199,8 @@ public class Segment <T extends Serializable> {
 		for (long rollupLevel: ROLLUP_LEVELS) {
 			Path path = getPathFor(groupingNumber, rollupLevel);
 			BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
-			try {
-				if (lock.getKey().toFile().exists()) {
-					return lock;
-				}
-			} catch (Throwable t) { // make sure we don't hold onto the lock if there's an exception
+			if (lock.getKey().toFile().exists()) {
+				return lock;
 			}
 			lock.release();
 		}

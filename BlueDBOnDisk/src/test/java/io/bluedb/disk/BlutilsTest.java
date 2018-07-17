@@ -48,26 +48,6 @@ public class BlutilsTest {
 	}
 
 	@Test
-	public void test_inRange() {
-		BlueKey _2_to_4 = new TimeFrameKey(1, 2, 4);
-		BlueKey _4 = new TimeKey(4, 4);
-		assertFalse(Blutils.isInRange(_2_to_4, 0, 1));
-		assertTrue(Blutils.isInRange(_2_to_4, 0, 2));
-		assertTrue(Blutils.isInRange(_2_to_4, 0, 3));
-		assertTrue(Blutils.isInRange(_2_to_4, 3, 3));
-		assertTrue(Blutils.isInRange(_2_to_4, 0, 6));
-		assertTrue(Blutils.isInRange(_2_to_4, 3, 6));
-		assertTrue(Blutils.isInRange(_2_to_4, 4, 6));
-		assertFalse(Blutils.isInRange(_2_to_4, 5, 6));
-		
-		assertFalse(Blutils.isInRange(_4, 0, 3));
-		assertTrue(Blutils.isInRange(_4, 0, 4));
-		assertTrue(Blutils.isInRange(_4, 0, 6));
-		assertTrue(Blutils.isInRange(_4, 4, 6));
-		assertFalse(Blutils.isInRange(_4, 5, 6));
-	}
-
-	@Test
 	public void test_trySleep() {
 		AtomicBoolean isDoneSleeping = new AtomicBoolean(false);
 		Thread sleepingThread = new Thread(new Runnable() {

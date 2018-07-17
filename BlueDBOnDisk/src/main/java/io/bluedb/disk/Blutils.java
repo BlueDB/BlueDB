@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import io.bluedb.api.Condition;
-import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeFrameKey;
 
 public class Blutils {
 	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
@@ -37,15 +35,6 @@ public class Blutils {
 			}
 		}
 		return results;
-	}
-
-	public static boolean isInRange(BlueKey key, long min, long max) {
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeFrameKey = (TimeFrameKey) key;
-			return timeFrameKey.getEndTime() >= min && timeFrameKey.getStartTime() <= max;
-		} else {
-			return key.getGroupingNumber() >= min && key.getGroupingNumber() <= max;
-		}
 	}
 
 	public static boolean trySleep(long timeMillis) {

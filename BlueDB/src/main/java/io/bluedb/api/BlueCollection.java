@@ -17,4 +17,8 @@ public interface BlueCollection<T extends Serializable> {
 	public void delete(BlueKey key) throws BlueDbException;
 
 	public BlueQuery<T> query();
+
+	public Long getMaxLongId() throws BlueDbException;
+
+	public Integer getMaxIntegerId() throws BlueDbException;
 }

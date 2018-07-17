@@ -56,32 +56,6 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getExistingSegmentFiles_range() {
-		File folder = getCollection().getPath().toFile();
-		emptyAndDelete(folder);
-		folder.mkdir();
-
-		long startTime = 987654321;
-
-		List<Path> singlePathToAdd = getSegmentManager().getAllPossibleSegmentPaths(startTime, startTime);
-		assertEquals(1, singlePathToAdd.size());
-		assertEquals(0, getSegmentManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
-		for (Path path: singlePathToAdd) {
-			path.toFile().mkdirs();
-		}
-		assertEquals(1, getSegmentManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
-
-		List<Path> fivePaths = getSegmentManager().getAllPossibleSegmentPaths(startTime, startTime + SegmentManager.SIZE_SEGMENT * 4);
-		assertEquals(5, fivePaths.size());
-		for (Path path: fivePaths) {
-			path.toFile().mkdirs();
-		}
-		assertEquals(5, getSegmentManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
-
-		emptyAndDelete(folder);
-	}
-
-	@Test
 	public void test_getExistingSegmentFiles_key() {
 		File folder = getCollection().getPath().toFile();
 		emptyAndDelete(folder);
@@ -110,8 +84,9 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getAllPossibleSegmentPaths_range() {
-		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(0, SegmentManager.SIZE_SEGMENT);
+	public void test_getAllPossibleSegmentPaths() {
+		TimeFrameKey timeFrameKey = new TimeFrameKey(42, 0, SegmentManager.SIZE_SEGMENT);
+		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(timeFrameKey);
 		assertEquals(2, paths.size());
 		
 		Path secondPath = paths.get(1);
@@ -127,19 +102,10 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		assertEquals(parentName, parent.getFileName().toString());
 		assertEquals(grandparentName, grandparent.getFileName().toString());
 		assertEquals(greatGrandparentName, greatGrandparent.getFileName().toString());
-	}
 
-	@Test
-	public void test_getAllPossibleSegmentPaths_key() {
-		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.SIZE_SEGMENT);
-		List<Path> timeFramePaths = getSegmentManager().getAllPossibleSegmentPaths(timeFrameKey);
-		List<Path> timeFramePaths_range = getSegmentManager().getAllPossibleSegmentPaths(0, SegmentManager.SIZE_SEGMENT);
-		assertEquals(timeFramePaths_range, timeFramePaths);
-		
 		BlueKey timeKey = new TimeKey(1, SegmentManager.SIZE_SEGMENT);
 		List<Path> timePaths = getSegmentManager().getAllPossibleSegmentPaths(timeKey);
-		List<Path> timePaths_range = getSegmentManager().getAllPossibleSegmentPaths(SegmentManager.SIZE_SEGMENT, SegmentManager.SIZE_SEGMENT);
-		assertEquals(timePaths_range, timePaths);
+		assertEquals(secondPath, timePaths.get(0));
 	}
 
 	@Test

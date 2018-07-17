@@ -17,7 +17,6 @@ import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.exceptions.DuplicateKeyException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 
 class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, Serializable {
@@ -28,6 +27,8 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 	
 	private final Object serializerLock = "Serializer Lock";
 	private transient FSTConfiguration serializer;
+	private Long maxLongId = null;
+	private Integer maxIntegerId = null;
 
 	public BlueCollectionImpl(Class<T> type) {
 		this.type = type;
@@ -115,24 +116,12 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 	private List<BlueKey> findMatches(long minTime, long maxTime, List<Condition<T>> objectConditions) {
 		List<BlueKey> results = new ArrayList<>();
 		for (BlueKey key: data.keySet()) {
-			if (inTimeRange(minTime, maxTime, key) && meetsConditions(objectConditions, data.get(key))) {
+			if (key.isInRange(minTime, maxTime) && meetsConditions(objectConditions, data.get(key))) {
 				results.add(key);
 			}
 		}
 		sort(results);
 		return results;
-	}
-	
-	private boolean inTimeRange(long minTime, long maxTime, BlueKey key) {
-		if (key instanceof TimeFrameKey) {
-			TimeFrameKey timeFrameKey = (TimeFrameKey) key;
-			return timeFrameKey.getEndTime() >= minTime && timeFrameKey.getStartTime() <= maxTime;
-		} else if (key instanceof TimeKey) {
-			long time = ((TimeKey) key).getTime();
-			return time >= minTime && time <= maxTime;
-		} else {
-			return true;
-		}
 	}
 
 	private <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, byte[] bytes) {
@@ -188,5 +177,31 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 				}
 			}
 		});
+	}
+
+	private void updateMaxLongId(Long newValue) {
+		if (newValue == null) {
+			return;
+		} else if (maxLongId == null || newValue > maxLongId) {
+			maxLongId = newValue;
+		}
+	}
+
+	private void updateMaxIntegerId(Integer newValue) {
+		if (newValue == null) {
+			return;
+		} else if (maxIntegerId == null || newValue > maxIntegerId) {
+			maxIntegerId = newValue;
+		}
+	}
+
+	@Override
+	public Long getMaxLongId() throws BlueDbException {
+		return maxLongId;
+	}
+
+	@Override
+	public Integer getMaxIntegerId() throws BlueDbException {
+		return maxIntegerId;
 	}
 }
