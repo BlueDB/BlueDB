@@ -3,6 +3,7 @@ package io.bluedb.disk.file;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -204,6 +205,22 @@ public class FileManagerTest extends TestCase {
 	}
 
 	@Test
+	public void test_ensureFileExists_already_existing() {
+		Path targetFilePath = Paths.get(testPath.toString(), "test_ensureFileExists");
+		filesToDelete.add(targetFilePath.toFile());
+		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(targetFilePath)) {
+			FileManager.ensureFileExists(targetFilePath);
+			assertTrue(targetFilePath.toFile().exists());
+			FileManager.ensureFileExists(targetFilePath);  // make sure we can do it after it already exists
+			assertTrue(targetFilePath.toFile().exists());
+			FileManager.deleteFile(lock);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
 	public void test_createEmptyFile() {
 		Path targetFilePath = Paths.get(testPath.toString(), "test_ensureFileExists");
 		filesToDelete.add(targetFilePath.toFile());
@@ -330,8 +347,131 @@ public class FileManagerTest extends TestCase {
 			e.printStackTrace();
 		}
 	}
-	
-	
+
+	@Test
+	public void test_moveWithoutLock() {
+		File srcFolder = createTempFolder("test_moveWithoutLock_src");
+		File dstFolder = createTempFolder("test_moveWithoutLock_dst");
+		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
+		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
+		File srcFile = srcFilePath.toFile();
+		File dstFile = dstFilePath.toFile();
+
+		try {
+			assertFalse(srcFile.exists());
+			srcFilePath.toFile().createNewFile();
+			assertTrue(srcFile.exists());
+			assertFalse(dstFile.exists());
+			FileManager.moveWithoutLock(srcFilePath, dstFilePath);
+			assertFalse(srcFile.exists());
+			assertTrue(dstFile.exists());
+		} catch (IOException | BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_moveWithoutLock_exception() {
+		File srcFolder = createTempFolder("test_moveWithoutLock_exception_src");
+		File dstFolder = createTempFolder("test_moveWithoutLock_exception_dst");
+		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
+		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
+		File srcFile = srcFilePath.toFile();
+		File dstFile = dstFilePath.toFile();
+
+		try {
+			assertFalse(srcFile.exists());
+			assertFalse(dstFile.exists());
+			FileManager.moveWithoutLock(srcFilePath, dstFilePath);
+			fail();
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Test
+	public void test_copyFileWithoutLock() {
+		File srcFolder = createTempFolder("test_copyFileWithoutLock_src");
+		File dstFolder = createTempFolder("test_copyFileWithoutLock_dst");
+		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
+		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
+		File srcFile = srcFilePath.toFile();
+		File dstFile = dstFilePath.toFile();
+
+		try {
+			assertFalse(srcFile.exists());
+			srcFilePath.toFile().createNewFile();
+			assertTrue(srcFile.exists());
+			assertFalse(dstFile.exists());
+			FileManager.copyFileWithoutLock(srcFilePath, dstFilePath);
+			assertTrue(srcFile.exists());
+			assertTrue(dstFile.exists());
+		} catch (IOException | BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_copyFileWithoutLock_exception() {
+		File srcFolder = createTempFolder("test_copyFileWithoutLock_exception_src");
+		File dstFolder = createTempFolder("test_copyFileWithoutLock_exception_dst");
+		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
+		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
+		File srcFile = srcFilePath.toFile();
+		File dstFile = dstFilePath.toFile();
+
+		try {
+			assertFalse(srcFile.exists());
+			assertFalse(dstFile.exists());
+			FileManager.copyFileWithoutLock(srcFilePath, dstFilePath);
+			fail();
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Test
+	public void test_copyDirectoryWithoutLock() {
+		File testFolder = createTempFolder("test_copyDirectoryWithoutLock");
+		Path srcPath = Paths.get(testFolder.toPath().toString(), "src");
+		Path srcFilePath = Paths.get(srcPath.toString(), "file");
+		Path srcSubfolderPath = Paths.get(srcPath.toString(), "subfolder");
+		Path srcSubfolderFilePath = Paths.get(srcSubfolderPath.toString(), "subfolder_file");
+
+		Path dstPath = Paths.get(testFolder.toPath().toString(), "dst");
+		Path dstFilePath = Paths.get(dstPath.toString(), "file");
+		Path dstSubfolderPath = Paths.get(dstPath.toString(), "subfolder");
+		Path dstSubfolderFilePath = Paths.get(dstSubfolderPath.toString(), "subfolder_file");
+
+		try {
+			srcPath.toFile().mkdirs();
+			srcFilePath.toFile().createNewFile();
+			srcSubfolderPath.toFile().mkdirs();
+			srcSubfolderFilePath.toFile().createNewFile();
+			assertTrue(srcPath.toFile().exists());
+			assertTrue(srcFilePath.toFile().exists());
+			assertTrue(srcSubfolderPath.toFile().exists());
+			assertTrue(srcSubfolderFilePath.toFile().exists());
+
+			assertFalse(dstPath.toFile().exists());
+			assertFalse(dstFilePath.toFile().exists());
+			assertFalse(dstSubfolderPath.toFile().exists());
+			assertFalse(dstSubfolderFilePath.toFile().exists());
+			FileManager.copyDirectoryWithoutLock(srcPath, dstPath);
+			assertTrue(dstPath.toFile().exists());
+			assertTrue(dstFilePath.toFile().exists());
+			assertTrue(dstSubfolderPath.toFile().exists());
+			assertTrue(dstSubfolderFilePath.toFile().exists());
+		} catch (BlueDbException | IOException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+
+
 	private void recursiveDelete(File file) {
 		if (!file.exists()) {
 			return;
@@ -407,6 +547,19 @@ public class FileManagerTest extends TestCase {
 			return value;
 		} catch (BlueDbException e) {
 			e.printStackTrace();
+		}
+		return null;
+	}
+
+	private File createTempFolder(String tempFolderName) {
+		try {
+			Path tempFolderPath = Files.createTempDirectory(tempFolderName);
+			File tempFolder = tempFolderPath.toFile();
+			tempFolder.deleteOnExit();
+			return tempFolder;
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail();
 		}
 		return null;
 	}

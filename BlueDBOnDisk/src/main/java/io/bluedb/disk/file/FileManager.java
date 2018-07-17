@@ -135,6 +135,39 @@ public class FileManager {
 		}
 	}
 
+	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
+		try {
+			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
+		}
+	}
+
+	public static void copyFileWithoutLock(Path src, Path dst) throws BlueDbException {
+		try {
+			Files.copy(src, dst, StandardCopyOption.COPY_ATTRIBUTES);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("Can't copy '" + src + "' to '" + dst + "'.", e);
+		}
+	}
+
+	public static void copyDirectoryWithoutLock(Path src, Path dst) throws BlueDbException {
+		dst.toFile().mkdirs();
+		for (File file: src.toFile().listFiles()) {
+			if (file.isDirectory()) {
+				Path path = file.toPath();
+				Path target = dst.resolve(src.relativize(path));
+				copyDirectoryWithoutLock(path, target);
+			} else {
+				Path path = file.toPath();
+				Path target = dst.resolve(src.relativize(path));
+				copyFileWithoutLock(path, target);
+			}
+		}
+	}
+
 	public static boolean deleteFile(BlueWriteLock<Path> writeLock) {
 		Path path = writeLock.getKey();
 		return path.toFile().delete();
