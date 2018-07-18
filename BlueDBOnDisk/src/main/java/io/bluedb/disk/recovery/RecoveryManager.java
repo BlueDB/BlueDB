@@ -49,10 +49,6 @@ public class RecoveryManager<T extends Serializable> {
 		return pendingFolderPath;
 	}
 
-	public Path getHistoryFolderPath() {
-		return historyFolderPath;
-	}
-
 	public void removeChange(Recoverable<?> change) throws BlueDbException {
 		String filename = getFileName(change);
 		Path path = Paths.get(pendingFolderPath.toString(), filename);
@@ -76,15 +72,8 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	private boolean isChangeFileOlderThan(File file, long age) {
-		try {
-			String filename = file.getName();
-			String[] parts = filename.split(".");
-			long changeTimestamp = Long.parseLong(parts[0]);
-			long ageOfChange = System.currentTimeMillis() - changeTimestamp;
-			return ageOfChange > COMPLETED_RETENTION;
-		} catch (Throwable t) {
-			return false;
-		}
+		Long timestamp = extractTimestamp(file);
+		return timestamp != null && timestamp > age;
 	}
 
 	public List<File> getChangeHistory(long backupStartTime, long backupEndTime) throws BlueDbException {
@@ -92,14 +81,14 @@ public class RecoveryManager<T extends Serializable> {
 		if (files.isEmpty()) {
 			return files;
 		}
-		Blutils.sortByMappedvalue(files, (File f) -> changeFileNameAsLong(f) );
+		Blutils.sortByMappedvalue(files, (File f) -> extractTimestamp(f) );
 
 		int firstChangeToKeep = 0;
 		int lastChangeToKeep = files.size() - 1;
 		
 		for (int i=0; i<files.size(); i++) {
 			File file = files.get(i);
-			long timestamp = changeFileNameAsLong(file);
+			long timestamp = extractTimestamp(file);
 			if (timestamp < backupStartTime) {
 				firstChangeToKeep = i;
 			}
@@ -112,16 +101,14 @@ public class RecoveryManager<T extends Serializable> {
 		return files.subList(firstChangeToKeep, lastChangeToKeep + 1);
 	}
 
-	private Long changeFileNameAsLong(File file) {
-		String fileName = file.getName();
-		String longString = fileName.split("[.]")[0];
-		return Long.valueOf(longString);
-	}
-
-	public void moveToCompletedFolder(String filename) throws BlueDbException {
-		Path src = Paths.get(pendingFolderPath.toString(), filename);
-		Path dst = Paths.get(historyFolderPath.toString(), filename);
-		FileManager.moveWithoutLock(src, dst);
+	public static Long extractTimestamp(File file) {
+		try {
+			String fileName = file.getName();
+			String longString = fileName.split("[.]")[0];
+			return Long.valueOf(longString);
+		} catch (Throwable t) {
+			return null;
+		}
 	}
 
 	public static String getFileName(Recoverable<?> change) {
