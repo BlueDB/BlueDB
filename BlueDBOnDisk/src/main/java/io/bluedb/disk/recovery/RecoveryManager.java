@@ -73,7 +73,8 @@ public class RecoveryManager<T extends Serializable> {
 
 	private boolean isChangeFileOlderThan(File file, long age) {
 		Long timestamp = extractTimestamp(file);
-		return timestamp != null && timestamp > age;
+		long minTimestamp = System.currentTimeMillis() - age;
+		return timestamp != null && timestamp < minTimestamp;
 	}
 
 	public List<File> getChangeHistory(long backupStartTime, long backupEndTime) throws BlueDbException {
