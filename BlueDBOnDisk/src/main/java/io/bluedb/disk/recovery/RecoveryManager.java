@@ -59,22 +59,17 @@ public class RecoveryManager<T extends Serializable> {
 		}
 	}
 
-	private boolean isTimeForHistoryCleanup() {
+	protected boolean isTimeForHistoryCleanup() {
 		long timeSinceLastCleanup = System.currentTimeMillis() - lastLogCleanup;
 		return timeSinceLastCleanup > FREQUENCY_OF_COMPLETED_CLEANUP;
 	}
 
-	private void cleanupHistory() {
+	protected void cleanupHistory() {
 		// TODO check if restore is pending
 		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX);
 		List<File> filesOldEnoughToDelete = Blutils.filter(historicChangeFiles, (f) -> isChangeFileOlderThan(f, COMPLETED_RETENTION));
 		filesOldEnoughToDelete.forEach((File f) -> f.delete());
-	}
-
-	private boolean isChangeFileOlderThan(File file, long age) {
-		Long timestamp = extractTimestamp(file);
-		long minTimestamp = System.currentTimeMillis() - age;
-		return timestamp != null && timestamp < minTimestamp;
+		lastLogCleanup = System.currentTimeMillis();
 	}
 
 	public List<File> getChangeHistory(long backupStartTime, long backupEndTime) throws BlueDbException {
@@ -85,7 +80,7 @@ public class RecoveryManager<T extends Serializable> {
 		Blutils.sortByMappedvalue(files, (File f) -> extractTimestamp(f) );
 
 		int firstChangeToKeep = 0;
-		int lastChangeToKeep = files.size() - 1;
+		int lastChangeToKeep = -1;
 		
 		for (int i=0; i<files.size(); i++) {
 			File file = files.get(i);
@@ -93,13 +88,40 @@ public class RecoveryManager<T extends Serializable> {
 			if (timestamp < backupStartTime) {
 				firstChangeToKeep = i;
 			}
-			if (timestamp > backupEndTime) {
-				lastChangeToKeep = i - 1;
+			if (timestamp <= backupEndTime) {
+				lastChangeToKeep = i;
 			}
 		}
 		
 		
 		return files.subList(firstChangeToKeep, lastChangeToKeep + 1);
+	}
+
+	public List<Recoverable<T>> getPendingChanges() {
+		List<File> pendingChangeFiles = FileManager.getFolderContents(pendingFolderPath, SUFFIX);
+		List<Recoverable<T>> changes = new ArrayList<>();
+		for (File file: pendingChangeFiles) {
+			try {
+				@SuppressWarnings("unchecked")
+				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
+				changes.add(change);
+			} catch (Throwable t) {
+				t.printStackTrace();
+				// TODO handle broken files, ignoring for now
+			}
+		}
+		return changes;
+	}
+
+	public void recover() {
+		for (Recoverable<T> change: getPendingChanges()) {
+			try {
+				change.apply(collection);
+				removeChange(change);
+			} catch (BlueDbException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public static Long extractTimestamp(File file) {
@@ -116,31 +138,9 @@ public class RecoveryManager<T extends Serializable> {
 		return  String.valueOf(change.getTimeCreated()) + SUFFIX;
 	}
 
-	public List<Recoverable<T>> getPendingChanges() {
-		List<File> pendingChangeFiles = FileManager.getFolderContents(pendingFolderPath, SUFFIX);
-		List<Recoverable<T>> changes = new ArrayList<>();
-		for (File file: pendingChangeFiles) {
-			try {
-				@SuppressWarnings("unchecked")
-				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
-				changes.add(change);
-			} catch (Throwable t) {
-				t.printStackTrace();
-				// ignore broken files for now
-			}
-		}
-		return changes;
-	}
-
-
-	public void recover() {
-		for (Recoverable<T> change: getPendingChanges()) {
-			try {
-				change.apply(collection);
-				removeChange(change);
-			} catch (BlueDbException e) {
-				e.printStackTrace();
-			}
-		}
+	protected static boolean isChangeFileOlderThan(File file, long age) {
+		Long timestamp = extractTimestamp(file);
+		long minTimestamp = System.currentTimeMillis() - age;
+		return timestamp != null && timestamp < minTimestamp;
 	}
 }

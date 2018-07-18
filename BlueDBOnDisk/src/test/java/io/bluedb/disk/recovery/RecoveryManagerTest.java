@@ -1,16 +1,20 @@
 package io.bluedb.disk.recovery;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
+
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionMetaData;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
@@ -101,6 +105,77 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_isTimeForHistoryCleanup() {
+		RecoveryManager<?> recoveryManager = getCollection().getRecoveryManager();
+		assertTrue(recoveryManager.isTimeForHistoryCleanup());
+		recoveryManager.cleanupHistory();
+		assertFalse(recoveryManager.isTimeForHistoryCleanup());
+	}
+
+	@Test
+	public void test_extractTimestamp() {
+		File _123 = Paths.get("123.whatever").toFile();
+		File invalid = Paths.get("123_xyz").toFile();
+		File _negative123 = Paths.get("-123.whatever").toFile();
+		assertEquals(123, RecoveryManager.extractTimestamp(_123).longValue());
+		assertNull(RecoveryManager.extractTimestamp(invalid));
+		assertEquals(-123, RecoveryManager.extractTimestamp(_negative123).longValue());
+	}
+
+	@Test
+	public void test_cleanupHistory() {
+		// TODO
+	}
+
+	@Test
+	public void test_getChangeHistory() {
+		long thirtyMinutesAgo = System.currentTimeMillis() - 30 * 60 * 1000;
+		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
+		long ninetyMinutesAgo = System.currentTimeMillis() - 90 * 60 * 1000;
+		Recoverable<TestValue> change30 = createRecoverable(thirtyMinutesAgo);
+		Recoverable<TestValue> change60 = createRecoverable(sixtyMinutesAgo);
+		Recoverable<TestValue> change90 = createRecoverable(ninetyMinutesAgo);
+		assertEquals(thirtyMinutesAgo, change30.getTimeCreated());
+		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
+		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
+		try {
+			List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+			getRecoveryManager().saveChange(change30);
+			getRecoveryManager().saveChange(change60);
+			getRecoveryManager().saveChange(change90);
+			List<File> changesAll = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+			List<File> changes30to60 = getRecoveryManager().getChangeHistory(sixtyMinutesAgo, thirtyMinutesAgo);
+			List<File> changes30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo, thirtyMinutesAgo);
+			List<File> changesJustBefore30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo-1, thirtyMinutesAgo);
+			List<File> changes30to90 = getRecoveryManager().getChangeHistory(ninetyMinutesAgo, thirtyMinutesAgo);
+			List<File> changes0to0 = getRecoveryManager().getChangeHistory(0, 0);
+			assertEquals(0, changesInitial.size());
+			assertEquals(3, changesAll.size());
+			assertEquals(3, changes30to60.size()); // includes change before time period that may be partly completed at backup
+			assertEquals(2, changes30to30.size()); // includes change before time period that may be partly completed at backup
+			assertEquals(2, changesJustBefore30to30.size()); // includes change before time period that may be partly completed at backup
+			assertEquals(3, changes30to90.size());
+			assertEquals(0, changes0to0.size());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_isChangeFileOlderThan() {
+		long oneHour = 60 * 60 * 1000;
+		long moreThanHourAgo = System.currentTimeMillis() - 2 * 60 * 60 * 1000 - 1;
+		long twoSecondsAgo = System.currentTimeMillis() - 2 * 1000;
+		File moreThanHourOld = Paths.get(moreThanHourAgo + ".chg").toFile();
+		File invalid = Paths.get("123_xyz").toFile();
+		File twoSecondsOld = Paths.get(twoSecondsAgo + ".chg").toFile();
+		assertTrue(RecoveryManager.isChangeFileOlderThan(moreThanHourOld, oneHour));
+		assertFalse(RecoveryManager.isChangeFileOlderThan(invalid, oneHour));
+		assertFalse(RecoveryManager.isChangeFileOlderThan(twoSecondsOld, oneHour));
+	}
+
+	@Test
 	public void test_recover_pendingInsert() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
@@ -184,5 +259,9 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		pathForGarbage.toFile().delete();
 		getRecoveryManager().recover();
+	}
+
+	private Recoverable<TestValue> createRecoverable(long time){
+		return new TestRecoverable(time);
 	}
 }
