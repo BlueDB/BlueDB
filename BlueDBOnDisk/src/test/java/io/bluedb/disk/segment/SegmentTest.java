@@ -1,6 +1,7 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +13,8 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.recovery.PendingRollup;
 
 public class SegmentTest extends BlueDbDiskTestBase {
 
@@ -362,5 +365,161 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(segment1.hashCode(), segment1copy.hashCode());
 		assertTrue(segment1.hashCode() != segmentMax.hashCode());
 		assertTrue(segment1.hashCode() != segmentNullPath.hashCode());
+	}
+
+	@Test
+	public void test_recover_pendingRollup_crash_before_rollup_starts() {
+		BlueKey key1 = createKey(1, 1);
+		BlueKey key2 = createKey(2, 2);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		try {
+			getCollection().insert(key1, value1);
+			getCollection().insert(key2, value2);
+			Range rollupRange = SegmentManager.getSegmentRange(0);
+			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+			getRecoveryManager().saveChange(pendingRollup);
+
+			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+
+			getRecoveryManager().recover();
+			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(1, remainingFiles.size());
+			List<TestValue> values = getCollection().query().getList();
+			assertEquals(2, values.size());
+			assertTrue(values.contains(value1));
+			assertTrue(values.contains(value2));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_recover_pendingRollup_crash_before_move_tmp() {
+		BlueKey key1 = createKey(1, 1);
+		BlueKey key2 = createKey(2, 2);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		try {
+			getCollection().insert(key1, value1);
+			getCollection().insert(key2, value2);
+			Range rollupRange = SegmentManager.getSegmentRange(0);
+			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+			getRecoveryManager().saveChange(pendingRollup);
+
+			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(2, filesToRollup.size());
+			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
+			Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+			segment.copy(tmpPath, filesToRollup);
+
+			
+			File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(3, filesExistingAfterCopy.length);
+
+			getRecoveryManager().recover();
+			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(1, remainingFiles.size());
+			List<TestValue> values = getCollection().query().getList();
+			assertEquals(2, values.size());
+			assertTrue(values.contains(value1));
+			assertTrue(values.contains(value2));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_recover_pendingRollup_crash_before_deletes_finished() {
+		BlueKey key1 = createKey(1, 1);
+		BlueKey key2 = createKey(2, 2);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		try {
+			getCollection().insert(key1, value1);
+			getCollection().insert(key2, value2);
+			Range rollupRange = SegmentManager.getSegmentRange(0);
+			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+			getRecoveryManager().saveChange(pendingRollup);
+
+			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(2, filesToRollup.size());
+			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
+			Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+			segment.copy(tmpPath, filesToRollup);
+
+			
+			File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(3, filesExistingAfterCopy.length);
+
+			try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
+				FileManager.moveFile(tmpPath, targetFileLock);
+			}
+			File file = filesToRollup.get(0);
+			try (BlueWriteLock<Path> writeLock = getLockManager().acquireWriteLock(file.toPath())) {
+				FileManager.deleteFile(writeLock);
+			}
+
+			getRecoveryManager().recover();
+			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(1, remainingFiles.size());
+			List<TestValue> values = getCollection().query().getList();
+			assertEquals(2, values.size());
+			assertTrue(values.contains(value1));
+			assertTrue(values.contains(value2));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_recover_pendingRollup_crash_after_completed() {
+		BlueKey key1 = createKey(1, 1);
+		BlueKey key2 = createKey(2, 2);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		try {
+			getCollection().insert(key1, value1);
+			getCollection().insert(key2, value2);
+			Range rollupRange = SegmentManager.getSegmentRange(0);
+			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+			getRecoveryManager().saveChange(pendingRollup);
+
+			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(2, filesToRollup.size());
+			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
+			Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+			segment.copy(tmpPath, filesToRollup);
+
+			
+			File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(3, filesExistingAfterCopy.length);
+
+			try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
+				FileManager.moveFile(tmpPath, targetFileLock);
+			}
+			for (File file: filesToRollup) {
+				try (BlueWriteLock<Path> writeLock = getLockManager().acquireWriteLock(file.toPath())) {
+					FileManager.deleteFile(writeLock);
+				}
+			}
+
+			getRecoveryManager().recover();
+			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+			assertEquals(1, remainingFiles.size());
+			List<TestValue> values = getCollection().query().getList();
+			assertEquals(2, values.size());
+			assertTrue(values.contains(value1));
+			assertTrue(values.contains(value2));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 }

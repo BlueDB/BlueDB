@@ -31,7 +31,7 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 		List<PendingChange<T>> changes = createDeletePendingChanges(entities);
 		for (PendingChange<T> change: changes) {
 			recoveryManager.saveChange(change);
-			collection.applyChange(change);
+			change.apply(collection);
 			recoveryManager.removeChange(change);
 		}
 	}

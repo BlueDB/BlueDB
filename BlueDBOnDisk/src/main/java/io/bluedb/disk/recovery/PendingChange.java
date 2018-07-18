@@ -1,14 +1,18 @@
 package io.bluedb.disk.recovery;
 
 import java.io.Serializable;
+import java.util.List;
+
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 
-public class PendingChange<T extends Serializable> implements Serializable {
+public class PendingChange<T extends Serializable> implements Serializable, Recoverable<T> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -46,6 +50,21 @@ public class PendingChange<T extends Serializable> implements Serializable {
 		return new PendingChange<T>(key, oldValue, newValue);
 	}
 
+	@Override
+	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
+		Long longId = key.getLongIdIfPresent();
+		Integer intId = key.getIntegerIdIfPresent();
+		if (longId != null) {
+			collection.getMetaData().updateMaxLong(longId);
+		} else if (intId != null) {
+			collection.getMetaData().updateMaxInteger(intId);
+		}
+		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
+		for (Segment<T> segment: segments) {
+			applyChange(segment);
+		}	
+	}
+
 	public void applyChange(Segment<T> segment) throws BlueDbException {
 		if (isInsert()) {
 			segment.insert(key, newValue);
@@ -66,6 +85,7 @@ public class PendingChange<T extends Serializable> implements Serializable {
 		return newValue;
 	}
 
+	@Override
 	public long getTimeCreated() {
 		return timeCreated;
 	}

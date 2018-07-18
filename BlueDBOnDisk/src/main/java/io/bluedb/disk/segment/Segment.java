@@ -13,6 +13,7 @@ import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
@@ -107,16 +108,29 @@ public class Segment <T extends Serializable> {
 		Path path = Paths.get(segmentPath.toString(), timeRange.toUnderscoreDelimitedString());
 		Path tmpPath = FileManager.createTempFilePath(path);
 
-		copy(tmpPath, filesToRollup);
-		moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
+		if (path.toFile().exists()) { // we're recovering after a rollup failed while deleting the removed files
+			filesToRollup = Blutils.filter(filesToRollup, (f) -> !f.equals(path.toFile()));  // don't delete the rolled up file
+			cleanupFiles(filesToRollup);
+		} else {
+			copy(tmpPath, filesToRollup);
+			moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
+		}
 	}
 
-	private void copy(Path destination, List<File> sources) throws BlueDbException {
+	void copy(Path destination, List<File> sources) throws BlueDbException {
 		try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(destination)) {
 			for (File file: sources) {
 				try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(file.toPath())) {
 					output.writeAll(inputStream);
 				}
+			}
+		}
+	}
+
+	private void cleanupFiles(List<File> filesToRollup) throws BlueDbException {
+		for (File file: filesToRollup) {
+			try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(file.toPath())){
+				FileManager.deleteFile(writeLock);
 			}
 		}
 	}
