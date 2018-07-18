@@ -35,6 +35,10 @@ public class FileManager {
 		return serializer.deserializeObjectFromByteArray(fileData);
 	}
 
+	public Object loadObject(File file) throws BlueDbException {
+		return loadObject(file.toPath());
+	}
+
 	public Object loadObject(Path path) throws BlueDbException {
 		try (BlueReadLock<Path> lock = lockManager.acquireReadLock(path)){
 			return loadObject(lock);
@@ -137,7 +141,8 @@ public class FileManager {
 
 	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
-			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
+			dst.toFile().mkdirs();
+			Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
@@ -146,7 +151,8 @@ public class FileManager {
 
 	public static void copyFileWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
-			Files.copy(src, dst, StandardCopyOption.COPY_ATTRIBUTES);
+			dst.toFile().mkdirs();
+			Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("Can't copy '" + src + "' to '" + dst + "'.", e);

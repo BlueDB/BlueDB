@@ -62,9 +62,9 @@ public class FileManagerTest extends TestCase {
 		try {
 			fileManager.saveObject(fileWithValue.toPath(), value);
 
-			Object nonExistantObject = fileManager.loadObject(nonExistantFile.toPath());
-			Object emptyObject = fileManager.loadObject(emptyFile.toPath());
-			Object validObject = fileManager.loadObject(fileWithValue.toPath());
+			Object nonExistantObject = fileManager.loadObject(nonExistantFile);
+			Object emptyObject = fileManager.loadObject(emptyFile);
+			Object validObject = fileManager.loadObject(fileWithValue);
 			assertNull(nonExistantObject);
 			assertNull(emptyObject);
 			assertEquals(value, validObject);
