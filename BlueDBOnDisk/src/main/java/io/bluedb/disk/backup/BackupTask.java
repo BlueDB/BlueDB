@@ -23,7 +23,7 @@ public class BackupTask {
 		this.backupPath = backupPath;
 	}
 
-	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException {// TODO filesystem to decide which to back up?  Or take arguments?>
+	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException {
 		long backupStartTime = System.currentTimeMillis();
 		for (BlueCollectionOnDisk<?> collection: collectionsToBackup) {
 			copyMetaData(collection, backupPath);
@@ -43,18 +43,17 @@ public class BackupTask {
 
 	private void copyDataFolders(BlueCollectionOnDisk<?> collection, Path backupPath2) throws BlueDbException {
 		for (Segment<?> segment: collection.getSegmentManager().getExistingSegments(Long.MIN_VALUE, Long.MAX_VALUE)) {
-			Path dstPath = translatePath(segment.getPath());
 			copyDataFolders(segment);
 		}
 	}
 
 	private void copyDataFolders(Segment<?> segment) throws BlueDbException {
-		Path dstPath = translatePath(segment.getPath());
 		Range range = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		List<File> files = segment.getOrderedFilesInRange(range);
 		for (File file: files) {
 			Range fileRange = Range.fromUnderscoreDelmimitedString(file.getName());
-			try (BlueReadLock<Path> lock = segment.getReadLockFor(fileRange.getStart())) {
+			long groupingNumber = fileRange.getStart();
+			try (BlueReadLock<Path> lock = segment.getReadLockFor(groupingNumber)) {
 				Path src = lock.getKey();
 				Path dst = translatePath(src);
 				FileManager.copyFileWithoutLock(src, dst);  // TODO use copy with lock?
