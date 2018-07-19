@@ -12,6 +12,7 @@ import io.bluedb.disk.recovery.PendingChange;
 public class FstConfigurationFactory {
 	public static FSTConfiguration createFstConfiguration(Class<?>...registeredSerializableClasses) {
 		FSTConfiguration config = FSTConfiguration.createDefaultConfiguration();
+		config.setShareReferences(true);
 		
 		config.registerClass(
 				BlueEntity.class, 

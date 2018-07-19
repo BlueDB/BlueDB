@@ -8,8 +8,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -25,11 +23,11 @@ import java.util.stream.IntStream;
 
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.serialization.BlueSerializer;
-import io.bluedb.disk.serialization.FstSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class PerformanceTests {
 
-	private static final int NUMBER_OF_VALUES = 5000;
+	private static final int NUMBER_OF_VALUES = 5_000;
 	
 	private Path tempDir;
 	private Path file;
@@ -42,17 +40,17 @@ public class PerformanceTests {
 		file = tempDir.resolve("test.bin");
 
 		if(registerClass) {
-			serializer = new FstSerializer(TestValue.class);
+			serializer = new ThreadLocalFstSerializer(TestValue.class);
 		}
 		else {
-			serializer = new FstSerializer();
+			serializer = new ThreadLocalFstSerializer();
 		}
 		
 		Random r = new Random();
 		values = IntStream.range(0, NUMBER_OF_VALUES)
 				.boxed()
 				.map(i -> new TestValue(UUID.randomUUID().toString(), r.nextInt()))
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(LinkedList::new));
 		
 		results = new TestResults();
 	}
@@ -64,21 +62,6 @@ public class PerformanceTests {
 		.forEach(File::delete);
 	}
 	
-	public void testOneObjectAtATimeWithoutRegister() throws IOException, ClassNotFoundException {
-		results.writeStart = Instant.now();
-		serializeListToFileOneObjectAtATime();
-		results.writeEnd = Instant.now();
-
-		results.sizeOnDisk = Files.size(file);
-
-		results.readStart = Instant.now();
-		List<TestValue> deserializedValues = deserializeListFromFileOneObjectAtATime();
-		results.readEnd = Instant.now();
-
-		assertEquals(values, deserializedValues);
-		results.print("testOneObjectAtATimeWithoutRegister");
-	}
-
 	public void testOneObjectAtATime() throws IOException, ClassNotFoundException {
 		results.writeStart = Instant.now();
 		serializeListToFileOneObjectAtATime();
@@ -94,20 +77,20 @@ public class PerformanceTests {
 		results.print("testOneObjectAtATime");
 	}
 
-	public void testOneObjectAtATimeUsingObjectStream() throws IOException, ClassNotFoundException {
-		results.writeStart = Instant.now();
-		serializeListToFileOneObjectAtATimeInObjectStream();
-		results.writeEnd = Instant.now();
-	
-		results.sizeOnDisk = Files.size(file);
-	
-		results.readStart = Instant.now();
-		List<TestValue> deserializedValues = deserializeListFromFileOneObjectAtATimeInObjectStream();
-		results.readEnd = Instant.now();
-	
-		assertEquals(values, deserializedValues);
-		results.print("testOneObjectAtATimeUsingObjectStream");
-	}
+//	public void testOneObjectAtATimeUsingObjectStream() throws IOException, ClassNotFoundException {
+//		results.writeStart = Instant.now();
+//		serializeListToFileOneObjectAtATimeInObjectStream();
+//		results.writeEnd = Instant.now();
+//	
+//		results.sizeOnDisk = Files.size(file);
+//	
+//		results.readStart = Instant.now();
+//		List<TestValue> deserializedValues = deserializeListFromFileOneObjectAtATimeInObjectStream();
+//		results.readEnd = Instant.now();
+//	
+//		assertEquals(values, deserializedValues);
+//		results.print("testOneObjectAtATimeUsingObjectStream");
+//	}
 
 	public void testAsList() throws IOException, ClassNotFoundException {
 		results.writeStart = Instant.now();
@@ -144,20 +127,20 @@ public class PerformanceTests {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void testAsListUsingObjectStream() throws IOException, ClassNotFoundException {
-		results.writeStart = Instant.now();
-		serializeObjectUsingObjectStream(values);
-		results.writeEnd = Instant.now();
-
-		results.sizeOnDisk = Files.size(file);
-
-		results.readStart = Instant.now();
-		List<TestValue> deserializedValues = (List<TestValue>) deserializeObjectUsingObjectStream();
-		results.readEnd = Instant.now();
-
-		assertEquals(values, deserializedValues);
-		results.print("testAsListUsingObjectStream");
-	}
+//	public void testAsListUsingObjectStream() throws IOException, ClassNotFoundException {
+//		results.writeStart = Instant.now();
+//		serializeObjectUsingObjectStream(values);
+//		results.writeEnd = Instant.now();
+//
+//		results.sizeOnDisk = Files.size(file);
+//
+//		results.readStart = Instant.now();
+//		List<TestValue> deserializedValues = (List<TestValue>) deserializeObjectUsingObjectStream();
+//		results.readEnd = Instant.now();
+//
+//		assertEquals(values, deserializedValues);
+//		results.print("testAsListUsingObjectStream");
+//	}
 
 	private void assertEquals(List<TestValue> l1, List<TestValue> l2) {
 		if(!l1.equals(l2)) {
@@ -199,32 +182,32 @@ public class PerformanceTests {
 		return values;
 	}
 
-	private void serializeListToFileOneObjectAtATimeInObjectStream() throws FileNotFoundException, IOException {
-		try(FileOutputStream fos = new FileOutputStream(file.toFile())) {
-			ObjectOutput oos = serializer.getObjectOutputStream(fos);
-			for(TestValue value : values) {
-				oos.writeObject(value);
-				oos.flush();
-			}
-		}
-	}
+//	private void serializeListToFileOneObjectAtATimeInObjectStream() throws FileNotFoundException, IOException {
+//		try(FileOutputStream fos = new FileOutputStream(file.toFile())) {
+//			ObjectOutput oos = serializer.getObjectOutputStream(fos);
+//			for(TestValue value : values) {
+//				oos.writeObject(value);
+//				oos.flush();
+//			}
+//		}
+//	}
 
-	private List<TestValue> deserializeListFromFileOneObjectAtATimeInObjectStream() throws FileNotFoundException, IOException, ClassNotFoundException {
-		List<TestValue> values = new LinkedList<>();
-		
-		try(FileInputStream fis = new FileInputStream(file.toFile())) {
-			ObjectInput ois = serializer.getObjectInputStream(fis);
-			
-			try {
-				while(true) {
-					values.add((TestValue) ois.readObject());
-				}
-			} catch(Throwable t) {
-			}
-		}
-
-		return values;
-	}
+//	private List<TestValue> deserializeListFromFileOneObjectAtATimeInObjectStream() throws FileNotFoundException, IOException, ClassNotFoundException {
+//		List<TestValue> values = new LinkedList<>();
+//		
+//		try(FileInputStream fis = new FileInputStream(file.toFile())) {
+//			ObjectInput ois = serializer.getObjectInputStream(fis);
+//			
+//			try {
+//				while(true) {
+//					values.add((TestValue) ois.readObject());
+//				}
+//			} catch(Throwable t) {
+//			}
+//		}
+//
+//		return values;
+//	}
 
 	private void serializeObject(Object obj) throws FileNotFoundException, IOException {
 		byte[] bytes = serializer.serializeObjectToByteArray(obj);
@@ -240,20 +223,20 @@ public class PerformanceTests {
 		return serializer.deserializeObjectFromByteArray(bytes);
 	}
 
-	private void serializeObjectUsingObjectStream(Object obj) throws FileNotFoundException, IOException {
-		try(FileOutputStream fos = new FileOutputStream(file.toFile())) {
-			ObjectOutput oos = serializer.getObjectOutputStream(fos);
-			oos.writeObject(obj);
-			oos.flush();
-		}
-	}
+//	private void serializeObjectUsingObjectStream(Object obj) throws FileNotFoundException, IOException {
+//		try(FileOutputStream fos = new FileOutputStream(file.toFile())) {
+//			ObjectOutput oos = serializer.getObjectOutputStream(fos);
+//			oos.writeObject(obj);
+//			oos.flush();
+//		}
+//	}
 
-	private Object deserializeObjectUsingObjectStream() throws FileNotFoundException, IOException, ClassNotFoundException {
-		try(FileInputStream fis = new FileInputStream(file.toFile())) {
-			ObjectInput ois = serializer.getObjectInputStream(fis);
-			return ois.readObject();
-		}
-	}
+//	private Object deserializeObjectUsingObjectStream() throws FileNotFoundException, IOException, ClassNotFoundException {
+//		try(FileInputStream fis = new FileInputStream(file.toFile())) {
+//			ObjectInput ois = serializer.getObjectInputStream(fis);
+//			return ois.readObject();
+//		}
+//	}
 	
 	private static class TestResults {
 		public long sizeOnDisk;
@@ -285,32 +268,27 @@ public class PerformanceTests {
 	
 	public static void main(String[] args) throws Exception {
 //		PerformanceTests tests = new PerformanceTests();
-//		tests.setUp(false);
-//		tests.testOneObjectAtATimeWithoutRegister();
-//		tests.tearDown();
-		
-//		PerformanceTests tests = new PerformanceTests();
-//		tests.setUp(true);
-//		tests.testOneObjectAtATime();
-//		tests.tearDown();
-		
-//		PerformanceTests tests = new PerformanceTests();
 //		tests.setUp(true);
 //		tests.testOneObjectAtATimeUsingObjectStream();
 //		tests.tearDown();
 		
+		PerformanceTests tests = new PerformanceTests();
+		tests.setUp(true);
+		tests.testOneObjectAtATime();
+		tests.tearDown();
+		
 //		PerformanceTests tests = new PerformanceTests();
-//		tests.setUp(true);
+//		tests.setUp(false);
 //		tests.testAsList();
 //		tests.tearDown();
 		
 //		PerformanceTests tests = new PerformanceTests();
-//		tests.setUp(true);
+//		tests.setUp(false);
 //		tests.testAsArray();
 //		tests.tearDown();
 		
 //		PerformanceTests tests = new PerformanceTests();
-//		tests.setUp(true);
+//		tests.setUp(false);
 //		tests.testAsListUsingObjectStream();
 //		tests.tearDown();
 	}
