@@ -75,7 +75,11 @@ public class BlueDbOnDisk implements BlueDb {
 
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() {
 		List<File> subfolders = FileManager.getFolderContents(path.toFile(), (f) -> f.isDirectory());
-		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (File f) -> new BlueCollectionOnDisk<Serializable>(this, f.getName(), Serializable.class) );
+		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getCollection(folder.getName()));
 		return collections;
+	}
+
+	private BlueCollectionOnDisk<Serializable> getCollection(String folderName) {
+		return new BlueCollectionOnDisk<Serializable>(this, folderName, Serializable.class);
 	}
 }
