@@ -31,16 +31,15 @@ public class ZipUtils {
 		}
 	}
 
-	public static void extractFiles(Path zipDirectory, Path outputDirectory, String... exemptFiles) throws IOException {
-		extractFiles(zipDirectory.toString(), outputDirectory.toString(), exemptFiles);
+	public static void extractFiles(Path zipDirectory, Path outputDirectory) throws IOException {
+		extractFiles(zipDirectory.toString(), outputDirectory.toString());
 	}
 
-	public static void extractFiles(String zipDirectory, String outputDirectory, String... exemptFiles) throws IOException {
-		Set<String> exemptFilesSet = new HashSet<>(Arrays.asList(exemptFiles));
+	public static void extractFiles(String zipDirectory, String outputDirectory) throws IOException {
 		try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipDirectory)))) {
 			ZipEntry entry = null;
 			while ((entry = zis.getNextEntry()) != null) {
-				extractEntryContents(zis, entry, outputDirectory, exemptFilesSet);
+				extractEntryContents(zis, entry, outputDirectory);
 			}
 			zis.closeEntry();
 		}
@@ -61,13 +60,11 @@ public class ZipUtils {
 		}
 	}
 
-	private static void extractEntryContents(ZipInputStream zis, ZipEntry entry, String outputDirectory, Set<String> exemptFiles) throws IOException {
+	private static void extractEntryContents(ZipInputStream zis, ZipEntry entry, String outputDirectory) throws IOException {
 		Path path = Paths.get(outputDirectory, entry.getName());
-		if (!exemptFiles.contains(path.toString())) {
-			Files.createDirectories(path.getParent());
-			try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(path))) {
-				copyBytes(zis, bos);
-			}
+		Files.createDirectories(path.getParent());
+		try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(path))) {
+			copyBytes(zis, bos);
 		}
 	}
 
