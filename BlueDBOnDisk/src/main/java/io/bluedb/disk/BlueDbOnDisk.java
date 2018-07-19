@@ -1,8 +1,11 @@
 package io.bluedb.disk;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +16,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.backup.BackupTask;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.zip.ZipUtils;
 
 public class BlueDbOnDisk implements BlueDb {
 
@@ -41,10 +45,20 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public void backup(Path path) throws BlueDbException {
-		BackupTask backupTask = new BackupTask(this, path);
-		List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
-		backupTask.backup(collectionsToBackup);
+	public void backup(Path zipPath) throws BlueDbException {
+		try {
+			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
+			tempDirectoryPath.toFile().deleteOnExit();
+			Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
+			BackupTask backupTask = new BackupTask(this, unzippedBackupPath);
+			List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
+			backupTask.backup(collectionsToBackup);
+			ZipUtils.zipFile(unzippedBackupPath, zipPath);
+			tempDirectoryPath.toFile().delete();
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("BlueDB backup failed", e);
+		}
 	}
 
 	@Override

@@ -1,5 +1,9 @@
 package io.bluedb.disk;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +14,7 @@ import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.zip.ZipUtils;
 
 public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
@@ -426,6 +431,36 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 			allCollections = db().getAllCollectionsFromDisk();
 			assertEquals(3, allCollections.size());
 		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_backup() {
+		try {
+			BlueKey key1At1 = createKey(1, 1);
+			TestValue value1 = createValue("Anna");
+			getCollection().insert(key1At1, value1);
+
+			Path tempFolder = Files.createTempDirectory(this.getClass().getSimpleName());
+			tempFolder.toFile().deleteOnExit();
+			Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
+			db().backup(backedUpPath);
+
+			Path restoredPath = Paths.get(tempFolder.toString(), "restore_test");
+			ZipUtils.extractFiles(backedUpPath, restoredPath);
+			Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
+
+			BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(restoredBlueDbPath).build();
+			BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, "testing");
+			assertTrue(restoredCollection.contains(key1At1));
+			assertEquals(value1, restoredCollection.get(key1At1));
+			Long restoredMaxLong = restoredCollection.getMaxLongId();
+			assertNotNull(restoredMaxLong);
+			assertEquals(getCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
+
+		} catch (IOException | BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
