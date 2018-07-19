@@ -160,6 +160,9 @@ public class FileManager {
 	}
 
 	public static void copyDirectoryWithoutLock(Path src, Path dst) throws BlueDbException {
+		if (!src.toFile().isDirectory()) {
+			throw new BlueDbException(src + " is not a directory.");
+		}
 		dst.toFile().mkdirs();
 		for (File file: src.toFile().listFiles()) {
 			if (file.isDirectory()) {

@@ -470,6 +470,24 @@ public class FileManagerTest extends TestCase {
 		}
 	}
 
+	@Test
+	public void test_copyDirectoryWithoutLock_not_a_directory() {
+		Path tempFile = null;
+		try {
+			tempFile = Files.createTempFile(this.getClass().getSimpleName() + "_test_copyDirectoryWithoutLock_not_a_directory", ".tmp");
+			tempFile.toFile().deleteOnExit();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			fail();
+		}
+		Path destination = Paths.get("never_going_to_happen");
+		try {
+			FileManager.copyDirectoryWithoutLock(tempFile, destination);
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
 
 
 	private void recursiveDelete(File file) {
