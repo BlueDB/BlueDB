@@ -21,27 +21,28 @@ import java.util.zip.ZipOutputStream;
 public class ZipUtils {
 
 	public static void zipFile(Path fileToZip, Path destination) throws IOException {
-		try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(destination.toString()))) {
-			File file = fileToZip.toFile();
-			zipFile(file, file.getName(), zipOut);
-		}
-	}
-
-	public static void extractFiles(Path zipDirectory, Path outputDirectory, String... exemptFiles) throws IOException {
-		Set<String> exemptFilesSet = new HashSet<>(Arrays.asList(exemptFiles));
-		try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipDirectory.toString())))) {
-			ZipEntry entry = null;
-			while ((entry = zis.getNextEntry()) != null) {
-				extractEntryContents(zis, entry, outputDirectory.toString(), exemptFilesSet);
-			}
-			zis.closeEntry();
-		}
+		zipFile(fileToZip.toString(), destination.toString());
 	}
 
 	public static void zipFile(String fileToZip, String destinationFilename) throws IOException {
 		try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(destinationFilename))) {
 			File file = new File(fileToZip);
 			zipFile(file, file.getName(), zipOut);
+		}
+	}
+
+	public static void extractFiles(Path zipDirectory, Path outputDirectory, String... exemptFiles) throws IOException {
+		extractFiles(zipDirectory.toString(), outputDirectory.toString(), exemptFiles);
+	}
+
+	public static void extractFiles(String zipDirectory, String outputDirectory, String... exemptFiles) throws IOException {
+		Set<String> exemptFilesSet = new HashSet<>(Arrays.asList(exemptFiles));
+		try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipDirectory)))) {
+			ZipEntry entry = null;
+			while ((entry = zis.getNextEntry()) != null) {
+				extractEntryContents(zis, entry, outputDirectory, exemptFilesSet);
+			}
+			zis.closeEntry();
 		}
 	}
 
@@ -57,17 +58,6 @@ public class ZipUtils {
 			ZipEntry zipEntry = new ZipEntry(fileName);
 			zipOut.putNextEntry(zipEntry);
 			copyBytes(fis, zipOut);
-		}
-	}
-
-	public static void extractFiles(String zipDirectory, String outputDirectory, String... exemptFiles) throws IOException {
-		Set<String> exemptFilesSet = new HashSet<>(Arrays.asList(exemptFiles));
-		try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipDirectory)))) {
-			ZipEntry entry = null;
-			while ((entry = zis.getNextEntry()) != null) {
-				extractEntryContents(zis, entry, outputDirectory, exemptFilesSet);
-			}
-			zis.closeEntry();
 		}
 	}
 
