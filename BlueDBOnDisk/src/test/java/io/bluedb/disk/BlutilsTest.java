@@ -53,10 +53,10 @@ public class BlutilsTest {
 	}
 
 	@Test
-	public void test_sortByMappedvalue() {
+	public void test_sortByMappedValue() {
 		List<String> listToSort = Arrays.asList("7", "5", "1000");
 		List<String> valuesInOrder = Arrays.asList("5", "7", "1000");
-		Blutils.sortByMappedvalue(listToSort, (s) -> Long.valueOf(s) );
+		Blutils.sortByMappedValue(listToSort, (s) -> Long.valueOf(s) );
 		assertEquals(valuesInOrder, listToSort);
 	}
 

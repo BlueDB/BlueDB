@@ -77,7 +77,7 @@ public class RecoveryManager<T extends Serializable> {
 		if (files.isEmpty()) {
 			return files;
 		}
-		Blutils.sortByMappedvalue(files, (File f) -> extractTimestamp(f) );
+		Blutils.sortByMappedValue(files, (File f) -> extractTimestamp(f) );
 
 		int firstChangeToKeep = 0;
 		int lastChangeToKeep = -1;

@@ -30,7 +30,7 @@ public class Blutils {
 		}
 	}
 
-	public static <X, Y extends Comparable<Y>> void sortByMappedvalue(List<X> values, Function<? super X, ? extends Y> mapper) {
+	public static <X, Y extends Comparable<Y>> void sortByMappedValue(List<X> values, Function<? super X, ? extends Y> mapper) {
 		Comparator<X> comparator = new Comparator<X>() {
 			@Override
 			public int compare(X x1, X x2) {
