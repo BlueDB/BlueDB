@@ -1,14 +1,12 @@
 package io.bluedb.disk.backup;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.collection.CollectionMetaData;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.recovery.RecoveryManager;
@@ -64,12 +62,9 @@ public class BackupTask {
 		}
 	}
 
-	// TODO copy any currently pending change?  Or maybe just copy changes from start time plus one additional change?
 	private void copyChanges(BlueCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime) throws BlueDbException {
 		RecoveryManager<?> recoveryManager = collection.getRecoveryManager();
 		List<File> changesToCopy = recoveryManager.getChangeHistory(backupStartTime, backupEndTime);
-//		Path recoveryManagerPath = recoveryManager.getHistoryFolderPath();
-//		Path historyFolderPath = recoveryManager.getHistoryFolderPath();
 		Path pendingFolderPath = recoveryManager.getPendingFolderPath();
 		Path destinationFolderPath = translatePath(pendingFolderPath);
 		destinationFolderPath.toFile().mkdirs();
