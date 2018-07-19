@@ -2,12 +2,15 @@ package io.bluedb.disk;
 
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.backup.BackupTask;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 
 public class BlueDbOnDisk implements BlueDb {
@@ -34,6 +37,13 @@ public class BlueDbOnDisk implements BlueDb {
 				
 			return collection;
 		}
+	}
+
+	@Override
+	public void backup(Path path) throws BlueDbException {
+		BackupTask backupTask = new BackupTask(this, path);
+		List<BlueCollectionOnDisk<?>> collectionsToBackup = new ArrayList<BlueCollectionOnDisk<?>>(collections.values());
+		backupTask.backup(collectionsToBackup);
 	}
 
 	@Override

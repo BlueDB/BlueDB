@@ -47,6 +47,11 @@ public class BlueDbInMemory implements BlueDb {
 	}
 
 	@Override
+	public void backup(Path path) throws BlueDbException {
+		serializeToDirectory();
+	}
+
+	@Override
 	public void shutdown() throws BlueDbException {
 		serializeToDirectory();
 	}

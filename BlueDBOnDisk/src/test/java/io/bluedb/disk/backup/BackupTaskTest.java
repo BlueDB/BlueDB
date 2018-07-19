@@ -12,7 +12,6 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
@@ -22,6 +21,30 @@ import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.SegmentManager;
 
 public class BackupTaskTest extends BlueDbDiskTestBase {
+
+	@Test
+	public void test_backup() {
+		try {
+			BlueKey key1At1 = createKey(1, 1);
+			TestValue value1 = createValue("Anna");
+			getCollection().insert(key1At1, value1);
+
+			Path backedUpPath = Files.createTempDirectory(this.getClass().getSimpleName());
+			db().backup(backedUpPath);
+
+			BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
+			BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, "testing");
+			assertTrue(restoredCollection.contains(key1At1));
+			assertEquals(value1, restoredCollection.get(key1At1));
+			Long restoredMaxLong = restoredCollection.getMaxLongId();
+			assertNotNull(restoredMaxLong);
+			assertEquals(getCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
+
+		} catch (IOException | BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
 
 	@Test
 	public void test_backup_simple() {
