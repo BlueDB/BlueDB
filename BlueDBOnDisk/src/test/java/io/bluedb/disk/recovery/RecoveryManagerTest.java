@@ -111,16 +111,6 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_extractTimestamp() {
-		File _123 = Paths.get("123.whatever").toFile();
-		File invalid = Paths.get("123_xyz").toFile();
-		File _negative123 = Paths.get("-123.whatever").toFile();
-		assertEquals(123, RecoveryManager.extractTimestamp(_123).longValue());
-		assertNull(RecoveryManager.extractTimestamp(invalid));
-		assertEquals(-123, RecoveryManager.extractTimestamp(_negative123).longValue());
-	}
-
-	@Test
 	public void test_cleanupHistory() {
 		// TODO
 	}
@@ -158,19 +148,6 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 			e.printStackTrace();
 			fail();
 		}
-	}
-
-	@Test
-	public void test_isChangeFileOlderThan() {
-		long oneHour = 60 * 60 * 1000;
-		long moreThanHourAgo = System.currentTimeMillis() - 2 * 60 * 60 * 1000 - 1;
-		long twoSecondsAgo = System.currentTimeMillis() - 2 * 1000;
-		File moreThanHourOld = Paths.get(moreThanHourAgo + ".chg").toFile();
-		File invalid = Paths.get("123_xyz").toFile();
-		File twoSecondsOld = Paths.get(twoSecondsAgo + ".chg").toFile();
-		assertTrue(RecoveryManager.isChangeFileOlderThan(moreThanHourOld, oneHour));
-		assertFalse(RecoveryManager.isChangeFileOlderThan(invalid, oneHour));
-		assertFalse(RecoveryManager.isChangeFileOlderThan(twoSecondsOld, oneHour));
 	}
 
 	@Test
