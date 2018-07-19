@@ -9,6 +9,7 @@ import org.junit.Test;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 
 public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
@@ -408,6 +409,22 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 			getCollection().query().delete();
 			storedValues = getCollection().query().getList();
 			assertEquals(0, storedValues.size());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_getAllCollectionsFromDisk() {
+		try {
+			getCollection();
+			List<BlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
+			assertEquals(1, allCollections.size());
+			db().getCollection(String.class, "string");
+			db().getCollection(Long.class, "long");
+			allCollections = db().getAllCollectionsFromDisk();
+			assertEquals(3, allCollections.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();

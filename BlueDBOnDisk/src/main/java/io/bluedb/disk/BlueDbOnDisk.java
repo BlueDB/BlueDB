@@ -1,8 +1,8 @@
 package io.bluedb.disk;
 
+import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +12,7 @@ import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.backup.BackupTask;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.file.FileManager;
 
 public class BlueDbOnDisk implements BlueDb {
 
@@ -42,7 +43,7 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public void backup(Path path) throws BlueDbException {
 		BackupTask backupTask = new BackupTask(this, path);
-		List<BlueCollectionOnDisk<?>> collectionsToBackup = new ArrayList<BlueCollectionOnDisk<?>>(collections.values());
+		List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
 		backupTask.backup(collectionsToBackup);
 	}
 
@@ -57,5 +58,10 @@ public class BlueDbOnDisk implements BlueDb {
 	public Path getPath() {
 		return path;
 	}
-	
+
+	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() {
+		List<File> subfolders = FileManager.getFolderContents(path.toFile(), (f) -> f.isDirectory());
+		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (File f) -> new BlueCollectionOnDisk<Serializable>(this, f.getName(), Serializable.class) );
+		return collections;
+	}
 }
