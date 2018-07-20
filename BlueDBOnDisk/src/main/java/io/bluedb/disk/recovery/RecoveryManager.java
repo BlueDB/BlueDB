@@ -70,7 +70,7 @@ public class RecoveryManager<T extends Serializable> {
 		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX);
 		List<TimeStampedFile> timestampedFiles = Blutils.map(historicChangeFiles, (f) -> new TimeStampedFile(f) );
 		long minTimeStamp = System.currentTimeMillis() - RETENTION_PERIOD;
-		List<TimeStampedFile> filesOldEnoughToDelete = Blutils.filter(timestampedFiles, (f) -> f.getTimestamp() < minTimeStamp);
+		List<TimeStampedFile> filesOldEnoughToDelete = Blutils.filter(timestampedFiles, (f) -> f.getTimestamp() > minTimeStamp);
 		filesOldEnoughToDelete.forEach((f) -> f.getFile().delete());
 		lastLogCleanup = System.currentTimeMillis();
 	}

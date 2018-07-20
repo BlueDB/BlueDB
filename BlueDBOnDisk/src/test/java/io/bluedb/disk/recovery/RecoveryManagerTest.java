@@ -112,7 +112,36 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_cleanupHistory() {
-		// TODO
+		long thirtyMinutesAgo = System.currentTimeMillis() - 30 * 60 * 1000;
+		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
+		long ninetyMinutesAgo = System.currentTimeMillis() - 90 * 60 * 1000;
+		long oneHundredMinutesAgo = System.currentTimeMillis() - 100 * 60 * 1000;
+		Recoverable<TestValue> change30 = createRecoverable(thirtyMinutesAgo);
+		Recoverable<TestValue> change60 = createRecoverable(sixtyMinutesAgo);
+		Recoverable<TestValue> change90 = createRecoverable(ninetyMinutesAgo);
+		Recoverable<TestValue> change100 = createRecoverable(oneHundredMinutesAgo);
+		assertEquals(thirtyMinutesAgo, change30.getTimeCreated());
+		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
+		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
+		assertEquals(oneHundredMinutesAgo, change100.getTimeCreated());
+		try {
+			List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+			getRecoveryManager().saveChange(change30);
+			getRecoveryManager().saveChange(change60);
+			getRecoveryManager().saveChange(change90);
+			getRecoveryManager().saveChange(change100);
+			List<File> changesBeforeCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+			getRecoveryManager().cleanupHistory();
+			List<File> changesAfterCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+
+			assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
+			assertEquals(0, changesBeforeInsert.size());
+			assertEquals(4, changesBeforeCleanup.size());
+			assertEquals(3, changesAfterCleanup.size());  // the 100 stays.  The 90 goes because it's 
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	@Test
