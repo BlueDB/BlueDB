@@ -81,7 +81,6 @@ public class RecoveryManager<T extends Serializable> {
 			return files;
 		}
 		List<TimeStampedFile> timestampedFiles = Blutils.map(files, (f) -> new TimeStampedFile(f) );
-		timestampedFiles = Blutils.filter(timestampedFiles, (t) -> t.getTimestamp() != null );
 		Collections.sort(timestampedFiles);
 
 		int firstChangeToKeep = 0;
