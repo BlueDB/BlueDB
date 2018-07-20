@@ -35,6 +35,10 @@ public class FileManager {
 		return serializer.deserializeObjectFromByteArray(fileData);
 	}
 
+	public Object loadObject(File file) throws BlueDbException {
+		return loadObject(file.toPath());
+	}
+
 	public Object loadObject(Path path) throws BlueDbException {
 		try (BlueReadLock<Path> lock = lockManager.acquireReadLock(path)){
 			return loadObject(lock);
@@ -132,6 +136,44 @@ public class FileManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
+		}
+	}
+
+	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
+		try {
+			dst.toFile().mkdirs();
+			Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
+		}
+	}
+
+	public static void copyFileWithoutLock(Path src, Path dst) throws BlueDbException {
+		try {
+			dst.toFile().mkdirs();
+			Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("Can't copy '" + src + "' to '" + dst + "'.", e);
+		}
+	}
+
+	public static void copyDirectoryWithoutLock(Path src, Path dst) throws BlueDbException {
+		if (!src.toFile().isDirectory()) {
+			throw new BlueDbException(src + " is not a directory.");
+		}
+		dst.toFile().mkdirs();
+		for (File file: src.toFile().listFiles()) {
+			if (file.isDirectory()) {
+				Path path = file.toPath();
+				Path target = dst.resolve(src.relativize(path));
+				copyDirectoryWithoutLock(path, target);
+			} else {
+				Path path = file.toPath();
+				Path target = dst.resolve(src.relativize(path));
+				copyFileWithoutLock(path, target);
+			}
 		}
 	}
 

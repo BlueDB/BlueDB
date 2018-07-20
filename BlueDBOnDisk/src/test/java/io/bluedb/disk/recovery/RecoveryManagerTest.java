@@ -1,11 +1,13 @@
 package io.bluedb.disk.recovery;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
+
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
@@ -101,6 +103,54 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_isTimeForHistoryCleanup() {
+		RecoveryManager<?> recoveryManager = getCollection().getRecoveryManager();
+		assertTrue(recoveryManager.isTimeForHistoryCleanup());
+		recoveryManager.cleanupHistory();
+		assertFalse(recoveryManager.isTimeForHistoryCleanup());
+	}
+
+	@Test
+	public void test_cleanupHistory() {
+		// TODO
+	}
+
+	@Test
+	public void test_getChangeHistory() {
+		long thirtyMinutesAgo = System.currentTimeMillis() - 30 * 60 * 1000;
+		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
+		long ninetyMinutesAgo = System.currentTimeMillis() - 90 * 60 * 1000;
+		Recoverable<TestValue> change30 = createRecoverable(thirtyMinutesAgo);
+		Recoverable<TestValue> change60 = createRecoverable(sixtyMinutesAgo);
+		Recoverable<TestValue> change90 = createRecoverable(ninetyMinutesAgo);
+		assertEquals(thirtyMinutesAgo, change30.getTimeCreated());
+		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
+		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
+		try {
+			List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+			getRecoveryManager().saveChange(change30);
+			getRecoveryManager().saveChange(change60);
+			getRecoveryManager().saveChange(change90);
+			List<File> changesAll = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+			List<File> changes30to60 = getRecoveryManager().getChangeHistory(sixtyMinutesAgo, thirtyMinutesAgo);
+			List<File> changes30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo, thirtyMinutesAgo);
+			List<File> changesJustBefore30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo-1, thirtyMinutesAgo);
+			List<File> changes30to90 = getRecoveryManager().getChangeHistory(ninetyMinutesAgo, thirtyMinutesAgo);
+			List<File> changes0to0 = getRecoveryManager().getChangeHistory(0, 0);
+			assertEquals(0, changesInitial.size());
+			assertEquals(3, changesAll.size());
+			assertEquals(3, changes30to60.size()); // includes change before time period that may be partly completed at backup
+			assertEquals(2, changes30to30.size()); // includes change before time period that may be partly completed at backup
+			assertEquals(2, changesJustBefore30to30.size()); // includes change before time period that may be partly completed at backup
+			assertEquals(3, changes30to90.size());
+			assertEquals(0, changes0to0.size());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
 	public void test_recover_pendingInsert() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
@@ -171,7 +221,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_recover_invalidPendingChange() {
-		Path pathForGarbage = Paths.get(getCollection().getPath().toString(), RecoveryManager.SUBFOLDER, "123" + RecoveryManager.SUFFIX);
+		Path pathForGarbage = Paths.get(getCollection().getPath().toString(), RecoveryManager.PENDING_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
 		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};
 		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
@@ -184,5 +234,9 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		pathForGarbage.toFile().delete();
 		getRecoveryManager().recover();
+	}
+
+	private Recoverable<TestValue> createRecoverable(long time){
+		return new TestRecoverable(time);
 	}
 }

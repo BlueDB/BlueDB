@@ -54,10 +54,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		fileManager = new FileManager(serializer);
 		segmentManager = new SegmentManager<T>(this);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
-		recoveryManager.recover();  // everything else has to be in place before running this
 		rollupScheduler = new RollupScheduler(this);
 		rollupScheduler.start();
 		metaData = new CollectionMetaData(collectionPath, fileManager);
+		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 
 	@Override

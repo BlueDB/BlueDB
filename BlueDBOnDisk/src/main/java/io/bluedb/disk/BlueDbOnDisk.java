@@ -1,14 +1,22 @@
 package io.bluedb.disk;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.backup.BackupTask;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.file.FileManager;
+import io.bluedb.zip.ZipUtils;
 
 public class BlueDbOnDisk implements BlueDb {
 
@@ -37,6 +45,23 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
+	public void backup(Path zipPath) throws BlueDbException {
+		try {
+			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
+			tempDirectoryPath.toFile().deleteOnExit();
+			Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
+			BackupTask backupTask = new BackupTask(this, unzippedBackupPath);
+			List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
+			backupTask.backup(collectionsToBackup);
+			ZipUtils.zipFile(unzippedBackupPath, zipPath);
+			tempDirectoryPath.toFile().delete();
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new BlueDbException("BlueDB backup failed", e);
+		}
+	}
+
+	@Override
 	public void shutdown() throws BlueDbException {
 		for (BlueCollection<?> collection: collections.values()) {
 			BlueCollectionOnDisk<?> diskCollection = (BlueCollectionOnDisk<?>) collection;
@@ -47,5 +72,14 @@ public class BlueDbOnDisk implements BlueDb {
 	public Path getPath() {
 		return path;
 	}
-	
+
+	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() {
+		List<File> subfolders = FileManager.getFolderContents(path.toFile(), (f) -> f.isDirectory());
+		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getCollection(folder.getName()));
+		return collections;
+	}
+
+	private BlueCollectionOnDisk<Serializable> getCollection(String folderName) {
+		return new BlueCollectionOnDisk<Serializable>(this, folderName, Serializable.class);
+	}
 }

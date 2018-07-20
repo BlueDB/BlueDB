@@ -154,7 +154,7 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	protected List<File> getOrderedFilesInRange(Range range) {
+	public List<File> getOrderedFilesInRange(Range range) {
 		return getOrderedFilesInRange(segmentPath, range);
 	}
 
@@ -209,7 +209,7 @@ public class Segment <T extends Serializable> {
 		return fileManager.getBlueInputStream(lock);
 	}
 
-	protected BlueReadLock<Path> getReadLockFor(long groupingNumber) {
+	public BlueReadLock<Path> getReadLockFor(long groupingNumber) {
 		for (long rollupLevel: ROLLUP_LEVELS) {
 			Path path = getPathFor(groupingNumber, rollupLevel);
 			BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
