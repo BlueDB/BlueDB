@@ -220,7 +220,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_recover_invalidPendingChange() {
+	public void test_recover_invalidPendingChange() throws Exception {
 		Path pathForGarbage = Paths.get(getCollection().getPath().toString(), RecoveryManager.PENDING_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
 		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};

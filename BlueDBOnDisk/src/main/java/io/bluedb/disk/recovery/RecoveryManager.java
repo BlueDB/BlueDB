@@ -100,30 +100,21 @@ public class RecoveryManager<T extends Serializable> {
 		return Blutils.map(relevantTimeStampedFiles, (tsf) -> tsf.getFile() );
 	}
 
-	public List<Recoverable<T>> getPendingChanges() {
+	public List<Recoverable<T>> getPendingChanges() throws BlueDbException {
 		List<File> pendingChangeFiles = FileManager.getFolderContents(pendingFolderPath, SUFFIX);
 		List<Recoverable<T>> changes = new ArrayList<>();
 		for (File file: pendingChangeFiles) {
-			try {
-				@SuppressWarnings("unchecked")
-				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
-				changes.add(change);
-			} catch (Throwable t) {
-				t.printStackTrace();
-				// TODO handle broken files, ignoring for now
-			}
+			@SuppressWarnings("unchecked")
+			Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
+			changes.add(change);
 		}
 		return changes;
 	}
 
-	public void recover() {
+	public void recover() throws BlueDbException {
 		for (Recoverable<T> change: getPendingChanges()) {
-			try {
-				change.apply(collection);
-				removeChange(change);
-			} catch (BlueDbException e) {
-				e.printStackTrace();
-			}
+			change.apply(collection);
+			removeChange(change);
 		}
 	}
 
