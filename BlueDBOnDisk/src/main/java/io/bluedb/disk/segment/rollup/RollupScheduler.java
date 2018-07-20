@@ -56,6 +56,10 @@ public class RollupScheduler implements Runnable {
 		return lastInsertTimes.getOrDefault(timeRange, Long.MIN_VALUE);
 	}
 
+	public boolean isRunning() {
+		return !isStopped;
+	}
+
 	protected static boolean isReadyForRollup(long lastInsert) {
 		long now = System.currentTimeMillis();
 		return (now - lastInsert) > WAIT_BEFORE_ROLLUP;
