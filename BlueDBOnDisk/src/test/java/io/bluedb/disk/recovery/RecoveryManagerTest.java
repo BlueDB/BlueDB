@@ -103,7 +103,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_isTimeForHistoryCleanup() {
+	public void test_isTimeForHistoryCleanup() throws Exception {
 		RecoveryManager<?> recoveryManager = getCollection().getRecoveryManager();
 		assertTrue(recoveryManager.isTimeForHistoryCleanup());
 		recoveryManager.cleanupHistory();

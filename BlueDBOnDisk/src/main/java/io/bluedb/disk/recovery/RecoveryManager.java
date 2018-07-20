@@ -65,7 +65,7 @@ public class RecoveryManager<T extends Serializable> {
 		return timeSinceLastCleanup > FREQUENCY_OF_COMPLETED_CLEANUP;
 	}
 
-	protected void cleanupHistory() {
+	protected void cleanupHistory() throws BlueDbException {
 		// TODO check if restore is pending
 		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX);
 		List<TimeStampedFile> timestampedFiles = Blutils.map(historicChangeFiles, (f) -> new TimeStampedFile(f) );

@@ -55,7 +55,7 @@ public class BlueDbOnDisk implements BlueDb {
 			backupTask.backup(collectionsToBackup);
 			ZipUtils.zipFile(unzippedBackupPath, zipPath);
 			tempDirectoryPath.toFile().delete();
-		} catch (IOException e) {
+		} catch (IOException | BlueDbException e) {
 			e.printStackTrace();
 			throw new BlueDbException("BlueDB backup failed", e);
 		}
@@ -73,13 +73,14 @@ public class BlueDbOnDisk implements BlueDb {
 		return path;
 	}
 
-	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() {
+	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
 		List<File> subfolders = FileManager.getFolderContents(path.toFile(), (f) -> f.isDirectory());
 		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getCollection(folder.getName()));
 		return collections;
 	}
 
-	private BlueCollectionOnDisk<Serializable> getCollection(String folderName) {
-		return new BlueCollectionOnDisk<Serializable>(this, folderName, Serializable.class);
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	protected BlueCollectionOnDisk getCollection(String folderName) throws BlueDbException {
+		return new BlueCollectionOnDisk(this, folderName, Serializable.class);
 	}
 }

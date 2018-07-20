@@ -3,6 +3,7 @@ package io.bluedb.disk.segment.rollup;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
+import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
@@ -93,11 +94,17 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	private BlueCollectionOnDisk<TestValue> createMockCollection(List<Range> rollupsRequested) {
-		return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
-			@Override
-			public void scheduleRollup(Range t) {
-				rollupsRequested.add(t);
-			}
-		};
+		try {
+			return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
+				@Override
+				public void scheduleRollup(Range t) {
+					rollupsRequested.add(t);
+				}
+			};
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+			return null;  // won't ever be called, but needed to avoid compile error
+		}
 	}
 }

@@ -29,6 +29,39 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_getCollection_untyped() {
+		try {
+			assertNotNull(db.getCollection("testing1"));
+			assertNotNull(db.getCollection("testing2"));  // this time it should create the collection
+		} catch (BlueDbException e1) {
+			e1.printStackTrace();
+			fail();
+		}
+
+		try {
+			@SuppressWarnings("rawtypes")
+			BlueCollectionOnDisk newUntypedCollection = db.getCollection("testing2"); // make sure it's created
+			Path serializedClassesPath = Paths.get(newUntypedCollection.getPath().toString(), ".meta", "serialized_classes");
+			getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
+
+			db.getCollection("testing2"); // this time it should exception out
+			fail();
+		} catch (Throwable e) {
+		}
+	}
+
+	@Test
+	public void test_getCollection_existing_correct_type() {
+		try {
+			db.getCollection(TestValue.class, "testing");
+			db.getCollection(TestValue.class, "testing");
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
 	public void test_getCollection_invalid_type() {
 		insert(10, new TestValue("Bob"));
 		try {
@@ -463,6 +496,24 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		} catch (IOException | BlueDbException e) {
 			e.printStackTrace();
 			fail();
+		}
+	}
+
+	@Test
+	public void test_backup_fail() {
+		try {
+			@SuppressWarnings("rawtypes")
+			BlueCollectionOnDisk newUntypedCollection = db.getCollection("testing2"); // create a new bogus collection
+			Path serializedClassesPath = Paths.get(newUntypedCollection.getPath().toString(), ".meta", "serialized_classes");
+			getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
+			
+			Path tempFolder = Files.createTempDirectory(this.getClass().getSimpleName());
+			tempFolder.toFile().deleteOnExit();
+			Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
+			db().backup(backedUpPath);
+			fail();  // because the "test2" collection was broken, the backup should error out;
+
+		} catch (IOException | BlueDbException e) {
 		}
 	}
 }
