@@ -476,6 +476,10 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 			TestValue value1 = createValue("Anna");
 			getCollection().insert(key1At1, value1);
 
+			BlueCollectionOnDisk<TestValue2> secondCollection = (BlueCollectionOnDisk<TestValue2>) db().getCollection(TestValue2.class, "testing_2");
+			TestValue2 valueInSecondCollection = new TestValue2("Joe", 3);
+			secondCollection.insert(key1At1, valueInSecondCollection);
+
 			Path tempFolder = Files.createTempDirectory(this.getClass().getSimpleName());
 			tempFolder.toFile().deleteOnExit();
 			Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
@@ -493,6 +497,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 			assertNotNull(restoredMaxLong);
 			assertEquals(getCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
 
+			BlueCollectionOnDisk<TestValue2> secondCollectionRestored = (BlueCollectionOnDisk<TestValue2>) restoredDb.getCollection(TestValue2.class, "testing_2");
+			assertTrue(secondCollectionRestored.contains(key1At1));
+			assertEquals(valueInSecondCollection, secondCollectionRestored.get(key1At1));
 		} catch (IOException | BlueDbException e) {
 			e.printStackTrace();
 			fail();
