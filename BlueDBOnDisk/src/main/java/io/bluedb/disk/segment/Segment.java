@@ -209,12 +209,17 @@ public class Segment <T extends Serializable> {
 		return fileManager.getBlueInputStream(lock);
 	}
 
-	public BlueReadLock<Path> getReadLockFor(long groupingNumber) {
+	public BlueReadLock<Path> getReadLockFor(long groupingNumber) throws BlueDbException {
 		for (long rollupLevel: ROLLUP_LEVELS) {
 			Path path = getPathFor(groupingNumber, rollupLevel);
 			BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
-			if (lock.getKey().toFile().exists()) {
-				return lock;
+			try {
+				if (lock.getKey().toFile().exists()) {
+					return lock;
+				}
+			} catch (Throwable t) { // make damn sure we don't hold onto the lock
+				lock.release();
+				throw new BlueDbException("Error attempting to acquire read lock", t);
 			}
 			lock.release();
 		}
