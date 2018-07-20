@@ -1,7 +1,9 @@
 package io.bluedb.disk.collection;
 
 import static org.junit.Assert.assertArrayEquals;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -88,6 +90,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSerializedClassList() {
+		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
 		try {
 			assertNull(metaData.getSerializedClassList());
 			List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
@@ -117,6 +120,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_updateSerializedClassList() {
+		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
 		try {
 			assertNull(metaData.getSerializedClassList());
 			List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
@@ -134,6 +138,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getAndAddToSerializedClassList() {
+		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
 		try {
 			assertNull(metaData.getSerializedClassList());
 			Class<? extends Serializable>[] testValue1 = new Class[] {TestValue.class};
@@ -150,6 +155,23 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
+		}
+	}
+
+	private CollectionMetaData createNewMetaData() {
+		Path tempPath = createTempPath();
+		return new CollectionMetaData(tempPath);
+	}
+
+	private Path createTempPath() {
+		try {
+			Path tempPath = Files.createTempDirectory(this.getClass().getSimpleName());
+			tempPath.toFile().deleteOnExit();
+			return tempPath;
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail();
+			return null; // fail() will prevent this from being called but need it to compile
 		}
 	}
 }
