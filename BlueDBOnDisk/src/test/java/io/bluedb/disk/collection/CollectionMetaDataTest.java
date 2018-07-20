@@ -1,8 +1,18 @@
 package io.bluedb.disk.collection;
 
+import static org.junit.Assert.assertArrayEquals;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbDiskTestBase;
+import io.bluedb.disk.TestValue;
+import io.bluedb.disk.TestValue2;
 
 public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
@@ -75,6 +85,93 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
+		}
+	}
+
+	@Test
+	public void test_getSerializedClassList() {
+		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
+		try {
+			assertNull(metaData.getSerializedClassList());
+			List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
+			metaData.updateSerializedClassList(classes);
+			assertEquals(classes, metaData.getSerializedClassList());
+			classes = Arrays.asList(TestValue.class, TestValue2.class);
+			assertFalse(classes.equals(metaData.getSerializedClassList())); // we haven't synced them yet
+			metaData.updateSerializedClassList(classes);
+			assertTrue(classes.equals(metaData.getSerializedClassList()));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_getSerializedClassList_exception() {
+		try {
+			Path serializedClassesPath = Paths.get(metaData.getPath().toString(), "serialized_classes");
+			getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
+			metaData.getSerializedClassList();  // now this should fail with BlueDbException
+			fail();
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Test
+	public void test_updateSerializedClassList() {
+		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
+		try {
+			assertNull(metaData.getSerializedClassList());
+			List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
+			metaData.updateSerializedClassList(classes);
+			assertEquals(classes, metaData.getSerializedClassList());
+			classes = Arrays.asList(TestValue.class, TestValue2.class);
+			assertFalse(classes.equals(metaData.getSerializedClassList())); // we haven't synced them yet
+			metaData.updateSerializedClassList(classes);
+			assertTrue(classes.equals(metaData.getSerializedClassList()));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
+	public void test_getAndAddToSerializedClassList() {
+		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
+		try {
+			assertNull(metaData.getSerializedClassList());
+			Class<? extends Serializable>[] testValue1 = new Class[] {TestValue.class};
+			Class<? extends Serializable>[] testValueBoth = new Class[] {TestValue.class, TestValue2.class};
+
+			Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(testValue1);
+			assertArrayEquals(testValue1, afterAdding1);
+
+			Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(testValue1);
+			assertArrayEquals(testValue1, afterAdding1Again);
+
+			Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(testValueBoth);
+			assertArrayEquals(testValueBoth, afterAddingBoth);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	private CollectionMetaData createNewMetaData() {
+		Path tempPath = createTempPath();
+		return new CollectionMetaData(tempPath);
+	}
+
+	private Path createTempPath() {
+		try {
+			Path tempPath = Files.createTempDirectory(this.getClass().getSimpleName());
+			tempPath.toFile().deleteOnExit();
+			return tempPath;
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail();
+			return null; // fail() will prevent this from being called but need it to compile
 		}
 	}
 }

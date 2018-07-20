@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.bluedb.api.Condition;
+import io.bluedb.api.exceptions.BlueDbException;
 
 public class Blutils {
 	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
@@ -42,7 +43,12 @@ public class Blutils {
 		Collections.sort(values, comparator);
 	}
 
-	public static <X, Y> List<Y> map(List<? extends X> values, Function<? super X, ? extends Y> mapper) {
+	@FunctionalInterface
+	public interface CheckedFunction<T, R> {
+	   R apply(T t) throws BlueDbException;
+	}
+	
+	public static <X, Y> List<Y> map(List<? extends X> values, CheckedFunction<? super X, ? extends Y> mapper) throws BlueDbException {
 		List<Y> results = new ArrayList<>();
 		for (X originalValue: values) {
 			Y newValue = mapper.apply(originalValue);

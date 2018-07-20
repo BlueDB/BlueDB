@@ -1,12 +1,13 @@
 package io.bluedb.disk.recovery;
 
 import java.io.File;
+import io.bluedb.api.exceptions.BlueDbException;
 
 public class TimeStampedFile implements Comparable<TimeStampedFile> {
 	private final Long timestamp;
 	private final File file;
 
-	public TimeStampedFile (File file) {
+	public TimeStampedFile (File file) throws BlueDbException {
 		this.file = file;
 		this.timestamp = extractTimestamp(file);
 	}
@@ -24,13 +25,13 @@ public class TimeStampedFile implements Comparable<TimeStampedFile> {
 		return timestamp.compareTo(o.timestamp);
 	}
 
-	public static Long extractTimestamp(File file) {
+	public static Long extractTimestamp(File file) throws BlueDbException {
 		try {
 			String fileName = file.getName();
 			String longString = fileName.split("[.]")[0];
 			return Long.valueOf(longString);
 		} catch (Throwable t) {
-			return null;
+			throw new BlueDbException("failed to parse timestamp in change filename " + file.getName(), t);
 		}
 	}
 }

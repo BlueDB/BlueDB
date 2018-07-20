@@ -46,17 +46,18 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 
-	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> type) {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> type) throws BlueDbException {
 		this.type = type;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
-		serializer = new ThreadLocalFstSerializer(type);
+		metaData = new CollectionMetaData(collectionPath);
+		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(type);
+		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
 		segmentManager = new SegmentManager<T>(this);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
 		rollupScheduler.start();
-		metaData = new CollectionMetaData(collectionPath, fileManager);
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 
