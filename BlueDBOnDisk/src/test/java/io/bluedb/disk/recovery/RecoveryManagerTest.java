@@ -203,6 +203,27 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_recover_pendingInsert_duplicate() {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		try {
+			getCollection().insert(key,  value);
+			PendingChange<TestValue> duplicateInsert = PendingChange.createInsert(key, value, serializer);
+			getRecoveryManager().saveChange(duplicateInsert);
+			List<TestValue> allValues = getCollection().query().getList();
+			assertEquals(1, allValues.size());
+
+			getRecoveryManager().recover();
+			allValues = getCollection().query().getList();
+			assertEquals(1, allValues.size());
+			assertEquals(value, allValues.get(0));
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	@Test
 	public void test_recover_pendingDelete() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
