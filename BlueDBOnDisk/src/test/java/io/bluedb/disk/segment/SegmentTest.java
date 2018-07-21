@@ -348,12 +348,14 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		Segment<TestValue> segment1copy = getSegment(1);
 		Segment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
 		Segment<TestValue> segmentNullPath = Segment.getTestSegment();
+		Segment<TestValue> segmentNullPathCopy = Segment.getTestSegment();
 		assertEquals(segment1, segment1copy);
 		assertFalse(segment1.equals(segmentMax));
 		assertFalse(segment1.equals(null));
 		assertFalse(segmentNullPath.equals(segment1));
 		assertFalse(segment1.equals(segmentNullPath));
 		assertFalse(segment1.equals("this is a String"));
+		assertTrue(segmentNullPath.equals(segmentNullPathCopy));
 	}
 
 	@Test
