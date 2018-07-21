@@ -1,14 +1,16 @@
 package io.bluedb.disk.file;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
@@ -73,6 +75,29 @@ public class BlueObjectInputTest extends TestCase {
 	}
 
 	@Test
+	public void test_hasNext() {
+		TestValue value = new TestValue("Jobodo Monobodo");
+		BlueObjectInput<TestValue> inStream = null;
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.write(value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			inStream = fileManager.getBlueInputStream(readLock);
+			assertTrue(inStream.hasNext());
+			assertTrue(inStream.hasNext());  // just to make sure it works multiple times
+			assertEquals(value, inStream.next());
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+		assertNull(inStream.next());
+	}
+
+	@Test
 	public void test_next() {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		BlueObjectInput<TestValue> inStream = null;
@@ -119,6 +144,33 @@ public class BlueObjectInputTest extends TestCase {
 		}
 	}
 
+
+	@Test
+	public void test_nextFromFile_IOException() {
+		AtomicBoolean readCalled = new AtomicBoolean(false);
+		DataInputStream dataInputStream = createDataInputStreamThatThrowsExceptionOnRead(readCalled);
+		BlueObjectInput<TestValue> inStream = BlueObjectInput.getTestInput(targetFilePath, serializer, dataInputStream);
+		assertFalse(readCalled.get());
+		assertNull(inStream.next());
+		assertTrue(readCalled.get());
+	}
+
+	@Test
+	public void test_close_exception() {
+		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			Path path = readLock.getKey();
+			AtomicBoolean streamClosed = new AtomicBoolean(false);
+			DataInputStream inStream = createDataInputStreamThatThrowsExceptionOnClose(streamClosed);
+			BlueObjectInput<TestValue> mockStream = BlueObjectInput.getTestInput(path, serializer, inStream);
+			mockStream.close();
+			assertTrue(streamClosed.get());  // make sure it actually closed the underlying stream
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail();  // BlueObjectInput should have handled the exception
+		}
+	}
+	
+
 	private File createEmptyFile(String filename) {
 		File file = Paths.get(testingFolderPath.toString(), filename).toFile();
 		try {
@@ -142,5 +194,31 @@ public class BlueObjectInputTest extends TestCase {
 		} else {
 			file.delete();
 		}
+	}
+
+	private static DataInputStream createDataInputStreamThatThrowsExceptionOnRead(AtomicBoolean isRead){
+		InputStream inputStream = new InputStream() {
+			@Override
+			public int read() throws IOException {
+				isRead.set(true);
+				throw new IOException();
+			}
+		};
+		return new DataInputStream(inputStream);
+	}
+
+	private static DataInputStream createDataInputStreamThatThrowsExceptionOnClose(AtomicBoolean isClosed) {
+		InputStream inputStream = new InputStream() {
+			@Override
+			public int read() throws IOException {
+				return 0;
+			}
+			@Override
+			public void close() throws IOException {
+				isClosed.set(true);
+				throw new IOException("fail!");
+			}
+		};
+		return new DataInputStream(inputStream);
 	}
 }
