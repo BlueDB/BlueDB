@@ -11,9 +11,10 @@ import io.bluedb.disk.segment.Range;
 
 public class RollupScheduler implements Runnable {
 
-	private static final long WAIT_BETWEEN_REVIEWS = 30_000; // TODO something more sophisticated than just wait ?
+	private static final long WAIT_BETWEEN_REVIEWS_DEFAULT = 30_000; // TODO something more sophisticated than just wait ?
 	private static final long WAIT_BEFORE_ROLLUP = 3600_000; // TODO something more sophisticated?
 
+	private long waitBetweenReviews = WAIT_BETWEEN_REVIEWS_DEFAULT;
 	private final BlueCollectionOnDisk<?> collection;
 	private final Map<Range, Long> lastInsertTimes;
 	private Thread thread;
@@ -34,7 +35,7 @@ public class RollupScheduler implements Runnable {
 	public void run() {
 		while (!isStopped) {
 			scheduleReadyRollups();
-			isStopped |= !Blutils.trySleep(WAIT_BETWEEN_REVIEWS);
+			isStopped |= !Blutils.trySleep(waitBetweenReviews);
 		}
 	}
 
@@ -70,6 +71,11 @@ public class RollupScheduler implements Runnable {
 			scheduleRollup(timeRange);
 		}
 	}
+
+	public void setWaitBetweenReviews(long newWaitTimeMillis) {
+		waitBetweenReviews = newWaitTimeMillis;
+	}
+
 	protected List<Range> timeRangesReadyForRollup() {
 		List<Range> results = new ArrayList<>();
 		for (Entry<Range, Long> entry: lastInsertTimes.entrySet()) {

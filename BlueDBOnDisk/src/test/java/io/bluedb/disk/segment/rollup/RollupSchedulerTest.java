@@ -97,8 +97,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_run_interruption() {
 		RollupScheduler mockRollupScheduler = new RollupScheduler(getCollection());
+		mockRollupScheduler.setWaitBetweenReviews(0);
 		Range timeRange = new Range(0, 1);
 		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastInsertTime(timeRange));
+
 
 		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
 		rollupSchedulerThread.start();
