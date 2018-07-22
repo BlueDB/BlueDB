@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.Blutils;
@@ -28,17 +29,20 @@ public class RecoveryManager<T extends Serializable> {
 	private final Path pendingFolderPath;
 	private final Path historyFolderPath;
 	private final FileManager fileManager;
+	private final AtomicLong lastRecoverableId;
 	private long lastLogCleanup = 0;
-	
+
 	public RecoveryManager(BlueCollectionOnDisk<T> collection, FileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
 		this.fileManager = fileManager;
 		this.recoveryPath = Paths.get(collection.getPath().toString(), RECOVERY_FOLDER);
 		this.pendingFolderPath = Paths.get(recoveryPath.toString(), PENDING_SUBFOLDER);
 		this.historyFolderPath = Paths.get(recoveryPath.toString(), HISTORY_SUBFOLDER);
+		lastRecoverableId = new AtomicLong(0);
 	}
 
 	public void saveChange(Recoverable<?> change) throws BlueDbException {
+		change.setRecoverableId(getNewRecoverableId());
 		String filename = getFileName(change);
 		Path pendingPath = Paths.get(pendingFolderPath.toString(), filename);
 		Path historyPath = Paths.get(historyFolderPath.toString(), filename);
@@ -108,6 +112,7 @@ public class RecoveryManager<T extends Serializable> {
 			Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
 			changes.add(change);
 		}
+		Collections.sort(changes);
 		return changes;
 	}
 
@@ -118,7 +123,11 @@ public class RecoveryManager<T extends Serializable> {
 		}
 	}
 
+	public long getNewRecoverableId() {
+		return lastRecoverableId.getAndIncrement();
+	}
+
 	public static String getFileName(Recoverable<?> change) {
-		return  String.valueOf(change.getTimeCreated()) + SUFFIX;
+		return  String.valueOf(change.getTimeCreated()) + "." + String.valueOf(change.getRecoverableId()) + SUFFIX;
 	}
 }

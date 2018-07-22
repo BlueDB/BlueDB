@@ -20,6 +20,7 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 	private T oldValue;
 	private T newValue;
 	private long timeCreated;
+	private long recoverableId;
 	
 	private PendingChange(BlueKey key, T oldValue, T newValue) {
 		this.key = key;
@@ -105,5 +106,15 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 	@Override
 	public String toString() {
 		return "<PendingChange for " + key +": " + String.valueOf(oldValue) + "=> " + String.valueOf(newValue) + ">";
+	}
+
+	@Override
+	public long getRecoverableId() {
+		return recoverableId;
+	}
+
+	@Override
+	public void setRecoverableId(long recoverableId) {
+		this.recoverableId = recoverableId;
 	}
 }
