@@ -48,6 +48,9 @@ public class RecoveryManager<T extends Serializable> {
 		Path historyPath = Paths.get(historyFolderPath.toString(), filename);
 		fileManager.saveObject(pendingPath, change);
 		fileManager.saveObject(historyPath, change);
+		if (isTimeForHistoryCleanup()) {
+			cleanupHistory();  // TODO run in a different thread?
+		}
 	}
 
 	public Path getPendingFolderPath() {
@@ -59,9 +62,6 @@ public class RecoveryManager<T extends Serializable> {
 		Path path = Paths.get(pendingFolderPath.toString(), filename);
 		File file = new File(path.toString());
 		file.delete();
-		if (isTimeForHistoryCleanup()) {
-			cleanupHistory();  // TODO run in a different thread?
-		}
 	}
 
 	protected boolean isTimeForHistoryCleanup() {
