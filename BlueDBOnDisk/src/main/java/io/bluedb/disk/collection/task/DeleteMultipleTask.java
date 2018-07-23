@@ -32,7 +32,7 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 		for (PendingChange<T> change: changes) {
 			recoveryManager.saveChange(change);
 			change.apply(collection);
-			recoveryManager.removeChange(change);
+			recoveryManager.markComplete(change);
 		}
 	}
 

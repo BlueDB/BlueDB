@@ -21,6 +21,8 @@ public class RecoveryManager<T extends Serializable> {
 	protected static String PENDING_SUBFOLDER = "changes_pending";
 	protected static String HISTORY_SUBFOLDER = "changes_history";
 	protected static String SUFFIX = ".chg";
+	protected static String SUFFIX_PENDING = ".pending.chg";
+	protected static String SUFFIX_COMPLETE = ".complete.chg";
 	private static long FREQUENCY_OF_COMPLETED_CLEANUP = 10 * 60 * 1000; // ten minutes
 	private static long RETENTION_PERIOD = 60 * 60 * 1000; // one hour
 
@@ -43,7 +45,7 @@ public class RecoveryManager<T extends Serializable> {
 
 	public void saveChange(Recoverable<?> change) throws BlueDbException {
 		change.setRecoverableId(getNewRecoverableId());
-		String filename = getFileName(change);
+		String filename = getPendingFileName(change);
 		Path pendingPath = Paths.get(pendingFolderPath.toString(), filename);
 		Path historyPath = Paths.get(historyFolderPath.toString(), filename);
 		fileManager.saveObject(pendingPath, change);
@@ -57,11 +59,19 @@ public class RecoveryManager<T extends Serializable> {
 		return pendingFolderPath;
 	}
 
-	public void removeChange(Recoverable<?> change) throws BlueDbException {
-		String filename = getFileName(change);
-		Path path = Paths.get(pendingFolderPath.toString(), filename);
-		File file = new File(path.toString());
-		file.delete();
+	public void markComplete(Recoverable<?> change) throws BlueDbException {
+		String pendingFileName = getPendingFileName(change);
+		String completedFileName = getCompletedFileName(change);
+		Path pendingPath = Paths.get(pendingFolderPath.toString(), pendingFileName);
+		Path completedPath = Paths.get(pendingFolderPath.toString(), completedFileName);
+		FileManager.moveWithoutLock(pendingPath, completedPath);
+	}
+
+	public void markChangePending(Path completedPath) throws BlueDbException {
+		String completedPathString = completedPath.toString();
+		String pendingPathString = completedPathString.replaceAll(SUFFIX_COMPLETE, SUFFIX_PENDING);
+		Path pendingPath = Paths.get(pendingPathString);
+		FileManager.moveWithoutLock(completedPath, pendingPath);
 	}
 
 	protected boolean isTimeForHistoryCleanup() {
@@ -105,7 +115,7 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<Recoverable<T>> getPendingChanges() throws BlueDbException {
-		List<File> pendingChangeFiles = FileManager.getFolderContents(pendingFolderPath, SUFFIX);
+		List<File> pendingChangeFiles = FileManager.getFolderContents(pendingFolderPath, SUFFIX_PENDING);
 		List<Recoverable<T>> changes = new ArrayList<>();
 		for (File file: pendingChangeFiles) {
 			@SuppressWarnings("unchecked")
@@ -119,7 +129,7 @@ public class RecoveryManager<T extends Serializable> {
 	public void recover() throws BlueDbException {
 		for (Recoverable<T> change: getPendingChanges()) {
 			change.apply(collection);
-			removeChange(change);
+			markComplete(change);
 		}
 	}
 
@@ -127,7 +137,11 @@ public class RecoveryManager<T extends Serializable> {
 		return lastRecoverableId.getAndIncrement();
 	}
 
-	public static String getFileName(Recoverable<?> change) {
-		return  String.valueOf(change.getTimeCreated()) + "." + String.valueOf(change.getRecoverableId()) + SUFFIX;
+	public static String getCompletedFileName(Recoverable<?> change) {
+		return  String.valueOf(change.getTimeCreated()) + "." + String.valueOf(change.getRecoverableId()) + SUFFIX_COMPLETE;
+	}
+
+	public static String getPendingFileName(Recoverable<?> change) {
+		return  String.valueOf(change.getTimeCreated()) + "." + String.valueOf(change.getRecoverableId()) + SUFFIX_PENDING;
 	}
 }

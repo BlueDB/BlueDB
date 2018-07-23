@@ -22,7 +22,7 @@ public class DeleteTask<T extends Serializable> extends QueryTask {
 		PendingChange<T> change = PendingChange.createDelete(key);
 		recoveryManager.saveChange(change);
 		change.apply(collection);
-		recoveryManager.removeChange(change);
+		recoveryManager.markComplete(change);
 	}
 
 	@Override

@@ -142,7 +142,6 @@ public class Segment <T extends Serializable> {
 				sourceFileWriteLocks.add(lockManager.acquireWriteLock(file.toPath()));
 			}
 
-			// TODO figure out how to recover if we crash here, must be done before any writes
 			FileManager.moveFile(tempRolledupPath, targetFileLock);
 			for (BlueWriteLock<Path> writeLock: sourceFileWriteLocks) {
 				FileManager.deleteFile(writeLock);

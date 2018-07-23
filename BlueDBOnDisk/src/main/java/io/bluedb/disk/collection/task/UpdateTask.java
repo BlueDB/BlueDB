@@ -34,7 +34,7 @@ public class UpdateTask<T extends Serializable> extends QueryTask {
 		}
 		recoveryManager.saveChange(change);
 		change.apply(collection);
-		recoveryManager.removeChange(change);
+		recoveryManager.markComplete(change);
 	}
 
 	@Override

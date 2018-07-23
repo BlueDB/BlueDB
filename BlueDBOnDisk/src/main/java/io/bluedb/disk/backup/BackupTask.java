@@ -70,6 +70,7 @@ public class BackupTask {
 		for (File file: changesToCopy) {
 			Path destinationPath = Paths.get(destinationFolderPath.toString(), file.getName());
 			FileManager.copyFileWithoutLock(file.toPath(), destinationPath);
+			recoveryManager.markChangePending(destinationPath);
 		}
 	}
 

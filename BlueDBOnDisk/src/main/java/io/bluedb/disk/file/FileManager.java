@@ -141,8 +141,9 @@ public class FileManager {
 
 	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
-			dst.toFile().mkdirs();
-			Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+			// TODO test to ensure parent exists
+			dst.toFile().getParentFile().mkdirs();
+			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
@@ -151,6 +152,7 @@ public class FileManager {
 
 	public static void copyFileWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
+			// TODO use atomic move and don't create a directory that has to be replaced anyway
 			dst.toFile().mkdirs();
 			Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
