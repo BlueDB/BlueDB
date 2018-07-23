@@ -107,17 +107,6 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return results;
 	}
 
-	public void writeBytes(Path path, byte[] bytes) {
-		File file = path.toFile();
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			fail();
-		}
-	}
-
 	public static <X> List<X> toList(Iterator<X> iterator) {
 		List<X> results = new ArrayList<>();
 		while (iterator.hasNext()) {

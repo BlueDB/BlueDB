@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-
+import io.bluedb.TestUtils;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.lock.BlueReadLock;
@@ -42,11 +42,14 @@ public class BlueObjectInputTest extends TestCase {
 	}
 
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 		targetFilePath.toFile().delete();
 		tempFilePath.toFile().delete();
-		recursiveDelete(testingFolderPath.toFile());
+		TestUtils.recursiveDelete(targetFilePath.toFile());
+		TestUtils.recursiveDelete(testingFolderPath.toFile());
 	}
+
+
 
 	@Test
 	public void test_close() throws Exception {
@@ -73,38 +76,39 @@ public class BlueObjectInputTest extends TestCase {
 	@Test
 	public void test_hasNext() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
-		BlueObjectInput<TestValue> inStream = null;
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
 			outStream.write(value);
+			outStream.close();
 		}
 
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
-			inStream = fileManager.getBlueInputStream(readLock);
-			assertTrue(inStream.hasNext());
-			assertTrue(inStream.hasNext());  // just to make sure it works multiple times
-			assertEquals(value, inStream.next());
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertTrue(inStream.hasNext());
+				assertTrue(inStream.hasNext());  // just to make sure it works multiple times
+				assertEquals(value, inStream.next());
+				assertNull(inStream.next());
+				inStream.close();
+			}
 		}
-
-		assertNull(inStream.next());
 	}
 
 	@Test
 	public void test_next() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
-		BlueObjectInput<TestValue> inStream = null;
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
 			outStream.write(value);
+			outStream.close();
 		}
 
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
-			inStream = fileManager.getBlueInputStream(readLock);
-			assertEquals(value, inStream.next());
-			inStream = fileManager.getBlueInputStream(readLock);
-			assertEquals(value, inStream.next());
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertEquals(value, inStream.next());
+				assertNull(inStream.next());
+				inStream.close();
+			}
 		}
-		assertNull(inStream.next());
 	}
 
 	@Test
@@ -119,8 +123,10 @@ public class BlueObjectInputTest extends TestCase {
 		}
 
 		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(corruptedFile.toPath())) {
-			BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock);
-			assertNull(inStream.next());
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertNull(inStream.next());
+				inStream.close();
+			}
 		}
 	}
 
@@ -133,6 +139,7 @@ public class BlueObjectInputTest extends TestCase {
 		assertFalse(readCalled.get());
 		assertNull(inStream.next());
 		assertTrue(readCalled.get());
+		inStream.close();
 	}
 
 	@Test
@@ -153,19 +160,6 @@ public class BlueObjectInputTest extends TestCase {
 		file.getParentFile().mkdirs();
 		file.createNewFile();
 		return file;
-	}
-
-	private void recursiveDelete(File file) {
-		if (!file.exists()) {
-			return;
-		} else if (file.isDirectory()) {
-			for (File f: file.listFiles()) {
-				recursiveDelete(f);
-			}
-			file.delete();
-		} else {
-			file.delete();
-		}
 	}
 
 	private static DataInputStream createDataInputStreamThatThrowsExceptionOnRead(AtomicBoolean isRead){

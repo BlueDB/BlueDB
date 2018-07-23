@@ -521,6 +521,7 @@ public class FileManagerTest extends TestCase {
 		Path tempFolderPath = Files.createTempDirectory(tempFolderName);
 		File tempFolder = tempFolderPath.toFile();
 		tempFolder.deleteOnExit();
+		filesToDelete.add(tempFolder);
 		return tempFolder;
 	}
 }
