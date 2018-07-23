@@ -1,10 +1,15 @@
 package io.bluedb.disk.file;
 
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.Test;
 
 import io.bluedb.api.exceptions.BlueDbException;
@@ -43,6 +48,21 @@ public class BlueObjectOutputTest extends TestCase {
 	}
 
 	
+	
+	@Test
+	public void test_close_exception() {
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			Path path = writeLock.getKey();
+			AtomicBoolean dataOutputClosed = new AtomicBoolean(false);
+			DataOutputStream outStream = createDataOutputStreamThatThrowsExceptionOnClose(path.toFile(), dataOutputClosed);
+			BlueObjectOutput<TestValue> mockStream = BlueObjectOutput.getTestOutput(path, serializer, outStream);
+			mockStream.close();
+			assertTrue(dataOutputClosed.get());  // make sure it actually closed the underlying stream
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();  // BlueObjectOutput should have handled the exception
+		}
+	}
 	
 	@Test
 	public void test_close() {
@@ -160,6 +180,22 @@ public class BlueObjectOutputTest extends TestCase {
 			file.delete();
 		} else {
 			file.delete();
+		}
+	}
+
+	private static DataOutputStream createDataOutputStreamThatThrowsExceptionOnClose(File file, AtomicBoolean dataOutputClosed) throws BlueDbException {
+		try {
+			return new DataOutputStream(new FileOutputStream(file) {
+				@Override
+				public void close() throws IOException {
+					super.close();
+					dataOutputClosed.set(true);
+					throw new IOException("fail!");
+				}
+			});
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			throw new BlueDbException("cannot open write to file " + file.toPath(), e);
 		}
 	}
 }

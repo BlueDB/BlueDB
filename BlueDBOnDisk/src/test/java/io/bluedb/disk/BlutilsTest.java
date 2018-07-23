@@ -50,6 +50,15 @@ public class BlutilsTest {
 	}
 
 	@Test
+	public void test_lastIndex() {
+		List<Long> values = Arrays.asList(7L, 5L, 1000L, 1L);
+		assertEquals(3, Blutils.lastIndex(values, (l) -> (l < 10) ));
+		assertEquals(2, Blutils.lastIndex(values, (l) -> (l > 1) ));
+		assertEquals(3, Blutils.lastIndex(values, (l) -> (l > 0) ));
+		assertEquals(-1, Blutils.lastIndex(values, (l) -> (l > 1000) ));
+	}
+
+	@Test
 	public void test_map() throws Exception {
 		List<String> originalValues = Arrays.asList("7", "5", "1000");
 		List<Long> expectedResults = Arrays.asList(7L, 5L, 1000L);

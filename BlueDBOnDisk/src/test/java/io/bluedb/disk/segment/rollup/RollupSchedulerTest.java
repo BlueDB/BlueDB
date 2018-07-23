@@ -38,7 +38,6 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	public void test_timeRangesReadyForRollup() {
 		Range timeRange0to1 = new Range(0, 1);
 		Range timeRange2to3 = new Range(2, 3);
-		Range timeRange4to5 = new Range(4, 5);
 		getRollupScheduler().reportInsert(timeRange0to1, 0);
 		getRollupScheduler().reportInsert(timeRange2to3, 0);
 		getRollupScheduler().reportInsert(timeRange2to3, System.currentTimeMillis());
@@ -97,8 +96,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_run_interruption() {
 		RollupScheduler mockRollupScheduler = new RollupScheduler(getCollection());
+		mockRollupScheduler.setWaitBetweenReviews(0);
 		Range timeRange = new Range(0, 1);
 		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastInsertTime(timeRange));
+
 
 		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
 		rollupSchedulerThread.start();

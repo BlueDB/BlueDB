@@ -56,7 +56,7 @@ public class BackupTask {
 			try (BlueReadLock<Path> lock = segment.getReadLockFor(groupingNumber)) {
 				Path src = lock.getKey();
 				Path dst = translatePath(src);
-				FileManager.copyFileWithoutLock(src, dst);  // TODO use copy with lock?
+				FileManager.copyFileWithoutLock(src, dst);  // already have read lock on src, shouldn't need write lock on dst
 			}
 		}
 	}
@@ -70,6 +70,7 @@ public class BackupTask {
 		for (File file: changesToCopy) {
 			Path destinationPath = Paths.get(destinationFolderPath.toString(), file.getName());
 			FileManager.copyFileWithoutLock(file.toPath(), destinationPath);
+			recoveryManager.markChangePending(destinationPath);
 		}
 	}
 

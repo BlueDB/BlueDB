@@ -28,12 +28,12 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getFileName() {
+	public void test_getPendingFileName() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
-		String fileName1 = RecoveryManager.getFileName(change);
+		String fileName1 = RecoveryManager.getPendingFileName(change);
 		try {
 			Thread.sleep(1);
 		} catch (InterruptedException e) {
@@ -41,8 +41,23 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 			fail();
 		}
 		PendingChange<TestValue> change2 = PendingChange.createInsert(key, value, serializer);
-		String fileName2 = RecoveryManager.getFileName(change2);
+		String fileName2 = RecoveryManager.getPendingFileName(change2);
 		assertTrue(fileName1.compareTo(fileName2) < 0);
+	}
+
+	@Test
+	public void test_getCompletedFileName() throws Exception {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
+		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
+		String pendingFileName = RecoveryManager.getPendingFileName(change);
+		String completedFileName = RecoveryManager.getCompletedFileName(change);
+		File pendingFile = Paths.get(pendingFileName).toFile();
+		File completedFile = Paths.get(completedFileName).toFile();
+		TimeStampedFile pendingTimeStampedFile = new TimeStampedFile(pendingFile);
+		TimeStampedFile completedTimeStampedFile = new TimeStampedFile(completedFile);
+		assertEquals(0, pendingTimeStampedFile.compareTo(completedTimeStampedFile));
 	}
 
 	@Test
@@ -65,7 +80,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_removeChange() {
+	public void test_markComplete() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		Recoverable<TestValue> change = PendingChange.createInsert(key, value, serializer);
@@ -73,7 +88,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 			getRecoveryManager().saveChange(change);
 			List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 			assertEquals(1, changes.size());
-			getRecoveryManager().removeChange(change);
+			getRecoveryManager().markComplete(change);
 			changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
 		} catch (BlueDbException e) {
@@ -93,7 +108,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 			getRecoveryManager().saveChange(change);
 			changes = getRecoveryManager().getPendingChanges();
 			assertEquals(1, changes.size());
-			getRecoveryManager().removeChange(change);
+			getRecoveryManager().markComplete(change);
 			changes = getRecoveryManager().getPendingChanges();
 			assertEquals(0, changes.size());
 		} catch (BlueDbException e) {
@@ -125,6 +140,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
 		assertEquals(oneHundredMinutesAgo, change100.getTimeCreated());
 		try {
+			getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
 			List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 			getRecoveryManager().saveChange(change30);
 			getRecoveryManager().saveChange(change60);
@@ -156,6 +172,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
 		try {
+			getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
 			List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 			getRecoveryManager().saveChange(change30);
 			getRecoveryManager().saveChange(change60);

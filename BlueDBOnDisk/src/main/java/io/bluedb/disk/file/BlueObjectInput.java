@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.lock.BlueReadLock;
+import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class BlueObjectInput<T> implements Closeable, Iterator<T> {
@@ -31,6 +32,18 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		} else {
 			dataInputStream = null;
 		}
+	}
+
+	protected static <T> BlueObjectInput<T> getTestInput(Path path, BlueSerializer serializer, DataInputStream dataInputStream) {
+		return new BlueObjectInput<T>(path, serializer, dataInputStream);
+	}
+
+	private BlueObjectInput(Path path, BlueSerializer serializer, DataInputStream dataInputStream) {
+		LockManager<Path> lockManager = new LockManager<Path>();
+		readLock = lockManager.acquireReadLock(path);
+		this.serializer = serializer;
+		this.path = null;
+		this.dataInputStream = dataInputStream;
 	}
 
 	public Path getPath() {

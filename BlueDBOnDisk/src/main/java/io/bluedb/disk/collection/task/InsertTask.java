@@ -31,7 +31,7 @@ public class InsertTask<T extends Serializable> extends QueryTask {
 		PendingChange<T> change = PendingChange.createInsert(key, value, serializer);
 		recoveryManager.saveChange(change);
 		change.apply(collection);
-		recoveryManager.removeChange(change);
+		recoveryManager.markComplete(change);
 	}
 
 	@Override

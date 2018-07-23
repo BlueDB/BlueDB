@@ -13,6 +13,7 @@ public class PendingRollup<T extends Serializable> implements Serializable, Reco
 	long timeCreated;
 	long min;
 	long max;
+	long recoverableId;
 	
 	public PendingRollup(long min, long max) {
 		timeCreated = System.currentTimeMillis();
@@ -33,5 +34,15 @@ public class PendingRollup<T extends Serializable> implements Serializable, Reco
 	@Override
 	public long getTimeCreated() {
 		return timeCreated;
+	}
+
+	@Override
+	public long getRecoverableId() {
+		return recoverableId;
+	}
+
+	@Override
+	public void setRecoverableId(long recoverableId) {
+		this.recoverableId = recoverableId;
 	}
 }

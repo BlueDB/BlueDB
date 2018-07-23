@@ -165,6 +165,33 @@ public class FileManagerTest extends TestCase {
 	}
 
 	@Test
+	public void test_getReadLockIfFileExists() throws Exception {
+		File testFolder = createTempFolder("test_getReadLockIfFileExists");
+		filesToDelete.add(testFolder);
+		Path nonExisting = Paths.get(testFolder.toString(), "non existing");
+		Path existing = Paths.get(testFolder.toString(), "existing");
+		existing.toFile().createNewFile();
+		BlueReadLock<Path> nonExistingLock = fileManager.getReadLockIfFileExists(nonExisting);
+		BlueReadLock<Path> existingLock = fileManager.getReadLockIfFileExists(existing);
+		assertNull(nonExistingLock);
+		assertNotNull(existingLock);
+		existingLock.release();
+		
+		FileManager mockFileManager = new FileManager(null) {
+			@Override
+			public boolean exists(Path path) {
+				throw new RuntimeException();
+			}
+		};
+		try {
+			BlueReadLock<Path> failedLockOnExistingFile = mockFileManager.getReadLockIfFileExists(existing);
+			fail();
+		} catch(BlueDbException expectedException) {
+		}
+		assertFalse(mockFileManager.getLockManager().isLocked(existing));
+	}
+
+	@Test
 	public void test_getFolderContents_suffix() {
 		String suffix = ".foo";
 		File nonExistant = new File("forever_or_never_whatever");

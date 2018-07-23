@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -20,7 +19,6 @@ import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.SegmentManager;
-import io.bluedb.zip.ZipUtils;
 
 public class BackupTaskTest extends BlueDbDiskTestBase {
 
@@ -82,7 +80,6 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 		}
 	}
 
-	// TODO if we have more than one change pending, only the last one is grabbed
 	@Test
 	public void test_backup_rollup_pending() {
 		try {

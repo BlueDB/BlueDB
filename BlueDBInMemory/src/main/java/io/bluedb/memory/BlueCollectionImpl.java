@@ -39,10 +39,8 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 		return data.containsKey(key);
 	}
 
-	// TODO discuss don't delay inserts on deletes and updates ?
 	@Override
 	public void insert(BlueKey key, T object) throws BlueDbException {
-		// TODO lock on update, insert or delete
 		if (data.containsKey(key)) {
 			throw new DuplicateKeyException("key already exists: " + key, key);
 		}
@@ -60,7 +58,6 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
-		// TODO lock on update, insert or delete
 		byte[] bytes = data.get(key);
 		if (bytes != null) {
 			T object = deserialize(bytes);
@@ -96,7 +93,6 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 	public void deleteAll(long minTime, long maxTime, List<Condition<T>> objectConditions) throws BlueDbException {
 		List<BlueKey> matches = findMatches(minTime, maxTime, objectConditions);
 		for (BlueKey key: matches) {
-			// TODO lock on update, insert or delete
 			data.remove(key);
 		}
 	}
@@ -104,7 +100,6 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 	public void updateAll(long minTime, long maxTime, List<Condition<T>> objectConditions, Updater<T> updater) throws BlueDbException {
 		List<BlueKey> matches = findMatches(minTime, maxTime, objectConditions);
 		for (BlueKey key: matches) {
-			// TODO lock on update, insert or delete
 			byte[] bytes = data.get(key);
 			T obj = deserialize(bytes);
 			updater.update(obj);

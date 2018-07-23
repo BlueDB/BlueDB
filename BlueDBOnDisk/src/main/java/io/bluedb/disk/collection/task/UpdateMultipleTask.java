@@ -44,7 +44,7 @@ public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 		for (PendingChange<T> update: updates) {
 			recoveryManager.saveChange(update);
 			update.apply(collection);
-			recoveryManager.removeChange(update);
+			recoveryManager.markComplete(update);
 		}
 	}
 

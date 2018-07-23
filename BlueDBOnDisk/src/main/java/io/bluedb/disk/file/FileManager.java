@@ -71,6 +71,24 @@ public class FileManager {
 		return new BlueObjectInput<T>(readLock, serializer);
 	}
 
+	public BlueReadLock<Path> getReadLockIfFileExists(Path path) throws BlueDbException {
+		BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
+		try {
+			if (exists(path)) {
+				return lock;
+			}
+		} catch (Throwable t) { // make damn sure we don't hold onto the lock
+			lock.release();
+			throw new BlueDbException("Error attempting to acquire read lock", t);
+		}
+		lock.release();
+		return null;
+	}
+
+	public boolean exists(Path path) {
+		return path.toFile().exists();
+	}
+
 	public LockManager<Path> getLockManager() {
 		return lockManager;
 	}
@@ -141,8 +159,8 @@ public class FileManager {
 
 	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
-			dst.toFile().mkdirs();
-			Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+			ensureDirectoryExists(dst.toFile());
+			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
@@ -151,8 +169,8 @@ public class FileManager {
 
 	public static void copyFileWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
-			dst.toFile().mkdirs();
-			Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+			ensureDirectoryExists(dst.toFile());
+			Files.copy(src, dst, StandardCopyOption.COPY_ATTRIBUTES);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("Can't copy '" + src + "' to '" + dst + "'.", e);
