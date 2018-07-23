@@ -67,6 +67,17 @@ public class Blutils {
 		return results;
 	}
 
+	public static <X> int lastIndex(List<X> values, Predicate<X> condition) {
+		int result = -1;
+		for (int i = 0; i < values.size(); i++) {
+			X value = values.get(i);
+			if (condition.test(value)) {
+				result = i;
+			}
+		}
+		return result;
+	}
+
 	public static boolean trySleep(long timeMillis) {
 		try {
 			Thread.sleep(timeMillis);
