@@ -1,9 +1,7 @@
 package io.bluedb.disk.collection;
 
 import static org.junit.Assert.assertArrayEquals;
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -124,19 +122,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	}
 
 	private CollectionMetaData createNewMetaData() {
-		Path tempPath = createTempPath();
+		Path tempPath = createTempFolder().toPath();
 		return new CollectionMetaData(tempPath);
-	}
-
-	private Path createTempPath() {
-		try {
-			Path tempPath = Files.createTempDirectory(this.getClass().getSimpleName());
-			tempPath.toFile().deleteOnExit();
-			return tempPath;
-		} catch (IOException e) {
-			e.printStackTrace();
-			fail();
-			return null; // fail() will prevent this from being called but need it to compile
-		}
 	}
 }
