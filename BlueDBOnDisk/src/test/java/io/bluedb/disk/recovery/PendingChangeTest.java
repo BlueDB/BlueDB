@@ -53,43 +53,37 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_applyChange_insert() {
+	public void test_applyChange_insert() throws Exception {
 		BlueKey key = createKey(1, 2);
 		removeKey(key);
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, getSerializer());
-		try {
-			assertNull(getCollection().get(key));
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
-			change.applyChange(segment);
-			assertEquals(value, getCollection().get(key));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		assertNull(getCollection().get(key));
+		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
+		change.applyChange(segment);
+		assertEquals(value, getCollection().get(key));
+
 		removeKey(key);
 	}
 
 	@Test
-	public void test_applyChange_delete() {
+	public void test_applyChange_delete() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		insert(key, value);
 		PendingChange<TestValue> change = PendingChange.createDelete(key);
-		try {
-			assertEquals(value, getCollection().get(key));
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
-			change.applyChange(segment);
-			assertNull(getCollection().get(key));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		assertEquals(value, getCollection().get(key));
+		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
+		change.applyChange(segment);
+		assertNull(getCollection().get(key));
+
 		removeKey(key);
 	}
 
 	@Test
-	public void test_applyChange_update() {
+	public void test_applyChange_update() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		insert(key, value);
@@ -97,15 +91,12 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		TestValue newValue = getSerializer().clone(value);
 		updater.update(newValue);
 		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, updater, getSerializer());
-		try {
-			assertEquals(value, getCollection().get(key));
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
-			change.applyChange(segment);
-			assertEquals(newValue, getCollection().get(key));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		assertEquals(value, getCollection().get(key));
+		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
+		change.applyChange(segment);
+		assertEquals(newValue, getCollection().get(key));
+
 		removeKey(key);
 	}
 

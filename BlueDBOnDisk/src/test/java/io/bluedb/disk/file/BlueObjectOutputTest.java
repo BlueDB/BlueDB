@@ -50,32 +50,25 @@ public class BlueObjectOutputTest extends TestCase {
 	
 	
 	@Test
-	public void test_close_exception() {
+	public void test_close_exception() throws Exception {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			Path path = writeLock.getKey();
 			AtomicBoolean dataOutputClosed = new AtomicBoolean(false);
 			DataOutputStream outStream = createDataOutputStreamThatThrowsExceptionOnClose(path.toFile(), dataOutputClosed);
 			BlueObjectOutput<TestValue> mockStream = BlueObjectOutput.getTestOutput(path, serializer, outStream);
-			mockStream.close();
+			mockStream.close(); // BlueObjectOutput should handle the exception
 			assertTrue(dataOutputClosed.get());  // make sure it actually closed the underlying stream
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();  // BlueObjectOutput should have handled the exception
 		}
 	}
 	
 	@Test
-	public void test_close() {
+	public void test_close() throws Exception {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			BlueObjectOutput<TestValue> stream = fileManager.getBlueOutputStream(writeLock);
 			stream.close();
 			stream.close();  // make sure it doesn't throw an exception if you close it twice
 			assertTrue(targetFilePath.toFile().exists());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
 		}
-
 	}
 
 	@Test
@@ -85,31 +78,22 @@ public class BlueObjectOutputTest extends TestCase {
 			BlueObjectOutput.openDataOutputStream(missingFile);
 			fail();
 		}  catch (BlueDbException e) {
-			e.printStackTrace();
-		} catch(Throwable t) {
-			
 		}
 	}
 
 
 	@Test
-	public void test_write() {
+	public void test_write() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
 			outStream.write(value);
 			outStream.close();
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
 		}
 
 		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock);
 			assertEquals(value, inStream.next());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
 		}
 
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
@@ -129,7 +113,7 @@ public class BlueObjectOutputTest extends TestCase {
 	}
 
 	@Test
-	public void test_copyObjects() {
+	public void test_copyObjects() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		Path srcPath = targetFilePath;
 		Path dstPath = tempFilePath;
@@ -138,9 +122,6 @@ public class BlueObjectOutputTest extends TestCase {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(srcPath)) {
 			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
 			outStream.write(value);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
 		}
 
 		// copy
@@ -152,9 +133,6 @@ public class BlueObjectOutputTest extends TestCase {
 					}
 				}
 			}
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
 		}
 
 		// confirm that it worked
@@ -162,9 +140,6 @@ public class BlueObjectOutputTest extends TestCase {
 			try (BlueObjectInput<TestValue> input = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(value, input.next());
 			}
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
 		}
 	}
 
