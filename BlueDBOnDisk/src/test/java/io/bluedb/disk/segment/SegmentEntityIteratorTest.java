@@ -256,9 +256,4 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 		assertEquals(0, entitiesFromBrokenSegment.size());
 	}
-
-	@Test
-	public void test_filesToRanges() {
-		// TODO
-	}
 }
