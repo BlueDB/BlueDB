@@ -11,7 +11,7 @@ import io.bluedb.disk.segment.Range;
 
 public class RollupScheduler implements Runnable {
 
-	private static final long WAIT_BETWEEN_REVIEWS_DEFAULT = 30_000; // TODO something more sophisticated than just wait ?
+	private static final long WAIT_BETWEEN_REVIEWS_DEFAULT = 30_000;
 	private static final long WAIT_BEFORE_ROLLUP = 3600_000; // TODO something more sophisticated?
 
 	private long waitBetweenReviews = WAIT_BETWEEN_REVIEWS_DEFAULT;
