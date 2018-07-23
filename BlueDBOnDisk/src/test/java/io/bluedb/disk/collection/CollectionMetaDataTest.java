@@ -25,137 +25,102 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getMaxLong() {
-		try {
-			assertNull(metaData.getMaxLong());
-			metaData.updateMaxLong(1);
-			assertEquals(1, 1L);
-			metaData.updateMaxLong(3);
-			assertEquals(3, metaData.getMaxLong().longValue());
-			metaData.updateMaxLong(2);
-			assertEquals(3, metaData.getMaxLong().longValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+	public void test_getMaxLong() throws Exception {
+		assertNull(metaData.getMaxLong());
+		metaData.updateMaxLong(1);
+		assertEquals(1, 1L);
+		metaData.updateMaxLong(3);
+		assertEquals(3, metaData.getMaxLong().longValue());
+		metaData.updateMaxLong(2);
+		assertEquals(3, metaData.getMaxLong().longValue());
 	}
 
 	@Test
-	public void test_getMaxInteger() {
-		try {
-			assertNull(metaData.getMaxInteger());
-			metaData.updateMaxInteger(1);
-			assertEquals(1, 1L);
-			metaData.updateMaxInteger(3);
-			assertEquals(3, metaData.getMaxInteger().longValue());
-			metaData.updateMaxInteger(2);
-			assertEquals(3, metaData.getMaxInteger().longValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+	public void test_getMaxInteger() throws Exception {
+		assertNull(metaData.getMaxInteger());
+		metaData.updateMaxInteger(1);
+		assertEquals(1, 1L);
+		metaData.updateMaxInteger(3);
+		assertEquals(3, metaData.getMaxInteger().longValue());
+		metaData.updateMaxInteger(2);
+		assertEquals(3, metaData.getMaxInteger().longValue());
 	}
 
 	@Test
-	public void test_updateMaxLong() {
-		try {
-			assertNull(metaData.getMaxLong());
-			metaData.updateMaxLong(1);
-			assertEquals(1, 1L);
-			metaData.updateMaxLong(3);
-			assertEquals(3, metaData.getMaxLong().longValue());
-			metaData.updateMaxLong(2);
-			assertEquals(3, metaData.getMaxLong().longValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+	public void test_updateMaxLong() throws Exception {
+		assertNull(metaData.getMaxLong());
+		metaData.updateMaxLong(1);
+		assertEquals(1, 1L);
+		metaData.updateMaxLong(3);
+		assertEquals(3, metaData.getMaxLong().longValue());
+		metaData.updateMaxLong(2);
+		assertEquals(3, metaData.getMaxLong().longValue());
 	}
 
 	@Test
-	public void test_updateMaxInteger() {
-		try {
-			assertNull(metaData.getMaxInteger());
-			metaData.updateMaxInteger(1);
-			assertEquals(1, 1L);
-			metaData.updateMaxInteger(3);
-			assertEquals(3, metaData.getMaxInteger().longValue());
-			metaData.updateMaxInteger(2);
-			assertEquals(3, metaData.getMaxInteger().longValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+	public void test_updateMaxInteger() throws Exception {
+		assertNull(metaData.getMaxInteger());
+		metaData.updateMaxInteger(1);
+		assertEquals(1, 1L);
+		metaData.updateMaxInteger(3);
+		assertEquals(3, metaData.getMaxInteger().longValue());
+		metaData.updateMaxInteger(2);
+		assertEquals(3, metaData.getMaxInteger().longValue());
 	}
 
 	@Test
-	public void test_getSerializedClassList() {
+	public void test_getSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
-		try {
-			assertNull(metaData.getSerializedClassList());
-			List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
-			metaData.updateSerializedClassList(classes);
-			assertEquals(classes, metaData.getSerializedClassList());
-			classes = Arrays.asList(TestValue.class, TestValue2.class);
-			assertFalse(classes.equals(metaData.getSerializedClassList())); // we haven't synced them yet
-			metaData.updateSerializedClassList(classes);
-			assertTrue(classes.equals(metaData.getSerializedClassList()));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		assertNull(metaData.getSerializedClassList());
+		List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
+		metaData.updateSerializedClassList(classes);
+		assertEquals(classes, metaData.getSerializedClassList());
+		classes = Arrays.asList(TestValue.class, TestValue2.class);
+		assertFalse(classes.equals(metaData.getSerializedClassList())); // we haven't synced them yet
+		metaData.updateSerializedClassList(classes);
+		assertTrue(classes.equals(metaData.getSerializedClassList()));
 	}
 
 	@Test
-	public void test_getSerializedClassList_exception() {
+	public void test_getSerializedClassList_exception() throws Exception {
+		Path serializedClassesPath = Paths.get(metaData.getPath().toString(), "serialized_classes");
+		getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 		try {
-			Path serializedClassesPath = Paths.get(metaData.getPath().toString(), "serialized_classes");
-			getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 			metaData.getSerializedClassList();  // now this should fail with BlueDbException
 			fail();
 		} catch (BlueDbException e) {
-			e.printStackTrace();
 		}
 	}
 
 	@Test
-	public void test_updateSerializedClassList() {
+	public void test_updateSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
-		try {
-			assertNull(metaData.getSerializedClassList());
-			List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
-			metaData.updateSerializedClassList(classes);
-			assertEquals(classes, metaData.getSerializedClassList());
-			classes = Arrays.asList(TestValue.class, TestValue2.class);
-			assertFalse(classes.equals(metaData.getSerializedClassList())); // we haven't synced them yet
-			metaData.updateSerializedClassList(classes);
-			assertTrue(classes.equals(metaData.getSerializedClassList()));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		assertNull(metaData.getSerializedClassList());
+		List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
+		metaData.updateSerializedClassList(classes);
+		assertEquals(classes, metaData.getSerializedClassList());
+		classes = Arrays.asList(TestValue.class, TestValue2.class);
+		assertFalse(classes.equals(metaData.getSerializedClassList())); // we haven't synced them yet
+		metaData.updateSerializedClassList(classes);
+		assertTrue(classes.equals(metaData.getSerializedClassList()));
 	}
 
 	@Test
-	public void test_getAndAddToSerializedClassList() {
+	public void test_getAndAddToSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
-		try {
-			assertNull(metaData.getSerializedClassList());
-			Class<? extends Serializable>[] testValue1 = new Class[] {TestValue.class};
-			Class<? extends Serializable>[] testValueBoth = new Class[] {TestValue.class, TestValue2.class};
 
-			Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(testValue1);
-			assertArrayEquals(testValue1, afterAdding1);
+		assertNull(metaData.getSerializedClassList());
+		Class<? extends Serializable>[] testValue1 = new Class[] {TestValue.class};
+		Class<? extends Serializable>[] testValueBoth = new Class[] {TestValue.class, TestValue2.class};
 
-			Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(testValue1);
-			assertArrayEquals(testValue1, afterAdding1Again);
+		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(testValue1);
+		assertArrayEquals(testValue1, afterAdding1);
 
-			Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(testValueBoth);
-			assertArrayEquals(testValueBoth, afterAddingBoth);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(testValue1);
+		assertArrayEquals(testValue1, afterAdding1Again);
+
+		Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(testValueBoth);
+		assertArrayEquals(testValueBoth, afterAddingBoth);
 	}
 
 	private CollectionMetaData createNewMetaData() {
