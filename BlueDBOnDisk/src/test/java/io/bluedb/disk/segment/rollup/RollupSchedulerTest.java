@@ -53,7 +53,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_scheduleReadyRollups() {
+	public void test_scheduleReadyRollups() throws Exception {
 		List<Range> rollupsRequested = new ArrayList<>();
 		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
@@ -68,7 +68,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_run() {
+	public void test_run() throws Exception {
 		List<Range> rollupsRequested = new ArrayList<>();
 		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
@@ -110,18 +110,12 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		assertFalse(mockRollupScheduler.isRunning());
 	}
 
-	private BlueCollectionOnDisk<TestValue> createMockCollection(List<Range> rollupsRequested) {
-		try {
-			return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
-				@Override
-				public void scheduleRollup(Range t) {
-					rollupsRequested.add(t);
-				}
-			};
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-			return null;  // won't ever be called, but needed to avoid compile error
-		}
+	private BlueCollectionOnDisk<TestValue> createMockCollection(List<Range> rollupsRequested) throws Exception {
+		return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
+			@Override
+			public void scheduleRollup(Range t) {
+				rollupsRequested.add(t);
+			}
+		};
 	}
 }
