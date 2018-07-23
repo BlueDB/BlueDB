@@ -153,8 +153,8 @@ public class FileManager {
 	public static void copyFileWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
 			// TODO use atomic move and don't create a directory that has to be replaced anyway
-			dst.toFile().mkdirs();
-			Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+			dst.toFile().getParentFile().mkdirs();
+			Files.copy(src, dst, StandardCopyOption.COPY_ATTRIBUTES);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("Can't copy '" + src + "' to '" + dst + "'.", e);
