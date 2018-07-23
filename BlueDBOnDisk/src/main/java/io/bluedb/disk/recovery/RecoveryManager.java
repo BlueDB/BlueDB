@@ -96,20 +96,10 @@ public class RecoveryManager<T extends Serializable> {
 		}
 		List<TimeStampedFile> timestampedFiles = Blutils.map(files, (f) -> new TimeStampedFile(f) );
 		Collections.sort(timestampedFiles);
-
-		int firstChangeToKeep = 0;
-		int lastChangeToKeep = -1;
-		
-		for (int i=0; i<files.size(); i++) {
-			TimeStampedFile timeStampedFile = timestampedFiles.get(i);
-			if (timeStampedFile.getTimestamp() < backupStartTime) {
-				firstChangeToKeep = i;
-			}
-			if (timeStampedFile.getTimestamp() <= backupEndTime) {
-				lastChangeToKeep = i;
-			}
-		}
-		
+		// Note: the last change before backup might by incomplete so we'll include it
+		int lastChangeBeforeBackup = Blutils.lastIndex(timestampedFiles, (t) -> t.getTimestamp() < backupStartTime );
+		int firstChangeToKeep = Math.max(0,  lastChangeBeforeBackup);
+		int lastChangeToKeep = Blutils.lastIndex(timestampedFiles, (t) -> t.getTimestamp() <= backupEndTime );
 		List<TimeStampedFile> relevantTimeStampedFiles = timestampedFiles.subList(firstChangeToKeep, lastChangeToKeep + 1);
 		return Blutils.map(relevantTimeStampedFiles, (tsf) -> tsf.getFile() );
 	}
