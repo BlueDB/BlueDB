@@ -71,6 +71,24 @@ public class FileManager {
 		return new BlueObjectInput<T>(readLock, serializer);
 	}
 
+	public BlueReadLock<Path> getReadLockIfFileExists(Path path) throws BlueDbException {
+		BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
+		try {
+			if (exists(path)) {
+				return lock;
+			}
+		} catch (Throwable t) { // make damn sure we don't hold onto the lock
+			lock.release();
+			throw new BlueDbException("Error attempting to acquire read lock", t);
+		}
+		lock.release();
+		return null;
+	}
+
+	public boolean exists(Path path) {
+		return path.toFile().exists();
+	}
+
 	public LockManager<Path> getLockManager() {
 		return lockManager;
 	}
