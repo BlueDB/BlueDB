@@ -11,12 +11,7 @@ public class BlueDbOnDiskBuilder {
 		this.path = path;
 		return this;
 	}
-	
-	public BlueDbOnDiskBuilder setRegisteredClasses(Class<?>...registeredClasses) {
-		this.registeredClasses = registeredClasses;
-		return this;
-	}
-	
+
 	public BlueDbOnDisk build() {
 		return new BlueDbOnDisk(path, registeredClasses);
 	}
