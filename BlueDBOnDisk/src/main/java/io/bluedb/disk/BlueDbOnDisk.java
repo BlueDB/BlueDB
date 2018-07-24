@@ -46,9 +46,14 @@ public class BlueDbOnDisk implements BlueDb {
 
 	@Override
 	public void backup(Path zipPath) throws BlueDbException {
-		BackupTask backupTask = new BackupTask(this, zipPath);
-		List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
-		backupTask.backup(collectionsToBackup);
+		try {
+			BackupTask backupTask = new BackupTask(this, zipPath);
+			List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
+			backupTask.backup(collectionsToBackup);
+		} catch (IOException | BlueDbException e) {
+			e.printStackTrace();
+			throw new BlueDbException("BlueDB backup failed", e);
+		}
 	}
 
 	@Override

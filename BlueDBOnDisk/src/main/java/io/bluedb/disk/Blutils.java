@@ -1,5 +1,6 @@
 package io.bluedb.disk;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,6 +85,17 @@ public class Blutils {
 			return true;
 		} catch (InterruptedException e) {
 			return false;
+		}
+	}
+
+	public static void recursiveDelete(File file) {
+		if (file.isDirectory()) {
+			for (File f: file.listFiles()) {
+				recursiveDelete(f);
+			}
+			file.delete();
+		} else {
+			file.delete();
 		}
 	}
 }

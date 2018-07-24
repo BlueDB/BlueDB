@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbOnDisk;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.BlueReadLock;
@@ -26,18 +27,13 @@ public class BackupTask {
 		this.backupPath = backupPath;
 	}
 
-	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException {
-		try {
-			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
-			tempDirectoryPath.toFile().deleteOnExit();
-			Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
-			backupToTempDirectory(collectionsToBackup, unzippedBackupPath);
-			ZipUtils.zipFile(unzippedBackupPath, backupPath);
-			tempDirectoryPath.toFile().delete();
-		} catch (IOException | BlueDbException e) {
-			e.printStackTrace();
-			throw new BlueDbException("BlueDB backup failed", e);
-		}
+	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException, IOException {
+		Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
+		tempDirectoryPath.toFile().deleteOnExit();
+		Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
+		backupToTempDirectory(collectionsToBackup, unzippedBackupPath);
+		ZipUtils.zipFile(unzippedBackupPath, backupPath);
+		Blutils.recursiveDelete(tempDirectoryPath.toFile());
 	}
 
 	public void backupToTempDirectory(List<BlueCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {
