@@ -14,6 +14,7 @@ import org.junit.Test;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
@@ -146,7 +147,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		// test max integer
 		try {
 			assertNull(getCollection().getMaxIntegerId());
-			BlueKey timeKeyWithInt5 = new TimeKey(5, 4);
+			BlueKey timeKeyWithInt5 = new TimeKey(new IntegerKey(5), 4);
 			getCollection().insert(timeKeyWithInt5, value);
 			assertNotNull(getCollection().getMaxIntegerId());
 			assertEquals(5, getCollection().getMaxIntegerId().intValue());

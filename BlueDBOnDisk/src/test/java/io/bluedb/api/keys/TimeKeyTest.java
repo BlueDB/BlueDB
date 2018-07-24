@@ -126,7 +126,7 @@ public class TimeKeyTest extends TestCase {
 	@Test
 	public void test_getLongIdIfPresent() {
 		TimeKey fourLongAtOne = new TimeKey(4L, 1);
-		TimeKey fourIntegerAtOne = new TimeKey(4, 1);
+		TimeKey fourIntegerAtOne = new TimeKey(new IntegerKey(4), 1);
 		assertEquals(Long.valueOf(4L), fourLongAtOne.getLongIdIfPresent());
 		assertNull(fourIntegerAtOne.getLongIdIfPresent());
 	}
@@ -134,7 +134,7 @@ public class TimeKeyTest extends TestCase {
 	@Test
 	public void test_getIntegerIdIfPresent() {
 		TimeKey fourLongAtOne = new TimeKey(4L, 1);
-		TimeKey fourIntegerAtOne = new TimeKey(4, 1);
+		TimeKey fourIntegerAtOne = new TimeKey(new IntegerKey(4), 1);
 		assertNull(fourLongAtOne.getIntegerIdIfPresent());
 		assertEquals(Integer.valueOf(4), fourIntegerAtOne.getIntegerIdIfPresent());
 	}

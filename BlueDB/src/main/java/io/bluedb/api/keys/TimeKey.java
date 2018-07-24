@@ -6,10 +6,6 @@ public class TimeKey implements BlueKey {
 	private ValueKey id;
 	private long time;
 
-	public TimeKey(int id, long time) {
-		this(new IntegerKey(id), time);
-	}
-
 	public TimeKey(long id, long time) {
 		this(new LongKey(id), time);
 	}
