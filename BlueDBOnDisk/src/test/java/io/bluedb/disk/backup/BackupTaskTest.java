@@ -20,7 +20,7 @@ import io.bluedb.disk.segment.SegmentManager;
 public class BackupTaskTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_backup_simple() throws Exception {
+	public void test_backupToTempDirectory_simple() throws Exception {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getCollection().insert(key1At1, value1);
@@ -40,7 +40,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_backup_change_pending() throws Exception {
+	public void test_backupToTempDirectory_change_pending() throws Exception {
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -66,7 +66,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_backup_rollup_pending() throws Exception {
+	public void test_backupToTempDirectory_rollup_pending() throws Exception {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getCollection().insert(key1At1, value1);
