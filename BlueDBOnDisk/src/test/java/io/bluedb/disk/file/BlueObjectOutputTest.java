@@ -92,8 +92,10 @@ public class BlueObjectOutputTest extends TestCase {
 		}
 
 		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
-			BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock);
-			assertEquals(value, inStream.next());
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertEquals(value, inStream.next());
+				inStream.close();
+			}
 		}
 
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
@@ -122,6 +124,7 @@ public class BlueObjectOutputTest extends TestCase {
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(srcPath)) {
 			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
 			outStream.write(value);
+			outStream.close();
 		}
 
 		// copy
@@ -130,8 +133,10 @@ public class BlueObjectOutputTest extends TestCase {
 				try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(dstPath)) {
 					try (BlueObjectOutput<TestValue> output = fileManager.getBlueOutputStream(writeLock)) {
 						output.writeAll(input);
+						output.close();
 					}
 				}
+				input.close();
 			}
 		}
 
@@ -139,6 +144,7 @@ public class BlueObjectOutputTest extends TestCase {
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(dstPath)) {
 			try (BlueObjectInput<TestValue> input = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(value, input.next());
+				input.close();
 			}
 		}
 	}
