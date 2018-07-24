@@ -12,8 +12,8 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-import io.bluedb.TestUtils;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
@@ -45,8 +45,8 @@ public class BlueObjectInputTest extends TestCase {
 	public void tearDown() throws Exception {
 		targetFilePath.toFile().delete();
 		tempFilePath.toFile().delete();
-		TestUtils.recursiveDelete(targetFilePath.toFile());
-		TestUtils.recursiveDelete(testingFolderPath.toFile());
+		Blutils.recursiveDelete(targetFilePath.toFile());
+		Blutils.recursiveDelete(testingFolderPath.toFile());
 	}
 
 
