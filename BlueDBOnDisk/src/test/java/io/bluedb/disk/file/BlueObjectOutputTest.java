@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
@@ -44,7 +45,7 @@ public class BlueObjectOutputTest extends TestCase {
 	protected void tearDown() throws Exception {
 		targetFilePath.toFile().delete();
 		tempFilePath.toFile().delete();
-		recursiveDelete(testingFolderPath.toFile());
+		Blutils.recursiveDelete(testingFolderPath.toFile());
 	}
 
 	
@@ -151,19 +152,6 @@ public class BlueObjectOutputTest extends TestCase {
 
 	
 	
-	private void recursiveDelete(File file) {
-		if (!file.exists()) {
-			return;
-		} else if (file.isDirectory()) {
-			for (File f: file.listFiles()) {
-				recursiveDelete(f);
-			}
-			file.delete();
-		} else {
-			file.delete();
-		}
-	}
-
 	private static DataOutputStream createDataOutputStreamThatThrowsExceptionOnClose(File file, AtomicBoolean dataOutputClosed) throws BlueDbException {
 		try {
 			return new DataOutputStream(new FileOutputStream(file) {

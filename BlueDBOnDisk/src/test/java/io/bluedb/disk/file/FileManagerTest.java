@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
@@ -44,7 +45,7 @@ public class FileManagerTest extends TestCase {
 	@Override
 	protected void tearDown() throws Exception {
 		for (File file : filesToDelete)
-			recursiveDelete(file);
+			Blutils.recursiveDelete(file);
 	}
 
 	
@@ -459,19 +460,6 @@ public class FileManagerTest extends TestCase {
 	}
 
 
-
-	private void recursiveDelete(File file) {
-		if (!file.exists()) {
-			return;
-		} else if (file.isDirectory()) {
-			for (File f : file.listFiles()) {
-				recursiveDelete(f);
-			}
-			file.delete();
-		} else {
-			file.delete();
-		}
-	}
 
 	private File createFile(String fileName) throws Exception {
 		File file = new File(fileName);

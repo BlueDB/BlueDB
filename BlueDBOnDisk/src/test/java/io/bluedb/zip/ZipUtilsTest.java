@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.Test;
+import io.bluedb.disk.Blutils;
 import junit.framework.TestCase;
 
 public class ZipUtilsTest extends TestCase {
@@ -19,7 +20,7 @@ public class ZipUtilsTest extends TestCase {
 
 	@Override
 	public void tearDown() {
-		recursiveDelete(tempFolder.toFile());
+		Blutils.recursiveDelete(tempFolder.toFile());
 	}
 
 	@Test
@@ -59,18 +60,5 @@ public class ZipUtilsTest extends TestCase {
 	public Path translatePath(Path targetPath, Path from, Path to) {
 		Path relativePath = from.relativize(targetPath);
 		return Paths.get(to.toString(), relativePath.toString());
-	}
-
-	private void recursiveDelete(File file) {
-		if (!file.exists()) {
-			return;
-		} else if (file.isDirectory()) {
-			for (File f: file.listFiles()) {
-				recursiveDelete(f);
-			}
-			file.delete();
-		} else {
-			file.delete();
-		}
 	}
 }

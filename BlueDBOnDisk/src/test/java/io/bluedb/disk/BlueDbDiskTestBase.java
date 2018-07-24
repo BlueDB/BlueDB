@@ -60,7 +60,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		.map(Path::toFile)
 		.forEach(File::delete);
 		for (File file: filesToDelete) {
-			recursiveDelete(file);
+			Blutils.recursiveDelete(file);
 		}
 	}
 
@@ -273,18 +273,5 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 			fail();
 		}
 		return null;
-	}
-
-	private void recursiveDelete(File file) {
-		if (!file.exists()) {
-			return;
-		} else if (file.isDirectory()) {
-			for (File f: file.listFiles()) {
-				recursiveDelete(f);
-			}
-			file.delete();
-		} else {
-			file.delete();
-		}
 	}
 }
