@@ -37,7 +37,8 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
-	private final Class<T> type;
+	private final Class<T> valueType;
+	private final Class<? extends BlueKey> keyType;
 	private final BlueSerializer serializer;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path collectionPath;
@@ -46,12 +47,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 
-	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> type) throws BlueDbException {
-		this.type = type;
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> valueType, Class<? extends BlueKey> keyType2) throws BlueDbException {
+		this.valueType = valueType;
+		this.keyType = keyType2;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
 		metaData = new CollectionMetaData(collectionPath);
-		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(type);
+		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
 		segmentManager = new SegmentManager<T>(this);
@@ -68,17 +70,20 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	@Override
 	public boolean contains(BlueKey key) throws BlueDbException {
+		ensureCorrectKeyType(key);
 		return get(key) != null;
 	}
 
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
+		ensureCorrectKeyType(key);
 		Segment<T> firstSegment = segmentManager.getFirstSegment(key);
 		return firstSegment.get(key);
 	}
 
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
+		ensureCorrectKeyType(key);
 		// TODO roll up to a smaller time range?
 		// TODO report insert when the insert task actually runs?
 		Range timeRange = SegmentManager.getSegmentRange(key.getGroupingNumber());
@@ -89,12 +94,14 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
+		ensureCorrectKeyType(key);
 		Runnable updateTask = new UpdateTask<T>(this, key, updater);
 		executeTask(updateTask);
 	}
 
 	@Override
 	public void delete(BlueKey key) throws BlueDbException {
+		ensureCorrectKeyType(key);
 		Runnable deleteTask = new DeleteTask<T>(this, key);
 		executeTask(deleteTask);
 	}
@@ -163,7 +170,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public Class<T> getType() {
-		return type;
+		return valueType;
 	}
 
 	@Override
@@ -174,5 +181,11 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	@Override
 	public Integer getMaxIntegerId() throws BlueDbException {
 		return metaData.getMaxInteger();
+	}
+
+	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
+		if (!keyType.isAssignableFrom(key.getClass())) {
+			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);
+		}
 	}
 }

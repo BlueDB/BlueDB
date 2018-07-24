@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
@@ -112,7 +113,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	private BlueCollectionOnDisk<TestValue> createMockCollection(List<Range> rollupsRequested) {
 		try {
-			return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
+			return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class, BlueKey.class) {
 				@Override
 				public void scheduleRollup(Range t) {
 					rollupsRequested.add(t);

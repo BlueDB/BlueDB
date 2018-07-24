@@ -12,6 +12,7 @@ import org.nustaq.serialization.FSTConfiguration;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
 
 public class BlueDbInMemory implements BlueDb {
 	private static final String COLLECTIONS_FILENAME = "collections.bin";
@@ -33,7 +34,7 @@ public class BlueDbInMemory implements BlueDb {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, Class<? extends BlueKey> keyType, String name) throws BlueDbException {
 		synchronized(collections) {
 			if (!collections.containsKey(name)) {
 				collections.put(name, new BlueCollectionImpl<T>(type));
@@ -97,5 +98,4 @@ public class BlueDbInMemory implements BlueDb {
 			throw new BlueDbException("Failed to serialize in memory database to directory " + directory, t);
 		}
 	}
-
 }

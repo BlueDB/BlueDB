@@ -44,7 +44,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	protected void setUp() throws Exception {
 		dbPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		collection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, "testing");
+		collection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, BlueKey.class, "testing");
 		dbPath = db.getPath();
 		lockManager = collection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(collection);

@@ -12,6 +12,7 @@ import java.util.Map;
 
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
+import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.backup.BackupTask;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
@@ -29,12 +30,12 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, Class<? extends BlueKey> keyType, String name) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new BlueCollectionOnDisk<>(this, name, type);
+				collection = new BlueCollectionOnDisk<T>(this, name, type, keyType);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(type)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + type + "]");
@@ -84,7 +85,7 @@ public class BlueDbOnDisk implements BlueDb {
 		synchronized (collections) {
 			BlueCollectionOnDisk collection = collections.get(folderName);
 			if (collection == null) {
-				collection = new BlueCollectionOnDisk(this, folderName, Serializable.class);
+				collection = new BlueCollectionOnDisk(this, folderName, Serializable.class, BlueKey.class);
 			}
 			return collection;
 		}

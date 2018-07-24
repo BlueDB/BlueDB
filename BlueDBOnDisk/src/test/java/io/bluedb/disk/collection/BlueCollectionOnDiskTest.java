@@ -3,6 +3,7 @@ package io.bluedb.disk.collection;
 import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,10 +12,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
+import io.bluedb.api.BlueCollection;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
+import io.bluedb.api.keys.LongKey;
+import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
@@ -311,5 +315,22 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			e.printStackTrace();
 			fail();
 		}
+	}
+
+	@Test
+	public void test_ensureCorrectKeyType() throws BlueDbException {
+		BlueCollection<?> collectionWithTimeKeys =db().getCollection(Serializable.class, TimeKey.class, "test_collection_TimeKey");
+		BlueCollection<?> collectionWithLongKeys = db().getCollection(Serializable.class, LongKey.class, "test_collection_LongKey");
+		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
+		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
+		collectionWithLongKeys.get(new LongKey(1));  // should not throw an Exception
+		try {
+			collectionWithTimeKeys.get(new LongKey(1));
+			fail();
+		} catch (BlueDbException e){}
+		try {
+			collectionWithLongKeys.get(new TimeKey(1, 1));
+			fail();
+		} catch (BlueDbException e){}
 	}
 }
