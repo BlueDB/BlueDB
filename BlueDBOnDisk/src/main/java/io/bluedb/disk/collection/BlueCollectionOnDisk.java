@@ -86,7 +86,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		ensureCorrectKeyType(key);
 		// TODO roll up to a smaller time range?
 		// TODO report insert when the insert task actually runs?
-		Range timeRange = SegmentManager.getSegmentRange(key.getGroupingNumber());
+		Range timeRange = segmentManager.getSegmentRange(key.getGroupingNumber());
 		rollupScheduler.reportInsert(timeRange);
 		Runnable insertTask = new InsertTask<T>(this, key, value);
 		executeTask(insertTask);

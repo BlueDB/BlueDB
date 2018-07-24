@@ -23,7 +23,6 @@ import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
-import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 
@@ -237,7 +236,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, segmentDirectoryContents.length);
 
-			long segmentSize = SegmentManager.getSegmentSize();
+			long segmentSize = getCollection().getSegmentManager().getSegmentSize();
 			Range offByOneSegmentTimeRange = new Range(0, segmentSize);
 			Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
 			try {
@@ -279,7 +278,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, segmentDirectoryContents.length);
 
-			long segmentSize = SegmentManager.getSegmentSize();
+			long segmentSize = getCollection().getSegmentManager().getSegmentSize();
 			Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
 			getCollection().scheduleRollup(entireFirstSegmentTimeRange);
 			waitForExecutorToFinish();

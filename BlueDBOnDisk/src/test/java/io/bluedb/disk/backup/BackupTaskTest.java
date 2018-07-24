@@ -18,7 +18,6 @@ import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.segment.Range;
-import io.bluedb.disk.segment.SegmentManager;
 
 public class BackupTaskTest extends BlueDbDiskTestBase {
 
@@ -86,7 +85,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 			BlueKey key1At1 = createKey(1, 1);
 			TestValue value1 = createValue("Anna");
 			getCollection().insert(key1At1, value1);
-			Range range = new Range(0, SegmentManager.getSegmentSize() -1);
+			Range range = new Range(0, getCollection().getSegmentManager().getSegmentSize() -1);
 			Recoverable<TestValue> rollup = new PendingRollup<>(range);
 			getRecoveryManager().saveChange(rollup);
 

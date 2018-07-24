@@ -3,7 +3,6 @@ package io.bluedb.disk.segment;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -14,111 +13,21 @@ import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.segment.path.TimeSegmentPathManager;
 
 public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_getSegmentRange() {
-		Range segmentRangeStartingAtZero = SegmentManager.getSegmentRange(0);
-		assertEquals(0, segmentRangeStartingAtZero.getStart());
-		assertEquals(SegmentManager.getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
-
-		Range maxLongRange = SegmentManager.getSegmentRange(Long.MAX_VALUE);
-		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
-		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
-
-		Range minLongRange = SegmentManager.getSegmentRange(Long.MIN_VALUE);
-		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
-		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
-	}
-
-	@Test
-	public void test_getSubfoldersInRange() {
-		File folder = Paths.get(".", "test_folder").toFile();
-		emptyAndDelete(folder);
-		folder.mkdir();
-
-		File folder2 = createSubfolder(folder, 2);
-		File folder7 = createSubfolder(folder, 7);
-		createSegment(folder, 2L, 2L);  // to make sure segment doesn't get included
-		
-		List<File> empty = Arrays.asList();
-		List<File> only2 = Arrays.asList(folder2);
-		List<File> both = Arrays.asList(folder2, folder7);
-		
-		assertEquals(empty, SegmentManager.getSubfoldersInRange(folder, 0L, 1L));  // folder above range
-		assertEquals(only2, SegmentManager.getSubfoldersInRange(folder, 0L, 2L));  // folder at top of range
-		assertEquals(only2, SegmentManager.getSubfoldersInRange(folder, 0L, 3L));  // folder overlaps top of range
-		assertEquals(empty, SegmentManager.getSubfoldersInRange(folder, 5L, 6L));  // folder below range
-		assertEquals(both, SegmentManager.getSubfoldersInRange(folder, 0L, 7L));  //works with multiple files
-
-		emptyAndDelete(folder);
-	}
-
-	@Test
-	public void test_getExistingSegmentFiles_key() {
-		File folder = getCollection().getPath().toFile();
-		emptyAndDelete(folder);
-		folder.mkdir();
-
-		long startTime = 987654321;
-		TimeKey timeKey = new TimeKey(1, startTime);
-		TimeFrameKey timeFrameKey = new TimeFrameKey(2, startTime, startTime + SegmentManager.SIZE_SEGMENT * 4);
-
-		List<Path> singlePathToAdd = getSegmentManager().getAllPossibleSegmentPaths(timeKey);
-		assertEquals(1, singlePathToAdd.size());
-		assertEquals(0, getSegmentManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
-		for (Path path: singlePathToAdd) {
-			path.toFile().mkdirs();
-		}
-		assertEquals(1, getSegmentManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
-
-		List<Path> fivePaths = getSegmentManager().getAllPossibleSegmentPaths(timeFrameKey);
-		assertEquals(5, fivePaths.size());
-		for (Path path: fivePaths) {
-			path.toFile().mkdirs();
-		}
-		assertEquals(5, getSegmentManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
-
-		emptyAndDelete(folder);
-	}
-
-	@Test
-	public void test_getAllPossibleSegmentPaths() {
-		TimeFrameKey timeFrameKey = new TimeFrameKey(42, 0, SegmentManager.SIZE_SEGMENT);
-		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(timeFrameKey);
-		assertEquals(2, paths.size());
-		
-		Path secondPath = paths.get(1);
-		Path parent = secondPath.getParent();
-		Path grandparent = parent.getParent();
-		Path greatGrandparent = grandparent.getParent();
-		
-		String fname = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_SEGMENT) );
-		String parentName = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_FOLDER_BOTTOM) );
-		String grandparentName = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_FOLDER_MIDDLE) );
-		String greatGrandparentName = String.valueOf( (SegmentManager.SIZE_SEGMENT / SegmentManager.SIZE_FOLDER_TOP) );
-		assertEquals(fname, secondPath.getFileName().toString());
-		assertEquals(parentName, parent.getFileName().toString());
-		assertEquals(grandparentName, grandparent.getFileName().toString());
-		assertEquals(greatGrandparentName, greatGrandparent.getFileName().toString());
-
-		BlueKey timeKey = new TimeKey(1, SegmentManager.SIZE_SEGMENT);
-		List<Path> timePaths = getSegmentManager().getAllPossibleSegmentPaths(timeKey);
-		assertEquals(secondPath, timePaths.get(0));
-	}
-
-	@Test
 	public void test_getAllSegments() {
-		BlueKey timeFrameKey = new TimeFrameKey(1, 0, SegmentManager.SIZE_SEGMENT);
-		List<Path> timeFramePaths = getSegmentManager().getAllPossibleSegmentPaths(timeFrameKey);
+		BlueKey timeFrameKey = new TimeFrameKey(1, 0, TimeSegmentPathManager.SIZE_SEGMENT);
+		List<Path> timeFramePaths = getSegmentManager().getPathManager().getAllPossibleSegmentPaths(timeFrameKey);
 		List<Segment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
 		List<Path> timeFrameSegmentPaths = timeFrameSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
 
 		assertEquals(timeFramePaths, timeFrameSegmentPaths);
 		
-		BlueKey timeKey = new TimeKey(1, SegmentManager.SIZE_SEGMENT);
-		List<Path> timePaths = getSegmentManager().getAllPossibleSegmentPaths(timeKey);
+		BlueKey timeKey = new TimeKey(1, TimeSegmentPathManager.SIZE_SEGMENT);
+		List<Path> timePaths = getSegmentManager().getPathManager().getAllPossibleSegmentPaths(timeKey);
 		List<Segment<TestValue>> timeSegments = getSegmentManager().getAllSegments(timeKey);
 		List<Path> segmentPaths = timeSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
 		assertEquals(timePaths, segmentPaths);
@@ -128,7 +37,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	public void test_getExistingSegments() {
 		emptyAndDelete(getCollection().getPath().toFile());
 		long minTime = 0;
-		long maxTime = SegmentManager.SIZE_SEGMENT * 2;
+		long maxTime = TimeSegmentPathManager.SIZE_SEGMENT * 2;
 		BlueKey timeFrameKey = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
 		TestValue value = new TestValue("Bob", 0);
 		try {
@@ -150,7 +59,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getFirstSegment() {
-		BlueKey timeFrameKey = new TimeFrameKey(1, SegmentManager.SIZE_SEGMENT, SegmentManager.SIZE_SEGMENT * 2);
+		BlueKey timeFrameKey = new TimeFrameKey(1, TimeSegmentPathManager.SIZE_SEGMENT, TimeSegmentPathManager.SIZE_SEGMENT * 2);
 		List<Segment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
 		assertEquals(2, timeFrameSegments.size());
 		assertEquals(timeFrameSegments.get(0), getSegmentManager().getFirstSegment(timeFrameKey));
@@ -159,17 +68,9 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_toSegment() {
 		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
-		Path path = getSegmentManager().getSegmentPath(key);
+		Path path = getSegmentManager().getPathManager().getSegmentPath(key);
 		Segment<TestValue> segment = getSegmentManager().toSegment(path);
 		assertEquals(path, segment.getPath());
-	}
-
-	@Test
-	public void test_getSegmentPath_key() {
-		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
-		List<Path> paths = getSegmentManager().getAllPossibleSegmentPaths(key);
-		assertEquals(1, paths.size());
-		assertEquals(paths.get(0), getSegmentManager().getSegmentPath(key));
 	}
 
 
@@ -187,9 +88,9 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	private long createTime(long level0, long level1, long level2, long level3) {
 		return
-				level0 * SegmentManager.SIZE_FOLDER_TOP +
-				level1 * SegmentManager.SIZE_FOLDER_MIDDLE +
-				level2 * SegmentManager.SIZE_FOLDER_BOTTOM +
-				level3 * SegmentManager.SIZE_SEGMENT;
+				level0 * TimeSegmentPathManager.SIZE_FOLDER_TOP +
+				level1 * TimeSegmentPathManager.SIZE_FOLDER_MIDDLE +
+				level2 * TimeSegmentPathManager.SIZE_FOLDER_BOTTOM +
+				level3 * TimeSegmentPathManager.SIZE_SEGMENT;
 	}
 }

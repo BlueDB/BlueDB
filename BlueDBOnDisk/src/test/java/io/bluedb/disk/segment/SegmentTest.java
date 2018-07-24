@@ -130,7 +130,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			assertEquals(value3, segment.get(key3At3));
 
 			// make sure insert works after rollup
-			segment.rollup(SegmentManager.getSegmentRange(0));
+			segment.rollup(getCollection().getSegmentManager().getSegmentRange(0));
 			BlueKey key4At2 = createKey(4, 2);
 			TestValue value4 = createValue("Dan");
 			segment.insert(key4At2, value4);
@@ -287,7 +287,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 				fail();  // rollups must be 
 			} catch (BlueDbException e) {}
 
-			Range validRollupTimeRange = new Range(0, SegmentManager.getSegmentSize() - 1);
+			Range validRollupTimeRange = new Range(0, getCollection().getSegmentManager().getSegmentSize() - 1);
 			segment.rollup(validRollupTimeRange);
 			values = getAll(segment);
 			assertEquals(2, values.size());
@@ -378,7 +378,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		try {
 			getCollection().insert(key1, value1);
 			getCollection().insert(key2, value2);
-			Range rollupRange = SegmentManager.getSegmentRange(0);
+			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
@@ -406,7 +406,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		try {
 			getCollection().insert(key1, value1);
 			getCollection().insert(key2, value2);
-			Range rollupRange = SegmentManager.getSegmentRange(0);
+			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
@@ -443,7 +443,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		try {
 			getCollection().insert(key1, value1);
 			getCollection().insert(key2, value2);
-			Range rollupRange = SegmentManager.getSegmentRange(0);
+			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
@@ -488,7 +488,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		try {
 			getCollection().insert(key1, value1);
 			getCollection().insert(key2, value2);
-			Range rollupRange = SegmentManager.getSegmentRange(0);
+			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
