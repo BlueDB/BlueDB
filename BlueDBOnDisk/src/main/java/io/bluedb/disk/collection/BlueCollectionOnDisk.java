@@ -47,16 +47,16 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 
-	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> valueType, Class<? extends BlueKey> keyType) throws BlueDbException {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> valueType, Class<? extends BlueKey> requestedKeyType) throws BlueDbException {
 		this.valueType = valueType;
-		this.keyType = keyType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
 		metaData = new CollectionMetaData(collectionPath);
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
-		segmentManager = new SegmentManager<T>(this, keyType);
+		this.keyType = determineKeyType(metaData, requestedKeyType);
+		segmentManager = new SegmentManager<T>(this, this.keyType);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
 		rollupScheduler.start();
@@ -173,6 +173,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return valueType;
 	}
 
+	public Class<? extends BlueKey> getKeyType() {
+		return keyType;
+	}
+
 	@Override
 	public Long getMaxLongId() throws BlueDbException {
 		return metaData.getMaxLong();
@@ -186,6 +190,20 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
 		if (!keyType.isAssignableFrom(key.getClass())) {
 			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);
+		}
+	}
+
+	protected static Class<? extends BlueKey> determineKeyType(CollectionMetaData metaData, Class<? extends BlueKey> providedKeyType) throws BlueDbException {
+		Class<? extends BlueKey> storedKeyType = metaData.getKeyType();
+		if (storedKeyType == null) {
+			metaData.saveKeyType(providedKeyType);
+			return providedKeyType;
+		} else if (providedKeyType == null) {
+			return storedKeyType;
+		} else if (!providedKeyType.isAssignableFrom(storedKeyType)){
+			throw new BlueDbException("Cannot instantiate a Collection<" + providedKeyType + "> from a Collection<" + storedKeyType + ">");
+		} else {
+			return providedKeyType;
 		}
 	}
 }

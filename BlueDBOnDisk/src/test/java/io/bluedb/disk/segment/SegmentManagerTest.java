@@ -12,6 +12,7 @@ import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.segment.path.SegmentPathManager;
 
 public class SegmentManagerTest extends BlueDbDiskTestBase {
 
@@ -74,7 +75,22 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		assertEquals(path, segment.getPath());
 	}
 
+	@Test
+	public void test_createSegmentPathManager() {
+		Path collectionPath = getTimeCollection().getPath();
+		SegmentPathManager timePathManager = SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class);
+		SegmentPathManager valuePathManager = SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class);
+		assertNotNull(timePathManager);
+		assertNotNull(valuePathManager);
 
+		try {
+			SegmentManager.createSegmentPathManager(collectionPath, BlueKey.class);
+		} catch (UnsupportedOperationException e) {}
+		try {
+			SegmentManager.createSegmentPathManager(collectionPath, null);
+		} catch (UnsupportedOperationException | NullPointerException e) {
+		}
+	}
 
 	private SegmentManager<TestValue> getSegmentManager() {
 		return getTimeCollection().getSegmentManager();

@@ -20,7 +20,10 @@ import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
+import io.bluedb.disk.BlueDbOnDisk;
+import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.Range;
@@ -331,5 +334,22 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			collectionWithLongKeys.get(new TimeKey(1, 1));
 			fail();
 		} catch (BlueDbException e){}
+	}
+
+
+	@Test
+	public void test_determineKeyType() throws BlueDbException {
+		db().getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());  // regular instantiation approach
+
+		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();  // reopen database without collections instantiated
+
+		try {
+			reopenedDatbase.getCollection(TestValue.class, ValueKey.class, getTimeCollectionName());  // try to open with the wrong key type
+			fail();
+		} catch (BlueDbException e) {
+		}
+
+		BlueCollectionOnDisk<?> collectionWithoutType = (BlueCollectionOnDisk<?>) reopenedDatbase.getCollection(TestValue.class, null, getTimeCollectionName());  // open without specifying key type
+		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
 	}
 }

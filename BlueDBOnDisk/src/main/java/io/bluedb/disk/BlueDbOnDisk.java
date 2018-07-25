@@ -39,9 +39,11 @@ public class BlueDbOnDisk implements BlueDb {
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(type)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + type + "]");
+			} else if (!collection.getKeyType().equals(keyType)) {
+				throw new BlueDbException("The " + name + " collection already exists for a different key type (" + collection.getKeyType() + ") vs " + keyType);
 			}
-				
-			return collection;
+
+		return collection;
 		}
 	}
 
@@ -76,16 +78,16 @@ public class BlueDbOnDisk implements BlueDb {
 
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
 		List<File> subfolders = FileManager.getFolderContents(path.toFile(), (f) -> f.isDirectory());
-		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getCollection(folder.getName()));
+		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getUntypedCollectionForBackup(folder.getName()));
 		return collections;
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	protected BlueCollectionOnDisk getCollection(String folderName) throws BlueDbException {
+	protected BlueCollectionOnDisk getUntypedCollectionForBackup(String folderName) throws BlueDbException {
 		synchronized (collections) {
 			BlueCollectionOnDisk collection = collections.get(folderName);
 			if (collection == null) {
-				collection = new BlueCollectionOnDisk(this, folderName, Serializable.class, BlueKey.class);
+				collection = new BlueCollectionOnDisk(this, folderName, Serializable.class, null);
 			}
 			return collection;
 		}

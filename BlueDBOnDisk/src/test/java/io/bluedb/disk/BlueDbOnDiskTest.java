@@ -14,6 +14,7 @@ import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.zip.ZipUtils;
 
@@ -30,22 +31,21 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getCollection_untyped() {
-		try {
-			assertNotNull(db.getCollection("testing1"));
-			assertNotNull(db.getCollection("testing2"));  // this time it should create the collection
-		} catch (BlueDbException e1) {
-			e1.printStackTrace();
-			fail();
-		}
+	public void test_getUntypedCollectionForBackup() throws Exception {
+		String timeCollectionName = getTimeCollectionName();
+		Path timeCollectionPath = getPath();
+		assertNotNull(db.getUntypedCollectionForBackup(timeCollectionName));
+		
+		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(timeCollectionPath).build();
+		assertNotNull(reopenedDatbase.getUntypedCollectionForBackup(timeCollectionName));  // this time it should instantiate the collection
 
 		try {
 			@SuppressWarnings("rawtypes")
-			BlueCollectionOnDisk newUntypedCollection = db.getCollection("testing2"); // make sure it's created
+			BlueCollectionOnDisk newUntypedCollection = db.getUntypedCollectionForBackup("testing2"); // make sure it's created
 			Path serializedClassesPath = Paths.get(newUntypedCollection.getPath().toString(), ".meta", "serialized_classes");
 			getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 
-			db.getCollection("testing2"); // this time it should exception out
+			db.getUntypedCollectionForBackup("testing2"); // this time it should exception out
 			fail();
 		} catch (Throwable e) {
 		}
@@ -55,7 +55,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getCollection_existing_correct_type() {
 		try {
 			db.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
-			db.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
+			db.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());  // make sure it works the second time as well
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -67,6 +67,15 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(10, new TestValue("Bob"));
 		try {
 			db.getCollection(TestValue2.class, TimeKey.class, getTimeCollectionName());
+			fail();
+		} catch(BlueDbException e) {
+		}
+	}
+	
+	@Test
+	public void test_getCollection_invalid_key_type() {
+		try {
+			db.getCollection(TestValue.class, ValueKey.class, getTimeCollectionName());
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -459,11 +468,11 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		try {
 			getTimeCollection();
 			List<BlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
-			assertEquals(1, allCollections.size());
-			db().getCollection(String.class, BlueKey.class, "string");
-			db().getCollection(Long.class, BlueKey.class, "long");
+			assertEquals(2, allCollections.size());
+			db().getCollection(String.class, ValueKey.class, "string");
+			db().getCollection(Long.class, ValueKey.class, "long");
 			allCollections = db().getAllCollectionsFromDisk();
-			assertEquals(3, allCollections.size());
+			assertEquals(4, allCollections.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -491,7 +500,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 			Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
 
 			BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(restoredBlueDbPath).build();
-			BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, TimeKey.class, "testing");
+			BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
 			assertTrue(restoredCollection.contains(key1At1));
 			assertEquals(value1, restoredCollection.get(key1At1));
 			Long restoredMaxLong = restoredCollection.getMaxLongId();
@@ -508,20 +517,21 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_backup_fail() {
+	public void test_backup_fail() throws Exception {
+		@SuppressWarnings("rawtypes")
+		BlueCollectionOnDisk newUntypedCollection = db.getUntypedCollectionForBackup(getTimeCollectionName());
+		Path serializedClassesPath = Paths.get(newUntypedCollection.getPath().toString(), ".meta", "serialized_classes");
+		getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
+		
+		Path tempFolder = Files.createTempDirectory(this.getClass().getSimpleName());
+		tempFolder.toFile().deleteOnExit();
+		Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
+		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(getPath()).build();
 		try {
-			@SuppressWarnings("rawtypes")
-			BlueCollectionOnDisk newUntypedCollection = db.getCollection("testing2"); // create a new bogus collection
-			Path serializedClassesPath = Paths.get(newUntypedCollection.getPath().toString(), ".meta", "serialized_classes");
-			getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
-			
-			Path tempFolder = Files.createTempDirectory(this.getClass().getSimpleName());
-			tempFolder.toFile().deleteOnExit();
-			Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
-			db().backup(backedUpPath);
+			reopenedDatbase.backup(backedUpPath);
 			fail();  // because the "test2" collection was broken, the backup should error out;
 
-		} catch (IOException | BlueDbException e) {
+		} catch (BlueDbException e) {
 		}
 	}
 }
