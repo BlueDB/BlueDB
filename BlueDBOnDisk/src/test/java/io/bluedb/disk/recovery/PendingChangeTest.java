@@ -59,10 +59,10 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, getSerializer());
 		try {
-			assertNull(getCollection().get(key));
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
+			assertNull(getTimeCollection().get(key));
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 			change.applyChange(segment);
-			assertEquals(value, getCollection().get(key));
+			assertEquals(value, getTimeCollection().get(key));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -77,10 +77,10 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		insert(key, value);
 		PendingChange<TestValue> change = PendingChange.createDelete(key);
 		try {
-			assertEquals(value, getCollection().get(key));
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
+			assertEquals(value, getTimeCollection().get(key));
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 			change.applyChange(segment);
-			assertNull(getCollection().get(key));
+			assertNull(getTimeCollection().get(key));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -98,10 +98,10 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		updater.update(newValue);
 		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, updater, getSerializer());
 		try {
-			assertEquals(value, getCollection().get(key));
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
+			assertEquals(value, getTimeCollection().get(key));
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 			change.applyChange(segment);
-			assertEquals(newValue, getCollection().get(key));
+			assertEquals(newValue, getTimeCollection().get(key));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();

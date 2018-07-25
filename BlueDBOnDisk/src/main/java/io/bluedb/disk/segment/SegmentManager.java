@@ -5,8 +5,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.TimeKey;
+import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.segment.path.SegmentPathManager;
 import io.bluedb.disk.segment.path.TimeSegmentPathManager;
 
@@ -16,9 +17,10 @@ public class SegmentManager<T extends Serializable> {
 	private final BlueCollectionOnDisk<T> collection;
 	private final SegmentPathManager pathManager;
 
-	public SegmentManager(BlueCollectionOnDisk<T> collection) {
+	public SegmentManager(BlueCollectionOnDisk<T> collection, Class<? extends BlueKey> keyType) {
 		this.collection = collection;
-		this.pathManager = new TimeSegmentPathManager(collection.getPath());
+		Path collectionPath = collection.getPath();
+		this.pathManager =createSegmentPathManager(collectionPath, keyType);
 	}
 
 	public Range getSegmentRange(long groupingValue) {
@@ -57,5 +59,15 @@ public class SegmentManager<T extends Serializable> {
 
 	public long getSegmentSize() {
 		return pathManager.getSegmentSize();
+	}
+
+	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
+		if (TimeKey.class.isAssignableFrom(keyType)) {
+			return new TimeSegmentPathManager(collectionPath);
+		} else if (ValueKey.class.isAssignableFrom(keyType)) {
+			return new TimeSegmentPathManager(collectionPath);
+		} else {
+			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
+		}
 	}
 }

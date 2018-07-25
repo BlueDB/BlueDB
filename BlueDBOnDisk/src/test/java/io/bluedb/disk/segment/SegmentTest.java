@@ -130,7 +130,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			assertEquals(value3, segment.get(key3At3));
 
 			// make sure insert works after rollup
-			segment.rollup(getCollection().getSegmentManager().getSegmentRange(0));
+			segment.rollup(getTimeCollection().getSegmentManager().getSegmentRange(0));
 			BlueKey key4At2 = createKey(4, 2);
 			TestValue value4 = createValue("Dan");
 			segment.insert(key4At2, value4);
@@ -287,7 +287,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 				fail();  // rollups must be 
 			} catch (BlueDbException e) {}
 
-			Range validRollupTimeRange = new Range(0, getCollection().getSegmentManager().getSegmentSize() - 1);
+			Range validRollupTimeRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 			segment.rollup(validRollupTimeRange);
 			values = getAll(segment);
 			assertEquals(2, values.size());
@@ -376,18 +376,18 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		try {
-			getCollection().insert(key1, value1);
-			getCollection().insert(key2, value2);
-			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
+			getTimeCollection().insert(key1, value1);
+			getTimeCollection().insert(key2, value2);
+			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 
 			getRecoveryManager().recover();
 			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
 			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getCollection().query().getList();
+			List<TestValue> values = getTimeCollection().query().getList();
 			assertEquals(2, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));
@@ -404,13 +404,13 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		try {
-			getCollection().insert(key1, value1);
-			getCollection().insert(key2, value2);
-			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
+			getTimeCollection().insert(key1, value1);
+			getTimeCollection().insert(key2, value2);
+			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
 			assertEquals(2, filesToRollup.size());
 			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
@@ -424,7 +424,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			getRecoveryManager().recover();
 			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
 			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getCollection().query().getList();
+			List<TestValue> values = getTimeCollection().query().getList();
 			assertEquals(2, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));
@@ -441,13 +441,13 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		try {
-			getCollection().insert(key1, value1);
-			getCollection().insert(key2, value2);
-			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
+			getTimeCollection().insert(key1, value1);
+			getTimeCollection().insert(key2, value2);
+			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
 			assertEquals(2, filesToRollup.size());
 			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
@@ -469,7 +469,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			getRecoveryManager().recover();
 			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
 			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getCollection().query().getList();
+			List<TestValue> values = getTimeCollection().query().getList();
 			assertEquals(2, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));
@@ -486,13 +486,13 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		try {
-			getCollection().insert(key1, value1);
-			getCollection().insert(key2, value2);
-			Range rollupRange = getCollection().getSegmentManager().getSegmentRange(0);
+			getTimeCollection().insert(key1, value1);
+			getTimeCollection().insert(key2, value2);
+			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 			getRecoveryManager().saveChange(pendingRollup);
 
-			Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
 			assertEquals(2, filesToRollup.size());
 			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
@@ -515,7 +515,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 			getRecoveryManager().recover();
 			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
 			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getCollection().query().getList();
+			List<TestValue> values = getTimeCollection().query().getList();
 			assertEquals(2, values.size());
 			assertTrue(values.contains(value1));
 			assertTrue(values.contains(value2));

@@ -22,30 +22,30 @@ public class RollupTaskTest extends BlueDbDiskTestBase {
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
 		try {
-			values = getCollection().query().getList();
+			values = getTimeCollection().query().getList();
 			assertEquals(0, values.size());
 
-			getCollection().insert(key1At1, value1);
-			getCollection().insert(key3At3, value3);
-			values = getCollection().query().getList();
+			getTimeCollection().insert(key1At1, value1);
+			getTimeCollection().insert(key3At3, value3);
+			values = getTimeCollection().query().getList();
 			assertEquals(2, values.size());
 			
-			Segment<TestValue> segment = getCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
+			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
 			File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, segmentDirectoryContents.length);
 
-			long segmentSize = getCollection().getSegmentManager().getSegmentSize();
+			long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
 			Range offByOneSegmentTimeRange = new Range(0, segmentSize);
 			Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
-			RollupTask<TestValue> invalidRollup = new RollupTask<>(getCollection(), offByOneSegmentTimeRange);
-			RollupTask<TestValue> validRollup = new RollupTask<>(getCollection(), entireFirstSegmentTimeRange);
+			RollupTask<TestValue> invalidRollup = new RollupTask<>(getTimeCollection(), offByOneSegmentTimeRange);
+			RollupTask<TestValue> validRollup = new RollupTask<>(getTimeCollection(), entireFirstSegmentTimeRange);
 
 			invalidRollup.run();
 			segmentDirectoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(2, segmentDirectoryContents.length);
 
 			validRollup.run();
-			values = getCollection().query().getList();
+			values = getTimeCollection().query().getList();
 			assertEquals(2, values.size());
 			segmentDirectoryContents = segment.getPath().toFile().listFiles();
 			assertEquals(1, segmentDirectoryContents.length);

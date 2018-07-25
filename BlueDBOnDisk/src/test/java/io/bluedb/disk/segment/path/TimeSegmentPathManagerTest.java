@@ -19,15 +19,15 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSegmentRange() {
-		Range segmentRangeStartingAtZero = getCollection().getSegmentManager().getSegmentRange(0);
+		Range segmentRangeStartingAtZero = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());
-		assertEquals(getCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
+		assertEquals(getTimeCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
 
-		Range maxLongRange = getCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
+		Range maxLongRange = getTimeCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		Range minLongRange = getCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
+		Range minLongRange = getTimeCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
@@ -57,7 +57,7 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getExistingSegmentFiles_key() {
-		File folder = getCollection().getPath().toFile();
+		File folder = getTimeCollection().getPath().toFile();
 		emptyAndDelete(folder);
 		folder.mkdir();
 
@@ -121,7 +121,7 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 	}
 
 	private SegmentPathManager getPathManager() {
-		return getCollection().getSegmentManager().getPathManager();
+		return getTimeCollection().getSegmentManager().getPathManager();
 	}
 
 	public File createSegment(File parentFolder, long low, long high) {

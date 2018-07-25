@@ -119,7 +119,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_isTimeForHistoryCleanup() throws Exception {
-		RecoveryManager<?> recoveryManager = getCollection().getRecoveryManager();
+		RecoveryManager<?> recoveryManager = getTimeCollection().getRecoveryManager();
 		assertTrue(recoveryManager.isTimeForHistoryCleanup());
 		recoveryManager.cleanupHistory();
 		assertFalse(recoveryManager.isTimeForHistoryCleanup());
@@ -200,16 +200,16 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	public void test_recover_pendingInsert() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		CollectionMetaData metaData = getCollection().getMetaData();
+		CollectionMetaData metaData = getTimeCollection().getMetaData();
 		try {
 			PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 			getRecoveryManager().saveChange(change);
-			List<TestValue> allValues = getCollection().query().getList();
+			List<TestValue> allValues = getTimeCollection().query().getList();
 			assertEquals(0, allValues.size());
 			assertNull(metaData.getMaxLong());
 
 			getRecoveryManager().recover();
-			allValues = getCollection().query().getList();
+			allValues = getTimeCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(value, allValues.get(0));
 			assertEquals(1, metaData.getMaxLong().longValue());
@@ -224,14 +224,14 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		try {
-			getCollection().insert(key,  value);
+			getTimeCollection().insert(key,  value);
 			PendingChange<TestValue> duplicateInsert = PendingChange.createInsert(key, value, serializer);
 			getRecoveryManager().saveChange(duplicateInsert);
-			List<TestValue> allValues = getCollection().query().getList();
+			List<TestValue> allValues = getTimeCollection().query().getList();
 			assertEquals(1, allValues.size());
 
 			getRecoveryManager().recover();
-			allValues = getCollection().query().getList();
+			allValues = getTimeCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(value, allValues.get(0));
 		} catch (BlueDbException e) {
@@ -245,14 +245,14 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		try {
-			getCollection().insert(key, value);
-			List<TestValue> allValues = getCollection().query().getList();
+			getTimeCollection().insert(key, value);
+			List<TestValue> allValues = getTimeCollection().query().getList();
 			assertEquals(1, allValues.size());
 
 			PendingChange<TestValue> change = PendingChange.createDelete(key);
 			getRecoveryManager().saveChange(change);
 			getRecoveryManager().recover();
-			allValues = getCollection().query().getList();
+			allValues = getTimeCollection().query().getList();
 			assertEquals(0, allValues.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
@@ -268,16 +268,16 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		TestValue newValue = serializer.clone(originalValue);
 		updater.update(newValue);
 		try {
-			getCollection().insert(key, originalValue);
+			getTimeCollection().insert(key, originalValue);
 			PendingChange<TestValue> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
 			getRecoveryManager().saveChange(change);
 
-			List<TestValue> allValues = getCollection().query().getList();
+			List<TestValue> allValues = getTimeCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(0, allValues.get(0).getCupcakes());
 
 			getRecoveryManager().recover();
-			allValues = getCollection().query().getList();
+			allValues = getTimeCollection().query().getList();
 			assertEquals(1, allValues.size());
 			assertEquals(1, allValues.get(0).getCupcakes());
 		} catch (BlueDbException e) {
@@ -288,7 +288,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_recover_invalidPendingChange() throws Exception {
-		Path pathForGarbage = Paths.get(getCollection().getPath().toString(), RecoveryManager.PENDING_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
+		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.PENDING_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
 		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};
 		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {

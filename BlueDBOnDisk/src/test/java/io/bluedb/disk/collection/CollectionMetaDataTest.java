@@ -21,7 +21,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		metaData = getCollection().getMetaData();
+		metaData = getTimeCollection().getMetaData();
 	}
 
 	@Test

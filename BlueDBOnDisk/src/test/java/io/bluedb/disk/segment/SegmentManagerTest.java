@@ -1,8 +1,6 @@
 package io.bluedb.disk.segment;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -36,7 +34,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getExistingSegments() {
-		emptyAndDelete(getCollection().getPath().toFile());
+		emptyAndDelete(getTimeCollection().getPath().toFile());
 		long minTime = 0;
 		long segmentSize = getSegmentManager().getSegmentSize();
 		long maxTime = segmentSize * 2;
@@ -45,7 +43,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		try {
 			List<Segment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(minTime, maxTime);
 			assertEquals(0, existingSegments.size());
-			getCollection().insert(timeFrameKey, value);
+			getTimeCollection().insert(timeFrameKey, value);
 			existingSegments = getSegmentManager().getExistingSegments(minTime, maxTime);
 			assertEquals(3, existingSegments.size());
 			List<Segment<TestValue>> existingSegments0to0 = getSegmentManager().getExistingSegments(minTime, minTime);
@@ -56,7 +54,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 			e.printStackTrace();
 			fail();
 		}
-		emptyAndDelete(getCollection().getPath().toFile());
+		emptyAndDelete(getTimeCollection().getPath().toFile());
 	}
 
 	@Test
@@ -79,7 +77,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 
 	private SegmentManager<TestValue> getSegmentManager() {
-		return getCollection().getSegmentManager();
+		return getTimeCollection().getSegmentManager();
 	}
 
 

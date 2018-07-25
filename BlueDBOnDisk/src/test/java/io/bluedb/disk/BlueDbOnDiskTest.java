@@ -13,6 +13,7 @@ import org.junit.Test;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.zip.ZipUtils;
 
@@ -53,8 +54,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getCollection_existing_correct_type() {
 		try {
-			db.getCollection(TestValue.class, BlueKey.class, "testing");
-			db.getCollection(TestValue.class, BlueKey.class, "testing");
+			db.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
+			db.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -65,7 +66,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getCollection_invalid_type() {
 		insert(10, new TestValue("Bob"));
 		try {
-			db.getCollection(TestValue2.class, BlueKey.class, "testing");
+			db.getCollection(TestValue2.class, TimeKey.class, getTimeCollectionName());
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -74,11 +75,11 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_query_count() {
 		try {
-			assertEquals(0, getCollection().query().count());
+			assertEquals(0, getTimeCollection().query().count());
 			BlueKey key = insert(10, new TestValue("Joe", 0));
-			assertEquals(1, getCollection().query().count());
-			getCollection().delete(key);
-			assertEquals(0, getCollection().query().count());
+			assertEquals(1, getTimeCollection().query().count());
+			getTimeCollection().delete(key);
+			assertEquals(0, getTimeCollection().query().count());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -93,9 +94,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(2, valueBob);
 		List<TestValue> storedValues;
 		try {
-			storedValues = getCollection().query().getList();
+			storedValues = getTimeCollection().query().getList();
 			assertEquals(2, storedValues.size());
-			List<TestValue> joeOnly = getCollection().query().where((v) -> v.getName().equals("Joe")).getList();
+			List<TestValue> joeOnly = getTimeCollection().query().where((v) -> v.getName().equals("Joe")).getList();
 			assertEquals(1, joeOnly.size());
 			assertEquals(valueJoe, joeOnly.get(0));
 		} catch (BlueDbException e) {
@@ -111,9 +112,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, 2, value1to2);
 		insert(2, 3, value2to3);
 		try {
-			List<TestValue> before3 = getCollection().query().beforeTime(3).getList();
-			List<TestValue> before2 = getCollection().query().beforeTime(2).getList();
-			List<TestValue> before1 = getCollection().query().beforeTime(1).getList();
+			List<TestValue> before3 = getTimeCollection().query().beforeTime(3).getList();
+			List<TestValue> before2 = getTimeCollection().query().beforeTime(2).getList();
+			List<TestValue> before1 = getTimeCollection().query().beforeTime(1).getList();
 			assertEquals(2, before3.size());
 			assertEquals(1, before2.size());
 			assertEquals(0, before1.size());
@@ -134,9 +135,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, valueAt1);
 		insert(2, valueAt2);
 		try {
-			List<TestValue> before3 = getCollection().query().beforeTime(3).getList();
-			List<TestValue> before2 = getCollection().query().beforeTime(2).getList();
-			List<TestValue> before1 = getCollection().query().beforeTime(1).getList();
+			List<TestValue> before3 = getTimeCollection().query().beforeTime(3).getList();
+			List<TestValue> before2 = getTimeCollection().query().beforeTime(2).getList();
+			List<TestValue> before1 = getTimeCollection().query().beforeTime(1).getList();
 			assertEquals(2, before3.size());
 			assertEquals(1, before2.size());
 			assertEquals(0, before1.size());
@@ -157,10 +158,10 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, 2, value1to2);
 		insert(2, 3, value2to3);
 		try {
-			List<TestValue> beforeOrAt3 = getCollection().query().beforeOrAtTime(3).getList();
-			List<TestValue> beforeOrAt2 = getCollection().query().beforeOrAtTime(2).getList();
-			List<TestValue> beforeOrAt1 = getCollection().query().beforeOrAtTime(1).getList();
-			List<TestValue> beforeOrAt0 = getCollection().query().beforeOrAtTime(0).getList();
+			List<TestValue> beforeOrAt3 = getTimeCollection().query().beforeOrAtTime(3).getList();
+			List<TestValue> beforeOrAt2 = getTimeCollection().query().beforeOrAtTime(2).getList();
+			List<TestValue> beforeOrAt1 = getTimeCollection().query().beforeOrAtTime(1).getList();
+			List<TestValue> beforeOrAt0 = getTimeCollection().query().beforeOrAtTime(0).getList();
 			assertEquals(2, beforeOrAt3.size());
 			assertEquals(2, beforeOrAt2.size());
 			assertEquals(1, beforeOrAt1.size());
@@ -184,9 +185,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, valueAt1);
 		insert(2, valueAt2);
 		try {
-			List<TestValue> beforeOrAt3 = getCollection().query().beforeOrAtTime(3).getList();
-			List<TestValue> beforeOrAt2 = getCollection().query().beforeOrAtTime(2).getList();
-			List<TestValue> beforeOrAt1 = getCollection().query().beforeOrAtTime(1).getList();
+			List<TestValue> beforeOrAt3 = getTimeCollection().query().beforeOrAtTime(3).getList();
+			List<TestValue> beforeOrAt2 = getTimeCollection().query().beforeOrAtTime(2).getList();
+			List<TestValue> beforeOrAt1 = getTimeCollection().query().beforeOrAtTime(1).getList();
 			assertEquals(2, beforeOrAt3.size());
 			assertEquals(2, beforeOrAt2.size());
 			assertEquals(1, beforeOrAt1.size());
@@ -209,10 +210,10 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, 2, value1to2);
 		insert(2, 3, value2to3);
 		try {
-			List<TestValue> after3 = getCollection().query().afterTime(3).getList();
-			List<TestValue> after2 = getCollection().query().afterTime(2).getList();
-			List<TestValue> after1 = getCollection().query().afterTime(1).getList();
-			List<TestValue> after0 = getCollection().query().afterTime(0).getList();
+			List<TestValue> after3 = getTimeCollection().query().afterTime(3).getList();
+			List<TestValue> after2 = getTimeCollection().query().afterTime(2).getList();
+			List<TestValue> after1 = getTimeCollection().query().afterTime(1).getList();
+			List<TestValue> after0 = getTimeCollection().query().afterTime(0).getList();
 			assertEquals(2, after0.size());
 			assertEquals(2, after1.size());
 			assertEquals(1, after2.size());
@@ -236,9 +237,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, valueAt1);
 		insert(2, valueAt2);
 		try {
-			List<TestValue> after2 = getCollection().query().afterTime(2).getList();
-			List<TestValue> after1 = getCollection().query().afterTime(1).getList();
-			List<TestValue> after0 = getCollection().query().afterTime(0).getList();
+			List<TestValue> after2 = getTimeCollection().query().afterTime(2).getList();
+			List<TestValue> after1 = getTimeCollection().query().afterTime(1).getList();
+			List<TestValue> after0 = getTimeCollection().query().afterTime(0).getList();
 			assertEquals(2, after0.size());
 			assertEquals(1, after1.size());
 			assertEquals(0, after2.size());
@@ -259,11 +260,11 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, 2, value1to2);
 		insert(2, 3, value2to3);
 		try {
-			List<TestValue> afterOrAt4 = getCollection().query().afterOrAtTime(4).getList();
-			List<TestValue> afterOrAt3 = getCollection().query().afterOrAtTime(3).getList();
-			List<TestValue> afterOrAt2 = getCollection().query().afterOrAtTime(2).getList();
-			List<TestValue> afterOrAt1 = getCollection().query().afterOrAtTime(1).getList();
-			List<TestValue> afterOrAt0 = getCollection().query().afterOrAtTime(0).getList();
+			List<TestValue> afterOrAt4 = getTimeCollection().query().afterOrAtTime(4).getList();
+			List<TestValue> afterOrAt3 = getTimeCollection().query().afterOrAtTime(3).getList();
+			List<TestValue> afterOrAt2 = getTimeCollection().query().afterOrAtTime(2).getList();
+			List<TestValue> afterOrAt1 = getTimeCollection().query().afterOrAtTime(1).getList();
+			List<TestValue> afterOrAt0 = getTimeCollection().query().afterOrAtTime(0).getList();
 			assertEquals(2, afterOrAt0.size());
 			assertEquals(2, afterOrAt1.size());
 			assertEquals(2, afterOrAt2.size());
@@ -290,9 +291,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(1, valueAt1);
 		insert(2, valueAt2);
 		try {
-			List<TestValue> afterOrAt2 = getCollection().query().afterOrAtTime(2).getList();
-			List<TestValue> afterOrAt1 = getCollection().query().afterOrAtTime(1).getList();
-			List<TestValue> afterOrAt0 = getCollection().query().afterOrAtTime(0).getList();
+			List<TestValue> afterOrAt2 = getTimeCollection().query().afterOrAtTime(2).getList();
+			List<TestValue> afterOrAt1 = getTimeCollection().query().afterOrAtTime(1).getList();
+			List<TestValue> afterOrAt0 = getTimeCollection().query().afterOrAtTime(0).getList();
 			assertEquals(2, afterOrAt0.size());
 			assertEquals(2, afterOrAt1.size());
 			assertEquals(1, afterOrAt2.size());
@@ -316,20 +317,20 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(3, valueAt3);
 		try {
 			// various queries outside the range
-			List<TestValue> after0before1 = getCollection().query().afterTime(0).beforeTime(1).getList();
-			List<TestValue> after0beforeOrAt1 = getCollection().query().afterTime(0).beforeOrAtTime(1).getList();
-			List<TestValue> afterOrAt0before1 = getCollection().query().afterOrAtTime(0).beforeTime(1).getList();
-			List<TestValue> afterOrAt0beforeOrAt1 = getCollection().query().afterOrAtTime(0).beforeOrAtTime(1).getList();
+			List<TestValue> after0before1 = getTimeCollection().query().afterTime(0).beforeTime(1).getList();
+			List<TestValue> after0beforeOrAt1 = getTimeCollection().query().afterTime(0).beforeOrAtTime(1).getList();
+			List<TestValue> afterOrAt0before1 = getTimeCollection().query().afterOrAtTime(0).beforeTime(1).getList();
+			List<TestValue> afterOrAt0beforeOrAt1 = getTimeCollection().query().afterOrAtTime(0).beforeOrAtTime(1).getList();
 			assertEquals(0, after0before1.size());
 			assertEquals(0, after0beforeOrAt1.size());
 			assertEquals(0, afterOrAt0before1.size());
 			assertEquals(0, afterOrAt0beforeOrAt1.size());
 
 			// various queries inside the range
-			List<TestValue> after2before3 = getCollection().query().afterTime(2).beforeTime(3).getList();
-			List<TestValue> after2beforeOrAt3 = getCollection().query().afterTime(2).beforeOrAtTime(3).getList();
-			List<TestValue> afterOrAt2before3 = getCollection().query().afterOrAtTime(2).beforeTime(3).getList();
-			List<TestValue> afterOrAt2beforeOrAt3 = getCollection().query().afterOrAtTime(2).beforeOrAtTime(3).getList();
+			List<TestValue> after2before3 = getTimeCollection().query().afterTime(2).beforeTime(3).getList();
+			List<TestValue> after2beforeOrAt3 = getTimeCollection().query().afterTime(2).beforeOrAtTime(3).getList();
+			List<TestValue> afterOrAt2before3 = getTimeCollection().query().afterOrAtTime(2).beforeTime(3).getList();
+			List<TestValue> afterOrAt2beforeOrAt3 = getTimeCollection().query().afterOrAtTime(2).beforeOrAtTime(3).getList();
 			assertEquals(0, after2before3.size());
 			assertEquals(1, after2beforeOrAt3.size());
 			assertEquals(1, afterOrAt2before3.size());
@@ -354,9 +355,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(2, valueBob);
 		List<TestValue> storedValues;
 		try {
-			storedValues = getCollection().query().getList();
+			storedValues = getTimeCollection().query().getList();
 			assertEquals(2, storedValues.size());
-			List<TestValue> joeOnly = getCollection().query().where((v) -> v.getName().equals("Joe")).getList();
+			List<TestValue> joeOnly = getTimeCollection().query().where((v) -> v.getName().equals("Joe")).getList();
 			assertEquals(1, joeOnly.size());
 			assertEquals(valueJoe, joeOnly.get(0));
 		} catch (BlueDbException e) {
@@ -373,7 +374,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(2, valueBob);
 		Iterator<TestValue> iter;
 		try {
-			iter = getCollection().query().getIterator();
+			iter = getTimeCollection().query().getIterator();
 			List<TestValue> list = new ArrayList<>();
 			iter.forEachRemaining(list::add);
 			assertEquals(2, list.size());
@@ -391,7 +392,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		BlueKey keyBob   = insert(2, new TestValue("Bob", 0));
 		BlueKey keyJosey = insert(2,  new TestValue("Josey", 0));
 		BlueKey keyBobby = insert(3, new TestValue("Bobby", 0));
-		BlueQuery<TestValue> queryForJosey = getCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
+		BlueQuery<TestValue> queryForJosey = getTimeCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
 		try {
 			// sanity check
 			assertCupcakes(keyJoe, 0);
@@ -407,7 +408,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 			assertCupcakes(keyBobby, 0);
 
 			// test update all
-			getCollection().query().update((v) -> v.addCupcake());
+			getTimeCollection().query().update((v) -> v.addCupcake());
 			assertCupcakes(keyJoe, 1);
 			assertCupcakes(keyBob, 1);
 			assertCupcakes(keyJosey, 2);
@@ -429,23 +430,23 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		insert(2, valueJosey);
 		insert(3, valueBobby);
 		List<TestValue> storedValues;
-		BlueQuery<TestValue> queryForJosey = getCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
+		BlueQuery<TestValue> queryForJosey = getTimeCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
 		try {
 			// sanity check
-			storedValues = getCollection().query().getList();
+			storedValues = getTimeCollection().query().getList();
 			assertEquals(4, storedValues.size());
 			assertTrue(storedValues.contains(valueJosey));
 
 			// test if delete works with query conditions
 			queryForJosey.delete();
-			storedValues = getCollection().query().getList();
+			storedValues = getTimeCollection().query().getList();
 			assertEquals(3, storedValues.size());
 			assertFalse(storedValues.contains(valueJosey));
 			assertTrue(storedValues.contains(valueJoe));
 
 			// test if delete works without conditions
-			getCollection().query().delete();
-			storedValues = getCollection().query().getList();
+			getTimeCollection().query().delete();
+			storedValues = getTimeCollection().query().getList();
 			assertEquals(0, storedValues.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
@@ -456,7 +457,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getAllCollectionsFromDisk() {
 		try {
-			getCollection();
+			getTimeCollection();
 			List<BlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
 			assertEquals(1, allCollections.size());
 			db().getCollection(String.class, BlueKey.class, "string");
@@ -474,9 +475,9 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		try {
 			BlueKey key1At1 = createKey(1, 1);
 			TestValue value1 = createValue("Anna");
-			getCollection().insert(key1At1, value1);
+			getTimeCollection().insert(key1At1, value1);
 
-			BlueCollectionOnDisk<TestValue2> secondCollection = (BlueCollectionOnDisk<TestValue2>) db().getCollection(TestValue2.class, BlueKey.class, "testing_2");
+			BlueCollectionOnDisk<TestValue2> secondCollection = (BlueCollectionOnDisk<TestValue2>) db().getCollection(TestValue2.class, TimeKey.class, "testing_2");
 			TestValue2 valueInSecondCollection = new TestValue2("Joe", 3);
 			secondCollection.insert(key1At1, valueInSecondCollection);
 
@@ -490,14 +491,14 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 			Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
 
 			BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(restoredBlueDbPath).build();
-			BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, BlueKey.class, "testing");
+			BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, TimeKey.class, "testing");
 			assertTrue(restoredCollection.contains(key1At1));
 			assertEquals(value1, restoredCollection.get(key1At1));
 			Long restoredMaxLong = restoredCollection.getMaxLongId();
 			assertNotNull(restoredMaxLong);
-			assertEquals(getCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
+			assertEquals(getTimeCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
 
-			BlueCollectionOnDisk<TestValue2> secondCollectionRestored = (BlueCollectionOnDisk<TestValue2>) restoredDb.getCollection(TestValue2.class, BlueKey.class, "testing_2");
+			BlueCollectionOnDisk<TestValue2> secondCollectionRestored = (BlueCollectionOnDisk<TestValue2>) restoredDb.getCollection(TestValue2.class, TimeKey.class, "testing_2");
 			assertTrue(secondCollectionRestored.contains(key1At1));
 			assertEquals(valueInSecondCollection, secondCollectionRestored.get(key1At1));
 		} catch (IOException | BlueDbException e) {
