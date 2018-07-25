@@ -24,6 +24,7 @@ import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
@@ -420,7 +421,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(2, segmentDirectoryContents.length);
 
 		long segmentSize = getValueCollection().getSegmentManager().getSegmentSize();
-		long segmentStart = key0.getGroupingNumber();
+		long segmentStart = Blutils.roundDownToMultiple(key0.getGroupingNumber(), segmentSize);
 		Range entireFirstSegmentTimeRange = new Range(segmentStart, segmentStart + segmentSize -1);
 		Range offByOneSegmentTimeRange = new Range(segmentStart, segmentStart + segmentSize);
 		try {
