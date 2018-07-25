@@ -74,7 +74,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 	public void test_applyChange_delete() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		insert(key, value);
+		insertToTimeCollection(key, value);
 		PendingChange<TestValue> change = PendingChange.createDelete(key);
 		try {
 			assertEquals(value, getTimeCollection().get(key));
@@ -92,7 +92,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 	public void test_applyChange_update() {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		insert(key, value);
+		insertToTimeCollection(key, value);
 		Updater<TestValue> updater = ((v) -> v.addCupcake());
 		TestValue newValue = getSerializer().clone(value);
 		updater.update(newValue);

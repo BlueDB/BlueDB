@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
@@ -35,6 +36,7 @@ import junit.framework.TestCase;
 public abstract class BlueDbDiskTestBase extends TestCase {
 
 	private static String TIME_COLLECTION_NAME = "testing_time";
+	private static String VALUE_COLLECTION_NAME = "testing_value";
 	BlueDbOnDisk db;
 	BlueCollectionOnDisk<TestValue> timeCollection;
 	BlueCollectionOnDisk<TestValue> valueCollection;
@@ -48,7 +50,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		dbPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		timeCollection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, TimeKey.class, TIME_COLLECTION_NAME);
-		valueCollection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, ValueKey.class, "testing_value");
+		valueCollection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, ValueKey.class, VALUE_COLLECTION_NAME);
 		dbPath = db.getPath();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
@@ -65,6 +67,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public BlueCollectionOnDisk<TestValue> getTimeCollection() {
 		return timeCollection;
+	}
+
+	public BlueCollectionOnDisk<TestValue> getValueCollection() {
+		return valueCollection;
 	}
 
 	public LockManager<Path> getLockManager() {
@@ -131,13 +137,28 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return new TimeFrameKey(stringKey, start, end);
 	}
 
-	public BlueKey insert(long time, TestValue value) {
+	public BlueKey insertAtTime(long time, TestValue value) {
 		BlueKey key = createTimeKey(time, value);
-		insert(key, value);
+		insertToTimeCollection(key, value);
 		return key;
 	}
 
-	public void insert(BlueKey key, TestValue value) {
+	public BlueKey insertAtLong(long id, TestValue value) {
+		BlueKey key = new LongKey(id);
+		insertToValueCollection(key, value);
+		return key;
+	}
+
+	public void insertToValueCollection(BlueKey key, TestValue value) {
+		try {
+			getValueCollection().insert(key, value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	public void insertToTimeCollection(BlueKey key, TestValue value) {
 		try {
 			getTimeCollection().insert(key, value);
 		} catch (BlueDbException e) {
@@ -146,9 +167,9 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public BlueKey insert(long start, long end, TestValue value) {
+	public BlueKey insertAtTimeFrame(long start, long end, TestValue value) {
 		BlueKey key = createTimeFrameKey(start, end, value);
-		insert(key, value);
+		insertToTimeCollection(key, value);
 		return key;
 	}
 

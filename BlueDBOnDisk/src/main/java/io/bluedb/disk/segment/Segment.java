@@ -100,7 +100,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	public void rollup(Range timeRange) throws BlueDbException {
-		if (!isValidRollupSize(timeRange)) {
+		if (!isValidRollupRange(timeRange)) {
 			throw new BlueDbException("Not a valid rollup size: " + timeRange);
 		}
 		List<File> filesToRollup = getOrderedFilesInRange(timeRange);
@@ -116,9 +116,11 @@ public class Segment <T extends Serializable> {
 		}
 	}
 
-	public boolean isValidRollupSize(Range timeRange) {
+	public boolean isValidRollupRange(Range timeRange) {
 		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
-		return rollupLevels.contains(rollupSize);
+		boolean isValidSize = rollupLevels.contains(rollupSize);
+		boolean isValidStartPoint = timeRange.getStart() % rollupSize == 0;
+		return isValidSize && isValidStartPoint;
 	}
 
 	void copy(Path destination, List<File> sources) throws BlueDbException {

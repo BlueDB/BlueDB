@@ -64,7 +64,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getCollection_invalid_type() {
-		insert(10, new TestValue("Bob"));
+		insertAtTime(10, new TestValue("Bob"));
 		try {
 			db.getCollection(TestValue2.class, TimeKey.class, getTimeCollectionName());
 			fail();
@@ -85,7 +85,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_count() {
 		try {
 			assertEquals(0, getTimeCollection().query().count());
-			BlueKey key = insert(10, new TestValue("Joe", 0));
+			BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
 			assertEquals(1, getTimeCollection().query().count());
 			getTimeCollection().delete(key);
 			assertEquals(0, getTimeCollection().query().count());
@@ -99,8 +99,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_where() {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
-		insert(1, valueJoe);
-		insert(2, valueBob);
+		insertAtTime(1, valueJoe);
+		insertAtTime(2, valueBob);
 		List<TestValue> storedValues;
 		try {
 			storedValues = getTimeCollection().query().getList();
@@ -118,8 +118,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_beforeTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
-		insert(1, 2, value1to2);
-		insert(2, 3, value2to3);
+		insertAtTimeFrame(1, 2, value1to2);
+		insertAtTimeFrame(2, 3, value2to3);
 		try {
 			List<TestValue> before3 = getTimeCollection().query().beforeTime(3).getList();
 			List<TestValue> before2 = getTimeCollection().query().beforeTime(2).getList();
@@ -141,8 +141,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_beforeTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
-		insert(1, valueAt1);
-		insert(2, valueAt2);
+		insertAtTime(1, valueAt1);
+		insertAtTime(2, valueAt2);
 		try {
 			List<TestValue> before3 = getTimeCollection().query().beforeTime(3).getList();
 			List<TestValue> before2 = getTimeCollection().query().beforeTime(2).getList();
@@ -164,8 +164,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_beforeOrAtTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
-		insert(1, 2, value1to2);
-		insert(2, 3, value2to3);
+		insertAtTimeFrame(1, 2, value1to2);
+		insertAtTimeFrame(2, 3, value2to3);
 		try {
 			List<TestValue> beforeOrAt3 = getTimeCollection().query().beforeOrAtTime(3).getList();
 			List<TestValue> beforeOrAt2 = getTimeCollection().query().beforeOrAtTime(2).getList();
@@ -191,8 +191,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_beforeOrAtTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
-		insert(1, valueAt1);
-		insert(2, valueAt2);
+		insertAtTime(1, valueAt1);
+		insertAtTime(2, valueAt2);
 		try {
 			List<TestValue> beforeOrAt3 = getTimeCollection().query().beforeOrAtTime(3).getList();
 			List<TestValue> beforeOrAt2 = getTimeCollection().query().beforeOrAtTime(2).getList();
@@ -216,8 +216,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_AfterTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
-		insert(1, 2, value1to2);
-		insert(2, 3, value2to3);
+		insertAtTimeFrame(1, 2, value1to2);
+		insertAtTimeFrame(2, 3, value2to3);
 		try {
 			List<TestValue> after3 = getTimeCollection().query().afterTime(3).getList();
 			List<TestValue> after2 = getTimeCollection().query().afterTime(2).getList();
@@ -243,8 +243,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_AfterTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
-		insert(1, valueAt1);
-		insert(2, valueAt2);
+		insertAtTime(1, valueAt1);
+		insertAtTime(2, valueAt2);
 		try {
 			List<TestValue> after2 = getTimeCollection().query().afterTime(2).getList();
 			List<TestValue> after1 = getTimeCollection().query().afterTime(1).getList();
@@ -266,8 +266,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_AfterOrAtTime_timeframe() {
 		TestValue value1to2 = new TestValue("Joe");
 		TestValue value2to3 = new TestValue("Bob");
-		insert(1, 2, value1to2);
-		insert(2, 3, value2to3);
+		insertAtTimeFrame(1, 2, value1to2);
+		insertAtTimeFrame(2, 3, value2to3);
 		try {
 			List<TestValue> afterOrAt4 = getTimeCollection().query().afterOrAtTime(4).getList();
 			List<TestValue> afterOrAt3 = getTimeCollection().query().afterOrAtTime(3).getList();
@@ -297,8 +297,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_AfterOrAtTime() {
 		TestValue valueAt1 = new TestValue("Joe");
 		TestValue valueAt2 = new TestValue("Bob");
-		insert(1, valueAt1);
-		insert(2, valueAt2);
+		insertAtTime(1, valueAt1);
+		insertAtTime(2, valueAt2);
 		try {
 			List<TestValue> afterOrAt2 = getTimeCollection().query().afterOrAtTime(2).getList();
 			List<TestValue> afterOrAt1 = getTimeCollection().query().afterOrAtTime(1).getList();
@@ -322,8 +322,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_query_Between() {
 		TestValue valueAt2 = new TestValue("Joe");
 		TestValue valueAt3 = new TestValue("Bob");
-		insert(2, valueAt2);
-		insert(3, valueAt3);
+		insertAtTime(2, valueAt2);
+		insertAtTime(3, valueAt3);
 		try {
 			// various queries outside the range
 			List<TestValue> after0before1 = getTimeCollection().query().afterTime(0).beforeTime(1).getList();
@@ -360,8 +360,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getList() {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
-		insert(1, valueJoe);
-		insert(2, valueBob);
+		insertAtTime(1, valueJoe);
+		insertAtTime(2, valueBob);
 		List<TestValue> storedValues;
 		try {
 			storedValues = getTimeCollection().query().getList();
@@ -379,8 +379,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getIterator() {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
-		insert(1, valueJoe);
-		insert(2, valueBob);
+		insertAtTime(1, valueJoe);
+		insertAtTime(2, valueBob);
 		Iterator<TestValue> iter;
 		try {
 			iter = getTimeCollection().query().getIterator();
@@ -397,10 +397,10 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	
 	@Test
 	public void test_query_update() {
-		BlueKey keyJoe   = insert(1, new TestValue("Joe", 0));
-		BlueKey keyBob   = insert(2, new TestValue("Bob", 0));
-		BlueKey keyJosey = insert(2,  new TestValue("Josey", 0));
-		BlueKey keyBobby = insert(3, new TestValue("Bobby", 0));
+		BlueKey keyJoe   = insertAtTime(1, new TestValue("Joe", 0));
+		BlueKey keyBob   = insertAtTime(2, new TestValue("Bob", 0));
+		BlueKey keyJosey = insertAtTime(2,  new TestValue("Josey", 0));
+		BlueKey keyBobby = insertAtTime(3, new TestValue("Bobby", 0));
 		BlueQuery<TestValue> queryForJosey = getTimeCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
 		try {
 			// sanity check
@@ -434,10 +434,10 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		TestValue valueBob = new TestValue("Bob");
 		TestValue valueJosey = new TestValue("Josey");
 		TestValue valueBobby = new TestValue("Bobby");
-		insert(1, valueJoe);
-		insert(2, valueBob);
-		insert(2, valueJosey);
-		insert(3, valueBobby);
+		insertAtTime(1, valueJoe);
+		insertAtTime(2, valueBob);
+		insertAtTime(2, valueJosey);
+		insertAtTime(3, valueBobby);
 		List<TestValue> storedValues;
 		BlueQuery<TestValue> queryForJosey = getTimeCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
 		try {

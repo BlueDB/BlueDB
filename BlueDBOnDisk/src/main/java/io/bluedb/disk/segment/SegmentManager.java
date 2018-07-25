@@ -8,6 +8,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.segment.path.NontimeSegmentPathManager;
 import io.bluedb.disk.segment.path.SegmentPathManager;
 import io.bluedb.disk.segment.path.TimeSegmentPathManager;
 
@@ -65,7 +66,7 @@ public class SegmentManager<T extends Serializable> {
 		if (TimeKey.class.isAssignableFrom(keyType)) {
 			return new TimeSegmentPathManager(collectionPath);
 		} else if (ValueKey.class.isAssignableFrom(keyType)) {
-			return new TimeSegmentPathManager(collectionPath);
+			return new NontimeSegmentPathManager(collectionPath);
 		} else {
 			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
 		}
