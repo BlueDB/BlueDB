@@ -28,7 +28,7 @@ public class TimeKey implements BlueKey {
 	}
 	
 	@Override
-	public long getGroupingNumber() {
+	public final long getGroupingNumber() {
 		return time;
 	}
 
