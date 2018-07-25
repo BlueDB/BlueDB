@@ -2,10 +2,14 @@ package io.bluedb.disk.segment.path;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.FileManager;
 
 
@@ -13,15 +17,42 @@ public interface SegmentPathManager {
 
 	public Path getSegmentPath(BlueKey key);
 
-	public Path getSegmentPath(long groupingNumber);
-
-	public List<Path> getAllPossibleSegmentPaths(BlueKey key);
-
-	public List<File> getExistingSegmentFiles(long minValue, long maxValue);
+	public Path getCollectionPath();
 
 	public long getSegmentSize();
 
+	public List<Long> getFolderSizes();
+
 	public List<Long> getRollupLevels();
+
+	public default Path getSegmentPath(long groupingNumber) {
+		Function<Long, String> calculateFolderName = (size) -> String.valueOf(groupingNumber / size);
+		String[] folderNames= getFolderSizes().stream().map(calculateFolderName).toArray(String[]::new);
+		return Paths.get(getCollectionPath().toString(), folderNames);
+	}
+
+	public default List<Path> getAllPossibleSegmentPaths(BlueKey key) {
+		long segmentSize = getSegmentSize();
+		List<Path> paths = new ArrayList<>();
+		long groupingNumber = key.getGroupingNumber();
+		long minTime = Blutils.roundDownToMultiple(groupingNumber, segmentSize);
+		long i = minTime;
+		while (key.isInRange(i, i + segmentSize - 1)) {
+			Path path = getSegmentPath(i);
+			paths.add(path);
+			i += segmentSize;
+		}
+		return paths;
+	}
+
+	public default List<File> getExistingSegmentFiles(long minValue, long maxValue) {
+		File collectionFolder = getCollectionPath().toFile();
+		List<File> foldersAtCurrentLevel = Arrays.asList(collectionFolder);
+		for (Long folderSizeThisCurrentLevel: getFolderSizes()) {
+			foldersAtCurrentLevel = SegmentPathManager.getSubfoldersInRange(foldersAtCurrentLevel, minValue/folderSizeThisCurrentLevel, maxValue/folderSizeThisCurrentLevel);
+		}
+		return foldersAtCurrentLevel;
+	}
 
 	public static List<File> getSubfoldersInRange(File folder, long minValue, long maxValue) {
 		return FileManager.getFolderContents(folder)

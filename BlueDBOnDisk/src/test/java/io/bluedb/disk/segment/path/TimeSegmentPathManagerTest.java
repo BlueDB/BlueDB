@@ -3,8 +3,11 @@ package io.bluedb.disk.segment.path;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Test;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
@@ -60,7 +63,7 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 		long startTime = 987654321;
 		TimeKey timeKey = new TimeKey(1, startTime);
-		TimeFrameKey timeFrameKey = new TimeFrameKey(2, startTime, startTime + TimeSegmentPathManager.SIZE_SEGMENT * 4);
+		TimeFrameKey timeFrameKey = new TimeFrameKey(2, startTime, startTime + getPathManager().getSegmentSize() * 4);
 
 		List<Path> singlePathToAdd = getPathManager().getAllPossibleSegmentPaths(timeKey);
 		assertEquals(1, singlePathToAdd.size());
@@ -82,7 +85,9 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getAllPossibleSegmentPaths() {
-		TimeFrameKey timeFrameKey = new TimeFrameKey(42, 0, TimeSegmentPathManager.SIZE_SEGMENT);
+		SegmentPathManager pathManager = getPathManager();
+		long segmentSize = pathManager.getSegmentSize();
+		TimeFrameKey timeFrameKey = new TimeFrameKey(42, 0, segmentSize);
 		List<Path> paths = getPathManager().getAllPossibleSegmentPaths(timeFrameKey);
 		assertEquals(2, paths.size());
 		
@@ -91,23 +96,25 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 		Path grandparent = parent.getParent();
 		Path greatGrandparent = grandparent.getParent();
 		
-		String fname = String.valueOf( (TimeSegmentPathManager.SIZE_SEGMENT / TimeSegmentPathManager.SIZE_SEGMENT) );
-		String parentName = String.valueOf( (TimeSegmentPathManager.SIZE_SEGMENT / TimeSegmentPathManager.SIZE_FOLDER_BOTTOM) );
-		String grandparentName = String.valueOf( (TimeSegmentPathManager.SIZE_SEGMENT / TimeSegmentPathManager.SIZE_FOLDER_MIDDLE) );
-		String greatGrandparentName = String.valueOf( (TimeSegmentPathManager.SIZE_SEGMENT / TimeSegmentPathManager.SIZE_FOLDER_TOP) );
+		List<Long> folderSizes = new ArrayList<>(getPathManager().getFolderSizes());
+		Collections.reverse(folderSizes);
+		String fname = String.valueOf( (segmentSize / folderSizes.get(0)) );
+		String parentName = String.valueOf( (segmentSize / folderSizes.get(1)) );
+		String grandparentName = String.valueOf( (segmentSize / folderSizes.get(2)) );
+		String greatGrandparentName = String.valueOf( (segmentSize / folderSizes.get(3)) );
 		assertEquals(fname, secondPath.getFileName().toString());
 		assertEquals(parentName, parent.getFileName().toString());
 		assertEquals(grandparentName, grandparent.getFileName().toString());
 		assertEquals(greatGrandparentName, greatGrandparent.getFileName().toString());
 
-		BlueKey timeKey = new TimeKey(1, TimeSegmentPathManager.SIZE_SEGMENT);
+		BlueKey timeKey = new TimeKey(1, segmentSize);
 		List<Path> timePaths = getPathManager().getAllPossibleSegmentPaths(timeKey);
 		assertEquals(secondPath, timePaths.get(0));
 	}
 
 	@Test
 	public void test_getSegmentPath_key() {
-		BlueKey key = new TimeKey(5, createTime(4, 3, 2, 1));
+		BlueKey key = new TimeKey(5, randomTime());
 		List<Path> paths = getPathManager().getAllPossibleSegmentPaths(key);
 		assertEquals(1, paths.size());
 		assertEquals(paths.get(0), getPathManager().getSegmentPath(key));
@@ -124,11 +131,8 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 		return file;
 	}
 
-	private long createTime(long level0, long level1, long level2, long level3) {
-		return
-				level0 * TimeSegmentPathManager.SIZE_FOLDER_TOP +
-				level1 * TimeSegmentPathManager.SIZE_FOLDER_MIDDLE +
-				level2 * TimeSegmentPathManager.SIZE_FOLDER_BOTTOM +
-				level3 * TimeSegmentPathManager.SIZE_SEGMENT;
+	private long randomTime() {
+		long aboutOneHundredYears = 100 * 365 * 24 * 60 * 60 * 1000;
+		return ThreadLocalRandom.current().nextLong(aboutOneHundredYears);
 	}
 }
