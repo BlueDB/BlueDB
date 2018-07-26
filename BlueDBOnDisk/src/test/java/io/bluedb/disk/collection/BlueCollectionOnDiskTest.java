@@ -34,35 +34,25 @@ import io.bluedb.disk.serialization.BlueEntity;
 public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_query() {
+	public void test_query() throws Exception {
 		TestValue value = new TestValue("Joe");
 		insertAtTime(1, value);
-		try {
-			List<TestValue> values = getTimeCollection().query().getList();
-			assertEquals(1, values.size());
-			assertTrue(values.contains(value));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		List<TestValue> values = getTimeCollection().query().getList();
+		assertEquals(1, values.size());
+		assertTrue(values.contains(value));
 	}
 
 	@Test
-	public void test_contains() {
+	public void test_contains() throws Exception {
 		TestValue value = new TestValue("Joe");
 		insertAtTime(1, value);
-		try {
-			List<TestValue> values = getTimeCollection().query().getList();
-			assertEquals(1, values.size());
-			assertTrue(values.contains(value));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		List<TestValue> values = getTimeCollection().query().getList();
+		assertEquals(1, values.size());
+		assertTrue(values.contains(value));
 	}
 
 	@Test
-	public void test_get() {
+	public void test_get() throws Exception {
 		TestValue value = new TestValue("Joe");
 		TestValue differentValue = new TestValue("Bob");
 		BlueKey key = createTimeKey(10, value);
@@ -70,16 +60,11 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		BlueKey sameValueDifferentTime = createTimeKey(20, value);
 		BlueKey differentValueAndTime = createTimeKey(20, differentValue);
 		insertToTimeCollection(key, value);
-		try {
-			assertEquals(value, getTimeCollection().get(key));
-			assertNotEquals(value, differentValue);
-			assertNotEquals(value, getTimeCollection().get(sameTimeDifferentValue));
-			assertNotEquals(value, getTimeCollection().get(sameValueDifferentTime));
-			assertNotEquals(value, getTimeCollection().get(differentValueAndTime));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		assertEquals(value, getTimeCollection().get(key));
+		assertNotEquals(value, differentValue);
+		assertNotEquals(value, getTimeCollection().get(sameTimeDifferentValue));
+		assertNotEquals(value, getTimeCollection().get(sameValueDifferentTime));
+		assertNotEquals(value, getTimeCollection().get(differentValueAndTime));
 	}
 
 	@Test
@@ -96,16 +81,11 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_update() {
+	public void test_update() throws Exception {
 		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
-		try {
-			assertCupcakes(key, 0);
-			getTimeCollection().update(key, (v) -> v.addCupcake());
-			assertCupcakes(key, 1);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+        assertCupcakes(key, 0);
+        getTimeCollection().update(key, (v) -> v.addCupcake());
+        assertCupcakes(key, 1);
 	}
 
 	@Test
@@ -120,85 +100,65 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_delete() {
+	public void test_delete() throws Exception {
 		TestValue value = new TestValue("Joe");
-		BlueKey key = insertAtTime(10, value);
-		try {
-			assertValueAtKey(key, value);
-			getTimeCollection().delete(key);
-			assertValueNotAtKey(key, value);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+        BlueKey key = insertAtTime(10, value);
+        assertValueAtKey(key, value);
+        getTimeCollection().delete(key);
+        assertValueNotAtKey(key, value);
 	}
 
 	@Test
-	public void test_maxLong_maxInt() {
+	public void test_maxLong_maxInt() throws Exception {
 		TestValue value = new TestValue("Joe");
 		BlueKey key = createTimeKey(10, value);
 		insertToTimeCollection(key, value);
 		assertValueAtKey(key, value);
 
 		// test max long
-		try {
-			assertNull(getTimeCollection().getMaxLongId());  // since the last insert was a String key;
-			BlueKey timeKeyWithLong3 = new TimeKey(3L, 4);
-			getTimeCollection().insert(timeKeyWithLong3, value);
-			assertNotNull(getTimeCollection().getMaxLongId());
-			assertEquals(3, getTimeCollection().getMaxLongId().longValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}  
+        assertNull(getTimeCollection().getMaxLongId());  // since the last insert was a String key;
+        BlueKey timeKeyWithLong3 = new TimeKey(3L, 4);
+        getTimeCollection().insert(timeKeyWithLong3, value);
+        assertNotNull(getTimeCollection().getMaxLongId());
+        assertEquals(3, getTimeCollection().getMaxLongId().longValue());
 
 		// test max integer
-		try {
-			assertNull(getTimeCollection().getMaxIntegerId());
-			BlueKey timeKeyWithInt5 = new TimeKey(new IntegerKey(5), 4);
-			getTimeCollection().insert(timeKeyWithInt5, value);
-			assertNotNull(getTimeCollection().getMaxIntegerId());
-			assertEquals(5, getTimeCollection().getMaxIntegerId().intValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}  
+        assertNull(getTimeCollection().getMaxIntegerId());
+        BlueKey timeKeyWithInt5 = new TimeKey(new IntegerKey(5), 4);
+        getTimeCollection().insert(timeKeyWithInt5, value);
+        assertNotNull(getTimeCollection().getMaxIntegerId());
+        assertEquals(5, getTimeCollection().getMaxIntegerId().intValue());
 	}
 
 	@Test
-	public void test_findMatches() {
+	public void test_findMatches() throws Exception {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
 		insertAtTime(1, valueJoe);
 		insertAtTime(2, valueBob);
 		List<BlueEntity<TestValue>> allEntities, entitiesWithJoe, entities3to5, entities2to3, entities0to1, entities0to0;
-		try {
-			Condition<TestValue> isJoe = (v) -> v.getName().equals("Joe");
-			allEntities = getTimeCollection().findMatches(0, 3, new ArrayList<>());
-			entitiesWithJoe = getTimeCollection().findMatches(0, 5, Arrays.asList(isJoe));
-			entities3to5 = getTimeCollection().findMatches(3, 5, new ArrayList<>());
-			entities2to3 = getTimeCollection().findMatches(2, 3, new ArrayList<>());
-			entities0to1 = getTimeCollection().findMatches(0, 1, new ArrayList<>());
-			entities0to0 = getTimeCollection().findMatches(0, 0, new ArrayList<>());
 
-			assertEquals(2, allEntities.size());
-			assertEquals(1, entitiesWithJoe.size());
-			assertEquals(valueJoe, entitiesWithJoe.get(0).getValue());
-			assertEquals(0, entities3to5.size());
-			assertEquals(1, entities2to3.size());
-			assertEquals(valueBob, entities2to3.get(0).getValue());
-			assertEquals(1, entities0to1.size());
-			assertEquals(valueJoe, entities0to1.get(0).getValue());
-			assertEquals(0, entities0to0.size());
+		Condition<TestValue> isJoe = (v) -> v.getName().equals("Joe");
+		allEntities = getTimeCollection().findMatches(0, 3, new ArrayList<>());
+		entitiesWithJoe = getTimeCollection().findMatches(0, 5, Arrays.asList(isJoe));
+		entities3to5 = getTimeCollection().findMatches(3, 5, new ArrayList<>());
+		entities2to3 = getTimeCollection().findMatches(2, 3, new ArrayList<>());
+		entities0to1 = getTimeCollection().findMatches(0, 1, new ArrayList<>());
+		entities0to0 = getTimeCollection().findMatches(0, 0, new ArrayList<>());
 
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		assertEquals(2, allEntities.size());
+		assertEquals(1, entitiesWithJoe.size());
+		assertEquals(valueJoe, entitiesWithJoe.get(0).getValue());
+		assertEquals(0, entities3to5.size());
+		assertEquals(1, entities2to3.size());
+		assertEquals(valueBob, entities2to3.get(0).getValue());
+		assertEquals(1, entities0to1.size());
+		assertEquals(valueJoe, entities0to1.get(0).getValue());
+		assertEquals(0, entities0to0.size());
 	}
 
 	@Test
-	public void test_executeTask() {
+	public void test_executeTask() throws Exception {
 		AtomicBoolean hasRun = new AtomicBoolean(false);
 		Runnable task = new Runnable() {
 			@Override
@@ -212,91 +172,77 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 				}
 			}
 		};
-		try {
-			getTimeCollection().executeTask(task);
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		getTimeCollection().executeTask(task);
 		assertTrue(hasRun.get());
 	}
 
 	@Test
-	public void test_rollup() {
+	public void test_rollup() throws Exception {
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
+
+		values = getTimeCollection().query().getList();
+		assertEquals(0, values.size());
+
+		getTimeCollection().insert(key1At1, value1);
+		getTimeCollection().insert(key3At3, value3);
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
+		File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
+
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Range offByOneSegmentTimeRange = new Range(0, segmentSize);
+		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
 		try {
-			values = getTimeCollection().query().getList();
-			assertEquals(0, values.size());
-
-			getTimeCollection().insert(key1At1, value1);
-			getTimeCollection().insert(key3At3, value3);
-			values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			
-			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
-			File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
-			assertEquals(2, segmentDirectoryContents.length);
-
-			long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-			Range offByOneSegmentTimeRange = new Range(0, segmentSize);
-			Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
-			try {
-				getTimeCollection().rollup(offByOneSegmentTimeRange);
-				fail();
-			} catch (BlueDbException e) {}
-			try {
-				getTimeCollection().rollup(entireFirstSegmentTimeRange);
-			} catch (BlueDbException e) {
-				fail();
-			}
-
-			values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			segmentDirectoryContents = segment.getPath().toFile().listFiles();
-			assertEquals(1, segmentDirectoryContents.length);
-
+			getTimeCollection().rollup(offByOneSegmentTimeRange);
+			fail();
+		} catch (BlueDbException e) {}
+		try {
+			getTimeCollection().rollup(entireFirstSegmentTimeRange);
 		} catch (BlueDbException e) {
-			e.printStackTrace();
 			fail();
 		}
+
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+		segmentDirectoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(1, segmentDirectoryContents.length);
 	}
 
 
 	@Test
-	public void test_scheduleRollup() {
+	public void test_scheduleRollup() throws Exception {
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
-		try {
-			getTimeCollection().insert(key1At1, value1);
-			getTimeCollection().insert(key3At3, value3);
-			values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			
-			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
-			File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
-			assertEquals(2, segmentDirectoryContents.length);
 
-			long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-			Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
-			getTimeCollection().scheduleRollup(entireFirstSegmentTimeRange);
-			waitForExecutorToFinish();
+		getTimeCollection().insert(key1At1, value1);
+		getTimeCollection().insert(key3At3, value3);
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
 
-			values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			segmentDirectoryContents = segment.getPath().toFile().listFiles();
-			assertEquals(1, segmentDirectoryContents.length);
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
+		File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
 
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
+		getTimeCollection().scheduleRollup(entireFirstSegmentTimeRange);
+		waitForExecutorToFinish();
+
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+		segmentDirectoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(1, segmentDirectoryContents.length);
 	}
 
 	@Test
@@ -411,7 +357,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		getValueCollection().insert(key3, value3);
 		values = getValueCollection().query().getList();
 		assertEquals(2, values.size());
-		
+
 		SegmentManager<TestValue> segmentManager = getValueCollection().getSegmentManager();
 		Segment<TestValue> segmentFor1 = segmentManager.getSegment(key0.getGroupingNumber());
 		Segment<TestValue> segmentFor3 = segmentManager.getSegment(key3.getGroupingNumber());
@@ -430,7 +376,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {}
 
 		getValueCollection().rollup(entireFirstSegmentTimeRange);
-		
+
 		values = getValueCollection().query().getList();
 		assertEquals(2, values.size());
 		segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();

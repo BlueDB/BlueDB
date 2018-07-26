@@ -43,11 +43,14 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	Path dbPath;
 	LockManager<Path> lockManager;
 	RollupScheduler rollupScheduler;
+	CollectionMetaData metaData;
+	List<File> filesToDelete;
 	CollectionMetaData timeCollectionMetaData;
 
 	@Override
 	protected void setUp() throws Exception {
-		dbPath = Files.createTempDirectory(this.getClass().getSimpleName());
+		filesToDelete = new ArrayList<>();
+		dbPath = createTempFolder().toPath();
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
 		timeCollection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, TimeKey.class, TIME_COLLECTION_NAME);
 		valueCollection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, ValueKey.class, VALUE_COLLECTION_NAME);
@@ -63,6 +66,9 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		.sorted(Comparator.reverseOrder())
 		.map(Path::toFile)
 		.forEach(File::delete);
+		for (File file: filesToDelete) {
+			Blutils.recursiveDelete(file);
+		}
 	}
 
 	public BlueCollectionOnDisk<TestValue> getTimeCollection() {
@@ -110,17 +116,6 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 			}
 		}
 		return results;
-	}
-
-	public void writeBytes(Path path, byte[] bytes) {
-		File file = path.toFile();
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(bytes);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			fail();
-		}
 	}
 
 	public static <X> List<X> toList(Iterator<X> iterator) {
@@ -288,7 +283,25 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return new TestValue(name, cupcakes);
 	}
 
-	public String getTimeCollectionName() {
-		return TIME_COLLECTION_NAME;
+    public String getTimeCollectionName() {
+        return TIME_COLLECTION_NAME;
+    }
+
+	public File createTempFolder() {
+		return createTempFolder(getClass().getSimpleName());
+	}
+
+	public File createTempFolder(String tempFolderName) {
+		try {
+			Path tempFolderPath = Files.createTempDirectory(tempFolderName);
+			File tempFolder = tempFolderPath.toFile();
+			tempFolder.deleteOnExit();
+			filesToDelete.add(tempFolder);
+			return tempFolder;
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail();
+		}
+		return null;
 	}
 }

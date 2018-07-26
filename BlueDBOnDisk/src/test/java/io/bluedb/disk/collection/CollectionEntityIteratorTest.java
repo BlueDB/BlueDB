@@ -16,91 +16,77 @@ import io.bluedb.disk.serialization.BlueEntity;
 public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_close() {
-		BlueKey key = createKey(1, 1);
-		TestValue value = createValue("Anna");
+	public void test_close() throws Exception {
+        BlueKey key = createKey(1, 1);
+        TestValue value = createValue("Anna");
 		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
-		Range range = new Range(1, 1);
-		Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
-		try {
-			getTimeCollection().insert(key, value);
-			CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeCollection(), 1, 2);
-			assertFalse(getLockManager().isLocked(chunkPath));
-			iterator.hasNext();  // force it to open the next file
-			assertTrue(getLockManager().isLocked(chunkPath));
-			iterator.close();
-			assertFalse(getLockManager().isLocked(chunkPath));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+        Range range = new Range(1, 1);
+        Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
+
+        getTimeCollection().insert(key, value);
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeCollection(), 1, 2);
+        assertFalse(getLockManager().isLocked(chunkPath));
+        iterator.hasNext();  // force it to open the next file
+        assertTrue(getLockManager().isLocked(chunkPath));
+        iterator.close();
+        assertFalse(getLockManager().isLocked(chunkPath));
 	}
 
 	@Test
-	public void test_hasNext() {
-		BlueKey key1 = createKey(1, 1);
-		BlueKey key2 = createKey(2, 2);
-		TestValue value1 = createValue("Anna");
-		TestValue value2 = createValue("Bob");
-		try {
-			getTimeCollection().insert(key1, value1);
-			getTimeCollection().insert(key2, value2);
-			CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 0);
-			assertFalse(iterator.hasNext());
-			iterator.close();
+	public void test_hasNext() throws Exception {
+        BlueKey key1 = createKey(1, 1);
+        BlueKey key2 = createKey(2, 2);
+        TestValue value1 = createValue("Anna");
+        TestValue value2 = createValue("Bob");
 
-			iterator = new CollectionEntityIterator<>(getTimeCollection(), 1, 1);
-			assertTrue(iterator.hasNext());
-			assertTrue(iterator.hasNext()); // make sure doing it twice doesn't break anything
-			iterator.next();
-			assertFalse(iterator.hasNext());
-			iterator.close();
+        getTimeCollection().insert(key1, value1);
+        getTimeCollection().insert(key2, value2);
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 0);
+        assertFalse(iterator.hasNext());
+        iterator.close();
 
-			iterator = new CollectionEntityIterator<>(getTimeCollection(), 1, 2);
-			assertTrue(iterator.hasNext());
-			iterator.next();
-			assertTrue(iterator.hasNext());
-			iterator.next();
-			assertFalse(iterator.hasNext());
-			iterator.close();
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+        iterator = new CollectionEntityIterator<>(getTimeCollection(), 1, 1);
+        assertTrue(iterator.hasNext());
+        assertTrue(iterator.hasNext()); // make sure doing it twice doesn't break anything
+        iterator.next();
+        assertFalse(iterator.hasNext());
+        iterator.close();
+
+        iterator = new CollectionEntityIterator<>(getTimeCollection(), 1, 2);
+        assertTrue(iterator.hasNext());
+        iterator.next();
+        assertTrue(iterator.hasNext());
+        iterator.next();
+        assertFalse(iterator.hasNext());
+        iterator.close();
 	}
 
 	@Test
-	public void test_next() {
-		BlueKey key1 = createKey(1, 1);
-		BlueKey key2 = createKey(2, 2);
-		TestValue value1 = createValue("Anna");
-		TestValue value2 = createValue("Bob");
-		try {
-			getTimeCollection().insert(key1, value1);
-			getTimeCollection().insert(key2, value2);
-			
-			CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 0);
-			List<BlueEntity<TestValue>> iteratorContents = toList(iterator);
-			iterator.close();
-			assertEquals(0, iteratorContents.size());
+	public void test_next() throws Exception {
+        BlueKey key1 = createKey(1, 1);
+        BlueKey key2 = createKey(2, 2);
+        TestValue value1 = createValue("Anna");
+        TestValue value2 = createValue("Bob");
 
-			iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 1);
-			iteratorContents = toList(iterator);
-			iterator.close();
-			assertEquals(1, iteratorContents.size());
+        getTimeCollection().insert(key1, value1);
+        getTimeCollection().insert(key2, value2);
+
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 0);
+        List<BlueEntity<TestValue>> iteratorContents = toList(iterator);
+        iterator.close();
+        assertEquals(0, iteratorContents.size());
+
+        iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 1);
+        iteratorContents = toList(iterator);
+        iterator.close();
+        assertEquals(1, iteratorContents.size());
 
 
-			iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 2);
-			iteratorContents = new ArrayList<>();
-			iteratorContents.add(iterator.next());
-			iteratorContents.add(iterator.next());  // make sure next work right after a next
-			iterator.close();
-			assertEquals(2, iteratorContents.size());
-
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+        iterator = new CollectionEntityIterator<>(getTimeCollection(), 0, 2);
+        iteratorContents = new ArrayList<>();
+        iteratorContents.add(iterator.next());
+        iteratorContents.add(iterator.next());  // make sure next work right after a next
+        iterator.close();
+        assertEquals(2, iteratorContents.size());
 	}
-
 }

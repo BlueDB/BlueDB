@@ -50,14 +50,9 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public void backup(Path zipPath) throws BlueDbException {
 		try {
-			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
-			tempDirectoryPath.toFile().deleteOnExit();
-			Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
-			BackupTask backupTask = new BackupTask(this, unzippedBackupPath);
+			BackupTask backupTask = new BackupTask(this, zipPath);
 			List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
 			backupTask.backup(collectionsToBackup);
-			ZipUtils.zipFile(unzippedBackupPath, zipPath);
-			tempDirectoryPath.toFile().delete();
 		} catch (IOException | BlueDbException e) {
 			e.printStackTrace();
 			throw new BlueDbException("BlueDB backup failed", e);

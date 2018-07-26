@@ -1,53 +1,66 @@
 package io.bluedb.disk.backup;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbOnDisk;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
+import io.bluedb.zip.ZipUtils;
 
 public class BackupTask {
 	
-	private final BlueDbOnDisk db;
+	private final Path dbPath;
 	private final Path backupPath;
 	
 	public BackupTask(BlueDbOnDisk db, Path backupPath) {
-		this.db = db;
+		this.dbPath = db.getPath();
 		this.backupPath = backupPath;
 	}
 
-	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException {
+	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException, IOException {
+		Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
+		tempDirectoryPath.toFile().deleteOnExit();
+		Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
+		backupToTempDirectory(collectionsToBackup, unzippedBackupPath);
+		ZipUtils.zipFile(unzippedBackupPath, backupPath);
+		Blutils.recursiveDelete(tempDirectoryPath.toFile());
+	}
+
+	public void backupToTempDirectory(List<BlueCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {
 		long backupStartTime = System.currentTimeMillis();
 		for (BlueCollectionOnDisk<?> collection: collectionsToBackup) {
-			copyMetaData(collection, backupPath);
-			copyDataFolders(collection, backupPath);
+			copyMetaData(collection, tempFolder);
+			copyDataFolders(collection, tempFolder);
 		}
 		long backupEndTime = System.currentTimeMillis();
 		for (BlueCollectionOnDisk<?> collection: collectionsToBackup) {
-			copyChanges(collection, backupStartTime, backupEndTime);
+			copyChanges(collection, backupStartTime, backupEndTime, tempFolder);
 		}
 	}
 
-	private void copyMetaData(BlueCollectionOnDisk<?> collection, Path backupPath2) throws BlueDbException {
+	private void copyMetaData(BlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
 		Path srcPath = collection.getMetaData().getPath();
-		Path dstPath = translatePath(srcPath);
+		Path dstPath = translatePath(dbPath, tempFolder, srcPath);
 		FileManager.copyDirectoryWithoutLock(srcPath, dstPath);
 	}
 
-	private void copyDataFolders(BlueCollectionOnDisk<?> collection, Path backupPath2) throws BlueDbException {
+	private void copyDataFolders(BlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
 		for (Segment<?> segment: collection.getSegmentManager().getExistingSegments(Long.MIN_VALUE, Long.MAX_VALUE)) {
-			copyDataFolders(segment);
+			copyDataFolders(segment, tempFolder);
 		}
 	}
 
-	private void copyDataFolders(Segment<?> segment) throws BlueDbException {
+	private void copyDataFolders(Segment<?> segment, Path tempFolder) throws BlueDbException {
 		Range range = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		List<File> files = segment.getOrderedFilesInRange(range);
 		for (File file: files) {
@@ -55,17 +68,17 @@ public class BackupTask {
 			long groupingNumber = fileRange.getStart();
 			try (BlueReadLock<Path> lock = segment.getReadLockFor(groupingNumber)) {
 				Path src = lock.getKey();
-				Path dst = translatePath(src);
+				Path dst = translatePath(dbPath, tempFolder, src);
 				FileManager.copyFileWithoutLock(src, dst);  // already have read lock on src, shouldn't need write lock on dst
 			}
 		}
 	}
 
-	private void copyChanges(BlueCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime) throws BlueDbException {
+	private void copyChanges(BlueCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime, Path tempFolder) throws BlueDbException {
 		RecoveryManager<?> recoveryManager = collection.getRecoveryManager();
 		List<File> changesToCopy = recoveryManager.getChangeHistory(backupStartTime, backupEndTime);
 		Path pendingFolderPath = recoveryManager.getPendingFolderPath();
-		Path destinationFolderPath = translatePath(pendingFolderPath);
+		Path destinationFolderPath = translatePath(dbPath, tempFolder, pendingFolderPath);
 		destinationFolderPath.toFile().mkdirs();
 		for (File file: changesToCopy) {
 			Path destinationPath = Paths.get(destinationFolderPath.toString(), file.getName());
@@ -74,9 +87,8 @@ public class BackupTask {
 		}
 	}
 
-	public Path translatePath(Path targetPath) {
-		Path dbPath = db.getPath();
-		Path relativePath = dbPath.relativize(targetPath);
-		return Paths.get(backupPath.toString(), relativePath.toString());
+	public static Path translatePath(Path fromPath, Path toPath, Path targetPath) {
+		Path relativePath = fromPath.relativize(targetPath);
+		return Paths.get(toPath.toString(), relativePath.toString());
 	}
 }

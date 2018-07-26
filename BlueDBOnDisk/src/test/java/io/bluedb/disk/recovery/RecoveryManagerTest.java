@@ -28,18 +28,15 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getPendingFileName() {
+	public void test_getPendingFileName() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		String fileName1 = RecoveryManager.getPendingFileName(change);
-		try {
-			Thread.sleep(1);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		Thread.sleep(1);
+
 		PendingChange<TestValue> change2 = PendingChange.createInsert(key, value, serializer);
 		String fileName2 = RecoveryManager.getPendingFileName(change2);
 		assertTrue(fileName1.compareTo(fileName2) < 0);
@@ -61,60 +58,48 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_saveChange() {
+	public void test_saveChange() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		Recoverable<TestValue> change = PendingChange.createInsert(key, value, serializer);
-		try {
-			List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
-			assertEquals(0, changes.size());
-			getRecoveryManager().saveChange(change);
-			changes = getRecoveryManager().getPendingChanges();
-			PendingChange<TestValue> savedChange = (PendingChange<TestValue>) changes.get(0);
-			assertEquals(1, changes.size());
-			assertEquals(value, savedChange.getNewValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
+		assertEquals(0, changes.size());
+		getRecoveryManager().saveChange(change);
+		changes = getRecoveryManager().getPendingChanges();
+		PendingChange<TestValue> savedChange = (PendingChange<TestValue>) changes.get(0);
+		assertEquals(1, changes.size());
+		assertEquals(value, savedChange.getNewValue());
 	}
 
 	@Test
-	public void test_markComplete() {
+	public void test_markComplete() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		Recoverable<TestValue> change = PendingChange.createInsert(key, value, serializer);
-		try {
-			getRecoveryManager().saveChange(change);
-			List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
-			assertEquals(1, changes.size());
-			getRecoveryManager().markComplete(change);
-			changes = getRecoveryManager().getPendingChanges();
-			assertEquals(0, changes.size());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		getRecoveryManager().saveChange(change);
+		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
+		assertEquals(1, changes.size());
+		getRecoveryManager().markComplete(change);
+		changes = getRecoveryManager().getPendingChanges();
+		assertEquals(0, changes.size());
 	}
 
 	@Test
-	public void test_getPendingChanges() {
+	public void test_getPendingChanges() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
-		try {
-			List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
-			assertEquals(0, changes.size());
-			getRecoveryManager().saveChange(change);
-			changes = getRecoveryManager().getPendingChanges();
-			assertEquals(1, changes.size());
-			getRecoveryManager().markComplete(change);
-			changes = getRecoveryManager().getPendingChanges();
-			assertEquals(0, changes.size());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
+		assertEquals(0, changes.size());
+		getRecoveryManager().saveChange(change);
+		changes = getRecoveryManager().getPendingChanges();
+		assertEquals(1, changes.size());
+		getRecoveryManager().markComplete(change);
+		changes = getRecoveryManager().getPendingChanges();
+		assertEquals(0, changes.size());
 	}
 
 	@Test
@@ -126,7 +111,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_cleanupHistory() {
+	public void test_cleanupHistory() throws Exception {
 		long thirtyMinutesAgo = System.currentTimeMillis() - 30 * 60 * 1000;
 		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
 		long ninetyMinutesAgo = System.currentTimeMillis() - 90 * 60 * 1000;
@@ -139,29 +124,24 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
 		assertEquals(oneHundredMinutesAgo, change100.getTimeCreated());
-		try {
-			getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
-			List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-			getRecoveryManager().saveChange(change30);
-			getRecoveryManager().saveChange(change60);
-			getRecoveryManager().saveChange(change90);
-			getRecoveryManager().saveChange(change100);
-			List<File> changesBeforeCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-			getRecoveryManager().cleanupHistory();
-			List<File> changesAfterCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
+		List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().saveChange(change30);
+		getRecoveryManager().saveChange(change60);
+		getRecoveryManager().saveChange(change90);
+		getRecoveryManager().saveChange(change100);
+		List<File> changesBeforeCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().cleanupHistory();
+		List<File> changesAfterCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 
-			assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
-			assertEquals(0, changesBeforeInsert.size());
-			assertEquals(4, changesBeforeCleanup.size());
-			assertEquals(3, changesAfterCleanup.size());  // the 100 stays.  The 90 goes because it's 
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
+		assertEquals(0, changesBeforeInsert.size());
+		assertEquals(4, changesBeforeCleanup.size());
+		assertEquals(3, changesAfterCleanup.size());  // the 100 stays.  The 90 goes because it's
 	}
 
 	@Test
-	public void test_getChangeHistory() {
+	public void test_getChangeHistory() throws Exception {
 		long thirtyMinutesAgo = System.currentTimeMillis() - 30 * 60 * 1000;
 		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
 		long ninetyMinutesAgo = System.currentTimeMillis() - 90 * 60 * 1000;
@@ -171,119 +151,98 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(thirtyMinutesAgo, change30.getTimeCreated());
 		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
-		try {
-			getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
-			List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-			getRecoveryManager().saveChange(change30);
-			getRecoveryManager().saveChange(change60);
-			getRecoveryManager().saveChange(change90);
-			List<File> changesAll = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-			List<File> changes30to60 = getRecoveryManager().getChangeHistory(sixtyMinutesAgo, thirtyMinutesAgo);
-			List<File> changes30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo, thirtyMinutesAgo);
-			List<File> changesJustBefore30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo-1, thirtyMinutesAgo);
-			List<File> changes30to90 = getRecoveryManager().getChangeHistory(ninetyMinutesAgo, thirtyMinutesAgo);
-			List<File> changes0to0 = getRecoveryManager().getChangeHistory(0, 0);
-			assertEquals(0, changesInitial.size());
-			assertEquals(3, changesAll.size());
-			assertEquals(3, changes30to60.size()); // includes change before time period that may be partly completed at backup
-			assertEquals(2, changes30to30.size()); // includes change before time period that may be partly completed at backup
-			assertEquals(2, changesJustBefore30to30.size()); // includes change before time period that may be partly completed at backup
-			assertEquals(3, changes30to90.size());
-			assertEquals(0, changes0to0.size());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
+		List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().saveChange(change30);
+		getRecoveryManager().saveChange(change60);
+		getRecoveryManager().saveChange(change90);
+		List<File> changesAll = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		List<File> changes30to60 = getRecoveryManager().getChangeHistory(sixtyMinutesAgo, thirtyMinutesAgo);
+		List<File> changes30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo, thirtyMinutesAgo);
+		List<File> changesJustBefore30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo-1, thirtyMinutesAgo);
+		List<File> changes30to90 = getRecoveryManager().getChangeHistory(ninetyMinutesAgo, thirtyMinutesAgo);
+		List<File> changes0to0 = getRecoveryManager().getChangeHistory(0, 0);
+		assertEquals(0, changesInitial.size());
+		assertEquals(3, changesAll.size());
+		assertEquals(3, changes30to60.size()); // includes change before time period that may be partly completed at backup
+		assertEquals(2, changes30to30.size()); // includes change before time period that may be partly completed at backup
+		assertEquals(2, changesJustBefore30to30.size()); // includes change before time period that may be partly completed at backup
+		assertEquals(3, changes30to90.size());
+		assertEquals(0, changes0to0.size());
 	}
 
 	@Test
-	public void test_recover_pendingInsert() {
+	public void test_recover_pendingInsert() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		CollectionMetaData metaData = getTimeCollection().getMetaData();
-		try {
-			PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
-			getRecoveryManager().saveChange(change);
-			List<TestValue> allValues = getTimeCollection().query().getList();
-			assertEquals(0, allValues.size());
-			assertNull(metaData.getMaxLong());
 
-			getRecoveryManager().recover();
-			allValues = getTimeCollection().query().getList();
-			assertEquals(1, allValues.size());
-			assertEquals(value, allValues.get(0));
-			assertEquals(1, metaData.getMaxLong().longValue());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
+		getRecoveryManager().saveChange(change);
+		List<TestValue> allValues = getTimeCollection().query().getList();
+		assertEquals(0, allValues.size());
+		assertNull(metaData.getMaxLong());
+
+		getRecoveryManager().recover();
+		allValues = getTimeCollection().query().getList();
+		assertEquals(1, allValues.size());
+		assertEquals(value, allValues.get(0));
+		assertEquals(1, metaData.getMaxLong().longValue());
 	}
 
 	@Test
-	public void test_recover_pendingInsert_duplicate() {
+	public void test_recover_pendingInsert_duplicate() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		try {
-			getTimeCollection().insert(key,  value);
-			PendingChange<TestValue> duplicateInsert = PendingChange.createInsert(key, value, serializer);
-			getRecoveryManager().saveChange(duplicateInsert);
-			List<TestValue> allValues = getTimeCollection().query().getList();
-			assertEquals(1, allValues.size());
 
-			getRecoveryManager().recover();
-			allValues = getTimeCollection().query().getList();
-			assertEquals(1, allValues.size());
-			assertEquals(value, allValues.get(0));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		getTimeCollection().insert(key,  value);
+		PendingChange<TestValue> duplicateInsert = PendingChange.createInsert(key, value, serializer);
+		getRecoveryManager().saveChange(duplicateInsert);
+		List<TestValue> allValues = getTimeCollection().query().getList();
+		assertEquals(1, allValues.size());
+
+		getRecoveryManager().recover();
+		allValues = getTimeCollection().query().getList();
+		assertEquals(1, allValues.size());
+		assertEquals(value, allValues.get(0));
 	}
 
 	@Test
-	public void test_recover_pendingDelete() {
+	public void test_recover_pendingDelete() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		try {
-			getTimeCollection().insert(key, value);
-			List<TestValue> allValues = getTimeCollection().query().getList();
-			assertEquals(1, allValues.size());
 
-			PendingChange<TestValue> change = PendingChange.createDelete(key);
-			getRecoveryManager().saveChange(change);
-			getRecoveryManager().recover();
-			allValues = getTimeCollection().query().getList();
-			assertEquals(0, allValues.size());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		getTimeCollection().insert(key, value);
+		List<TestValue> allValues = getTimeCollection().query().getList();
+		assertEquals(1, allValues.size());
+
+		PendingChange<TestValue> change = PendingChange.createDelete(key);
+		getRecoveryManager().saveChange(change);
+		getRecoveryManager().recover();
+		allValues = getTimeCollection().query().getList();
+		assertEquals(0, allValues.size());
 	}
 
 	@Test
-	public void test_recover_pendingUpdate() {
+	public void test_recover_pendingUpdate() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue originalValue = createValue("Joe", 0);
 		Updater<TestValue> updater = ((v) -> v.addCupcake());
 		TestValue newValue = serializer.clone(originalValue);
 		updater.update(newValue);
-		try {
-			getTimeCollection().insert(key, originalValue);
-			PendingChange<TestValue> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
-			getRecoveryManager().saveChange(change);
 
-			List<TestValue> allValues = getTimeCollection().query().getList();
-			assertEquals(1, allValues.size());
-			assertEquals(0, allValues.get(0).getCupcakes());
+		getTimeCollection().insert(key, originalValue);
+		PendingChange<TestValue> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
+		getRecoveryManager().saveChange(change);
 
-			getRecoveryManager().recover();
-			allValues = getTimeCollection().query().getList();
-			assertEquals(1, allValues.size());
-			assertEquals(1, allValues.get(0).getCupcakes());
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		List<TestValue> allValues = getTimeCollection().query().getList();
+		assertEquals(1, allValues.size());
+		assertEquals(0, allValues.get(0).getCupcakes());
+
+		getRecoveryManager().recover();
+		allValues = getTimeCollection().query().getList();
+		assertEquals(1, allValues.size());
+		assertEquals(1, allValues.get(0).getCupcakes());
 	}
 
 	@Test
@@ -291,12 +250,10 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.PENDING_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
 		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};
+
 		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
 			fos.write(bytes);
 			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			fail();
 		}
 
 		pathForGarbage.toFile().delete();

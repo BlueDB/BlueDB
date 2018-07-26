@@ -60,7 +60,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_contains() {
+	public void test_contains() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -68,28 +68,24 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
-		try {
-			assertFalse(segment.contains(key1At1));
-			segment.insert(key1At1, value1);
-			assertTrue(segment.contains(key1At1));
-			assertFalse(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			segment.insert(key2At1, value2);
-			assertTrue(segment.contains(key1At1));
-			assertTrue(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			segment.insert(key3At3, value3);
-			assertTrue(segment.contains(key1At1));
-			assertTrue(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		assertFalse(segment.contains(key1At1));
+		segment.insert(key1At1, value1);
+		assertTrue(segment.contains(key1At1));
+		assertFalse(segment.contains(key2At1));
+		assertFalse(segment.contains(key3At3));
+		segment.insert(key2At1, value2);
+		assertTrue(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertFalse(segment.contains(key3At3));
+		segment.insert(key3At3, value3);
+		assertTrue(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
 	}
 
 	@Test
-	public void test_insert() {
+	public void test_insert() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -97,56 +93,51 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
-		try {
-			assertFalse(segment.contains(key1At1));
-			assertFalse(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(null, segment.get(key2At1));
-			assertEquals(null, segment.get(key3At3));
 
-			segment.insert(key3At3, value3);
-			assertFalse(segment.contains(key1At1));
-			assertFalse(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(null, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
+		assertFalse(segment.contains(key1At1));
+		assertFalse(segment.contains(key2At1));
+		assertFalse(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(null, segment.get(key3At3));
 
-			segment.insert(key2At1, value2);
-			assertFalse(segment.contains(key1At1));
-			assertTrue(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(value2, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
+		segment.insert(key3At3, value3);
+		assertFalse(segment.contains(key1At1));
+		assertFalse(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
 
-			segment.insert(key1At1, value1);
-			assertTrue(segment.contains(key1At1));
-			assertTrue(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-			assertEquals(value1, segment.get(key1At1));
-			assertEquals(value2, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
+		segment.insert(key2At1, value2);
+		assertFalse(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
 
-			// make sure insert works after rollup
-			segment.rollup(getTimeCollection().getSegmentManager().getSegmentRange(0));
-			BlueKey key4At2 = createKey(4, 2);
-			TestValue value4 = createValue("Dan");
-			segment.insert(key4At2, value4);
-			assertTrue(segment.contains(key1At1));
-			assertTrue(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-			assertTrue(segment.contains(key4At2));
+		segment.insert(key1At1, value1);
+		assertTrue(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(value1, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
 
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		// make sure insert works after rollup
+		segment.rollup(getTimeCollection().getSegmentManager().getSegmentRange(0));
+		BlueKey key4At2 = createKey(4, 2);
+		TestValue value4 = createValue("Dan");
+		segment.insert(key4At2, value4);
+		assertTrue(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertTrue(segment.contains(key4At2));
 	}
 
 	@Test
-	public void testDelete() {
+	public void testDelete() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -154,45 +145,41 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
-		try {
-			segment.insert(key1At1, value1);
-			segment.insert(key2At1, value2);
-			segment.insert(key3At3, value3);
-			assertTrue(segment.contains(key1At1));
-			assertTrue(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-			assertEquals(value1, segment.get(key1At1));
-			assertEquals(value2, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
-			segment.delete(key1At1);
-			assertFalse(segment.contains(key1At1));
-			assertTrue(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(value2, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
-			segment.delete(key2At1);
-			assertFalse(segment.contains(key1At1));
-			assertFalse(segment.contains(key2At1));
-			assertTrue(segment.contains(key3At3));
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(null, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
-			segment.delete(key3At3);
-			assertFalse(segment.contains(key1At1));
-			assertFalse(segment.contains(key2At1));
-			assertFalse(segment.contains(key3At3));
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(null, segment.get(key2At1));
-			assertEquals(null, segment.get(key3At3));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		segment.insert(key1At1, value1);
+		segment.insert(key2At1, value2);
+		segment.insert(key3At3, value3);
+		assertTrue(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(value1, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
+		segment.delete(key1At1);
+		assertFalse(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
+		segment.delete(key2At1);
+		assertFalse(segment.contains(key1At1));
+		assertFalse(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
+		segment.delete(key3At3);
+		assertFalse(segment.contains(key1At1));
+		assertFalse(segment.contains(key2At1));
+		assertFalse(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(null, segment.get(key3At3));
 	}
 
 	@Test
-	public void testGet() {
+	public void testGet() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -200,33 +187,29 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
-		try {
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(null, segment.get(key2At1));
-			assertEquals(null, segment.get(key3At3));
 
-			segment.insert(key3At3, value3);
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(null, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(null, segment.get(key3At3));
 
-			segment.insert(key2At1, value2);
-			assertEquals(null, segment.get(key1At1));
-			assertEquals(value2, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
+		segment.insert(key3At3, value3);
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
 
-			segment.insert(key1At1, value1);
-			assertEquals(value1, segment.get(key1At1));
-			assertEquals(value2, segment.get(key2At1));
-			assertEquals(value3, segment.get(key3At3));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		segment.insert(key2At1, value2);
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
+
+		segment.insert(key1At1, value1);
+		assertEquals(value1, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
 	}
 
 	@Test
-	public void testGetAll() {
+	public void testGetAll() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
@@ -235,90 +218,76 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
-		try {
-			values = getAll(segment);
-			assertEquals(0, values.size());
 
-			segment.insert(key1At1, value1);
-			values = getAll(segment);
-			assertEquals(1, values.size());
-			assertTrue(values.contains(value1));
+		values = getAll(segment);
+		assertEquals(0, values.size());
 
-			segment.insert(key2At1, value2);
-			values = getAll(segment);
-			assertEquals(2, values.size());
-			assertTrue(values.contains(value1));
-			assertTrue(values.contains(value2));
+		segment.insert(key1At1, value1);
+		values = getAll(segment);
+		assertEquals(1, values.size());
+		assertTrue(values.contains(value1));
 
-			segment.insert(key3At3, value3);
-			values = getAll(segment);
-			assertEquals(3, values.size());
-			assertTrue(values.contains(value1));
-			assertTrue(values.contains(value2));
-			assertTrue(values.contains(value3));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		segment.insert(key2At1, value2);
+		values = getAll(segment);
+		assertEquals(2, values.size());
+		assertTrue(values.contains(value1));
+		assertTrue(values.contains(value2));
+
+		segment.insert(key3At3, value3);
+		values = getAll(segment);
+		assertEquals(3, values.size());
+		assertTrue(values.contains(value1));
+		assertTrue(values.contains(value2));
+		assertTrue(values.contains(value3));
 	}
 
 	@Test
-	public void test_rollup() {
+	public void test_rollup() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
+
+		values = getAll(segment);
+		assertEquals(0, values.size());
+
+		segment.insert(key1At1, value1);
+		segment.insert(key3At3, value3);
+		values = getAll(segment);
+		assertEquals(2, values.size());
+		File[] directoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(2, directoryContents.length);
+
+		Range invalidRollupTimeRange = new Range(0, 3);
 		try {
-			values = getAll(segment);
-			assertEquals(0, values.size());
+			segment.rollup(invalidRollupTimeRange);
+			fail();  // rollups must be
+		} catch (BlueDbException e) {}
 
-			segment.insert(key1At1, value1);
-			segment.insert(key3At3, value3);
-			values = getAll(segment);
-			assertEquals(2, values.size());
-			File[] directoryContents = segment.getPath().toFile().listFiles();
-			assertEquals(2, directoryContents.length);
-
-			Range invalidRollupTimeRange = new Range(0, 3);
-			try {
-				segment.rollup(invalidRollupTimeRange);
-				fail();  // rollups must be 
-			} catch (BlueDbException e) {}
-
-			Range validRollupTimeRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
-			segment.rollup(validRollupTimeRange);
-			values = getAll(segment);
-			assertEquals(2, values.size());
-			directoryContents = segment.getPath().toFile().listFiles();
-			assertEquals(1, directoryContents.length);
-
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		Range validRollupTimeRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
+		segment.rollup(validRollupTimeRange);
+		values = getAll(segment);
+		assertEquals(2, values.size());
+		directoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(1, directoryContents.length);
 	}
 
 	@Test
-	public void test_getOrderedFilesInRange() {
+	public void test_getOrderedFilesInRange() throws Exception {
 		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
 		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();
 		File _2_3 = Paths.get(getPath().toString(), "2_3").toFile();
 		File _100_101 = Paths.get(getPath().toString(), "100_101").toFile();
 		List<File> expected = Arrays.asList(_2_3, _12_13, _12_15);
 
-		try {
-			FileManager.ensureFileExists(_12_13.toPath());
-			FileManager.ensureFileExists(_12_15.toPath());
-			FileManager.ensureFileExists(_2_3.toPath());
-			FileManager.ensureFileExists(_100_101.toPath());
-			Range timeRange = new Range(0, 20);
-			assertEquals(expected, Segment.getOrderedFilesInRange(getPath(), timeRange));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		FileManager.ensureFileExists(_12_13.toPath());
+		FileManager.ensureFileExists(_12_15.toPath());
+		FileManager.ensureFileExists(_2_3.toPath());
+		FileManager.ensureFileExists(_100_101.toPath());
+		Range timeRange = new Range(0, 20);
+		assertEquals(expected, Segment.getOrderedFilesInRange(getPath(), timeRange));
 	}
 
 	@Test
@@ -370,159 +339,143 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_recover_pendingRollup_crash_before_rollup_starts() {
+	public void test_recover_pendingRollup_crash_before_rollup_starts() throws Exception {
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
-		try {
-			getTimeCollection().insert(key1, value1);
-			getTimeCollection().insert(key2, value2);
-			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
-			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
-			getRecoveryManager().saveChange(pendingRollup);
 
-			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
+		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+		getRecoveryManager().saveChange(pendingRollup);
 
-			getRecoveryManager().recover();
-			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			assertTrue(values.contains(value1));
-			assertTrue(values.contains(value2));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+
+		getRecoveryManager().recover();
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(1, remainingFiles.size());
+		List<TestValue> values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+		assertTrue(values.contains(value1));
+		assertTrue(values.contains(value2));
 	}
 
 	@Test
-	public void test_recover_pendingRollup_crash_before_move_tmp() {
+	public void test_recover_pendingRollup_crash_before_move_tmp() throws Exception {
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
-		try {
-			getTimeCollection().insert(key1, value1);
-			getTimeCollection().insert(key2, value2);
-			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
-			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
-			getRecoveryManager().saveChange(pendingRollup);
 
-			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
-			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(2, filesToRollup.size());
-			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
-			Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
-			segment.copy(tmpPath, filesToRollup);
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
+		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+		getRecoveryManager().saveChange(pendingRollup);
 
-			
-			File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(3, filesExistingAfterCopy.length);
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(2, filesToRollup.size());
+		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
+		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+		segment.copy(tmpPath, filesToRollup);
 
-			getRecoveryManager().recover();
-			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			assertTrue(values.contains(value1));
-			assertTrue(values.contains(value2));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+
+		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(3, filesExistingAfterCopy.length);
+
+		getRecoveryManager().recover();
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(1, remainingFiles.size());
+		List<TestValue> values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+		assertTrue(values.contains(value1));
+		assertTrue(values.contains(value2));
 	}
 
 	@Test
-	public void test_recover_pendingRollup_crash_before_deletes_finished() {
+	public void test_recover_pendingRollup_crash_before_deletes_finished() throws Exception {
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
-		try {
-			getTimeCollection().insert(key1, value1);
-			getTimeCollection().insert(key2, value2);
-			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
-			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
-			getRecoveryManager().saveChange(pendingRollup);
 
-			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
-			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(2, filesToRollup.size());
-			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
-			Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
-			segment.copy(tmpPath, filesToRollup);
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
+		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+		getRecoveryManager().saveChange(pendingRollup);
 
-			
-			File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(3, filesExistingAfterCopy.length);
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(2, filesToRollup.size());
+		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
+		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+		segment.copy(tmpPath, filesToRollup);
 
-			try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
-				FileManager.moveFile(tmpPath, targetFileLock);
-			}
-			File file = filesToRollup.get(0);
+
+		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(3, filesExistingAfterCopy.length);
+
+		try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
+			FileManager.moveFile(tmpPath, targetFileLock);
+		}
+		File file = filesToRollup.get(0);
+		try (BlueWriteLock<Path> writeLock = getLockManager().acquireWriteLock(file.toPath())) {
+			FileManager.deleteFile(writeLock);
+		}
+
+		getRecoveryManager().recover();
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(1, remainingFiles.size());
+		List<TestValue> values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+		assertTrue(values.contains(value1));
+		assertTrue(values.contains(value2));
+	}
+
+	@Test
+	public void test_recover_pendingRollup_crash_after_completed() throws Exception {
+		BlueKey key1 = createKey(1, 1);
+		BlueKey key2 = createKey(2, 2);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
+		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
+		getRecoveryManager().saveChange(pendingRollup);
+
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(2, filesToRollup.size());
+		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
+		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+		segment.copy(tmpPath, filesToRollup);
+
+
+		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(3, filesExistingAfterCopy.length);
+
+		try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
+			FileManager.moveFile(tmpPath, targetFileLock);
+		}
+		for (File file: filesToRollup) {
 			try (BlueWriteLock<Path> writeLock = getLockManager().acquireWriteLock(file.toPath())) {
 				FileManager.deleteFile(writeLock);
 			}
-
-			getRecoveryManager().recover();
-			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			assertTrue(values.contains(value1));
-			assertTrue(values.contains(value2));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
 		}
-	}
 
-	@Test
-	public void test_recover_pendingRollup_crash_after_completed() {
-		BlueKey key1 = createKey(1, 1);
-		BlueKey key2 = createKey(2, 2);
-		TestValue value1 = createValue("Anna");
-		TestValue value2 = createValue("Bob");
-		try {
-			getTimeCollection().insert(key1, value1);
-			getTimeCollection().insert(key2, value2);
-			Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
-			PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
-			getRecoveryManager().saveChange(pendingRollup);
-
-			Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
-			List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(2, filesToRollup.size());
-			Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
-			Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
-			segment.copy(tmpPath, filesToRollup);
-
-			
-			File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(3, filesExistingAfterCopy.length);
-
-			try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
-				FileManager.moveFile(tmpPath, targetFileLock);
-			}
-			for (File file: filesToRollup) {
-				try (BlueWriteLock<Path> writeLock = getLockManager().acquireWriteLock(file.toPath())) {
-					FileManager.deleteFile(writeLock);
-				}
-			}
-
-			getRecoveryManager().recover();
-			List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
-			assertEquals(1, remainingFiles.size());
-			List<TestValue> values = getTimeCollection().query().getList();
-			assertEquals(2, values.size());
-			assertTrue(values.contains(value1));
-			assertTrue(values.contains(value2));
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		getRecoveryManager().recover();
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
+		assertEquals(1, remainingFiles.size());
+		List<TestValue> values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+		assertTrue(values.contains(value1));
+		assertTrue(values.contains(value2));
 	}
 
 	@Test
@@ -539,14 +492,14 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		Range validValueSegmentRange = new Range(0, valueSegmentSize - 1);
 		Range invalidValueSegmentRange1 = new Range(1, valueSegmentSize);
 		Range invalidValueSegmentRange2 = new Range(0, valueSegmentSize);
-		
+
 		assertTrue(timeSegment.isValidRollupRange(validTimeSegmentRange));
 		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange1));
 		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange2));
 		assertFalse(timeSegment.isValidRollupRange(validValueSegmentRange));
 		assertFalse(timeSegment.isValidRollupRange(invalidValueSegmentRange1));
 		assertFalse(timeSegment.isValidRollupRange(invalidValueSegmentRange2));
-		
+
 		assertFalse(valueSegment.isValidRollupRange(validTimeSegmentRange));
 		assertFalse(valueSegment.isValidRollupRange(invalidTimeSegmentRange1));
 		assertFalse(valueSegment.isValidRollupRange(invalidTimeSegmentRange2));
