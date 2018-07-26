@@ -3,9 +3,7 @@ package io.bluedb.disk;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +15,6 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.backup.BackupTask;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
-import io.bluedb.zip.ZipUtils;
 
 public class BlueDbOnDisk implements BlueDb {
 
@@ -30,15 +27,15 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, Class<? extends BlueKey> keyType, String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> getCollection(Class<? extends BlueKey> keyType, Class<T> valueType, String name) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new BlueCollectionOnDisk<T>(this, name, type, keyType);
+				collection = new BlueCollectionOnDisk<T>(this, keyType, valueType, name);
 				collections.put(name, collection);
-			} else if(!collection.getType().equals(type)) {
-				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + type + "]");
+			} else if(!collection.getType().equals(valueType)) {
+				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
 			} else if (!collection.getKeyType().equals(keyType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different key type (" + collection.getKeyType() + ") vs " + keyType);
 			}
@@ -82,7 +79,7 @@ public class BlueDbOnDisk implements BlueDb {
 		synchronized (collections) {
 			BlueCollectionOnDisk collection = collections.get(folderName);
 			if (collection == null) {
-				collection = new BlueCollectionOnDisk(this, folderName, Serializable.class, null);
+				collection = new BlueCollectionOnDisk(this, null, Serializable.class, folderName);
 			}
 			return collection;
 		}

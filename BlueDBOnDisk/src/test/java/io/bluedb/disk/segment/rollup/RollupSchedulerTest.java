@@ -113,7 +113,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	private BlueCollectionOnDisk<TestValue> createMockCollection(List<Range> rollupsRequested) throws Exception {
-        return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class, TimeKey.class) {
+        return new BlueCollectionOnDisk<TestValue>(db(), TimeKey.class, TestValue.class, "test_RollupSchedulerTest") {
             @Override
             public void scheduleRollup(Range t) {
                 rollupsRequested.add(t);

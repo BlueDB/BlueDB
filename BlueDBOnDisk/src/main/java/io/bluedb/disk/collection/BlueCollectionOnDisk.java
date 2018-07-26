@@ -47,7 +47,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 
-	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<T> valueType, Class<? extends BlueKey> requestedKeyType) throws BlueDbException {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, String name) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();

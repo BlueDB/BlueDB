@@ -34,7 +34,7 @@ public class BlueDbInMemory implements BlueDb {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, Class<? extends BlueKey> keyType, String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> getCollection(Class<? extends BlueKey> keyType, Class<T> type, String name) throws BlueDbException {
 		synchronized(collections) {
 			if (!collections.containsKey(name)) {
 				collections.put(name, new BlueCollectionImpl<T>(type));

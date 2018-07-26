@@ -32,7 +32,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
-		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
+		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TimeKey.class, TestValue.class, getTimeCollectionName());
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
 		Long restoredMaxLong = restoredCollection.getMaxLongId();
@@ -56,7 +56,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
-        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
+        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TimeKey.class, TestValue.class, getTimeCollectionName());
 		assertTrue(restoredCollection.contains(key1At1));
 		assertTrue(restoredCollection.contains(key2At2));
 		assertEquals(value1, restoredCollection.get(key1At1));
@@ -81,7 +81,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
         BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
-        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TestValue.class, TimeKey.class, getTimeCollectionName());
+        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TimeKey.class, TestValue.class, getTimeCollectionName());
 		Path segmentPath = restoredCollection.getSegmentManager().getSegment(1).getPath();
 		File[] filesInSegment = segmentPath.toFile().listFiles();
 		assertEquals(1, filesInSegment.length);
