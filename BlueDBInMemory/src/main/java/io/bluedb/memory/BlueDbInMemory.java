@@ -32,9 +32,18 @@ public class BlueDbInMemory implements BlueDb {
 		initializeFromDirectory();
 	}
 
+	@Override
+	public <T extends Serializable> BlueCollection<T> getCollection(String name) throws BlueDbException {
+		synchronized(collections) {
+			@SuppressWarnings("unchecked")
+			BlueCollection<T> collection = (BlueCollection<T>)(collections.get(name));
+			return collection;
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<? extends BlueKey> keyType, Class<T> type, String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> type, Class<?>... additionalClassesToRegister) throws BlueDbException {
 		synchronized(collections) {
 			if (!collections.containsKey(name)) {
 				collections.put(name, new BlueCollectionImpl<T>(type));

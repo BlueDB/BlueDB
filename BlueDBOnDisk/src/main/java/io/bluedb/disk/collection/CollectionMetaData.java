@@ -92,9 +92,12 @@ public class CollectionMetaData {
 	}
 
 	@SafeVarargs
-	public final Class<? extends Serializable>[] getAndAddToSerializedClassList(Class<? extends Serializable>... additionalClasses) throws BlueDbException {
+	public final Class<? extends Serializable>[] getAndAddToSerializedClassList(Class<? extends Serializable> primaryClass, Class<? extends Serializable>... additionalClasses) throws BlueDbException {
 		List<Class<? extends Serializable>> existingClassList = getSerializedClassList();
 		List<Class<? extends Serializable>> newClassList = (existingClassList == null) ? new ArrayList<>() : new ArrayList<>(existingClassList);
+		if (!newClassList.contains(primaryClass)) {  // don't keep expanding the list every time we call this method
+			newClassList.add(primaryClass);
+		}
 		for (Class<? extends Serializable> clazz: additionalClasses) {
 			if (!newClassList.contains(clazz)) {  // don't keep expanding the list every time we call this method
 				newClassList.add(clazz);

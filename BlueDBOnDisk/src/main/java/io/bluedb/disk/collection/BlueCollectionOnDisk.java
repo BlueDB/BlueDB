@@ -47,12 +47,12 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 
-	public BlueCollectionOnDisk(BlueDbOnDisk db, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, String name) throws BlueDbException {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, Class<? extends Serializable>... additionalRegisteredClasses) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
 		metaData = new CollectionMetaData(collectionPath);
-		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType);
+		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
 		this.keyType = determineKeyType(metaData, requestedKeyType);

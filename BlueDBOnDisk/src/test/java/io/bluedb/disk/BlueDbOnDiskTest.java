@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
+import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
@@ -26,7 +27,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
     @Test
     public void test_getUntypedCollectionForBackup() throws Exception {
         String timeCollectionName = getTimeCollectionName();
-        BlueCollectionOnDisk<String> newCollection = (BlueCollectionOnDisk<String>) db.getCollection(TimeKey.class, String.class, "new_collection");
+        BlueCollectionOnDisk<String> newCollection = (BlueCollectionOnDisk<String>) db.initializeCollection("new_collection", TimeKey.class, String.class);
         assertNotNull(db.getUntypedCollectionForBackup(timeCollectionName));
         assertNotNull(db.getUntypedCollectionForBackup("new_collection"));
 
@@ -46,30 +47,34 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getCollection_existing_correct_type() throws Exception {
-		try {
-			db.getCollection(TimeKey.class, TestValue.class, getTimeCollectionName());
-			db.getCollection(TimeKey.class, TestValue.class, getTimeCollectionName());  // make sure it works the second time as well
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+	public void test_getCollection() throws Exception {
+		db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		BlueCollection<TestValue> collection = db.getCollection(getTimeCollectionName());
+		assertNotNull(collection);
+		assertEquals(collection, db.getCollection(getTimeCollectionName()));
+		assertNull(db.getCollection("non-existing"));
 	}
 
 	@Test
-	public void test_getCollection_invalid_type() {
+	public void test_initializeCollection_existing_correct_type() throws Exception {
+		db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		assertNotNull(db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class));  // make sure it works the second time as well
+	}
+
+	@Test
+	public void test_initializeCollection_invalid_type() {
 		insertAtTime(10, new TestValue("Bob"));
 		try {
-			db.getCollection(TimeKey.class, TestValue2.class, getTimeCollectionName());
+			db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue2.class);
 			fail();
 		} catch(BlueDbException e) {
 		}
 	}
 
 	@Test
-	public void test_getCollection_invalid_key_type() {
+	public void test_initializeCollection_invalid_key_type() {
 		try {
-			db.getCollection(ValueKey.class, TestValue.class, getTimeCollectionName());
+			db.initializeCollection(getTimeCollectionName(), ValueKey.class, TestValue.class);
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -401,8 +406,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         getTimeCollection();
         List<BlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
         assertEquals(2, allCollections.size());
-        db().getCollection(ValueKey.class, String.class, "string");
-        db().getCollection(ValueKey.class, Long.class, "long");
+        db().initializeCollection("string", ValueKey.class, String.class);
+        db().initializeCollection("long", ValueKey.class, Long.class);
         allCollections = db().getAllCollectionsFromDisk();
         assertEquals(4, allCollections.size());
 	}
@@ -413,7 +418,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         TestValue value1 = createValue("Anna");
         getTimeCollection().insert(key1At1, value1);
 
-        BlueCollectionOnDisk<TestValue2> secondCollection = (BlueCollectionOnDisk<TestValue2>) db().getCollection(TimeKey.class, TestValue2.class, "testing_2");
+        BlueCollectionOnDisk<TestValue2> secondCollection = (BlueCollectionOnDisk<TestValue2>) db().initializeCollection("testing_2", TimeKey.class, TestValue2.class);
         TestValue2 valueInSecondCollection = new TestValue2("Joe", 3);
         secondCollection.insert(key1At1, valueInSecondCollection);
 
@@ -427,14 +432,14 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(restoredBlueDbPath).build();
-        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.getCollection(TimeKey.class, TestValue.class, getTimeCollectionName());
+        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
 		Long restoredMaxLong = restoredCollection.getMaxLongId();
 		assertNotNull(restoredMaxLong);
         assertEquals(getTimeCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
 
-        BlueCollectionOnDisk<TestValue2> secondCollectionRestored = (BlueCollectionOnDisk<TestValue2>) restoredDb.getCollection(TimeKey.class, TestValue2.class, "testing_2");
+        BlueCollectionOnDisk<TestValue2> secondCollectionRestored = (BlueCollectionOnDisk<TestValue2>) restoredDb.initializeCollection("testing_2", TimeKey.class, TestValue2.class);
 		assertTrue(secondCollectionRestored.contains(key1At1));
 		assertEquals(valueInSecondCollection, secondCollectionRestored.get(key1At1));
 	}

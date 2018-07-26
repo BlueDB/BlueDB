@@ -269,8 +269,8 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
-		BlueCollection<?> collectionWithTimeKeys =db().getCollection(TimeKey.class, Serializable.class, "test_collection_TimeKey");
-		BlueCollection<?> collectionWithLongKeys = db().getCollection(LongKey.class, Serializable.class, "test_collection_LongKey");
+		BlueCollection<?> collectionWithTimeKeys =db().initializeCollection("test_collection_TimeKey", TimeKey.class, Serializable.class);
+		BlueCollection<?> collectionWithLongKeys = db().initializeCollection("test_collection_LongKey", LongKey.class, Serializable.class);
 		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
 		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
 		collectionWithLongKeys.get(new LongKey(1));  // should not throw an Exception
@@ -287,17 +287,17 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_determineKeyType() throws BlueDbException {
-		db().getCollection(TimeKey.class, TestValue.class, getTimeCollectionName());  // regular instantiation approach
+		db().initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);  // regular instantiation approach
 
 		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();  // reopen database without collections instantiated
 
 		try {
-			reopenedDatbase.getCollection(ValueKey.class, TestValue.class, getTimeCollectionName());  // try to open with the wrong key type
+			reopenedDatbase.initializeCollection(getTimeCollectionName(), ValueKey.class, TestValue.class);  // try to open with the wrong key type
 			fail();
 		} catch (BlueDbException e) {
 		}
 
-		BlueCollectionOnDisk<?> collectionWithoutType = (BlueCollectionOnDisk<?>) reopenedDatbase.getCollection(null, TestValue.class, getTimeCollectionName());  // open without specifying key type
+		BlueCollectionOnDisk<?> collectionWithoutType = (BlueCollectionOnDisk<?>) reopenedDatbase.initializeCollection(getTimeCollectionName(), null, TestValue.class);  // open without specifying key type
 		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
 	}
 

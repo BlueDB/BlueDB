@@ -33,7 +33,7 @@ public class BlueDbInMemoryTest extends TestCase {
 	protected void setUp() throws Exception {
 		tempDir = Files.createTempDirectory("BlueDbInMemoryTest");
 		db = new BlueDbInMemory(tempDir);
-		collection = db.getCollection(BlueKey.class, TestValue.class, "testing");
+		collection = db.initializeCollection("testing", BlueKey.class, TestValue.class);
 	}
 	
 	@Override
@@ -499,7 +499,7 @@ public class BlueDbInMemoryTest extends TestCase {
 		db.shutdown();
 		
 		db = new BlueDbInMemory(tempDir);
-		collection = db.getCollection(BlueKey.class, TestValue.class, "testing");
+		collection = db.initializeCollection("testing", BlueKey.class, TestValue.class);
 		
 		assertValueAtKey(key, value);
 	}
