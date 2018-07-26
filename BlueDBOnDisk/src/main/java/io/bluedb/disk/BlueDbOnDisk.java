@@ -85,12 +85,13 @@ public class BlueDbOnDisk implements BlueDb {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected BlueCollectionOnDisk getUntypedCollectionForBackup(String folderName) throws BlueDbException {
+		BlueCollectionOnDisk collection;
 		synchronized (collections) {
-			BlueCollectionOnDisk collection = collections.get(folderName);
-			if (collection == null) {
-				collection = new BlueCollectionOnDisk(this, folderName, null, Serializable.class);
-			}
-			return collection;
+			collection = collections.get(folderName);
 		}
+		if (collection == null) {
+			collection = new BlueCollectionOnDisk(this, folderName, null, Serializable.class);
+		}
+		return collection;
 	}
 }
