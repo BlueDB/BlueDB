@@ -27,7 +27,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 		getTimeCollection().insert(key1At1, value1);
 		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 
-		Path backedUpPath = Files.createTempDirectory(this.getClass().getSimpleName());
+		Path backedUpPath = createTempFolder().toPath();
 		BackupTask backupTask = new BackupTask(db(), backedUpPath);
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 

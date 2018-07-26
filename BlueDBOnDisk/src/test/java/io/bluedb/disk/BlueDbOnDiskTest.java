@@ -446,7 +446,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         Path serializedClassesPath = Paths.get(newUntypedCollection.getPath().toString(), ".meta", "serialized_classes");
         getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 
-        Path tempFolder = Files.createTempDirectory(this.getClass().getSimpleName());
+        Path tempFolder = createTempFolder().toPath();
         tempFolder.toFile().deleteOnExit();
         Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
         BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(getPath()).build();
