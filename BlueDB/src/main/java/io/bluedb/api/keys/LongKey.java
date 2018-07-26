@@ -15,10 +15,7 @@ public class LongKey extends ValueKey {
 	
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (int) (id ^ (id >>> 32));
-		return result;
+		return (int) (id ^ (id >>> 32));
 	}
 
 	@Override
