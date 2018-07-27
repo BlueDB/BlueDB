@@ -44,12 +44,12 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, Class<?>... additionalClassesToRegister) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new BlueCollectionOnDisk<T>(this, name, keyType, valueType);
+				collection = new BlueCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
