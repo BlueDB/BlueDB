@@ -43,14 +43,14 @@ public class BlueDbInMemory implements BlueDb {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> type, Class<?>... additionalClassesToRegister) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, Class<?>... additionalClassesToRegister) throws BlueDbException {
 		synchronized(collections) {
 			if (!collections.containsKey(name)) {
-				collections.put(name, new BlueCollectionImpl<T>(type));
-				classes.put(name, type);
+				collections.put(name, new BlueCollectionImpl<T>(valueType));
+				classes.put(name, valueType);
 			}
-			if (classes.get(name) != type) {
-				throw new BlueDbException("Collection '" + name + "' is not for type " + type);
+			if (classes.get(name) != valueType) {
+				throw new BlueDbException("Collection '" + name + "' is not for type " + valueType);
 			}
 			return (BlueCollection<T>)(collections.get(name));
 		}
