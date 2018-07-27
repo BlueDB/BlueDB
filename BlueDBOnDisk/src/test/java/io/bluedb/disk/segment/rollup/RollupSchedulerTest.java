@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
@@ -95,7 +97,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_run_interruption() {
-		RollupScheduler mockRollupScheduler = new RollupScheduler(getCollection());
+		RollupScheduler mockRollupScheduler = new RollupScheduler(getTimeCollection());
 		mockRollupScheduler.setWaitBetweenReviews(0);
 		Range timeRange = new Range(0, 1);
 		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastInsertTime(timeRange));
@@ -111,11 +113,11 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	private BlueCollectionOnDisk<TestValue> createMockCollection(List<Range> rollupsRequested) throws Exception {
-		return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TestValue.class) {
-			@Override
-			public void scheduleRollup(Range t) {
-				rollupsRequested.add(t);
-			}
-		};
+        return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class) {
+            @Override
+            public void scheduleRollup(Range t) {
+                rollupsRequested.add(t);
+            }
+        };
 	}
 }

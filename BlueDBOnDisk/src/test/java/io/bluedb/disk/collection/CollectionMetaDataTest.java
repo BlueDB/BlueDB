@@ -19,7 +19,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		metaData = getCollection().getMetaData();
+		metaData = getTimeCollection().getMetaData();
 	}
 
 	@Test
@@ -111,13 +111,13 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		Class<? extends Serializable>[] testValue1 = new Class[] {TestValue.class};
 		Class<? extends Serializable>[] testValueBoth = new Class[] {TestValue.class, TestValue2.class};
 
-		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(testValue1);
+		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(TestValue.class);
 		assertArrayEquals(testValue1, afterAdding1);
 
-		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(testValue1);
+		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(TestValue.class);
 		assertArrayEquals(testValue1, afterAdding1Again);
 
-		Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(testValueBoth);
+		Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(TestValue.class, TestValue2.class);
 		assertArrayEquals(testValueBoth, afterAddingBoth);
 	}
 

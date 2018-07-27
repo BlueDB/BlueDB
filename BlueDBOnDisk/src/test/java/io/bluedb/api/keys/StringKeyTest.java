@@ -27,6 +27,13 @@ public class StringKeyTest extends TestCase {
 		assertTrue(one.getGroupingNumber() == oneCopy.getGroupingNumber());
 		assertFalse(one.getGroupingNumber() == zero.getGroupingNumber());
 		assertFalse(empty.getGroupingNumber() == one.getGroupingNumber());
+
+		assertTrue(zero.getGroupingNumber() >= 0);
+		assertTrue(one.getGroupingNumber() >= 0);
+
+		long integerMaxValueAsLong = Integer.MAX_VALUE;
+		assertTrue(zero.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
+		assertTrue(one.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
 	}
 
 	@Test
@@ -104,7 +111,7 @@ public class StringKeyTest extends TestCase {
 	@Test
 	public void test_getIntegerIdIfPresent() {
 		TimeKey fourLongAtOne = new TimeKey(4L, 1);
-		TimeKey fourIntegerAtOne = new TimeKey(4, 1);
+		TimeKey fourIntegerAtOne = new TimeKey(new IntegerKey(4), 1);
 		assertNull(fourLongAtOne.getIntegerIdIfPresent());
 		assertEquals(Integer.valueOf(4), fourIntegerAtOne.getIntegerIdIfPresent());
 	}

@@ -28,6 +28,17 @@ public class IntegerKeyTest extends TestCase {
 		assertTrue(one.getGroupingNumber() == oneCopy.getGroupingNumber());
 		assertFalse(one.getGroupingNumber() == zero.getGroupingNumber());
 		assertFalse(min.getGroupingNumber() == max.getGroupingNumber());
+
+		assertTrue(min.getGroupingNumber() >= 0);
+		assertTrue(max.getGroupingNumber() >= 0);
+		assertTrue(zero.getGroupingNumber() >= 0);
+		assertTrue(one.getGroupingNumber() >= 0);
+
+		long integerMaxValueAsLong = Integer.MAX_VALUE;
+		assertTrue(min.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
+		assertTrue(max.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
+		assertTrue(zero.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
+		assertTrue(one.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
 	}
 
 	@Test

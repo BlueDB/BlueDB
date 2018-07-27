@@ -134,7 +134,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 			assertEquals(2, entities.size());
 			
 			iterator = segment.getIterator(1, 2); // it should now have two ranges to search
-			long segmentSize = SegmentManager.getSegmentSize();
+			long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
 			Range range = new Range(0, segmentSize -1);
 			segment.rollup(range);
 			entities = toList(iterator);
@@ -162,7 +162,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 			entities.add(iterator.next()); // read one from the first file;
 
 			// simulate a rollup from underneath us
-			long segmentSize = SegmentManager.getSegmentSize();
+			long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
 			Range range = new Range(0, segmentSize -1);
 			Path rolledUpPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 			try (BlueObjectOutput<BlueEntity<TestValue>> output = segment.getObjectOutputFor(rolledUpPath)) {
@@ -241,7 +241,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		
 		assertEquals(2, entitiesInRealSegment.size());
 
-		Segment<TestValue> mockSegment = new Segment<TestValue>(segment.getPath(), getFileManager()) {
+		Segment<TestValue> mockSegment = new Segment<TestValue>(segment.getPath(), getTimeCollection(), null) {
 			@Override
 			protected BlueObjectInput<BlueEntity<TestValue>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 				throw new BlueDbException("segment fail");

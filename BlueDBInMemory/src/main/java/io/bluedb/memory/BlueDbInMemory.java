@@ -12,6 +12,7 @@ import org.nustaq.serialization.FSTConfiguration;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.keys.BlueKey;
 
 public class BlueDbInMemory implements BlueDb {
 	private static final String COLLECTIONS_FILENAME = "collections.bin";
@@ -31,16 +32,25 @@ public class BlueDbInMemory implements BlueDb {
 		initializeFromDirectory();
 	}
 
+	@Override
+	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
+		synchronized(collections) {
+			@SuppressWarnings("unchecked")
+			BlueCollection<T> collection = (BlueCollection<T>)(collections.get(name));
+			return collection;
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(Class<T> type, String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException {
 		synchronized(collections) {
 			if (!collections.containsKey(name)) {
-				collections.put(name, new BlueCollectionImpl<T>(type));
-				classes.put(name, type);
+				collections.put(name, new BlueCollectionImpl<T>(valueType));
+				classes.put(name, valueType);
 			}
-			if (classes.get(name) != type) {
-				throw new BlueDbException("Collection '" + name + "' is not for type " + type);
+			if (classes.get(name) != valueType) {
+				throw new BlueDbException("Collection '" + name + "' is not for type " + valueType);
 			}
 			return (BlueCollection<T>)(collections.get(name));
 		}
@@ -97,5 +107,4 @@ public class BlueDbInMemory implements BlueDb {
 			throw new BlueDbException("Failed to serialize in memory database to directory " + directory, t);
 		}
 	}
-
 }

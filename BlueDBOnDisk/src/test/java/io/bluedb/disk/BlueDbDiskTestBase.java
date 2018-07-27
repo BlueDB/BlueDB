@@ -13,9 +13,11 @@ import java.util.Iterator;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
@@ -33,24 +35,29 @@ import junit.framework.TestCase;
 
 public abstract class BlueDbDiskTestBase extends TestCase {
 
+	private static String TIME_COLLECTION_NAME = "testing_time";
+	private static String VALUE_COLLECTION_NAME = "testing_value";
 	BlueDbOnDisk db;
-	BlueCollectionOnDisk<TestValue> collection;
+	BlueCollectionOnDisk<TestValue> timeCollection;
+	BlueCollectionOnDisk<TestValue> valueCollection;
 	Path dbPath;
 	LockManager<Path> lockManager;
 	RollupScheduler rollupScheduler;
 	CollectionMetaData metaData;
 	List<File> filesToDelete;
+	CollectionMetaData timeCollectionMetaData;
 
 	@Override
 	protected void setUp() throws Exception {
 		filesToDelete = new ArrayList<>();
 		dbPath = createTempFolder().toPath();
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		collection = (BlueCollectionOnDisk<TestValue>) db.getCollection(TestValue.class, "testing");
+		timeCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class);
+		valueCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(VALUE_COLLECTION_NAME, ValueKey.class, TestValue.class);
 		dbPath = db.getPath();
-		lockManager = collection.getFileManager().getLockManager();
-		rollupScheduler = new RollupScheduler(collection);
-		metaData = getCollection().getMetaData();
+		lockManager = timeCollection.getFileManager().getLockManager();
+		rollupScheduler = new RollupScheduler(timeCollection);
+		timeCollectionMetaData = getTimeCollection().getMetaData();
 	}
 
 	@Override
@@ -64,8 +71,12 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public BlueCollectionOnDisk<TestValue> getCollection() {
-		return collection;
+	public BlueCollectionOnDisk<TestValue> getTimeCollection() {
+		return timeCollection;
+	}
+
+	public BlueCollectionOnDisk<TestValue> getValueCollection() {
+		return valueCollection;
 	}
 
 	public LockManager<Path> getLockManager() {
@@ -86,7 +97,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public Segment<TestValue> getSegment(long groupingId) {
 		BlueKey keyInSegment = new TimeKey(1, groupingId);
-		return collection.getSegmentManager().getFirstSegment(keyInSegment);
+		return timeCollection.getSegmentManager().getFirstSegment(keyInSegment);
 	}
 
 	public List<TestValue> extractValues(List<BlueEntity<TestValue>> entities) {
@@ -121,24 +132,39 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return new TimeFrameKey(stringKey, start, end);
 	}
 
-	public BlueKey insert(long time, TestValue value) {
+	public BlueKey insertAtTime(long time, TestValue value) {
 		BlueKey key = createTimeKey(time, value);
-		insert(key, value);
+		insertToTimeCollection(key, value);
 		return key;
 	}
 
-	public void insert(BlueKey key, TestValue value) {
+	public BlueKey insertAtLong(long id, TestValue value) {
+		BlueKey key = new LongKey(id);
+		insertToValueCollection(key, value);
+		return key;
+	}
+
+	public void insertToValueCollection(BlueKey key, TestValue value) {
 		try {
-			getCollection().insert(key, value);
+			getValueCollection().insert(key, value);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
 		}
 	}
 
-	public BlueKey insert(long start, long end, TestValue value) {
+	public void insertToTimeCollection(BlueKey key, TestValue value) {
+		try {
+			getTimeCollection().insert(key, value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	public BlueKey insertAtTimeFrame(long start, long end, TestValue value) {
 		BlueKey key = createTimeFrameKey(start, end, value);
-		insert(key, value);
+		insertToTimeCollection(key, value);
 		return key;
 	}
 
@@ -149,7 +175,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public void assertCupcakes(BlueKey key, int cupcakes) {
 		try {
-			TestValue value = getCollection().get(key);
+			TestValue value = getTimeCollection().get(key);
 			if (value == null)
 				fail();
 			assertEquals(cupcakes, value.getCupcakes());
@@ -161,7 +187,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public void assertValueNotAtKey(BlueKey key, TestValue value) {
 		try {
-			assertNotEquals(value, getCollection().get(key));
+			assertNotEquals(value, getTimeCollection().get(key));
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -172,7 +198,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		TestValue differentValue = new TestValue("Bob");
 		differentValue.setCupcakes(42);
 		try {
-			assertEquals(value, getCollection().get(key));
+			assertEquals(value, getTimeCollection().get(key));
 			assertNotEquals(value, differentValue);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
@@ -225,7 +251,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	}
 
 	public FileManager getFileManager() {
-		return collection.getFileManager();
+		return timeCollection.getFileManager();
 	}
 
 	public RollupScheduler getRollupScheduler() {
@@ -233,16 +259,16 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	}
 
 	public BlueSerializer getSerializer() {
-		return getCollection().getSerializer();
+		return getTimeCollection().getSerializer();
 	}
 
-	public CollectionMetaData getMetaData() {
-		return metaData;
+	public CollectionMetaData getTimeCollectionMetaData() {
+		return timeCollectionMetaData;
 	}
 
 	public void removeKey(BlueKey key) {
 		try {
-			getCollection().delete(key);
+			getTimeCollection().delete(key);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 			fail();
@@ -250,12 +276,16 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	}
 
 	public RecoveryManager<TestValue> getRecoveryManager() {
-		return collection.getRecoveryManager();
+		return timeCollection.getRecoveryManager();
 	}
 
 	public TestValue createValue(String name, int cupcakes){
 		return new TestValue(name, cupcakes);
 	}
+
+    public String getTimeCollectionName() {
+        return TIME_COLLECTION_NAME;
+    }
 
 	public File createTempFolder() {
 		return createTempFolder(getClass().getSimpleName());

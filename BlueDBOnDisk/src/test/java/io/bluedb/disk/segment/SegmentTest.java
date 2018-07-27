@@ -126,7 +126,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(value3, segment.get(key3At3));
 
 		// make sure insert works after rollup
-		segment.rollup(SegmentManager.getSegmentRange(0));
+		segment.rollup(getTimeCollection().getSegmentManager().getSegmentRange(0));
 		BlueKey key4At2 = createKey(4, 2);
 		TestValue value4 = createValue("Dan");
 		segment.insert(key4At2, value4);
@@ -263,10 +263,10 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		Range invalidRollupTimeRange = new Range(0, 3);
 		try {
 			segment.rollup(invalidRollupTimeRange);
-			fail();  // rollups must be 
+			fail();  // rollups must be
 		} catch (BlueDbException e) {}
 
-		Range validRollupTimeRange = new Range(0, SegmentManager.getSegmentSize() - 1);
+		Range validRollupTimeRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 		segment.rollup(validRollupTimeRange);
 		values = getAll(segment);
 		assertEquals(2, values.size());
@@ -345,18 +345,18 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 
-		getCollection().insert(key1, value1);
-		getCollection().insert(key2, value2);
-		Range rollupRange = SegmentManager.getSegmentRange(0);
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 
 		getRecoveryManager().recover();
-		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(1, remainingFiles.size());
-		List<TestValue> values = getCollection().query().getList();
+		List<TestValue> values = getTimeCollection().query().getList();
 		assertEquals(2, values.size());
 		assertTrue(values.contains(value1));
 		assertTrue(values.contains(value2));
@@ -369,27 +369,27 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 
-		getCollection().insert(key1, value1);
-		getCollection().insert(key2, value2);
-		Range rollupRange = SegmentManager.getSegmentRange(0);
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
-		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
 		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
 		segment.copy(tmpPath, filesToRollup);
 
-		
-		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
+
+		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(3, filesExistingAfterCopy.length);
 
 		getRecoveryManager().recover();
-		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(1, remainingFiles.size());
-		List<TestValue> values = getCollection().query().getList();
+		List<TestValue> values = getTimeCollection().query().getList();
 		assertEquals(2, values.size());
 		assertTrue(values.contains(value1));
 		assertTrue(values.contains(value2));
@@ -402,21 +402,21 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 
-		getCollection().insert(key1, value1);
-		getCollection().insert(key2, value2);
-		Range rollupRange = SegmentManager.getSegmentRange(0);
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
-		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
 		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
 		segment.copy(tmpPath, filesToRollup);
 
-		
-		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
+
+		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(3, filesExistingAfterCopy.length);
 
 		try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
@@ -428,9 +428,9 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		}
 
 		getRecoveryManager().recover();
-		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(1, remainingFiles.size());
-		List<TestValue> values = getCollection().query().getList();
+		List<TestValue> values = getTimeCollection().query().getList();
 		assertEquals(2, values.size());
 		assertTrue(values.contains(value1));
 		assertTrue(values.contains(value2));
@@ -443,21 +443,21 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 
-		getCollection().insert(key1, value1);
-		getCollection().insert(key2, value2);
-		Range rollupRange = SegmentManager.getSegmentRange(0);
+		getTimeCollection().insert(key1, value1);
+		getTimeCollection().insert(key2, value2);
+		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupRange);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key1);
-		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);	
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
 		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
 		segment.copy(tmpPath, filesToRollup);
 
-		
-		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);	
+
+		File[] filesExistingAfterCopy = tmpPath.toFile().getParentFile().listFiles(); //segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(3, filesExistingAfterCopy.length);
 
 		try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
@@ -470,11 +470,41 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		}
 
 		getRecoveryManager().recover();
-		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);	
+		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(1, remainingFiles.size());
-		List<TestValue> values = getCollection().query().getList();
+		List<TestValue> values = getTimeCollection().query().getList();
 		assertEquals(2, values.size());
 		assertTrue(values.contains(value1));
 		assertTrue(values.contains(value2));
+	}
+
+	@Test
+	public void test_isValidRollupRange() {
+		SegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
+		SegmentManager<TestValue> valueSegmentManager = getValueCollection().getSegmentManager();
+		Segment<TestValue> timeSegment = timeSegmentManager.getSegment(0);
+		Segment<TestValue> valueSegment = valueSegmentManager.getSegment(0);
+		long timeSegmentSize = timeSegmentManager.getSegmentSize();
+		long valueSegmentSize = valueSegmentManager.getSegmentSize();
+		Range validTimeSegmentRange = new Range(0, timeSegmentSize - 1);
+		Range invalidTimeSegmentRange1 = new Range(1, timeSegmentSize);
+		Range invalidTimeSegmentRange2 = new Range(0, timeSegmentSize);
+		Range validValueSegmentRange = new Range(0, valueSegmentSize - 1);
+		Range invalidValueSegmentRange1 = new Range(1, valueSegmentSize);
+		Range invalidValueSegmentRange2 = new Range(0, valueSegmentSize);
+
+		assertTrue(timeSegment.isValidRollupRange(validTimeSegmentRange));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange1));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange2));
+		assertFalse(timeSegment.isValidRollupRange(validValueSegmentRange));
+		assertFalse(timeSegment.isValidRollupRange(invalidValueSegmentRange1));
+		assertFalse(timeSegment.isValidRollupRange(invalidValueSegmentRange2));
+
+		assertFalse(valueSegment.isValidRollupRange(validTimeSegmentRange));
+		assertFalse(valueSegment.isValidRollupRange(invalidTimeSegmentRange1));
+		assertFalse(valueSegment.isValidRollupRange(invalidTimeSegmentRange2));
+		assertTrue(valueSegment.isValidRollupRange(validValueSegmentRange));
+		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange1));
+		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange2));
 	}
 }

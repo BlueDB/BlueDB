@@ -29,72 +29,72 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 	public void test_close() throws Exception {
 		BlueKey key = createKey(1, 1);
 		TestValue value = createValue("Anna");
-		Segment<TestValue> segment = getCollection().getSegmentManager().getFirstSegment(key);
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 		Range range = new Range(1, 1);
 		Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 
-		getCollection().insert(key, value);
-		CollectionValueIterator<TestValue> iterator = (CollectionValueIterator<TestValue>) getCollection().query().afterOrAtTime(1).beforeOrAtTime(2).getIterator();
-		assertFalse(getLockManager().isLocked(chunkPath));
-		iterator.hasNext();  // force it to open the next file
-		assertTrue(getLockManager().isLocked(chunkPath));
-		iterator.close();
-		assertFalse(getLockManager().isLocked(chunkPath));
+        getTimeCollection().insert(key, value);
+        CollectionValueIterator<TestValue> iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(1).beforeOrAtTime(2).getIterator();
+        assertFalse(getLockManager().isLocked(chunkPath));
+        iterator.hasNext();  // force it to open the next file
+        assertTrue(getLockManager().isLocked(chunkPath));
+        iterator.close();
+        assertFalse(getLockManager().isLocked(chunkPath));
 	}
 
 	@Test
 	public void test_hasNext() throws Exception {
-		BlueKey key1 = createKey(1, 1);
-		BlueKey key2 = createKey(2, 2);
-		TestValue value1 = createValue("Anna");
-		TestValue value2 = createValue("Bob");
-		getCollection().insert(key1, value1);
-		getCollection().insert(key2, value2);
-		CollectionValueIterator<TestValue> iterator = (CollectionValueIterator<TestValue>) getCollection().query().afterOrAtTime(0).beforeOrAtTime(0).getIterator();
-		assertFalse(iterator.hasNext());
-		iterator.close();
+        BlueKey key1 = createKey(1, 1);
+        BlueKey key2 = createKey(2, 2);
+        TestValue value1 = createValue("Anna");
+        TestValue value2 = createValue("Bob");
+        getTimeCollection().insert(key1, value1);
+        getTimeCollection().insert(key2, value2);
+        CollectionValueIterator<TestValue> iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(0).beforeOrAtTime(0).getIterator();
+        assertFalse(iterator.hasNext());
+        iterator.close();
 
-		iterator = (CollectionValueIterator<TestValue>) getCollection().query().afterOrAtTime(1).beforeOrAtTime(1).getIterator();
-		assertTrue(iterator.hasNext());
-		assertTrue(iterator.hasNext()); // make sure doing it twice doesn't break anything
-		iterator.next();
-		assertFalse(iterator.hasNext());
-		iterator.close();
+        iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(1).beforeOrAtTime(1).getIterator();
+        assertTrue(iterator.hasNext());
+        assertTrue(iterator.hasNext()); // make sure doing it twice doesn't break anything
+        iterator.next();
+        assertFalse(iterator.hasNext());
+        iterator.close();
 
-		iterator = (CollectionValueIterator<TestValue>) getCollection().query().afterOrAtTime(1).beforeOrAtTime(2).getIterator();
-		assertTrue(iterator.hasNext());
-		iterator.next();
-		assertTrue(iterator.hasNext());
-		iterator.next();
-		assertFalse(iterator.hasNext());
-		iterator.close();
+        iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(1).beforeOrAtTime(2).getIterator();
+        assertTrue(iterator.hasNext());
+        iterator.next();
+        assertTrue(iterator.hasNext());
+        iterator.next();
+        assertFalse(iterator.hasNext());
+        iterator.close();
 	}
 
 	@Test
 	public void test_next() throws Exception {
-		BlueKey key1 = createKey(1, 1);
-		BlueKey key2 = createKey(2, 2);
-		TestValue value1 = createValue("Anna");
-		TestValue value2 = createValue("Bob");
+        BlueKey key1 = createKey(1, 1);
+        BlueKey key2 = createKey(2, 2);
+        TestValue value1 = createValue("Anna");
+        TestValue value2 = createValue("Bob");
 
-		getCollection().insert(key1, value1);
-		getCollection().insert(key2, value2);
-		
-		CollectionValueIterator<TestValue> iterator = (CollectionValueIterator<TestValue>) getCollection().query().afterOrAtTime(0).beforeOrAtTime(0).getIterator();
-		List<TestValue> iteratorContents = toList(iterator);
-		iterator.close();
-		assertEquals(0, iteratorContents.size());
+        getTimeCollection().insert(key1, value1);
+        getTimeCollection().insert(key2, value2);
 
-		iterator = (CollectionValueIterator<TestValue>) getCollection().query().afterOrAtTime(0).beforeOrAtTime(1).getIterator();
-		iteratorContents = toList(iterator);
-		iterator.close();
-		assertEquals(1, iteratorContents.size());
+        CollectionValueIterator<TestValue> iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(0).beforeOrAtTime(0).getIterator();
+        List<TestValue> iteratorContents = toList(iterator);
+        iterator.close();
+        assertEquals(0, iteratorContents.size());
+
+        iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(0).beforeOrAtTime(1).getIterator();
+        iteratorContents = toList(iterator);
+        iterator.close();
+        assertEquals(1, iteratorContents.size());
 
 
-		iterator = (CollectionValueIterator<TestValue>) getCollection().query().afterOrAtTime(1).beforeOrAtTime(2).getIterator();
-		iteratorContents = toList(iterator);
-		iterator.close();
-		assertEquals(2, iteratorContents.size());
+        iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(1).beforeOrAtTime(2).getIterator();
+        iteratorContents = toList(iterator);
+        iterator.close();
+        assertEquals(2, iteratorContents.size());
 	}
 
 
@@ -109,23 +109,23 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 		List<TestValue> iteratorContents;
 		
 		// insert values
-		getCollection().insert(key1at1, value1);
-		getCollection().insert(key2at1, value2);
-		getCollection().insert(key3at3, value3);
+        getTimeCollection().insert(key1at1, value1);
+        getTimeCollection().insert(key2at1, value2);
+        getTimeCollection().insert(key3at3, value3);
 
 		// validate that the iterator is working normally
-		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getCollection(), 0, 3)) {
+		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), 0, 3)) {
 			iteratorContents = toList(iterator);
 			iterator.close();
 			assertEquals(3, iteratorContents.size());
 		}
 
 		LockManager<Path> lockManager = getLockManager();
-		Path segmentPath = getCollection().getSegmentManager().getFirstSegment(key2at1).getPath();
+		Path segmentPath = getTimeCollection().getSegmentManager().getFirstSegment(key2at1).getPath();
 		String fileName = Range.forValueAndRangeSize(1, 1).toUnderscoreDelimitedString();
 		Path firstFilePath = Paths.get(segmentPath.toString(), fileName);
 
-		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getCollection(), 0, 3, 20)) {
+		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), 0, 3, 20)) {
 			TestValue first = iterator.next(); // make sure that the underlying resources are acquired
 			assertEquals(value1, first);
 

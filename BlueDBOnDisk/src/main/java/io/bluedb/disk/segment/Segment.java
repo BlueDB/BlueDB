@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -14,6 +13,7 @@ import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
@@ -28,16 +28,17 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> {
 
-	private final static Long SEGMENT_SIZE = SegmentManager.SIZE_SEGMENT;
-	private final static Long[] ROLLUP_LEVELS = {1L, 3125L, SEGMENT_SIZE};
-
+	BlueCollectionOnDisk<T> collection;
 	private final FileManager fileManager;
 	private final Path segmentPath;
 	private final LockManager<Path> lockManager;
+	private final List<Long> rollupLevels;
 
-	public Segment(Path segmentPath, FileManager fileManager) {
+	public Segment(Path segmentPath, BlueCollectionOnDisk<T> collection, final List<Long> rollupLevels) {
+		this.collection = collection;
 		this.segmentPath = segmentPath;
-		this.fileManager = fileManager;
+		this.fileManager = collection.getFileManager();
+		this.rollupLevels = rollupLevels;
 		lockManager = fileManager.getLockManager();
 	}
 
@@ -45,7 +46,7 @@ public class Segment <T extends Serializable> {
 		return new Segment<T>();
 	}
 
-	protected Segment() {segmentPath = null;fileManager = null;lockManager = null;}
+	protected Segment() {segmentPath = null;fileManager = null;lockManager = null; rollupLevels = null;}
 
 	@Override
 	public String toString() {
@@ -99,9 +100,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	public void rollup(Range timeRange) throws BlueDbException {
-		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
-		boolean isValidRollupSize = Arrays.asList(ROLLUP_LEVELS).contains(rollupSize);
-		if (!isValidRollupSize) {
+		if (!isValidRollupRange(timeRange)) {
 			throw new BlueDbException("Not a valid rollup size: " + timeRange);
 		}
 		List<File> filesToRollup = getOrderedFilesInRange(timeRange);
@@ -115,6 +114,13 @@ public class Segment <T extends Serializable> {
 			copy(tmpPath, filesToRollup);
 			moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
 		}
+	}
+
+	public boolean isValidRollupRange(Range timeRange) {
+		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
+		boolean isValidSize = rollupLevels.contains(rollupSize);
+		boolean isValidStartPoint = timeRange.getStart() % rollupSize == 0;
+		return isValidSize && isValidStartPoint;
 	}
 
 	void copy(Path destination, List<File> sources) throws BlueDbException {
@@ -209,7 +215,7 @@ public class Segment <T extends Serializable> {
 	}
 
 	public BlueReadLock<Path> getReadLockFor(long groupingNumber) throws BlueDbException {
-		for (long rollupLevel: ROLLUP_LEVELS) {
+		for (long rollupLevel: rollupLevels) {
 			Path path = getPathFor(groupingNumber, rollupLevel);
 			BlueReadLock<Path> lock = fileManager.getReadLockIfFileExists(path);
 			if (lock != null) {

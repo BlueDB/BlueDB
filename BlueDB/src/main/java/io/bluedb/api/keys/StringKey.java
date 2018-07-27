@@ -1,6 +1,6 @@
 package io.bluedb.api.keys;
 
-public class StringKey implements ValueKey {
+public class StringKey extends ValueKey {
 	private static final long serialVersionUID = 1L;
 
 	private String id;
@@ -13,11 +13,6 @@ public class StringKey implements ValueKey {
 		return id;
 	}
 	
-	@Override
-	public long getGroupingNumber() {
-		return hashCode();
-	}
-
 	@Override
 	public int hashCode() {
 		final int prime = 31;
