@@ -27,11 +27,19 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
-			@SuppressWarnings("unchecked")
-			BlueCollection<T> collection = (BlueCollection<T>)(collections.get(name));
-			return collection;
+			BlueCollectionOnDisk<?> untypedCollection = collections.get(name);
+			if (untypedCollection == null) {
+				return null;
+			}
+			if (untypedCollection.getType().equals(valueType)) {
+				@SuppressWarnings("unchecked")
+				BlueCollection<T> typedCollection = (BlueCollection<T>) untypedCollection;
+				return typedCollection;
+			} else {
+				throw new BlueDbException("Cannot cast BlueCollection<" + untypedCollection.getType() + "> to BlueCollection<" + valueType + ">");
+			}
 		}
 	}
 

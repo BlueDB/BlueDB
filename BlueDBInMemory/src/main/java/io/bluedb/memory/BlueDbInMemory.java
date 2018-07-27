@@ -33,7 +33,7 @@ public class BlueDbInMemory implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable> BlueCollection<T> getCollection(String name) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollection<T> collection = (BlueCollection<T>)(collections.get(name));

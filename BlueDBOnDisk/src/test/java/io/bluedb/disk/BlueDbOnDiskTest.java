@@ -49,10 +49,22 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getCollection() throws Exception {
 		db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
-		BlueCollection<TestValue> collection = db.getCollection(getTimeCollectionName());
+		BlueCollection<TestValue> collection = db.getCollection(getTimeCollectionName(), TestValue.class);
 		assertNotNull(collection);
-		assertEquals(collection, db.getCollection(getTimeCollectionName()));
-		assertNull(db.getCollection("non-existing"));
+		assertEquals(collection, db.getCollection(getTimeCollectionName(), TestValue.class));
+		assertNull(db.getCollection("non-existing", TestValue.class));
+	}
+
+	@Test
+	public void test_getCollection_wrong_type() throws Exception {
+		BlueCollection<TestValue> valueCollection = db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		TimeKey testValueKey = new TimeKey(1, 1);
+		valueCollection.insert(testValueKey, new TestValue("Bob"));
+		try {
+			db.getCollection(getTimeCollectionName(), String.class);
+			fail();
+		} catch (BlueDbException e) {
+		}
 	}
 
 	@Test
