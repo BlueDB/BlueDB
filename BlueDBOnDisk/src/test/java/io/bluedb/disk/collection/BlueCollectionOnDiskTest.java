@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +19,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.LongKey;
+import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.api.keys.ValueKey;
@@ -78,6 +80,20 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			fail();
 		} catch (BlueDbException e) {
 		}
+	}
+
+	@Test
+	public void test_insert_long_strings() throws Exception {
+		BlueCollection<String> stringCollection = db().initializeCollection("test_strings", StringKey.class, String.class);
+		String value = "string";
+		int n = 100;
+		for (int i = 0; i < n; i++) {
+			String id = UUID.randomUUID().toString();
+			StringKey key = new StringKey(id);
+			stringCollection.insert(key, value);
+		}
+		List<String> storedValues = stringCollection.query().getList();
+		assertEquals(100, storedValues.size());
 	}
 
 	@Test
