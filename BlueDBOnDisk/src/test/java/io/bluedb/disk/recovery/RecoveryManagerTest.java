@@ -137,7 +137,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
 		assertEquals(0, changesBeforeInsert.size());
 		assertEquals(4, changesBeforeCleanup.size());
-		assertEquals(3, changesAfterCleanup.size());  // the 100 stays.  The 90 goes because it's
+		assertEquals(1, changesAfterCleanup.size());  // 30 stays, but 60, 90, 100 go because they're an hour old;
 	}
 
 	@Test
@@ -247,7 +247,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_recover_invalidPendingChange() throws Exception {
-		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.PENDING_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
+		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.HISTORY_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
 		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};
 

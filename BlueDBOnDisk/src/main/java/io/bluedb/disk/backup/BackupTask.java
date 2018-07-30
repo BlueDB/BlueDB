@@ -77,8 +77,8 @@ public class BackupTask {
 	private void copyChanges(BlueCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime, Path tempFolder) throws BlueDbException {
 		RecoveryManager<?> recoveryManager = collection.getRecoveryManager();
 		List<File> changesToCopy = recoveryManager.getChangeHistory(backupStartTime, backupEndTime);
-		Path pendingFolderPath = recoveryManager.getPendingFolderPath();
-		Path destinationFolderPath = translatePath(dbPath, tempFolder, pendingFolderPath);
+		Path historyFolderPath = recoveryManager.getHistoryFolder();
+		Path destinationFolderPath = translatePath(dbPath, tempFolder, historyFolderPath);
 		destinationFolderPath.toFile().mkdirs();
 		for (File file: changesToCopy) {
 			Path destinationPath = Paths.get(destinationFolderPath.toString(), file.getName());

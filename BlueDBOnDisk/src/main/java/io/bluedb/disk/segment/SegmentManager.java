@@ -47,6 +47,7 @@ public class SegmentManager<T extends Serializable> {
 	public List<Segment<T>> getExistingSegments(long minValue, long maxValue) {
 		return pathManager.getExistingSegmentFiles(minValue, maxValue).stream()
 				.map((f) -> (toSegment(f.toPath())))
+				.sorted()
 				.collect(Collectors.toList());
 	}
 

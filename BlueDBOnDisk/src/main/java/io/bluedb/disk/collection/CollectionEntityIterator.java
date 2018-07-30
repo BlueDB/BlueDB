@@ -2,6 +2,7 @@ package io.bluedb.disk.collection;
 
 import java.io.Closeable;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import io.bluedb.disk.segment.SegmentEntityIterator;
@@ -24,6 +25,7 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 		this.max = max;
 		this.endGroupingValueOfCompletedSegments = Long.MIN_VALUE;
 		segments = collection.getSegmentManager().getExistingSegments(min, max);
+		Collections.sort(segments);
 	}
 
 	@Override

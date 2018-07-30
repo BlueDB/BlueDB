@@ -26,7 +26,7 @@ import io.bluedb.disk.segment.writer.StreamingWriter;
 import io.bluedb.disk.segment.writer.UpdateWriter;
 import io.bluedb.disk.serialization.BlueEntity;
 
-public class Segment <T extends Serializable> {
+public class Segment <T extends Serializable> implements Comparable<Segment<T>> {
 
 	BlueCollectionOnDisk<T> collection;
 	private final FileManager fileManager;
@@ -276,5 +276,10 @@ public class Segment <T extends Serializable> {
 		} else {
 			return segmentPath.equals(other.segmentPath);
 		}
+	}
+
+	@Override
+	public int compareTo(Segment<T> other) {
+		return segmentRange.compareTo(other.segmentRange);
 	}
 }

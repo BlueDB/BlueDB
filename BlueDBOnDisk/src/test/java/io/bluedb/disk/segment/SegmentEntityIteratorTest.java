@@ -5,11 +5,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.LongKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.serialization.BlueEntity;
@@ -253,5 +256,37 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		assertEquals(valuesExpectedInFirstSegment, valuesFromFirstSegment);
 		assertEquals(valuesExpectedInSecondSegment, valuesFromSecondSegment);
 		assertEquals(valuesExpectedInSecondSegmentOnly, valuesFromSecondSegmentOnly);
+	}
+
+
+	@Test
+	public void test_insert_longs() throws Exception {
+		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
+		String value = "longs";
+		int n = 100;
+		for (int i = 0; i < n; i++) {
+			long id = new Random().nextLong();
+			LongKey key = new LongKey(id);
+			stringCollection.insert(key, value);
+		}
+		
+		List<Segment<String>> segments = stringCollection.getSegmentManager().getExistingSegments(Long.MIN_VALUE, Long.MAX_VALUE);
+		assertEquals(n, segments.size());
+
+		for (Segment<String> segment: segments) {
+			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
+			List<String> strings = toValueList(iterator);
+			assertEquals(1, strings.size());
+		}
+		for (Segment<String> segment: segments) {
+			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
+			List<String> strings = toValueList(iterator);
+			if (strings.size() < 1) {
+				iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
+				toValueList(iterator);
+			}
+		}
+		List<String> storedValues = stringCollection.query().getList();
+		assertEquals(100, storedValues.size());
 	}
 }
