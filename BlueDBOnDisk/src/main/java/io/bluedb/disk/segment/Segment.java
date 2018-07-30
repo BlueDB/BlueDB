@@ -31,12 +31,14 @@ public class Segment <T extends Serializable> {
 	BlueCollectionOnDisk<T> collection;
 	private final FileManager fileManager;
 	private final Path segmentPath;
+	private final Range segmentRange;
 	private final LockManager<Path> lockManager;
 	private final List<Long> rollupLevels;
 
-	public Segment(Path segmentPath, BlueCollectionOnDisk<T> collection, final List<Long> rollupLevels) {
+	public Segment(Path segmentPath, Range segmentRange, BlueCollectionOnDisk<T> collection, final List<Long> rollupLevels) {
 		this.collection = collection;
 		this.segmentPath = segmentPath;
+		this.segmentRange = segmentRange;
 		this.fileManager = collection.getFileManager();
 		this.rollupLevels = rollupLevels;
 		lockManager = fileManager.getLockManager();
@@ -46,7 +48,7 @@ public class Segment <T extends Serializable> {
 		return new Segment<T>();
 	}
 
-	protected Segment() {segmentPath = null;fileManager = null;lockManager = null; rollupLevels = null;}
+	protected Segment() {segmentPath = null;segmentRange = null;fileManager = null;lockManager = null; rollupLevels = null;}
 
 	@Override
 	public String toString() {
@@ -93,6 +95,14 @@ public class Segment <T extends Serializable> {
 		try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(groupingNumber)) {
 			return get(key, inputStream);
 		}
+	}
+
+	public Range getRange() {
+		return segmentRange;
+	}
+
+	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, long rangeMin, long rangeMax) {
+		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, rangeMin, rangeMax);
 	}
 
 	public SegmentEntityIterator<T> getIterator(long min, long max) {

@@ -3,13 +3,14 @@ package io.bluedb.disk.collection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.segment.SegmentEntityIterator;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 
@@ -88,5 +89,35 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
         iteratorContents.add(iterator.next());  // make sure next work right after a next
         iterator.close();
         assertEquals(2, iteratorContents.size());
+	}
+
+	@Test
+	public void test_getNext_multiple_time_frames() {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Segment<TestValue> firstSegment = getSegment(0);
+		Segment<TestValue> secondSegment = getSegment(segmentSize);
+		
+		TestValue valueInFirstSegment = new TestValue("first");
+		TestValue valueInBothSegments = new TestValue("both");
+		TestValue valueInSecondSegment = new TestValue("second");
+		TestValue valueAfterSecondSegment = new TestValue("after");
+		insertAtTimeFrame(0, 1, valueInFirstSegment);
+		insertAtTimeFrame(0, segmentSize, valueInBothSegments);
+		insertAtTimeFrame(segmentSize, segmentSize + 1, valueInSecondSegment);
+		insertAtTimeFrame(segmentSize * 2, segmentSize * 2 + 1, valueAfterSecondSegment);
+		List<TestValue> valuesExpectedInFirstSegment = Arrays.asList(valueInFirstSegment, valueInBothSegments);
+		List<TestValue> valuesExpectedInSecondSegment = Arrays.asList(valueInBothSegments, valueInSecondSegment);
+		List<TestValue> valuesExpectedInEitherSegment = Arrays.asList(valueInFirstSegment, valueInBothSegments, valueInSecondSegment);
+
+		SegmentEntityIterator<TestValue> firstSegmentIterator = firstSegment.getIterator(0, segmentSize - 1);
+		List<TestValue> valuesFromFirstSegment = toValueList(firstSegmentIterator);
+		SegmentEntityIterator<TestValue> secondSegmentIterator = secondSegment.getIterator(0, segmentSize * 2 - 1);
+		List<TestValue> valuesFromSecondSegment = toValueList(secondSegmentIterator);
+		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeCollection(), 0, segmentSize * 2 - 1);
+		List<TestValue> valuesFromEitherSegment = toValueList(collectionIterator);
+
+		assertEquals(valuesExpectedInFirstSegment, valuesFromFirstSegment);
+		assertEquals(valuesExpectedInSecondSegment, valuesFromSecondSegment);
+		assertEquals(valuesExpectedInEitherSegment, valuesFromEitherSegment);
 	}
 }

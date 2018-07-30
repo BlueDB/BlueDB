@@ -304,4 +304,20 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 		return null;
 	}
+
+	public static List<TestValue> toValueList(Iterator<BlueEntity<TestValue>> iterator) {
+		List<TestValue> results = new ArrayList<>();
+		while(iterator.hasNext()) {
+			results.add(iterator.next().getValue());
+		}
+		return results;
+	}
+
+	public static List<BlueEntity<TestValue>> toEntityList(Iterator<BlueEntity<TestValue>> iterator) {
+		List<BlueEntity<TestValue>> results = new ArrayList<>();
+		while(iterator.hasNext()) {
+			results.add(iterator.next());
+		}
+		return results;
+	}
 }
