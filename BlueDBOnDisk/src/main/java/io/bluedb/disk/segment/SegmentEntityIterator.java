@@ -9,7 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.serialization.BlueEntity;
 
@@ -17,21 +16,24 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 
 	long highestGroupingNumberCompleted;
 	final Segment<T> segment;
-	final long min;
-	final long max;
+	final long rangeMin;
+	final long rangeMax;
 	final List<Range> timeRanges;
 	BlueObjectInput<BlueEntity<T>> currentInput;
 	BlueEntity<T> next = null;
 	
-	public SegmentEntityIterator(final Segment<T> segment, final long min, final long max) {
-		highestGroupingNumberCompleted = Long.MIN_VALUE;
+	public SegmentEntityIterator(final Segment<T> segment, final long highestGroupingNumberCompleted, final long rangeMin, final long rangeMax) {
+		this.highestGroupingNumberCompleted =highestGroupingNumberCompleted;
 		this.segment = segment;
-		this.min = min;
-		this.max = max;
-		// We can't bound from below.  A query for [2,4] should return a TimeRangeKey [1,3] which would be stored at 1.
-		Range timeRange = new Range(Long.MIN_VALUE, max);
+		this.rangeMin = rangeMin;
+		this.rangeMax = rangeMax;
+		Range timeRange = new Range(highestGroupingNumberCompleted, rangeMax);
 		List<File> relevantFiles = segment.getOrderedFilesInRange(timeRange);
 		timeRanges = filesToRanges(relevantFiles);
+	}
+
+	public SegmentEntityIterator(final Segment<T> segment, final long rangeMin, final long rangeMax) {
+		this(segment, Long.MIN_VALUE, rangeMin, rangeMax);
 	}
 
 	@Override
@@ -59,6 +61,10 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 		return response;
 	}
 
+	public Segment<T> getSegment() {
+		return segment;
+	}
+
 	protected BlueEntity<T> nextFromFile() {
 		while (true) {
 			while (currentInput != null && currentInput.hasNext()) {
@@ -67,7 +73,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 				if (key.getGroupingNumber() <= highestGroupingNumberCompleted) {
 					continue;
 				}
-				if (key.isInRange(min, max)) {
+				if (key.isInRange(rangeMin, rangeMax)) {
 					return next;
 				}
 			}

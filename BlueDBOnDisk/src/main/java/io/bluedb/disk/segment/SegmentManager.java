@@ -47,6 +47,7 @@ public class SegmentManager<T extends Serializable> {
 	public List<Segment<T>> getExistingSegments(long minValue, long maxValue) {
 		return pathManager.getExistingSegmentFiles(minValue, maxValue).stream()
 				.map((f) -> (toSegment(f.toPath())))
+				.sorted()
 				.collect(Collectors.toList());
 	}
 
@@ -55,7 +56,15 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected Segment<T> toSegment(Path path) {
-		return new Segment<T>(path, collection, pathManager.getRollupLevels());
+		Range range = toRange(path);
+		return new Segment<T>(path, range, collection, pathManager.getRollupLevels());
+	}
+
+	public Range toRange(Path path) {
+		String filename = path.toFile().getName();
+		long rangeStart = Long.valueOf(filename) * getSegmentSize();
+		Range range = new Range(rangeStart, rangeStart + getSegmentSize() - 1);
+		return range;
 	}
 
 	public long getSegmentSize() {

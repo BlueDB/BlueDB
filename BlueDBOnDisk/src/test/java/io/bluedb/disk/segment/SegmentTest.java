@@ -209,6 +209,16 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void testRange() throws Exception {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Segment<TestValue> firstSegment = getSegment(0);
+		Segment<TestValue> secondSegment = getSegment(segmentSize);
+		Range expectedFirstRange = new Range(0, segmentSize - 1);
+		assertEquals(expectedFirstRange, firstSegment.getRange());
+		assertEquals(firstSegment.getRange().getEnd() + 1, secondSegment.getRange().getStart());
+	}
+
+	@Test
 	public void testGetAll() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);

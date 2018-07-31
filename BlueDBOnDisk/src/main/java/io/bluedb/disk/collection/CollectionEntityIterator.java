@@ -2,6 +2,7 @@ package io.bluedb.disk.collection;
 
 import java.io.Closeable;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import io.bluedb.disk.segment.SegmentEntityIterator;
@@ -14,6 +15,7 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 	final private List<Segment<T>> segments;
 	final private long min;
 	final private long max;
+	private long endGroupingValueOfCompletedSegments;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 
@@ -21,7 +23,9 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 		this.collection = collection;
 		this.min = min;
 		this.max = max;
+		this.endGroupingValueOfCompletedSegments = Long.MIN_VALUE;
 		segments = collection.getSegmentManager().getExistingSegments(min, max);
+		Collections.sort(segments);
 	}
 
 	@Override
@@ -52,7 +56,8 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 	private BlueEntity<T> nextFromSegment() {
 		while (!segments.isEmpty() || segmentIterator != null) {
 			if (segmentIterator != null && segmentIterator.hasNext()) {
-				return segmentIterator.next();
+				BlueEntity<T> result = segmentIterator.next();
+				return result;
 			}
 			if (segmentIterator != null) {
 				segmentIterator.close();
@@ -66,7 +71,11 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 		if (segments.isEmpty()) {
 			return null;
 		}
+		if (segmentIterator != null) {
+			long endOfLastSegment =  segmentIterator.getSegment().getRange().getEnd();
+			endGroupingValueOfCompletedSegments = endOfLastSegment;
+		}
 		Segment<T> segment = segments.remove(0);
-		return segment.getIterator(min, max);
+		return segment.getIterator(endGroupingValueOfCompletedSegments, min, max);
 	}
 }

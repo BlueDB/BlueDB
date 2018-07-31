@@ -4,6 +4,7 @@ import static org.junit.Assert.assertNotEquals;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -303,5 +304,21 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 			fail();
 		}
 		return null;
+	}
+
+	public static <T extends Serializable> List<T> toValueList(Iterator<BlueEntity<T>> iterator) {
+		List<T> results = new ArrayList<>();
+		while(iterator.hasNext()) {
+			results.add(iterator.next().getValue());
+		}
+		return results;
+	}
+
+	public static <T extends Serializable> List<BlueEntity<T>> toEntityList(Iterator<BlueEntity<T>> iterator) {
+		List<BlueEntity<T>> results = new ArrayList<>();
+		while(iterator.hasNext()) {
+			results.add(iterator.next());
+		}
+		return results;
 	}
 }

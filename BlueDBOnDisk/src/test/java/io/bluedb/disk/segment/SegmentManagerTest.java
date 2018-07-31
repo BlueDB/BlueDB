@@ -76,6 +76,20 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_toRange() {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Path firstPath = getSegmentManager().getPathManager().getSegmentPath(0);
+		Path secondPath = getSegmentManager().getPathManager().getSegmentPath(segmentSize);
+		Range firstRange = getSegmentManager().toRange(firstPath);
+		Range secondRange = getSegmentManager().toRange(secondPath);
+		Range expectedFirstRange = new Range(0, segmentSize - 1);
+		Range expectedSecondRange = new Range(segmentSize, segmentSize * 2 - 1);
+		assertEquals(expectedFirstRange, firstRange);
+		assertEquals(expectedSecondRange, secondRange);
+		assertEquals(firstRange.getEnd() + 1, secondRange.getStart());
+	}
+
+	@Test
 	public void test_createSegmentPathManager() {
 		Path collectionPath = getTimeCollection().getPath();
 		SegmentPathManager timePathManager = SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class);

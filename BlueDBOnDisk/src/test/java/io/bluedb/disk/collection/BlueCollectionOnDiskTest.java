@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -83,8 +84,35 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_insert_times() throws Exception {
+		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", TimeKey.class, String.class);
+		String value = "string";
+		int n = 100;
+		for (int i = 0; i < n; i++) {
+			TimeKey key = new TimeKey(i, i);
+			stringCollection.insert(key, value);
+		}
+		List<String> storedValues = stringCollection.query().getList();
+		assertEquals(n, storedValues.size());
+	}
+
+	@Test
+	public void test_insert_longs() throws Exception {
+		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
+		String value = "string";
+		int n = 100;
+		for (int i = 0; i < n; i++) {
+			long id = new Random().nextLong();
+			LongKey key = new LongKey(id);
+			stringCollection.insert(key, value);
+		}
+		List<String> storedValues = stringCollection.query().getList();
+		assertEquals(n, storedValues.size());
+	}
+
+	@Test
 	public void test_insert_long_strings() throws Exception {
-		BlueCollection<String> stringCollection = db().initializeCollection("test_strings", StringKey.class, String.class);
+		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", StringKey.class, String.class);
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -93,7 +121,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			stringCollection.insert(key, value);
 		}
 		List<String> storedValues = stringCollection.query().getList();
-		assertEquals(100, storedValues.size());
+		assertEquals(n, storedValues.size());
 	}
 
 	@Test
