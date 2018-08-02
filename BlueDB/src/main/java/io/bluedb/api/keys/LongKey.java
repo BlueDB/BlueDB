@@ -15,7 +15,7 @@ public class LongKey extends ValueKey {
 	
 	@Override
 	public long getGroupingNumber() {
-		return id;
+		return (id / 2) - (Long.MIN_VALUE / 2);  // make them all positive for better file paths
 	}
 
 	@Override
