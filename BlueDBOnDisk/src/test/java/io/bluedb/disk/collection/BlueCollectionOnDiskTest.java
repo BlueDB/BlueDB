@@ -48,10 +48,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_contains() throws Exception {
 		TestValue value = new TestValue("Joe");
-		insertAtTime(1, value);
-		List<TestValue> values = getTimeCollection().query().getList();
-		assertEquals(1, values.size());
-		assertTrue(values.contains(value));
+		BlueKey key = createTimeKey(1, value);
+		getTimeCollection().insert(key, value);
+		assertTrue(getTimeCollection().contains(key));
 	}
 
 	@Test
