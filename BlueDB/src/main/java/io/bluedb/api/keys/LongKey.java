@@ -14,6 +14,11 @@ public class LongKey extends ValueKey {
 	}
 	
 	@Override
+	public long getGroupingNumber() {
+		return id;
+	}
+
+	@Override
 	public int hashCode() {
 		return (int) (id ^ (id >>> 32));
 	}
