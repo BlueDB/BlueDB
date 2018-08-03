@@ -1,6 +1,6 @@
 package io.bluedb.api.keys;
 
-public class TimeFrameKey extends TimeKey {
+public final class TimeFrameKey extends TimeKey {
 	@Override
 	public int hashCode() {
 		final int prime = 31;

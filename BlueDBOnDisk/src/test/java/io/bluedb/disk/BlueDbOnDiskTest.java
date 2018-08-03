@@ -12,8 +12,8 @@ import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.HashGroupedKey;
 import io.bluedb.api.keys.TimeKey;
-import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.zip.ZipUtils;
 
@@ -86,7 +86,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_initializeCollection_invalid_key_type() {
 		try {
-			db.initializeCollection(getTimeCollectionName(), ValueKey.class, TestValue.class);
+			db.initializeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class);
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -417,11 +417,11 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getAllCollectionsFromDisk() throws Exception {
         getTimeCollection();
         List<BlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
-        assertEquals(2, allCollections.size());
-        db().initializeCollection("string", ValueKey.class, String.class);
-        db().initializeCollection("long", ValueKey.class, Long.class);
+        assertEquals(3, allCollections.size());
+        db().initializeCollection("string", HashGroupedKey.class, String.class);
+        db().initializeCollection("long", HashGroupedKey.class, Long.class);
         allCollections = db().getAllCollectionsFromDisk();
-        assertEquals(4, allCollections.size());
+        assertEquals(5, allCollections.size());
 	}
 
 	@Test

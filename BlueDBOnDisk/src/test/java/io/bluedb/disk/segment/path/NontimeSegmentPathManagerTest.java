@@ -18,15 +18,15 @@ public class NontimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSegmentRange() {
-		Range segmentRangeStartingAtZero = getValueCollection().getSegmentManager().getSegmentRange(0);
+		Range segmentRangeStartingAtZero = getHashGroupedCollection().getSegmentManager().getSegmentRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());
-		assertEquals(getValueCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
+		assertEquals(getHashGroupedCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
 
-		Range maxLongRange = getValueCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
+		Range maxLongRange = getHashGroupedCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		Range minLongRange = getValueCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
+		Range minLongRange = getHashGroupedCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
@@ -56,11 +56,11 @@ public class NontimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getExistingSegmentFiles_key() {
-		File folder = getValueCollection().getPath().toFile();
+		File folder = getHashGroupedCollection().getPath().toFile();
 		emptyAndDelete(folder);
 		folder.mkdir();
 		LongKey longKey = new LongKey(randomValue());
-		List<Path> singlePathToAdd = getValueCollection().getSegmentManager().getPathManager().getAllPossibleSegmentPaths(longKey);
+		List<Path> singlePathToAdd = getHashGroupedCollection().getSegmentManager().getPathManager().getAllPossibleSegmentPaths(longKey);
 		assertEquals(1, singlePathToAdd.size());
 		assertEquals(0, getPathManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
 		for (Path path: singlePathToAdd) {
@@ -104,7 +104,7 @@ public class NontimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 	}
 
 	private SegmentPathManager getPathManager() {
-		return getValueCollection().getSegmentManager().getPathManager();
+		return getHashGroupedCollection().getSegmentManager().getPathManager();
 	}
 
 	public File createSegment(File parentFolder, long low, long high) {

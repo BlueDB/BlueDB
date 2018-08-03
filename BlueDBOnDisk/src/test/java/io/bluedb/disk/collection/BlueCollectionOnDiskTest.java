@@ -18,12 +18,12 @@ import io.bluedb.api.BlueCollection;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.HashGroupedKey;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
-import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
@@ -335,7 +335,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();  // reopen database without collections instantiated
 
 		try {
-			reopenedDatbase.initializeCollection(getTimeCollectionName(), ValueKey.class, TestValue.class);  // try to open with the wrong key type
+			reopenedDatbase.initializeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class);  // try to open with the wrong key type
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -345,45 +345,68 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_query_ValueKey() throws Exception {
+	public void test_query_HashGroupedKey() throws Exception {
 		TestValue value = new TestValue("Joe");
-		insertAtLong(1, value);
-		List<TestValue> values = getValueCollection().query().getList();
+		insertAtInteger(1, value);
+		List<TestValue> values = getHashGroupedCollection().query().getList();
 		assertEquals(1, values.size());
 		assertTrue(values.contains(value));
 	}
 
 	@Test
-	public void test_contains_ValueKey() throws Exception {
+	public void test_contains_HashGroupedKey() throws Exception {
 		TestValue value = new TestValue("Joe");
-		insertAtLong(1, value);
-		List<TestValue> values = getValueCollection().query().getList();
+		HashGroupedKey key = insertAtInteger(1, value);
+		List<TestValue> values = getHashGroupedCollection().query().getList();
 		assertEquals(1, values.size());
-		assertTrue(values.contains(value));
+		assertTrue(getHashGroupedCollection().contains(key));
 	}
 
 	@Test
-	public void test_get_ValueKey() throws Exception {
+	public void test_get_HashGroupedKey() throws Exception {
 		TestValue value = new TestValue("Joe");
 		BlueKey key = insertAtLong(1, value);
-		assertEquals(value, getValueCollection().get(key));
+		assertEquals(value, getLongCollection().get(key));
+	}
+
+	@Test
+	public void test_query_LongKey() throws Exception {
+		TestValue value = new TestValue("Joe");
+		insertAtLong(1, value);
+		List<TestValue> values = getLongCollection().query().getList();
+		assertEquals(1, values.size());
+		assertTrue(values.contains(value));
+	}
+
+	@Test
+	public void test_contains_LongKey() throws Exception {
+		TestValue value = new TestValue("Joe");
+		LongKey key = insertAtLong(1L, value);
+		assertTrue(getLongCollection().contains(key));
+	}
+
+	@Test
+	public void test_get_LongKey() throws Exception {
+		TestValue value = new TestValue("Joe");
+		BlueKey key = insertAtLong(1, value);
+		assertEquals(value, getLongCollection().get(key));
 	}
 
 	@Test
 	public void test_rollup_ValueKey_invalid_size() throws Exception {
-		long segmentSize = getValueCollection().getSegmentManager().getSegmentSize();
+		long segmentSize = getHashGroupedCollection().getSegmentManager().getSegmentSize();
 		Range offByOneSegmentTimeRange1 = new Range(0, segmentSize);
 		Range offByOneSegmentTimeRange2 = new Range(1, segmentSize);
 		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
 		try {
-			getValueCollection().rollup(offByOneSegmentTimeRange1);
+			getHashGroupedCollection().rollup(offByOneSegmentTimeRange1);
 			fail();
 		} catch (BlueDbException e) {}
 		try {
-			getValueCollection().rollup(offByOneSegmentTimeRange2);
+			getHashGroupedCollection().rollup(offByOneSegmentTimeRange2);
 			fail();
 		} catch (BlueDbException e) {}
-		getValueCollection().rollup(entireFirstSegmentTimeRange);
+		getHashGroupedCollection().rollup(entireFirstSegmentTimeRange);
 	}
 
 	@Test
@@ -396,12 +419,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		values = getTimeCollection().query().getList();
 		assertEquals(0, values.size());
 
-		getValueCollection().insert(key0, value1);
-		getValueCollection().insert(key3, value3);
-		values = getValueCollection().query().getList();
+		getHashGroupedCollection().insert(key0, value1);
+		getHashGroupedCollection().insert(key3, value3);
+		values = getHashGroupedCollection().query().getList();
 		assertEquals(2, values.size());
 
-		SegmentManager<TestValue> segmentManager = getValueCollection().getSegmentManager();
+		SegmentManager<TestValue> segmentManager = getHashGroupedCollection().getSegmentManager();
 		Segment<TestValue> segmentFor1 = segmentManager.getSegment(key0.getGroupingNumber());
 		Segment<TestValue> segmentFor3 = segmentManager.getSegment(key3.getGroupingNumber());
 		assertEquals(segmentFor1, segmentFor3);  // make sure they're in the same segment
@@ -409,18 +432,18 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		File[] segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();
 		assertEquals(2, segmentDirectoryContents.length);
 
-		long segmentSize = getValueCollection().getSegmentManager().getSegmentSize();
+		long segmentSize = getHashGroupedCollection().getSegmentManager().getSegmentSize();
 		long segmentStart = Blutils.roundDownToMultiple(key0.getGroupingNumber(), segmentSize);
 		Range entireFirstSegmentTimeRange = new Range(segmentStart, segmentStart + segmentSize -1);
 		Range offByOneSegmentTimeRange = new Range(segmentStart, segmentStart + segmentSize);
 		try {
-			getValueCollection().rollup(offByOneSegmentTimeRange);
+			getHashGroupedCollection().rollup(offByOneSegmentTimeRange);
 			fail();
 		} catch (BlueDbException e) {}
 
-		getValueCollection().rollup(entireFirstSegmentTimeRange);
+		getHashGroupedCollection().rollup(entireFirstSegmentTimeRange);
 
-		values = getValueCollection().query().getList();
+		values = getHashGroupedCollection().query().getList();
 		assertEquals(2, values.size());
 		segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();
 		assertEquals(1, segmentDirectoryContents.length);

@@ -1,6 +1,6 @@
 package io.bluedb.api.keys;
 
-public class LongKey extends ValueKey {
+public final class LongKey extends ValueKey {
 	private static final long serialVersionUID = 1L;
 
 	private long id;
