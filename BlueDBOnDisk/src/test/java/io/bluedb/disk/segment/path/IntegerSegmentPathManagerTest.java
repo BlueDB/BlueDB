@@ -14,7 +14,7 @@ import io.bluedb.api.keys.LongKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.segment.Range;
 
-public class NontimeSegmentPathManagerTest extends BlueDbDiskTestBase {
+public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSegmentRange() {

@@ -10,7 +10,7 @@ import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.segment.path.LongSegmentPathManager;
-import io.bluedb.disk.segment.path.NontimeSegmentPathManager;
+import io.bluedb.disk.segment.path.IntegerSegmentPathManager;
 import io.bluedb.disk.segment.path.SegmentPathManager;
 import io.bluedb.disk.segment.path.TimeSegmentPathManager;
 
@@ -79,7 +79,7 @@ public class SegmentManager<T extends Serializable> {
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
 			return new LongSegmentPathManager(collectionPath);
 		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
-			return new NontimeSegmentPathManager(collectionPath);
+			return new IntegerSegmentPathManager(collectionPath);
 		} else {
 			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
 		}
