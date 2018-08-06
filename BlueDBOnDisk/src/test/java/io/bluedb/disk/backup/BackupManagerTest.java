@@ -17,7 +17,7 @@ import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.segment.Range;
 
-public class BackupTaskTest extends BlueDbDiskTestBase {
+public class BackupManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_backupToTempDirectory_simple() throws Exception {
