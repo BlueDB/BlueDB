@@ -17,11 +17,11 @@ import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.zip.ZipUtils;
 
-public class BackupTask {
+public class BackupManager {
 	
 	private final Path dbPath;
-	
-	public BackupTask(BlueDbOnDisk db) {
+
+	public BackupManager(BlueDbOnDisk db) {
 		this.dbPath = db.getPath();
 	}
 

@@ -27,7 +27,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 
 		Path backedUpPath = createTempFolder().toPath();
-		BackupTask backupTask = new BackupTask(db());
+		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
@@ -51,7 +51,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 
 		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
-		BackupTask backupTask = new BackupTask(db());
+		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
@@ -76,7 +76,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 
 		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
-		BackupTask backupTask = new BackupTask(db());
+		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
         BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
