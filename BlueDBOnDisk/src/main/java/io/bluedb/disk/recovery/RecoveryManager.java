@@ -24,8 +24,8 @@ public class RecoveryManager<T extends Serializable> {
 	protected static String SUFFIX = ".chg";
 	protected static String SUFFIX_PENDING = ".pending.chg";
 	protected static String SUFFIX_COMPLETE = ".complete.chg";
-	private static long FREQUENCY_OF_COMPLETED_CLEANUP = TimeUnit.MINUTES.toMillis(5);
-	private static long DEFAULT_RETENTION_PERIOD = TimeUnit.MINUTES.toMillis(10);
+	private static long FREQUENCY_OF_COMPLETED_CLEANUP = TimeUnit.MINUTES.toMillis(1);
+	private static long DEFAULT_RETENTION_PERIOD = TimeUnit.MINUTES.toMillis(3);
 
 	private final BlueCollectionOnDisk<T> collection;
 	private final Path recoveryPath;
