@@ -106,6 +106,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		executeTask(deleteTask);
 	}
 
+	@Override
 	public BlueKey getLastKey() {
 		LastEntityFinder<T> lastFinder = new LastEntityFinder<T>(this);
 		BlueEntity<T> lastEntity = lastFinder.getLastEntity();

@@ -199,4 +199,10 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 	public Integer getMaxIntegerId() throws BlueDbException {
 		return maxIntegerId;
 	}
+
+	@Override
+	public BlueKey getLastKey() throws BlueDbException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
