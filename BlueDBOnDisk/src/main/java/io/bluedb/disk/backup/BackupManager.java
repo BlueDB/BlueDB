@@ -26,12 +26,17 @@ public class BackupManager {
 	}
 
 	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
-		Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
-		tempDirectoryPath.toFile().deleteOnExit();
-		Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
-		backupToTempDirectory(collectionsToBackup, unzippedBackupPath);
-		ZipUtils.zipFile(unzippedBackupPath, backupPath);
-		Blutils.recursiveDelete(tempDirectoryPath.toFile());
+		try {
+			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().placeHoldOnHistoryCleanup());
+			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
+			tempDirectoryPath.toFile().deleteOnExit();
+			Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
+			backupToTempDirectory(collectionsToBackup, unzippedBackupPath);
+			ZipUtils.zipFile(unzippedBackupPath, backupPath);
+			Blutils.recursiveDelete(tempDirectoryPath.toFile());
+		} finally {
+			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().removeHoldOnHistoryCleanup());
+		}
 	}
 
 	public void backupToTempDirectory(List<BlueCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {

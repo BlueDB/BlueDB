@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.bluedb.api.exceptions.BlueDbException;
@@ -33,6 +34,7 @@ public class RecoveryManager<T extends Serializable> {
 	private final AtomicLong lastRecoverableId;
 	private long lastLogCleanup = 0;
 	private long retentionPeriod = DEFAULT_RETENTION_PERIOD;
+	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
 
 	public RecoveryManager(BlueCollectionOnDisk<T> collection, FileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
@@ -56,8 +58,12 @@ public class RecoveryManager<T extends Serializable> {
 		this.retentionPeriod = retentionMillis;
 	}
 
-	public void resetDefaultRetentionPeriod() {
-		this.retentionPeriod = DEFAULT_RETENTION_PERIOD;
+	public void placeHoldOnHistoryCleanup() {
+		holdsOnHistoryCleanup.incrementAndGet();
+	}
+
+	public void removeHoldOnHistoryCleanup() {
+		holdsOnHistoryCleanup.decrementAndGet();
 	}
 
 	public Path getHistoryFolder() {
@@ -85,6 +91,9 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public void cleanupHistory() throws BlueDbException {
+		if (holdsOnHistoryCleanup.get() > 0) {
+			return;
+		}
 		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX);
 		List<TimeStampedFile> timestampedFiles = Blutils.map(historicChangeFiles, (f) -> new TimeStampedFile(f) );
 		long minTimeStamp = System.currentTimeMillis() - retentionPeriod;

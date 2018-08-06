@@ -2,7 +2,6 @@ package io.bluedb.disk.recovery;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -132,6 +131,10 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		getRecoveryManager().saveChange(change100);
 		List<File> changesBeforeCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		getRecoveryManager().setRetentionPeriod(TimeUnit.HOURS.toMillis(1));
+		getRecoveryManager().placeHoldOnHistoryCleanup();
+		getRecoveryManager().cleanupHistory();
+		List<File> changesAfterFailedCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().removeHoldOnHistoryCleanup();
 		getRecoveryManager().cleanupHistory();
 		List<File> changesAfterOneHourCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		getRecoveryManager().setRetentionPeriod(TimeUnit.MINUTES.toMillis(5));
@@ -141,6 +144,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
 		assertEquals(0, changesBeforeInsert.size());
 		assertEquals(4, changesBeforeCleanup.size());
+		assertEquals(4, changesAfterFailedCleanup.size());
 		assertEquals(1, changesAfterOneHourCleanup.size());  // 30 stays, but 60, 90, 100 go because they're an hour old;
 		assertEquals(0, changesAfterFiveMinuteCleanup.size());  // 30 stays, but 60, 90, 100 go because they're an hour old;
 	}

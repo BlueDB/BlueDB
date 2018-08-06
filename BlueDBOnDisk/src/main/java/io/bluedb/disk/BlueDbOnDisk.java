@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.keys.BlueKey;
@@ -67,13 +66,9 @@ public class BlueDbOnDisk implements BlueDb {
 	public void backup(Path zipPath) throws BlueDbException {
 		try {
 			List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
-			long twoHours = TimeUnit.HOURS.toMillis(2);
-			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().setRetentionPeriod(twoHours));
 			backupManager.backup(collectionsToBackup, zipPath);
 		} catch (IOException | BlueDbException e) {
 			throw new BlueDbException("BlueDB backup failed", e);
-		} finally {
-			collections.values().forEach((c) -> (c).getRecoveryManager().resetDefaultRetentionPeriod());
 		}
 	}
 
