@@ -64,11 +64,11 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public void backup(Path zipPath) throws BlueDbException {
 		try {
-			BackupTask backupTask = new BackupTask(this, zipPath);
+			BackupTask backupTask = new BackupTask(this);
 			List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
 			long twoHours = TimeUnit.HOURS.toMillis(2);
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().setRetentionPeriod(twoHours));
-			backupTask.backup(collectionsToBackup);
+			backupTask.backup(collectionsToBackup, zipPath);
 		} catch (IOException | BlueDbException e) {
 			throw new BlueDbException("BlueDB backup failed", e);
 		} finally {

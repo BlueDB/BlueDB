@@ -20,14 +20,12 @@ import io.bluedb.zip.ZipUtils;
 public class BackupTask {
 	
 	private final Path dbPath;
-	private final Path backupPath;
 	
-	public BackupTask(BlueDbOnDisk db, Path backupPath) {
+	public BackupTask(BlueDbOnDisk db) {
 		this.dbPath = db.getPath();
-		this.backupPath = backupPath;
 	}
 
-	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException, IOException {
+	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
 		Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
 		tempDirectoryPath.toFile().deleteOnExit();
 		Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
