@@ -104,8 +104,16 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_isTimeForHistoryCleanup() throws Exception {
 		RecoveryManager<?> recoveryManager = getTimeCollection().getRecoveryManager();
+		assertFalse(recoveryManager.isTimeForHistoryCleanup());
+		
+		Recoverable<TestValue> change = null;
+		for (int i = 0; i < 300; i++) {
+			change = createRecoverable(i);
+			getRecoveryManager().saveChange(change);
+		}
 		assertTrue(recoveryManager.isTimeForHistoryCleanup());
-		recoveryManager.cleanupHistory();
+
+		getRecoveryManager().markComplete(change); // trigger cleanup
 		assertFalse(recoveryManager.isTimeForHistoryCleanup());
 	}
 
@@ -136,23 +144,27 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		getRecoveryManager().markComplete(change90);
 		getRecoveryManager().markComplete(change100);
 		List<File> changesBeforeCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-		getRecoveryManager().setRetentionPeriod(TimeUnit.HOURS.toMillis(1));
+
 		getRecoveryManager().placeHoldOnHistoryCleanup();
+		getRecoveryManager().setRetentionLimit(2);
+
 		getRecoveryManager().cleanupHistory();
-		List<File> changesAfterFailedCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		List<File> changesAfterCleanupDuringHold = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		getRecoveryManager().removeHoldOnHistoryCleanup();
+
 		getRecoveryManager().cleanupHistory();
-		List<File> changesAfterOneHourCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-		getRecoveryManager().setRetentionPeriod(TimeUnit.MINUTES.toMillis(5));
+		List<File> changesAfterCleanup2 = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+
+		getRecoveryManager().setRetentionLimit(0);
 		getRecoveryManager().cleanupHistory();
-		List<File> changesAfterFiveMinuteCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		List<File> changesAfterCleanup0 = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 
 		assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
 		assertEquals(0, changesBeforeInsert.size());
 		assertEquals(5, changesBeforeCleanup.size());
-		assertEquals(5, changesAfterFailedCleanup.size());
-		assertEquals(2, changesAfterOneHourCleanup.size());  // pending stays and 30 stays, but 60, 90, 100 go because they're an hour old
-		assertEquals(1, changesAfterFiveMinuteCleanup.size());  // everything goes except pending
+		assertEquals(5, changesAfterCleanupDuringHold.size());
+		assertEquals(3, changesAfterCleanup2.size());  // two completed stay, plus the pending
+		assertEquals(1, changesAfterCleanup0.size());  // everything goes except pending
 	}
 
 	@Test

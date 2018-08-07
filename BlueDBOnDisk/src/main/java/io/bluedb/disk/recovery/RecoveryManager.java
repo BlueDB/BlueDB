@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -24,16 +23,16 @@ public class RecoveryManager<T extends Serializable> {
 	protected static String SUFFIX = ".chg";
 	protected static String SUFFIX_PENDING = ".pending.chg";
 	protected static String SUFFIX_COMPLETE = ".complete.chg";
-	private static long FREQUENCY_OF_COMPLETED_CLEANUP = TimeUnit.MINUTES.toMillis(1);
-	private static long DEFAULT_RETENTION_PERIOD = TimeUnit.MINUTES.toMillis(1);
+	private static int DEFAULT_NUMBER_CHANGES_BETWEEN_CLEANUPS = 100;
+	private static int DEFAULT_RETENTION_LIMIT = 200;
 
 	private final BlueCollectionOnDisk<T> collection;
 	private final Path recoveryPath;
 	private final Path historyFolderPath;
 	private final FileManager fileManager;
 	private final AtomicLong lastRecoverableId;
-	private long lastLogCleanup = 0;
-	private long retentionPeriod = DEFAULT_RETENTION_PERIOD;
+	private int changesSinceLastCleanup = 0;
+	private int completedChangeLimit = DEFAULT_RETENTION_LIMIT;
 	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
 
 	public RecoveryManager(BlueCollectionOnDisk<T> collection, FileManager fileManager, BlueSerializer serializer) {
@@ -49,13 +48,11 @@ public class RecoveryManager<T extends Serializable> {
 		String filename = getPendingFileName(change);
 		Path historyPath = Paths.get(historyFolderPath.toString(), filename);
 		fileManager.saveObject(historyPath, change);
-		if (isTimeForHistoryCleanup()) {
-			cleanupHistory();  // TODO run in a different thread?
-		}
+		changesSinceLastCleanup++;
 	}
 
-	public void setRetentionPeriod(long retentionMillis) {
-		this.retentionPeriod = retentionMillis;
+	public void setRetentionLimit(int completedChangeLimit) {
+		this.completedChangeLimit = completedChangeLimit;
 	}
 
 	public void placeHoldOnHistoryCleanup() {
@@ -76,6 +73,9 @@ public class RecoveryManager<T extends Serializable> {
 		Path pendingPath = Paths.get(historyFolderPath.toString(), pendingFileName);
 		Path completedPath = Paths.get(historyFolderPath.toString(), completedFileName);
 		FileManager.moveWithoutLock(pendingPath, completedPath);
+		if (isTimeForHistoryCleanup()) {
+			cleanupHistory();  // TODO run in a different thread?
+		}
 	}
 
 	public void markChangePending(Path completedPath) throws BlueDbException {
@@ -86,8 +86,7 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	protected boolean isTimeForHistoryCleanup() {
-		long timeSinceLastCleanup = System.currentTimeMillis() - lastLogCleanup;
-		return timeSinceLastCleanup > FREQUENCY_OF_COMPLETED_CLEANUP;
+		return changesSinceLastCleanup > DEFAULT_NUMBER_CHANGES_BETWEEN_CLEANUPS;
 	}
 
 	public void cleanupHistory() throws BlueDbException {
@@ -96,10 +95,11 @@ public class RecoveryManager<T extends Serializable> {
 		}
 		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
 		List<TimeStampedFile> timestampedFiles = Blutils.map(historicChangeFiles, (f) -> new TimeStampedFile(f) );
-		long minTimeStamp = System.currentTimeMillis() - retentionPeriod;
-		List<TimeStampedFile> filesOldEnoughToDelete = Blutils.filter(timestampedFiles, (f) -> f.getTimestamp() < minTimeStamp);
-		filesOldEnoughToDelete.forEach((f) -> f.getFile().delete());
-		lastLogCleanup = System.currentTimeMillis();
+		Collections.sort(timestampedFiles);
+		int numFilesToDelete = Math.max(0, timestampedFiles.size() - completedChangeLimit);
+		List<TimeStampedFile> filesToDelete = timestampedFiles.subList(0, numFilesToDelete);
+		filesToDelete.forEach((f) -> f.getFile().delete());
+		changesSinceLastCleanup = 0;
 	}
 
 	public List<File> getChangeHistory(long backupStartTime, long backupEndTime) throws BlueDbException {
