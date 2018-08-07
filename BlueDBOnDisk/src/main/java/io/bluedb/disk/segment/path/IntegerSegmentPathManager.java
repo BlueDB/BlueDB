@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import io.bluedb.api.keys.BlueKey;
 
-public class NontimeSegmentPathManager implements SegmentPathManager {
+public class IntegerSegmentPathManager implements SegmentPathManager {
 
 	private static final long SIZE_SEGMENT = 256;
 	private static final long SIZE_FOLDER_BOTTOM = SIZE_SEGMENT * 64;
@@ -17,7 +17,7 @@ public class NontimeSegmentPathManager implements SegmentPathManager {
 	private final Path collectionPath;
 	private final List<Long> folderSizes = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
 
-	public NontimeSegmentPathManager(Path collectionPath) {
+	public IntegerSegmentPathManager(Path collectionPath) {
 		this.collectionPath = collectionPath;
 	}
 

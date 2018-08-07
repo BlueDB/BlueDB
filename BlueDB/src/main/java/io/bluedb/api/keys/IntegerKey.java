@@ -1,6 +1,6 @@
 package io.bluedb.api.keys;
 
-public class IntegerKey extends ValueKey {
+public final class IntegerKey extends HashGroupedKey {
 	private static final long serialVersionUID = 1L;
 
 	private int id;

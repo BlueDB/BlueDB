@@ -1,6 +1,6 @@
 package io.bluedb.api.keys;
 
-public class LongKey extends ValueKey {
+public final class LongKey extends ValueKey {
 	private static final long serialVersionUID = 1L;
 
 	private long id;
@@ -13,6 +13,11 @@ public class LongKey extends ValueKey {
 		return id;
 	}
 	
+	@Override
+	public long getGroupingNumber() {
+		return (id / 2) - (Long.MIN_VALUE / 2);  // make them all positive for better file paths
+	}
+
 	@Override
 	public int hashCode() {
 		return (int) (id ^ (id >>> 32));

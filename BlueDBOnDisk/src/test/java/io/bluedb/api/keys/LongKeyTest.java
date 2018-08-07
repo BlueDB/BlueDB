@@ -26,8 +26,6 @@ public class LongKeyTest extends TestCase {
 		LongKey oneCopy = new LongKey(1);
 		assertEquals(one.getGroupingNumber(), oneCopy.getGroupingNumber());
 		assertTrue(one.getGroupingNumber() == oneCopy.getGroupingNumber());
-		assertFalse(one.getGroupingNumber() == zero.getGroupingNumber());
-//		assertFalse(min.getGroupingNumber() == max.getGroupingNumber());  // Actually, true.  In fact, Long.hashCode(Long.MAX_VALUE) == Long.hashCode(Long.MIN_VALUE)
 		assertFalse(max.getGroupingNumber() == zero.getGroupingNumber());
 		assertFalse(min.getGroupingNumber() == zero.getGroupingNumber());
 
@@ -36,12 +34,10 @@ public class LongKeyTest extends TestCase {
 		assertTrue(zero.getGroupingNumber() >= 0);
 		assertTrue(one.getGroupingNumber() >= 0);
 
-		long integerMaxValueAsLong = Integer.MAX_VALUE;
-		assertTrue(min.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
-		assertTrue(max.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
-		assertTrue(zero.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
-		assertTrue(one.getGroupingNumber() <= integerMaxValueAsLong * 2 + 1);
-}
+		assertTrue(min.getGroupingNumber() < zero.getGroupingNumber());
+		assertTrue(zero.getGroupingNumber() <= one.getGroupingNumber());
+		assertTrue(one.getGroupingNumber() <= max.getGroupingNumber());
+	}
 
 	@Test
 	public void test_hashCode() {

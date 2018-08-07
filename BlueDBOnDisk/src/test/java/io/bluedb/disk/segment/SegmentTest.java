@@ -491,7 +491,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_isValidRollupRange() {
 		SegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
-		SegmentManager<TestValue> valueSegmentManager = getValueCollection().getSegmentManager();
+		SegmentManager<TestValue> valueSegmentManager = getHashGroupedCollection().getSegmentManager();
 		Segment<TestValue> timeSegment = timeSegmentManager.getSegment(0);
 		Segment<TestValue> valueSegment = valueSegmentManager.getSegment(0);
 		long timeSegmentSize = timeSegmentManager.getSegmentSize();
