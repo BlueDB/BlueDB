@@ -17,18 +17,16 @@ public class InsertWriter<T extends Serializable> implements StreamingWriter<T> 
 		newValue = value;
 	}
 
-	@Override
 	public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
 		BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
 		BlueEntity<T> toInsert = newEntity;
-		long groupingNumber = newKey.getGroupingNumber();
 		while (input.hasNext()) {
 			BlueEntity<T> iterEntity = input.next();
 			BlueKey iterKey = iterEntity.getKey();
 			if (iterKey.equals(newKey)) {
 				output.write(newEntity);
 				toInsert = null;
-			} else if (toInsert != null && iterKey.getGroupingNumber() > groupingNumber) {
+			} else if (toInsert != null && iterKey.compareTo(newKey) > 0) {
 				output.write(newEntity);
 				toInsert = null;
 				output.write(iterEntity);

@@ -102,8 +102,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 		TestValue valueInSecondSegment = new TestValue("second");
 		TestValue valueAfterSecondSegment = new TestValue("after");
 		insertAtTimeFrame(0, 1, valueInFirstSegment);
-		insertAtTimeFrame(0, segmentSize, valueInBothSegments);
-		insertAtTimeFrame(segmentSize, segmentSize + 1, valueInSecondSegment);
+		insertAtTimeFrame(1, segmentSize, valueInBothSegments);
+		insertAtTimeFrame(segmentSize + 1, segmentSize + 1, valueInSecondSegment);
 		insertAtTimeFrame(segmentSize * 2, segmentSize * 2 + 1, valueAfterSecondSegment);
 		List<TestValue> valuesExpectedInFirstSegment = Arrays.asList(valueInFirstSegment, valueInBothSegments);
 		List<TestValue> valuesExpectedInSecondSegment = Arrays.asList(valueInBothSegments, valueInSecondSegment);
