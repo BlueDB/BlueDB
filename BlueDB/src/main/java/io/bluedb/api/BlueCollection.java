@@ -21,4 +21,6 @@ public interface BlueCollection<T extends Serializable> {
 	public Long getMaxLongId() throws BlueDbException;
 
 	public Integer getMaxIntegerId() throws BlueDbException;
+	
+	public BlueKey getLastKey() throws BlueDbException;
 }

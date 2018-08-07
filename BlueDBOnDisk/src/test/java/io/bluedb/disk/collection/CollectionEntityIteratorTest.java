@@ -55,9 +55,9 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
         iterator = new CollectionEntityIterator<>(getTimeCollection(), 1, 2);
         assertTrue(iterator.hasNext());
-        iterator.next();
+        assertEquals(value1, iterator.next().getValue());
         assertTrue(iterator.hasNext());
-        iterator.next();
+        assertEquals(value2, iterator.next().getValue());
         assertFalse(iterator.hasNext());
         iterator.close();
 	}

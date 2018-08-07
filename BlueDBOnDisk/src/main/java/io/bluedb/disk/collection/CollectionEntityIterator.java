@@ -11,7 +11,6 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
 
-	final private BlueCollectionOnDisk<T> collection;
 	final private List<Segment<T>> segments;
 	final private long min;
 	final private long max;
@@ -20,7 +19,6 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 	private BlueEntity<T> next;
 
 	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, final long min, final long max) {
-		this.collection = collection;
 		this.min = min;
 		this.max = max;
 		this.endGroupingValueOfCompletedSegments = Long.MIN_VALUE;

@@ -106,6 +106,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		executeTask(deleteTask);
 	}
 
+	@Override
+	public BlueKey getLastKey() {
+		LastEntityFinder<T> lastFinder = new LastEntityFinder<T>(this);
+		BlueEntity<T> lastEntity = lastFinder.getLastEntity();
+		return lastEntity == null ? null : lastEntity.getKey();
+	}
+
 	public List<BlueEntity<T>> findMatches(long min, long max, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, min, max)) {

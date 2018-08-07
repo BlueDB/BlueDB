@@ -152,6 +152,17 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_getLastKey() throws Exception {
+		assertNull(getTimeCollection().getLastKey());
+		BlueKey key1 = insertAtTime(1, new TestValue("Joe"));
+		assertEquals(key1, getTimeCollection().getLastKey());
+		BlueKey key3 = insertAtTime(3, new TestValue("Bob"));
+		assertEquals(key3, getTimeCollection().getLastKey());
+		BlueKey key2 = insertAtTime(2, new TestValue("Fred"));
+		assertEquals(key3, getTimeCollection().getLastKey());
+	}
+
+	@Test
 	public void test_maxLong_maxInt() throws Exception {
 		TestValue value = new TestValue("Joe");
 		BlueKey key = createTimeKey(10, value);
