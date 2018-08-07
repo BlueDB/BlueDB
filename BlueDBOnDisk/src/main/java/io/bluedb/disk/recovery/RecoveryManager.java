@@ -7,6 +7,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.bluedb.api.exceptions.BlueDbException;
@@ -22,8 +24,8 @@ public class RecoveryManager<T extends Serializable> {
 	protected static String SUFFIX = ".chg";
 	protected static String SUFFIX_PENDING = ".pending.chg";
 	protected static String SUFFIX_COMPLETE = ".complete.chg";
-	private static long FREQUENCY_OF_COMPLETED_CLEANUP = 10 * 60 * 1000; // ten minutes
-	private static long RETENTION_PERIOD = 60 * 60 * 1000; // one hour
+	private static long FREQUENCY_OF_COMPLETED_CLEANUP = TimeUnit.MINUTES.toMillis(1);
+	private static long DEFAULT_RETENTION_PERIOD = TimeUnit.MINUTES.toMillis(1);
 
 	private final BlueCollectionOnDisk<T> collection;
 	private final Path recoveryPath;
@@ -31,6 +33,8 @@ public class RecoveryManager<T extends Serializable> {
 	private final FileManager fileManager;
 	private final AtomicLong lastRecoverableId;
 	private long lastLogCleanup = 0;
+	private long retentionPeriod = DEFAULT_RETENTION_PERIOD;
+	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
 
 	public RecoveryManager(BlueCollectionOnDisk<T> collection, FileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
@@ -48,6 +52,18 @@ public class RecoveryManager<T extends Serializable> {
 		if (isTimeForHistoryCleanup()) {
 			cleanupHistory();  // TODO run in a different thread?
 		}
+	}
+
+	public void setRetentionPeriod(long retentionMillis) {
+		this.retentionPeriod = retentionMillis;
+	}
+
+	public void placeHoldOnHistoryCleanup() {
+		holdsOnHistoryCleanup.incrementAndGet();
+	}
+
+	public void removeHoldOnHistoryCleanup() {
+		holdsOnHistoryCleanup.decrementAndGet();
 	}
 
 	public Path getHistoryFolder() {
@@ -74,11 +90,13 @@ public class RecoveryManager<T extends Serializable> {
 		return timeSinceLastCleanup > FREQUENCY_OF_COMPLETED_CLEANUP;
 	}
 
-	protected void cleanupHistory() throws BlueDbException {
-		// TODO check if restore is pending
-		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX);
+	public void cleanupHistory() throws BlueDbException {
+		if (holdsOnHistoryCleanup.get() > 0) {
+			return;
+		}
+		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
 		List<TimeStampedFile> timestampedFiles = Blutils.map(historicChangeFiles, (f) -> new TimeStampedFile(f) );
-		long minTimeStamp = System.currentTimeMillis() - RETENTION_PERIOD;
+		long minTimeStamp = System.currentTimeMillis() - retentionPeriod;
 		List<TimeStampedFile> filesOldEnoughToDelete = Blutils.filter(timestampedFiles, (f) -> f.getTimestamp() < minTimeStamp);
 		filesOldEnoughToDelete.forEach((f) -> f.getFile().delete());
 		lastLogCleanup = System.currentTimeMillis();

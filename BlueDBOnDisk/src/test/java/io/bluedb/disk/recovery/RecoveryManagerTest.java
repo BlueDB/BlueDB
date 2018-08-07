@@ -2,14 +2,13 @@ package io.bluedb.disk.recovery;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import io.bluedb.api.Updater;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
@@ -116,6 +115,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
 		long ninetyMinutesAgo = System.currentTimeMillis() - 90 * 60 * 1000;
 		long oneHundredMinutesAgo = System.currentTimeMillis() - 100 * 60 * 1000;
+		Recoverable<TestValue> changePending = createRecoverable(thirtyMinutesAgo);
 		Recoverable<TestValue> change30 = createRecoverable(thirtyMinutesAgo);
 		Recoverable<TestValue> change60 = createRecoverable(sixtyMinutesAgo);
 		Recoverable<TestValue> change90 = createRecoverable(ninetyMinutesAgo);
@@ -126,18 +126,33 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(oneHundredMinutesAgo, change100.getTimeCreated());
 		getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
 		List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().saveChange(changePending);
 		getRecoveryManager().saveChange(change30);
 		getRecoveryManager().saveChange(change60);
 		getRecoveryManager().saveChange(change90);
 		getRecoveryManager().saveChange(change100);
+		getRecoveryManager().markComplete(change30);
+		getRecoveryManager().markComplete(change60);
+		getRecoveryManager().markComplete(change90);
+		getRecoveryManager().markComplete(change100);
 		List<File> changesBeforeCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().setRetentionPeriod(TimeUnit.HOURS.toMillis(1));
+		getRecoveryManager().placeHoldOnHistoryCleanup();
 		getRecoveryManager().cleanupHistory();
-		List<File> changesAfterCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		List<File> changesAfterFailedCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().removeHoldOnHistoryCleanup();
+		getRecoveryManager().cleanupHistory();
+		List<File> changesAfterOneHourCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
+		getRecoveryManager().setRetentionPeriod(TimeUnit.MINUTES.toMillis(5));
+		getRecoveryManager().cleanupHistory();
+		List<File> changesAfterFiveMinuteCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 
 		assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
 		assertEquals(0, changesBeforeInsert.size());
-		assertEquals(4, changesBeforeCleanup.size());
-		assertEquals(1, changesAfterCleanup.size());  // 30 stays, but 60, 90, 100 go because they're an hour old;
+		assertEquals(5, changesBeforeCleanup.size());
+		assertEquals(5, changesAfterFailedCleanup.size());
+		assertEquals(2, changesAfterOneHourCleanup.size());  // pending stays and 30 stays, but 60, 90, 100 go because they're an hour old
+		assertEquals(1, changesAfterFiveMinuteCleanup.size());  // everything goes except pending
 	}
 
 	@Test

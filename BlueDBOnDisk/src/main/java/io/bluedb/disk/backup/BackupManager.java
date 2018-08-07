@@ -17,23 +17,26 @@ import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.zip.ZipUtils;
 
-public class BackupTask {
+public class BackupManager {
 	
 	private final Path dbPath;
-	private final Path backupPath;
-	
-	public BackupTask(BlueDbOnDisk db, Path backupPath) {
+
+	public BackupManager(BlueDbOnDisk db) {
 		this.dbPath = db.getPath();
-		this.backupPath = backupPath;
 	}
 
-	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup) throws BlueDbException, IOException {
-		Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
-		tempDirectoryPath.toFile().deleteOnExit();
-		Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
-		backupToTempDirectory(collectionsToBackup, unzippedBackupPath);
-		ZipUtils.zipFile(unzippedBackupPath, backupPath);
-		Blutils.recursiveDelete(tempDirectoryPath.toFile());
+	public void backup(List<BlueCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
+		try {
+			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().placeHoldOnHistoryCleanup());
+			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
+			tempDirectoryPath.toFile().deleteOnExit();
+			Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
+			backupToTempDirectory(collectionsToBackup, unzippedBackupPath);
+			ZipUtils.zipFile(unzippedBackupPath, backupPath);
+			Blutils.recursiveDelete(tempDirectoryPath.toFile());
+		} finally {
+			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().removeHoldOnHistoryCleanup());
+		}
 	}
 
 	public void backupToTempDirectory(List<BlueCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {

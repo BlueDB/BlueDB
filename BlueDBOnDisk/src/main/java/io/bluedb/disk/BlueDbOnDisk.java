@@ -7,23 +7,24 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.BlueDb;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.disk.backup.BackupTask;
+import io.bluedb.disk.backup.BackupManager;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
 
 public class BlueDbOnDisk implements BlueDb {
 
 	private final Path path;
+	private final BackupManager backupManager;
 	
 	private final Map<String, BlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
 	BlueDbOnDisk(Path path, Class<?>...registeredSerializableClasses) {
 		this.path = path;
+		this.backupManager = new BackupManager(this);
 	}
 
 	@Override
@@ -64,11 +65,9 @@ public class BlueDbOnDisk implements BlueDb {
 	@Override
 	public void backup(Path zipPath) throws BlueDbException {
 		try {
-			BackupTask backupTask = new BackupTask(this, zipPath);
 			List<BlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
-			backupTask.backup(collectionsToBackup);
+			backupManager.backup(collectionsToBackup, zipPath);
 		} catch (IOException | BlueDbException e) {
-			e.printStackTrace();
 			throw new BlueDbException("BlueDB backup failed", e);
 		}
 	}
@@ -83,6 +82,10 @@ public class BlueDbOnDisk implements BlueDb {
 
 	public Path getPath() {
 		return path;
+	}
+
+	public BackupManager getBackupManager() {
+		return backupManager;
 	}
 
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {

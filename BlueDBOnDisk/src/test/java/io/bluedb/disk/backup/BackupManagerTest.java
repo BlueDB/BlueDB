@@ -1,7 +1,6 @@
 package io.bluedb.disk.backup;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +17,7 @@ import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.segment.Range;
 
-public class BackupTaskTest extends BlueDbDiskTestBase {
+public class BackupManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_backupToTempDirectory_simple() throws Exception {
@@ -28,7 +27,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 
 		Path backedUpPath = createTempFolder().toPath();
-		BackupTask backupTask = new BackupTask(db(), backedUpPath);
+		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
@@ -52,7 +51,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 
 		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
-		BackupTask backupTask = new BackupTask(db(), backedUpPath);
+		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
@@ -77,7 +76,7 @@ public class BackupTaskTest extends BlueDbDiskTestBase {
 
 		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
-		BackupTask backupTask = new BackupTask(db(), backedUpPath);
+		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
         BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
