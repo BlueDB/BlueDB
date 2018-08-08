@@ -13,16 +13,12 @@ import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class CollectionMetaData {
 	
-	private static final String FILENAME_MAX_INTEGER = "max_int";
-	private static final String FILENAME_MAX_LONG = "max_long";
 	private static final String FILENAME_SERIALIZED_CLASSES = "serialized_classes";
 	private static final String FILENAME_KEY_TYPE = "key_type";
 	private static final String META_DATA_FOLDER = ".meta";
 	
 	final Path folderPath;
 	final FileManager fileManager;
-	final Path maxIntegerPath;
-	final Path maxLongPath;
 	final Path serializedClassesPath;
 	final Path keyTypePath;
 
@@ -32,8 +28,6 @@ public class CollectionMetaData {
 		
 		fileManager = new FileManager(serializer);  
 		folderPath = Paths.get(collectionPath.toString(), META_DATA_FOLDER);
-		maxIntegerPath = Paths.get(folderPath.toString(), FILENAME_MAX_INTEGER);
-		maxLongPath = Paths.get(folderPath.toString(), FILENAME_MAX_LONG);
 		serializedClassesPath = Paths.get(folderPath.toString(), FILENAME_SERIALIZED_CLASSES);
 		keyTypePath = Paths.get(folderPath.toString(), FILENAME_KEY_TYPE);
 	}
@@ -53,29 +47,6 @@ public class CollectionMetaData {
 		} catch(ClassCastException e) {
 			e.printStackTrace();
 			throw new BlueDbException("Serialized class list in collection data is corrupted: " + serializedClassesPath, e);
-		}
-	}
-
-	public Long getMaxLong() throws BlueDbException {
-		return (Long) fileManager.loadObject(maxLongPath);
-	}
-
-	public Integer getMaxInteger() throws BlueDbException {
-		return (Integer) fileManager.loadObject(maxIntegerPath);
-	}
-
-
-	public void updateMaxLong(long value) throws BlueDbException {
-		Long currentMaxLong = getMaxLong();
-		if (currentMaxLong == null || currentMaxLong < value) {
-			fileManager.saveObject(maxLongPath, value);;
-		}
-	}
-
-	public void updateMaxInteger(int value) throws BlueDbException {
-		Integer currentMaxInteger = getMaxInteger();
-		if (currentMaxInteger == null || currentMaxInteger < value) {
-			fileManager.saveObject(maxIntegerPath, value);;
 		}
 	}
 

@@ -23,50 +23,6 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getMaxLong() throws Exception {
-		assertNull(metaData.getMaxLong());
-		metaData.updateMaxLong(1);
-		assertEquals(1, 1L);
-		metaData.updateMaxLong(3);
-		assertEquals(3, metaData.getMaxLong().longValue());
-		metaData.updateMaxLong(2);
-		assertEquals(3, metaData.getMaxLong().longValue());
-	}
-
-	@Test
-	public void test_getMaxInteger() throws Exception {
-		assertNull(metaData.getMaxInteger());
-		metaData.updateMaxInteger(1);
-		assertEquals(1, 1L);
-		metaData.updateMaxInteger(3);
-		assertEquals(3, metaData.getMaxInteger().longValue());
-		metaData.updateMaxInteger(2);
-		assertEquals(3, metaData.getMaxInteger().longValue());
-	}
-
-	@Test
-	public void test_updateMaxLong() throws Exception {
-		assertNull(metaData.getMaxLong());
-		metaData.updateMaxLong(1);
-		assertEquals(1, 1L);
-		metaData.updateMaxLong(3);
-		assertEquals(3, metaData.getMaxLong().longValue());
-		metaData.updateMaxLong(2);
-		assertEquals(3, metaData.getMaxLong().longValue());
-	}
-
-	@Test
-	public void test_updateMaxInteger() throws Exception {
-		assertNull(metaData.getMaxInteger());
-		metaData.updateMaxInteger(1);
-		assertEquals(1, 1L);
-		metaData.updateMaxInteger(3);
-		assertEquals(3, metaData.getMaxInteger().longValue());
-		metaData.updateMaxInteger(2);
-		assertEquals(3, metaData.getMaxInteger().longValue());
-	}
-
-	@Test
 	public void test_getSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
 		assertNull(metaData.getSerializedClassList());

@@ -34,9 +34,6 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
-		Long restoredMaxLong = restoredCollection.getMaxLongId();
-		assertNotNull(restoredMaxLong);
-		assertEquals(getTimeCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
 	}
 
 	@Test
@@ -60,9 +57,6 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		assertTrue(restoredCollection.contains(key2At2));
 		assertEquals(value1, restoredCollection.get(key1At1));
 		assertEquals(value2, restoredCollection.get(key2At2));
-		Long restoredMaxLong = restoredCollection.getMaxLongId();
-		assertNotNull(restoredMaxLong);
-		assertEquals(key2At2.getLongIdIfPresent().longValue(), restoredMaxLong.longValue());
 	}
 
 	@Test
@@ -87,8 +81,5 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		assertEquals(1, restoredCollection.query().getList().size());
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
-		Long restoredMaxLong = restoredCollection.getMaxLongId();
-		assertNotNull(restoredMaxLong);
-		assertEquals(key1At1.getLongIdIfPresent().longValue(), restoredMaxLong.longValue());
 	}
 }
