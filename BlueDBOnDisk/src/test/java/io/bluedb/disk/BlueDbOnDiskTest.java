@@ -447,9 +447,6 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
-		Long restoredMaxLong = restoredCollection.getMaxLongId();
-		assertNotNull(restoredMaxLong);
-        assertEquals(getTimeCollection().getMaxLongId().longValue(), restoredMaxLong.longValue());
 
         BlueCollectionOnDisk<TestValue2> secondCollectionRestored = (BlueCollectionOnDisk<TestValue2>) restoredDb.initializeCollection("testing_2", TimeKey.class, TestValue2.class);
 		assertTrue(secondCollectionRestored.contains(key1At1));

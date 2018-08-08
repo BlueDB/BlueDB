@@ -53,13 +53,6 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 
 	@Override
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
-		Long longId = key.getLongIdIfPresent();
-		Integer intId = key.getIntegerIdIfPresent();
-		if (longId != null) {
-			collection.getMetaData().updateMaxLong(longId);
-		} else if (intId != null) {
-			collection.getMetaData().updateMaxInteger(intId);
-		}
 		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
 		for (Segment<T> segment: segments) {
 			applyChange(segment);

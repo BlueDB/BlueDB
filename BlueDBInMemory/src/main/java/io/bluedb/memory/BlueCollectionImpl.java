@@ -27,8 +27,6 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 	
 	private final Object serializerLock = "Serializer Lock";
 	private transient FSTConfiguration serializer;
-	private Long maxLongId = null;
-	private Integer maxIntegerId = null;
 
 	public BlueCollectionImpl(Class<T> type) {
 		this.type = type;
@@ -172,32 +170,6 @@ class BlueCollectionImpl<T extends Serializable> implements BlueCollection<T>, S
 				}
 			}
 		});
-	}
-
-	private void updateMaxLongId(Long newValue) {
-		if (newValue == null) {
-			return;
-		} else if (maxLongId == null || newValue > maxLongId) {
-			maxLongId = newValue;
-		}
-	}
-
-	private void updateMaxIntegerId(Integer newValue) {
-		if (newValue == null) {
-			return;
-		} else if (maxIntegerId == null || newValue > maxIntegerId) {
-			maxIntegerId = newValue;
-		}
-	}
-
-	@Override
-	public Long getMaxLongId() throws BlueDbException {
-		return maxLongId;
-	}
-
-	@Override
-	public Integer getMaxIntegerId() throws BlueDbException {
-		return maxIntegerId;
 	}
 
 	@Override

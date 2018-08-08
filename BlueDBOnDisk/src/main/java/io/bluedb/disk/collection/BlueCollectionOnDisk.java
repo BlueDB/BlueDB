@@ -184,16 +184,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return keyType;
 	}
 
-	@Override
-	public Long getMaxLongId() throws BlueDbException {
-		return metaData.getMaxLong();
-	}
-
-	@Override
-	public Integer getMaxIntegerId() throws BlueDbException {
-		return metaData.getMaxInteger();
-	}
-
 	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
 		if (!keyType.isAssignableFrom(key.getClass())) {
 			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);

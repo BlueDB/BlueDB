@@ -208,13 +208,11 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		getRecoveryManager().saveChange(change);
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(0, allValues.size());
-		assertNull(metaData.getMaxLong());
 
 		getRecoveryManager().recover();
 		allValues = getTimeCollection().query().getList();
 		assertEquals(1, allValues.size());
 		assertEquals(value, allValues.get(0));
-		assertEquals(1, metaData.getMaxLong().longValue());
 	}
 
 	@Test

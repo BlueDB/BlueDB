@@ -163,28 +163,6 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_maxLong_maxInt() throws Exception {
-		TestValue value = new TestValue("Joe");
-		BlueKey key = createTimeKey(10, value);
-		insertToTimeCollection(key, value);
-		assertValueAtKey(key, value);
-
-		// test max long
-        assertNull(getTimeCollection().getMaxLongId());  // since the last insert was a String key;
-        BlueKey timeKeyWithLong3 = new TimeKey(3L, 4);
-        getTimeCollection().insert(timeKeyWithLong3, value);
-        assertNotNull(getTimeCollection().getMaxLongId());
-        assertEquals(3, getTimeCollection().getMaxLongId().longValue());
-
-		// test max integer
-        assertNull(getTimeCollection().getMaxIntegerId());
-        BlueKey timeKeyWithInt5 = new TimeKey(new IntegerKey(5), 4);
-        getTimeCollection().insert(timeKeyWithInt5, value);
-        assertNotNull(getTimeCollection().getMaxIntegerId());
-        assertEquals(5, getTimeCollection().getMaxIntegerId().intValue());
-	}
-
-	@Test
 	public void test_findMatches() throws Exception {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
