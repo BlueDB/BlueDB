@@ -117,6 +117,7 @@ public class Blutils {
 			} catch (Throwable t) {
 				failures++;
 				lastThrowable = t;
+				trySleep(1);
 			}
 		}
 		throw lastThrowable;

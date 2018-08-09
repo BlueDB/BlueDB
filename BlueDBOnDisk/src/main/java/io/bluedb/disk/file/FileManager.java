@@ -151,7 +151,7 @@ public class FileManager {
 	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
 		Path dst = lock.getKey();
 		try {
-			Blutils.tryMultipleTimes(3, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
+			Blutils.tryMultipleTimes(5, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
 		} catch (Throwable e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
@@ -161,7 +161,7 @@ public class FileManager {
 	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
 			ensureDirectoryExists(dst.toFile());
-			Blutils.tryMultipleTimes(3, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
+			Blutils.tryMultipleTimes(5, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
 		} catch (Throwable e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
