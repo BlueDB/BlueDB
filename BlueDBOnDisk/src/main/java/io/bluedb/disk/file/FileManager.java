@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
 import io.bluedb.disk.lock.LockManager;
@@ -150,8 +151,8 @@ public class FileManager {
 	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
 		Path dst = lock.getKey();
 		try {
-			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
-		} catch (IOException e) {
+			Blutils.tryMultipleTimes(3, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
+		} catch (Throwable e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
 		}
@@ -160,8 +161,8 @@ public class FileManager {
 	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
 			ensureDirectoryExists(dst.toFile());
-			Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
-		} catch (IOException e) {
+			Blutils.tryMultipleTimes(3, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
+		} catch (Throwable e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
 		}

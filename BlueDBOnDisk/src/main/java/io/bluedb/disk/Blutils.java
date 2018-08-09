@@ -98,4 +98,27 @@ public class Blutils {
 			file.delete();
 		}
 	}
+
+	@FunctionalInterface
+	public interface UnreliableFunction<T, E extends Throwable> {
+	   T get() throws E;
+	}
+	
+
+	public static <T, E extends Throwable> T tryMultipleTimes(int attempts, UnreliableFunction<T, E> function) throws Throwable {
+		if (attempts <= 0) {
+			throw new IllegalArgumentException("Number of attempts must be > 0.");
+		}
+		int failures = 0;
+		Throwable lastThrowable = null;
+		while (failures < attempts) {
+			try {
+				return function.get();
+			} catch (Throwable t) {
+				failures++;
+				lastThrowable = t;
+			}
+		}
+		throw lastThrowable;
+	}
 }
