@@ -172,8 +172,9 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public void shutdown() {
+		rollupScheduler.forceScheduleRollups();
 		rollupScheduler.stop();
-		executor.shutdownNow();
+		executor.shutdown();
 	}
 
 	public Class<T> getType() {

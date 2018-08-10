@@ -70,6 +70,26 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_forceScheduleRollups() throws Exception {
+		List<Range> rollupsRequested = new ArrayList<>();
+		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
+		Range timeRange = new Range(0, 1);
+		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastInsertTime(timeRange));
+
+		long now = System.currentTimeMillis();
+		mockRollupScheduler.reportInsert(timeRange, now);
+		assertEquals(now, mockRollupScheduler.getLastInsertTime(timeRange));
+
+		mockRollupScheduler.scheduleReadyRollups();
+		assertEquals(0, rollupsRequested.size());
+
+		mockRollupScheduler.forceScheduleRollups();
+		assertEquals(1, rollupsRequested.size());
+		assertTrue(rollupsRequested.contains(timeRange));
+	}
+
+	@Test
 	public void test_run() throws Exception {
 		List<Range> rollupsRequested = new ArrayList<>();
 		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
