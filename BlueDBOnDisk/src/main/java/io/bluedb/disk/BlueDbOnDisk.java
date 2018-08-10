@@ -45,7 +45,7 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException {
+	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
