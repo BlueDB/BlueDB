@@ -88,6 +88,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(targetPath)) {
 			FileManager.moveFile(tmpPath, targetFileLock);
 		}
+		// TODO roll up to a smaller time range?
+		collection.getRollupScheduler().reportInsert(segmentRange);
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
