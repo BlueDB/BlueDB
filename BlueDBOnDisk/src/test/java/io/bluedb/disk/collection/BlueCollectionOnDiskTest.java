@@ -171,12 +171,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<BlueEntity<TestValue>> allEntities, entitiesWithJoe, entities3to5, entities2to3, entities0to1, entities0to0;
 
 		Condition<TestValue> isJoe = (v) -> v.getName().equals("Joe");
-		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>());
-		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), Arrays.asList(isJoe));
-		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>());
-		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>());
-		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>());
-		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>());
+		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), false);
+		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), Arrays.asList(isJoe), false);
+		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), false);
+		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), false);
+		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), false);
+		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), false);
 
 		assertEquals(2, allEntities.size());
 		assertEquals(1, entitiesWithJoe.size());
@@ -187,6 +187,42 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(1, entities0to1.size());
 		assertEquals(valueJoe, entities0to1.get(0).getValue());
 		assertEquals(0, entities0to0.size());
+	}
+
+	@Test
+	public void test_findMatches_byStartTime() throws Exception {
+		TestValue valueJoe = new TestValue("Joe");
+		TestValue valueBob = new TestValue("Bob");
+		insertAtTimeFrame(1, 2, valueJoe);
+		insertAtTimeFrame(2, 3, valueBob);
+		List<BlueEntity<TestValue>> allEntities, entities3to5, entities2to3, entities0to1, entities0to0;
+
+		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), true);
+		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), true);
+		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), true);
+		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), true);
+		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), true);
+
+		assertEquals(2, allEntities.size());
+		assertEquals(0, entities3to5.size());
+		assertEquals(1, entities2to3.size());
+		assertEquals(valueBob, entities2to3.get(0).getValue());
+		assertEquals(1, entities0to1.size());
+		assertEquals(valueJoe, entities0to1.get(0).getValue());
+		assertEquals(0, entities0to0.size());
+	}
+
+	@Test
+	public void test_count_byStartTime() throws Exception {
+		TestValue valueJoe = new TestValue("Joe");
+		TestValue valueBob = new TestValue("Bob");
+		insertAtTimeFrame(1, 2, valueJoe);
+		insertAtTimeFrame(2, 3, valueBob);
+
+		assertEquals(2, getTimeCollection().query().byStartTime().afterOrAtTime(1).beforeOrAtTime(3).count());
+		assertEquals(2, getTimeCollection().query().byStartTime().afterOrAtTime(1).beforeOrAtTime(2).count());
+		assertEquals(1, getTimeCollection().query().byStartTime().afterOrAtTime(2).beforeOrAtTime(3).count());
+		assertEquals(0, getTimeCollection().query().byStartTime().afterOrAtTime(3).beforeOrAtTime(4).count());
 	}
 
 	@Test

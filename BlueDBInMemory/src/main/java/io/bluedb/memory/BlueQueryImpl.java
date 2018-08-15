@@ -54,6 +54,12 @@ class BlueQueryImpl<T extends Serializable> implements BlueQuery<T> {
 	}
 
 	@Override
+	public BlueQuery<T> byStartTime() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
 	public List<T> getList() throws BlueDbException {
 		return collection.getList(minTime, maxTime, objectConditions);
 	}

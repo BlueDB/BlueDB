@@ -20,20 +20,22 @@ public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 	private final long min;
 	private final long max;
 	private final  List<Condition<T>> conditions;
+	private final boolean byStartTime;
 
 
-	public UpdateMultipleTask(BlueCollectionOnDisk<T> collection, long min, long max, List<Condition<T>> conditions, Updater<T> updater) {
+	public UpdateMultipleTask(BlueCollectionOnDisk<T> collection, long min, long max, List<Condition<T>> conditions, Updater<T> updater, boolean byStartTime) {
 		this.collection = collection;
 		this.min = min;
 		this.max = max;
 		this.conditions = conditions;
 		this.updater = updater;
+		this.byStartTime = byStartTime;
 	}
 
 	@Override
 	public void execute() throws BlueDbException {
 		Range range = new Range(min, max);
-		List<BlueEntity<T>> entities = collection.findMatches(range, conditions);
+		List<BlueEntity<T>> entities = collection.findMatches(range, conditions, byStartTime);
 		List<PendingChange<T>> updates;
 		try {
 			updates = createUpdates(entities, updater);

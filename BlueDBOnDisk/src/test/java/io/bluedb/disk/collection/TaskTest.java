@@ -22,7 +22,7 @@ public class TaskTest extends TestCase {
 		long max = 101;
 		ArrayList<Condition<?>> conditions = new ArrayList<>();
 		@SuppressWarnings({"rawtypes", "unchecked"})
-		Runnable task = new DeleteMultipleTask(null, min, max, conditions);
+		Runnable task = new DeleteMultipleTask(null, min, max, conditions, false);
 		String taskString = task.toString();
 		assertTrue(taskString.contains(task.getClass().getSimpleName()));
 		assertTrue(taskString.contains(String.valueOf(min)));
@@ -45,7 +45,7 @@ public class TaskTest extends TestCase {
 		long max = 101;
 		ArrayList<Condition<?>> conditions = new ArrayList<>();
 		@SuppressWarnings({"rawtypes", "unchecked"})
-		Runnable task = new UpdateMultipleTask(null, min, max, conditions, null);
+		Runnable task = new UpdateMultipleTask(null, min, max, conditions, null, false);
 		String taskString = task.toString();
 		assertTrue(taskString.contains(task.getClass().getSimpleName()));
 		assertTrue(taskString.contains(String.valueOf(min)));

@@ -8,6 +8,8 @@ public interface BlueQuery<T extends Serializable> {
 
 	BlueQuery<T> where(Condition<T> c);
 
+	BlueQuery<T> byStartTime();
+
 	BlueQuery<T> beforeTime(long time);
 	BlueQuery<T> beforeOrAtTime(long time);
 
@@ -20,5 +22,4 @@ public interface BlueQuery<T extends Serializable> {
 	void delete() throws BlueDbException;
 	void update(Updater<T> updater) throws BlueDbException;
 	public int count() throws BlueDbException;
-
 }

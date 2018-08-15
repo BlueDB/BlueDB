@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -338,6 +339,28 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 	
 	@Test
+	public void test_getList_byStartTime() throws Exception {
+        TestValue valueJoe = new TestValue("Joe");
+        TestValue valueBob = new TestValue("Bob");
+        insertAtTimeFrame(1, 2, valueJoe);
+        insertAtTimeFrame(2, 3, valueBob);
+        List<TestValue> both = Arrays.asList(valueJoe, valueBob);
+        List<TestValue> justJoe = Arrays.asList(valueJoe);
+        List<TestValue> justBob = Arrays.asList(valueBob);
+        List<TestValue> neither = Arrays.asList();
+
+        List<TestValue> values0to0 = getTimeCollection().query().byStartTime().afterOrAtTime(0).beforeOrAtTime(0).getList();
+        List<TestValue> values1to2 = getTimeCollection().query().byStartTime().afterOrAtTime(1).beforeOrAtTime(2).getList();
+        List<TestValue> values2to3 = getTimeCollection().query().byStartTime().afterOrAtTime(2).beforeOrAtTime(3).getList();
+        List<TestValue> values3to4 = getTimeCollection().query().byStartTime().afterOrAtTime(3).beforeOrAtTime(4).getList();
+
+        assertEquals(neither, values0to0);
+        assertEquals(both, values1to2);
+        assertEquals(justBob, values2to3);
+        assertEquals(neither, values3to4);
+	}
+	
+	@Test
 	public void test_getIterator() throws Exception {
         TestValue valueJoe = new TestValue("Joe");
         TestValue valueBob = new TestValue("Bob");
@@ -355,10 +378,10 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	
 	@Test
 	public void test_query_update() throws Exception {
-        BlueKey keyJoe   = insertAtTime(1, new TestValue("Joe", 0));
-        BlueKey keyBob   = insertAtTime(2, new TestValue("Bob", 0));
-        BlueKey keyJosey = insertAtTime(2,  new TestValue("Josey", 0));
-        BlueKey keyBobby = insertAtTime(3, new TestValue("Bobby", 0));
+        BlueKey keyJoe   = insertAtTimeFrame(1, 1, new TestValue("Joe", 0));
+        BlueKey keyBob   = insertAtTimeFrame(2, 2, new TestValue("Bob", 0));
+        BlueKey keyJosey = insertAtTimeFrame(2, 3, new TestValue("Josey", 0));
+        BlueKey keyBobby = insertAtTimeFrame(3, 3, new TestValue("Bobby", 0));
         BlueQuery<TestValue> queryForJosey = getTimeCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
 
         // sanity check
@@ -380,6 +403,13 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertCupcakes(keyBob, 1);
         assertCupcakes(keyJosey, 2);
         assertCupcakes(keyBobby, 1);
+
+        // test update byStartTime
+        getTimeCollection().query().byStartTime().afterOrAtTime(3).update((v) -> v.addCupcake());
+        assertCupcakes(keyJoe, 1);
+        assertCupcakes(keyBob, 1);
+        assertCupcakes(keyJosey, 2);
+        assertCupcakes(keyBobby, 2);
 	}
 	
 	@Test
@@ -388,12 +418,13 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		TestValue valueBob = new TestValue("Bob");
 		TestValue valueJosey = new TestValue("Josey");
 		TestValue valueBobby = new TestValue("Bobby");
-		insertAtTime(1, valueJoe);
-		insertAtTime(2, valueBob);
-		insertAtTime(2, valueJosey);
-		insertAtTime(3, valueBobby);
+		insertAtTimeFrame(1, 1, valueJoe);
+		insertAtTimeFrame(2, 2, valueBob);
+		insertAtTimeFrame(2, 3, valueJosey);
+		insertAtTimeFrame(3, 3, valueBobby);
 		List<TestValue> storedValues;
         BlueQuery<TestValue> queryForJosey = getTimeCollection().query().afterTime(1).where((v) -> v.getName().startsWith("Jo"));
+        BlueQuery<TestValue> queryByStartTime3 = getTimeCollection().query().byStartTime().afterOrAtTime(3);
 
         // sanity check
         storedValues = getTimeCollection().query().getList();
@@ -404,6 +435,13 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         queryForJosey.delete();
         storedValues = getTimeCollection().query().getList();
         assertEquals(3, storedValues.size());
+        assertFalse(storedValues.contains(valueJosey));
+        assertTrue(storedValues.contains(valueJoe));
+
+        // test if byStartTime works
+        queryByStartTime3.delete();
+        storedValues = getTimeCollection().query().getList();
+        assertEquals(2, storedValues.size());
         assertFalse(storedValues.contains(valueJosey));
         assertTrue(storedValues.contains(valueJoe));
 
