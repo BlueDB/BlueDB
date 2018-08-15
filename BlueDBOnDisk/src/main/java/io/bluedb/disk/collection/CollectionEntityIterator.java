@@ -6,23 +6,22 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import io.bluedb.disk.segment.SegmentEntityIterator;
+import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
 
 	final private List<Segment<T>> segments;
-	final private long min;
-	final private long max;
+	final private Range range;
 	private long endGroupingValueOfCompletedSegments;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 
-	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, final long min, final long max) {
-		this.min = min;
-		this.max = max;
+	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, Range range) {
+		this.range = range;
 		this.endGroupingValueOfCompletedSegments = Long.MIN_VALUE;
-		segments = collection.getSegmentManager().getExistingSegments(min, max);
+		segments = collection.getSegmentManager().getExistingSegments(range);
 		Collections.sort(segments);
 	}
 
@@ -74,6 +73,6 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 			endGroupingValueOfCompletedSegments = endOfLastSegment;
 		}
 		Segment<T> segment = segments.remove(0);
-		return segment.getIterator(endGroupingValueOfCompletedSegments, min, max);
+		return segment.getIterator(endGroupingValueOfCompletedSegments, range);
 	}
 }

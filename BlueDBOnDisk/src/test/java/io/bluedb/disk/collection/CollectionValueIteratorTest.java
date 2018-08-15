@@ -114,7 +114,7 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
         getTimeCollection().insert(key3at3, value3);
 
 		// validate that the iterator is working normally
-		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), 0, 3)) {
+		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), new Range(0, 3))) {
 			iteratorContents = toList(iterator);
 			iterator.close();
 			assertEquals(3, iteratorContents.size());
@@ -125,7 +125,7 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 		String fileName = Range.forValueAndRangeSize(1, 1).toUnderscoreDelimitedString();
 		Path firstFilePath = Paths.get(segmentPath.toString(), fileName);
 
-		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), 0, 3, 20)) {
+		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), new Range(0, 3), 20)) {
 			TestValue first = iterator.next(); // make sure that the underlying resources are acquired
 			assertEquals(value1, first);
 

@@ -270,7 +270,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 			stringCollection.insert(key, value);
 		}
 		
-		List<Segment<String>> segments = stringCollection.getSegmentManager().getExistingSegments(Long.MIN_VALUE, Long.MAX_VALUE);
+		List<Segment<String>> segments = stringCollection.getSegmentManager().getExistingSegments(new Range(Long.MIN_VALUE, Long.MAX_VALUE));
 		assertEquals(n, segments.size());
 
 		for (Segment<String> segment: segments) {

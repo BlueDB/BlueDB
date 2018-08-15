@@ -58,7 +58,7 @@ public class BackupManager {
 	}
 
 	private void copyDataFolders(BlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
-		for (Segment<?> segment: collection.getSegmentManager().getExistingSegments(Long.MIN_VALUE, Long.MAX_VALUE)) {
+		for (Segment<?> segment: collection.getSegmentManager().getAllExistingSegments()) {
 			copyDataFolders(segment, tempFolder);
 		}
 	}

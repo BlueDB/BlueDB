@@ -42,14 +42,14 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		BlueKey timeFrameKey = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
 		TestValue value = new TestValue("Bob", 0);
 		try {
-			List<Segment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(minTime, maxTime);
+			List<Segment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime));
 			assertEquals(0, existingSegments.size());
 			getTimeCollection().insert(timeFrameKey, value);
-			existingSegments = getSegmentManager().getExistingSegments(minTime, maxTime);
+			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime));
 			assertEquals(3, existingSegments.size());
-			List<Segment<TestValue>> existingSegments0to0 = getSegmentManager().getExistingSegments(minTime, minTime);
+			List<Segment<TestValue>> existingSegments0to0 = getSegmentManager().getExistingSegments(new Range(minTime, minTime));
 			assertEquals(1, existingSegments0to0.size());
-			List<Segment<TestValue>> existingSegmentsOutsideRange = getSegmentManager().getExistingSegments(maxTime * 2, maxTime * 2);
+			List<Segment<TestValue>> existingSegmentsOutsideRange = getSegmentManager().getExistingSegments(new Range(maxTime * 2, maxTime * 2));
 			assertEquals(0, existingSegmentsOutsideRange.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();

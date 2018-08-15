@@ -12,7 +12,7 @@ public class LastEntityFinder<T extends Serializable> {
 	final private List<Segment<T>> segments;
 
 	public LastEntityFinder(final BlueCollectionOnDisk<T> collection) {
-		segments = collection.getSegmentManager().getExistingSegments(Long.MIN_VALUE, Long.MAX_VALUE);
+		segments = collection.getSegmentManager().getAllExistingSegments();
 		Collections.sort(segments);
 		Collections.reverse(segments);
 	}

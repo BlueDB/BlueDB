@@ -103,6 +103,10 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		return segmentRange;
 	}
 
+	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, Range range) {
+		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, range.getStart(), range.getEnd());
+	}
+
 	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, long rangeMin, long rangeMax) {
 		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, rangeMin, rangeMax);
 	}
