@@ -19,23 +19,23 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	public void test_reportWrite() {
 		Range timeRange = new Range(2, 5);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		assertEquals(Long.MIN_VALUE, getRollupScheduler().getLastWriteTime(rollupTarget));
+		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long insertTime = System.currentTimeMillis();
 		getRollupScheduler().reportWrite(rollupTarget, insertTime);
-		assertEquals(insertTime, getRollupScheduler().getLastWriteTime(rollupTarget));
+		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 
 		getRollupScheduler().reportWrite(rollupTarget, insertTime - 1); // report earlier time
-		assertEquals(insertTime, getRollupScheduler().getLastWriteTime(rollupTarget));
+		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 	}
 
 	@Test
 	public void test_getLastWriteTime() {
 		Range timeRange = new Range(2, 5);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		assertEquals(Long.MIN_VALUE, getRollupScheduler().getLastWriteTime(rollupTarget));
+		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long insertTime = System.currentTimeMillis();
 		getRollupScheduler().reportWrite(rollupTarget, insertTime);
-		assertEquals(insertTime, getRollupScheduler().getLastWriteTime(rollupTarget));
+		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 	}
 
 	@Test
@@ -53,21 +53,15 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_isReadyForRollup() {
-		assertTrue(RollupScheduler.isReadyForRollup(0));
-		assertFalse(RollupScheduler.isReadyForRollup(System.currentTimeMillis()));
-	}
-
-	@Test
 	public void test_scheduleReadyRollups() throws Exception {
 		List<RollupTarget> rollupsRequested = new ArrayList<>();
 		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
 		Range timeRange = new Range(0, 1);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastWriteTime(rollupTarget));
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 		mockRollupScheduler.reportWrite(rollupTarget, 0);
-		assertEquals(0, mockRollupScheduler.getLastWriteTime(rollupTarget));
+		assertEquals(0 + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 		mockRollupScheduler.scheduleReadyRollups();
 
 		assertEquals(1, rollupsRequested.size());
@@ -81,11 +75,11 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
 		Range timeRange = new Range(0, 1);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastWriteTime(rollupTarget));
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
 		long now = System.currentTimeMillis();
 		mockRollupScheduler.reportWrite(rollupTarget, now);
-		assertEquals(now, mockRollupScheduler.getLastWriteTime(rollupTarget));
+		assertEquals(now + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
 		mockRollupScheduler.scheduleReadyRollups();
 		assertEquals(0, rollupsRequested.size());
@@ -102,9 +96,9 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
 		Range timeRange = new Range(0, 1);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastWriteTime(rollupTarget));
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 		mockRollupScheduler.reportWrite(rollupTarget, 0);
-		assertEquals(0, mockRollupScheduler.getLastWriteTime(rollupTarget));
+		assertEquals(0 + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
 		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
 		rollupSchedulerThread.start();
@@ -128,7 +122,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		mockRollupScheduler.setWaitBetweenReviews(0);
 		Range timeRange = new Range(0, 1);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		assertEquals(Long.MIN_VALUE, mockRollupScheduler.getLastWriteTime(rollupTarget));
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
 
 		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);

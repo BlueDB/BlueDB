@@ -12,16 +12,18 @@ import io.bluedb.disk.segment.Range;
 public class RollupScheduler implements Runnable {
 
 	private static final long WAIT_BETWEEN_REVIEWS_DEFAULT = 30_000;
-	private static final long WAIT_BEFORE_ROLLUP = 3600_000;
+	protected static final long WAIT_AFTER_WRITE_BEFORE_ROLLUP = 3600_000;
+	protected static final long WAIT_AFTER_READ_BEFORE_ROLLUP = 60_000;
 
 	private long waitBetweenReviews = WAIT_BETWEEN_REVIEWS_DEFAULT;
 	private final BlueCollectionOnDisk<?> collection;
-	private final Map<RollupTarget, Long> lastInsertTimes;
+	private final Map<RollupTarget, Long> rollupTimes;
+
 	private Thread thread;
 	private boolean isStopped;
 
 	public RollupScheduler(BlueCollectionOnDisk<?> collection) {
-		lastInsertTimes = new ConcurrentHashMap<>();
+		rollupTimes = new ConcurrentHashMap<>();
 		this.collection = collection;
 	}
 
@@ -49,22 +51,19 @@ public class RollupScheduler implements Runnable {
 	}
 
 	public void reportWrite(RollupTarget rollupTarget, long timeMillis) {
-		if (getLastWriteTime(rollupTarget) < timeMillis) {
-			lastInsertTimes.put(rollupTarget, timeMillis);
+		long currentRollupTime = rollupTimes.getOrDefault(rollupTarget, Long.MIN_VALUE);
+		long newRollupTime = Math.max(currentRollupTime, timeMillis + WAIT_AFTER_WRITE_BEFORE_ROLLUP);
+		if (newRollupTime > currentRollupTime) {
+			rollupTimes.put(rollupTarget, newRollupTime);
 		}
 	}
 
-	public long getLastWriteTime(RollupTarget target) {
-		return lastInsertTimes.getOrDefault(target, Long.MIN_VALUE);
+	public long getScheduledRollupTime(RollupTarget target) {
+		return rollupTimes.getOrDefault(target, Long.MAX_VALUE);
 	}
 
 	public boolean isRunning() {
 		return !isStopped;
-	}
-
-	protected static boolean isReadyForRollup(long lastInsert) {
-		long now = System.currentTimeMillis();
-		return (now - lastInsert) > WAIT_BEFORE_ROLLUP;
 	}
 
 	protected void scheduleReadyRollups() {
@@ -74,7 +73,7 @@ public class RollupScheduler implements Runnable {
 	}
 
 	public void forceScheduleRollups() {
-		List<RollupTarget> allRangesWaitingForRollups = new ArrayList<>(lastInsertTimes.keySet());
+		List<RollupTarget> allRangesWaitingForRollups = new ArrayList<>(rollupTimes.keySet());
 		for (RollupTarget timeRange: allRangesWaitingForRollups) {
 			scheduleRollup(timeRange);
 		}
@@ -85,9 +84,10 @@ public class RollupScheduler implements Runnable {
 	}
 
 	protected List<RollupTarget> rollupTargetsReadyForRollup() {
+		long now = System.currentTimeMillis();
 		List<RollupTarget> results = new ArrayList<>();
-		for (Entry<RollupTarget, Long> entry: lastInsertTimes.entrySet()) {
-			if (isReadyForRollup(entry.getValue())) {
+		for (Entry<RollupTarget, Long> entry: rollupTimes.entrySet()) {
+			if (entry.getValue() < now) {
 				results.add(entry.getKey());
 			}
 		}
@@ -96,6 +96,6 @@ public class RollupScheduler implements Runnable {
 
 	private void scheduleRollup(RollupTarget target) {
 		collection.scheduleRollup(target);
-		lastInsertTimes.remove(target);
+		rollupTimes.remove(target);
 	}
 }
