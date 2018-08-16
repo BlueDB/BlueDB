@@ -43,18 +43,18 @@ public class RollupScheduler implements Runnable {
 		isStopped = true;
 	}
 
-	public void reportInsert(long segmentGroupingNumber, Range range) {
+	public void reportWrite(long segmentGroupingNumber, Range range) {
 		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		reportInsert(target, System.currentTimeMillis());
+		reportWrite(target, System.currentTimeMillis());
 	}
 
-	public void reportInsert(RollupTarget rollupTarget, long timeMillis) {
-		if (getLastInsertTime(rollupTarget) < timeMillis) {
+	public void reportWrite(RollupTarget rollupTarget, long timeMillis) {
+		if (getLastWriteTime(rollupTarget) < timeMillis) {
 			lastInsertTimes.put(rollupTarget, timeMillis);
 		}
 	}
 
-	public long getLastInsertTime(RollupTarget target) {
+	public long getLastWriteTime(RollupTarget target) {
 		return lastInsertTimes.getOrDefault(target, Long.MIN_VALUE);
 	}
 
