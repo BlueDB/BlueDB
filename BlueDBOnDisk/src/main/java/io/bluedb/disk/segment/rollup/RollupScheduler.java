@@ -16,7 +16,7 @@ public class RollupScheduler implements Runnable {
 
 	private long waitBetweenReviews = WAIT_BETWEEN_REVIEWS_DEFAULT;
 	private final BlueCollectionOnDisk<?> collection;
-	private final Map<Range, Long> lastInsertTimes;
+	private final Map<RollupTarget, Long> lastInsertTimes;
 	private Thread thread;
 	private boolean isStopped;
 
@@ -43,18 +43,19 @@ public class RollupScheduler implements Runnable {
 		isStopped = true;
 	}
 
-	public void reportInsert(Range timeRange) {
-		reportInsert(timeRange, System.currentTimeMillis());
+	public void reportInsert(long segmentGroupingNumber, Range range) {
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		reportInsert(target, System.currentTimeMillis());
 	}
 
-	public void reportInsert(Range timeRange, long timeMillis) {
-		if (getLastInsertTime(timeRange) < timeMillis) {
-			lastInsertTimes.put(timeRange, timeMillis);
+	public void reportInsert(RollupTarget rollupTarget, long timeMillis) {
+		if (getLastInsertTime(rollupTarget) < timeMillis) {
+			lastInsertTimes.put(rollupTarget, timeMillis);
 		}
 	}
 
-	public long getLastInsertTime(Range timeRange) {
-		return lastInsertTimes.getOrDefault(timeRange, Long.MIN_VALUE);
+	public long getLastInsertTime(RollupTarget target) {
+		return lastInsertTimes.getOrDefault(target, Long.MIN_VALUE);
 	}
 
 	public boolean isRunning() {
@@ -67,14 +68,14 @@ public class RollupScheduler implements Runnable {
 	}
 
 	protected void scheduleReadyRollups() {
-		for (Range timeRange: timeRangesReadyForRollup()) {
-			scheduleRollup(timeRange);
+		for (RollupTarget target: rollupTargetsReadyForRollup()) {
+			scheduleRollup(target);
 		}
 	}
 
 	public void forceScheduleRollups() {
-		List<Range> allRangesWaitingForRollups = new ArrayList<>(lastInsertTimes.keySet());
-		for (Range timeRange: allRangesWaitingForRollups) {
+		List<RollupTarget> allRangesWaitingForRollups = new ArrayList<>(lastInsertTimes.keySet());
+		for (RollupTarget timeRange: allRangesWaitingForRollups) {
 			scheduleRollup(timeRange);
 		}
 	}
@@ -83,9 +84,9 @@ public class RollupScheduler implements Runnable {
 		waitBetweenReviews = newWaitTimeMillis;
 	}
 
-	protected List<Range> timeRangesReadyForRollup() {
-		List<Range> results = new ArrayList<>();
-		for (Entry<Range, Long> entry: lastInsertTimes.entrySet()) {
+	protected List<RollupTarget> rollupTargetsReadyForRollup() {
+		List<RollupTarget> results = new ArrayList<>();
+		for (Entry<RollupTarget, Long> entry: lastInsertTimes.entrySet()) {
 			if (isReadyForRollup(entry.getValue())) {
 				results.add(entry.getKey());
 			}
@@ -93,8 +94,8 @@ public class RollupScheduler implements Runnable {
 		return results;
 	}
 
-	private void scheduleRollup(Range timeRange) {
-		collection.scheduleRollup(timeRange);
-		lastInsertTimes.remove(timeRange);
+	private void scheduleRollup(RollupTarget target) {
+		collection.scheduleRollup(target);
+		lastInsertTimes.remove(target);
 	}
 }

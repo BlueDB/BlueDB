@@ -76,7 +76,6 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	public void modifyChunk(long groupingNumber, StreamingWriter<T> processor) throws BlueDbException {
 		Path targetPath, tmpPath;
-
 		try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(groupingNumber)) {
 			targetPath = input.getPath();
 			tmpPath = FileManager.createTempFilePath(targetPath);
@@ -89,7 +88,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			FileManager.moveFile(tmpPath, targetFileLock);
 		}
 		// TODO roll up to a smaller time range?
-		collection.getRollupScheduler().reportInsert(segmentRange);
+		Range targetRange = collection.getSegmentManager().getSegmentRange(groupingNumber);
+		collection.getRollupScheduler().reportInsert(segmentRange.getStart(), targetRange);
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
