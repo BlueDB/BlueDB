@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.bluedb.api.exceptions.BlueDbException;
@@ -23,17 +22,13 @@ public class RecoveryManager<T extends Serializable> {
 	protected static String SUFFIX = ".chg";
 	protected static String SUFFIX_PENDING = ".pending.chg";
 	protected static String SUFFIX_COMPLETE = ".complete.chg";
-	private static int DEFAULT_NUMBER_CHANGES_BETWEEN_CLEANUPS = 100;
-	private static int DEFAULT_RETENTION_LIMIT = 200;
 
 	private final BlueCollectionOnDisk<T> collection;
 	private final Path recoveryPath;
 	private final Path historyFolderPath;
 	private final FileManager fileManager;
 	private final AtomicLong lastRecoverableId;
-	private int changesSinceLastCleanup = 0;
-	private int completedChangeLimit = DEFAULT_RETENTION_LIMIT;
-	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
+	private final ChangeHistoryCleaner cleaner;
 
 	public RecoveryManager(BlueCollectionOnDisk<T> collection, FileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
@@ -41,6 +36,7 @@ public class RecoveryManager<T extends Serializable> {
 		this.recoveryPath = Paths.get(collection.getPath().toString(), RECOVERY_FOLDER);
 		this.historyFolderPath = Paths.get(recoveryPath.toString(), HISTORY_SUBFOLDER);
 		lastRecoverableId = new AtomicLong(0);
+		cleaner = new ChangeHistoryCleaner(this);
 	}
 
 	public void saveChange(Recoverable<?> change) throws BlueDbException {
@@ -48,19 +44,6 @@ public class RecoveryManager<T extends Serializable> {
 		String filename = getPendingFileName(change);
 		Path historyPath = Paths.get(historyFolderPath.toString(), filename);
 		fileManager.saveObject(historyPath, change);
-		changesSinceLastCleanup++;
-	}
-
-	public void setRetentionLimit(int completedChangeLimit) {
-		this.completedChangeLimit = completedChangeLimit;
-	}
-
-	public void placeHoldOnHistoryCleanup() {
-		holdsOnHistoryCleanup.incrementAndGet();
-	}
-
-	public void removeHoldOnHistoryCleanup() {
-		holdsOnHistoryCleanup.decrementAndGet();
 	}
 
 	public Path getHistoryFolder() {
@@ -73,9 +56,6 @@ public class RecoveryManager<T extends Serializable> {
 		Path pendingPath = Paths.get(historyFolderPath.toString(), pendingFileName);
 		Path completedPath = Paths.get(historyFolderPath.toString(), completedFileName);
 		FileManager.moveWithoutLock(pendingPath, completedPath);
-		if (isTimeForHistoryCleanup()) {
-			cleanupHistory();  // TODO run in a different thread?
-		}
 	}
 
 	public void markChangePending(Path completedPath) throws BlueDbException {
@@ -83,23 +63,6 @@ public class RecoveryManager<T extends Serializable> {
 		String pendingPathString = completedPathString.replaceAll(SUFFIX_COMPLETE, SUFFIX_PENDING);
 		Path pendingPath = Paths.get(pendingPathString);
 		FileManager.moveWithoutLock(completedPath, pendingPath);
-	}
-
-	protected boolean isTimeForHistoryCleanup() {
-		return changesSinceLastCleanup > DEFAULT_NUMBER_CHANGES_BETWEEN_CLEANUPS;
-	}
-
-	public void cleanupHistory() throws BlueDbException {
-		if (holdsOnHistoryCleanup.get() > 0) {
-			return;
-		}
-		List<File> historicChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
-		List<TimeStampedFile> timestampedFiles = Blutils.map(historicChangeFiles, (f) -> new TimeStampedFile(f) );
-		Collections.sort(timestampedFiles);
-		int numFilesToDelete = Math.max(0, timestampedFiles.size() - completedChangeLimit);
-		List<TimeStampedFile> filesToDelete = timestampedFiles.subList(0, numFilesToDelete);
-		filesToDelete.forEach((f) -> f.getFile().delete());
-		changesSinceLastCleanup = 0;
 	}
 
 	public List<File> getChangeHistory(long backupStartTime, long backupEndTime) throws BlueDbException {
@@ -129,11 +92,23 @@ public class RecoveryManager<T extends Serializable> {
 		return changes;
 	}
 
+	public List<File> getCompletedChangeFiles() {
+		return FileManager.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
+	}
+
 	public void recover() throws BlueDbException {
 		for (Recoverable<T> change: getPendingChanges()) {
 			change.apply(collection);
 			markComplete(change);
 		}
+	}
+
+	public void placeHoldOnHistoryCleanup() {
+		cleaner.placeHoldOnHistoryCleanup();
+	}
+
+	public void removeHoldOnHistoryCleanup() {
+		cleaner.removeHoldOnHistoryCleanup();
 	}
 
 	public long getNewRecoverableId() {
@@ -146,5 +121,9 @@ public class RecoveryManager<T extends Serializable> {
 
 	public static String getPendingFileName(Recoverable<?> change) {
 		return  String.valueOf(change.getTimeCreated()) + "." + String.valueOf(change.getRecoverableId()) + SUFFIX_PENDING;
+	}
+
+	public ChangeHistoryCleaner getChangeHistoryCleaner() {
+		return cleaner;
 	}
 }

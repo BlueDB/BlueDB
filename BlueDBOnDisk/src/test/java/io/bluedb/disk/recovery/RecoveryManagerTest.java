@@ -101,71 +101,6 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(0, changes.size());
 	}
 
-	@Test
-	public void test_isTimeForHistoryCleanup() throws Exception {
-		RecoveryManager<?> recoveryManager = getTimeCollection().getRecoveryManager();
-		assertFalse(recoveryManager.isTimeForHistoryCleanup());
-		
-		Recoverable<TestValue> change = null;
-		for (int i = 0; i < 300; i++) {
-			change = createRecoverable(i);
-			getRecoveryManager().saveChange(change);
-		}
-		assertTrue(recoveryManager.isTimeForHistoryCleanup());
-
-		getRecoveryManager().markComplete(change); // trigger cleanup
-		assertFalse(recoveryManager.isTimeForHistoryCleanup());
-	}
-
-	@Test
-	public void test_cleanupHistory() throws Exception {
-		long thirtyMinutesAgo = System.currentTimeMillis() - 30 * 60 * 1000;
-		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
-		long ninetyMinutesAgo = System.currentTimeMillis() - 90 * 60 * 1000;
-		long oneHundredMinutesAgo = System.currentTimeMillis() - 100 * 60 * 1000;
-		Recoverable<TestValue> changePending = createRecoverable(thirtyMinutesAgo);
-		Recoverable<TestValue> change30 = createRecoverable(thirtyMinutesAgo);
-		Recoverable<TestValue> change60 = createRecoverable(sixtyMinutesAgo);
-		Recoverable<TestValue> change90 = createRecoverable(ninetyMinutesAgo);
-		Recoverable<TestValue> change100 = createRecoverable(oneHundredMinutesAgo);
-		assertEquals(thirtyMinutesAgo, change30.getTimeCreated());
-		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
-		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
-		assertEquals(oneHundredMinutesAgo, change100.getTimeCreated());
-		getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
-		List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-		getRecoveryManager().saveChange(changePending);
-		getRecoveryManager().saveChange(change30);
-		getRecoveryManager().saveChange(change60);
-		getRecoveryManager().saveChange(change90);
-		getRecoveryManager().saveChange(change100);
-		getRecoveryManager().markComplete(change30);
-		getRecoveryManager().markComplete(change60);
-		getRecoveryManager().markComplete(change90);
-		getRecoveryManager().markComplete(change100);
-		List<File> changesBeforeCleanup = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-
-		getRecoveryManager().placeHoldOnHistoryCleanup();
-		getRecoveryManager().setRetentionLimit(2);
-
-		getRecoveryManager().cleanupHistory();
-		List<File> changesAfterCleanupDuringHold = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-		getRecoveryManager().removeHoldOnHistoryCleanup();
-
-		getRecoveryManager().cleanupHistory();
-		List<File> changesAfterCleanup2 = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-
-		getRecoveryManager().setRetentionLimit(0);
-		getRecoveryManager().cleanupHistory();
-		List<File> changesAfterCleanup0 = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-
-		assertFalse(getRecoveryManager().isTimeForHistoryCleanup());  // since we already just did cleanup
-		assertEquals(0, changesBeforeInsert.size());
-		assertEquals(5, changesBeforeCleanup.size());
-		assertEquals(5, changesAfterCleanupDuringHold.size());
-		assertEquals(3, changesAfterCleanup2.size());  // two completed stay, plus the pending
-		assertEquals(1, changesAfterCleanup0.size());  // everything goes except pending
-	}
 
 	@Test
 	public void test_getChangeHistory() throws Exception {
@@ -178,7 +113,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(thirtyMinutesAgo, change30.getTimeCreated());
 		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
-		getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
+		getRecoveryManager().getChangeHistoryCleaner().setWaitBetweenCleanups(100_000);  // to prevent automatic cleanup
 		List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		getRecoveryManager().saveChange(change30);
 		getRecoveryManager().saveChange(change60);
@@ -202,7 +137,6 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	public void test_recover_pendingInsert() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		CollectionMetaData metaData = getTimeCollection().getMetaData();
 
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		getRecoveryManager().saveChange(change);

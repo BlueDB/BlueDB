@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import io.bluedb.api.Condition;
+import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.Blutils.UnreliableFunction;
 
 public class BlutilsTest {
@@ -66,6 +67,19 @@ public class BlutilsTest {
 		List<Long> expectedResults = Arrays.asList(7L, 5L, 1000L);
 		List<Long> mappedValues = Blutils.map(originalValues, (s) -> Long.valueOf(s));
 		assertEquals(expectedResults, mappedValues);
+	}
+
+	@Test
+	public void test_mapIgnoringExceptions() {
+		List<String> originalValues = Arrays.asList("7", "5", "1000", "garbage");
+		List<Long> expectedResults = Arrays.asList(7L, 5L, 1000L);
+		List<Long> mappedValues = Blutils.mapIgnoringExceptions(originalValues, (s) -> Long.valueOf(s));
+		assertEquals(expectedResults, mappedValues);
+		try {
+			Blutils.map(originalValues, (s) -> Long.valueOf(s));
+			fail();
+		} catch (Throwable e) {
+		}
 	}
 
 	@Test
