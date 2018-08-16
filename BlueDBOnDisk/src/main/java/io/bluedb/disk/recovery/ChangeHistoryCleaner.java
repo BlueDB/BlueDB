@@ -13,6 +13,7 @@ public class ChangeHistoryCleaner implements Runnable {
 	private int completedChangeLimit = DEFAULT_RETENTION_LIMIT;
 	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
 	private long waitBetweenCleanups = 500;
+	private boolean isStopped = false;
 	final Path historyFolderPath;
 	RecoveryManager<?> recoveryManager;
 	Thread thread;
@@ -58,12 +59,12 @@ public class ChangeHistoryCleaner implements Runnable {
 	}
 
 	public void stop() {
-		thread.stop();
+		isStopped = true;
 	}
 
 	@Override
 	public void run() {
-		while(true) {
+		while(!isStopped) {
 			cleanupHistory();
 			Blutils.trySleep(waitBetweenCleanups);
 		}
