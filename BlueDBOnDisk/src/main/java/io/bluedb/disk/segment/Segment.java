@@ -227,6 +227,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
+		Range rollupRange = collection.getSegmentManager().getSegmentRange(groupingNumber);
+		collection.getRollupScheduler().reportRead(segmentRange.getStart(), rollupRange);
 		return fileManager.getBlueInputStream(lock);
 	}
 

@@ -29,6 +29,19 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_reportRead() {
+		Range timeRange = new Range(2, 5);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		long readTime = System.currentTimeMillis();
+		getRollupScheduler().reportRead(rollupTarget, readTime);
+		assertEquals(readTime + RollupScheduler.WAIT_AFTER_READ_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+
+		getRollupScheduler().reportRead(rollupTarget, readTime - 1); // report earlier time
+		assertEquals(readTime + RollupScheduler.WAIT_AFTER_READ_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+	}
+
+	@Test
 	public void test_getLastWriteTime() {
 		Range timeRange = new Range(2, 5);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
