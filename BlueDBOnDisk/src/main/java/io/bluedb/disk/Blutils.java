@@ -58,6 +58,18 @@ public class Blutils {
 		return results;
 	}
 
+	public static <X, Y> List<Y> mapIgnoringExceptions(List<? extends X> values, CheckedFunction<? super X, ? extends Y> mapper) {
+		List<Y> results = new ArrayList<>();
+		for (X originalValue: values) {
+			try {
+				Y newValue = mapper.apply(originalValue);
+				results.add(newValue);
+			} catch (Throwable e) {
+			}
+		}
+		return results;
+	}
+
 	public static <X> List<X> filter(List<X> values, Predicate<X> condition) {
 		List<X> results = new ArrayList<>();
 		for (X value: values) {
