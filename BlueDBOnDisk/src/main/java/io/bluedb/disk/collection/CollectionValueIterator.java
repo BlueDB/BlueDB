@@ -12,13 +12,13 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 	private CollectionEntityIterator<T> entityIterator;
 	private AutoCloseCountdown timeoutCloser;
 	
-	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range) {
-		entityIterator = new CollectionEntityIterator<T>(collection, range);
+	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range, boolean byStartTime) {
+		entityIterator = new CollectionEntityIterator<T>(collection, range, byStartTime);
 		timeoutCloser = new AutoCloseCountdown(this, TIMEOUT_DEFAULT_MILLIS);
 	}
 
-	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range, long timeout) {
-		entityIterator = new CollectionEntityIterator<T>(collection, range);
+	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range, long timeout, boolean byStartTime) {
+		entityIterator = new CollectionEntityIterator<T>(collection, range, byStartTime);
 		timeoutCloser = new AutoCloseCountdown(this, timeout);
 	}
 

@@ -21,6 +21,7 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	private List<Condition<T>> objectConditions = new LinkedList<>();
 	private long max = Long.MAX_VALUE;
 	private long min = Long.MIN_VALUE;
+	private boolean byStartTime = false;
 
 	public BlueQueryOnDisk(BlueCollectionOnDisk<T> collection) {
 		this.collection = collection;
@@ -59,9 +60,15 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	}
 
 	@Override
+	public BlueQuery<T> byStartTime() {
+		byStartTime = true;
+		return this;
+	}
+
+	@Override
 	public List<T> getList() throws BlueDbException {
 		Range range = new Range(min, max);
-		return collection.findMatches(range, objectConditions)
+		return collection.findMatches(range, objectConditions, byStartTime)
 				.stream()
 				.map((e) -> e.getValue())
 				.collect(Collectors.toList());
@@ -70,23 +77,29 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
 		Range range = new Range(min, max);
-		return new CollectionValueIterator<T>(collection, range);
+		return new CollectionValueIterator<T>(collection, range, byStartTime);
 	}
 
 	@Override
 	public void delete() throws BlueDbException {
-		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, min, max, objectConditions);
+		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, min, max, objectConditions, byStartTime);
 		collection.executeTask(deleteAllTask);
 	}
 
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
-		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, min, max, objectConditions, updater);
+		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, min, max, objectConditions, updater, byStartTime);
 		collection.executeTask(updateMultipleTask);
 	}
 
 	@Override
 	public int count() throws BlueDbException {
-		return getList().size();
+		CloseableIterator<T> iter = getIterator();
+		int count = 0;
+		while (iter.hasNext()) {
+			count++;
+			iter.next();
+		}
+		return count;
 	}
 }

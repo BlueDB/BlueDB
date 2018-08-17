@@ -109,9 +109,9 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
-	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions, boolean byStartTime) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, range)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, range, byStartTime)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
 				T value = entity.getValue();

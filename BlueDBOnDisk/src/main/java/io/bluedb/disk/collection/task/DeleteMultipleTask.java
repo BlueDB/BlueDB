@@ -17,19 +17,21 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 	private final long minGroupingValue;
 	private final long maxGroupingValue;
 	private final List<Condition<T>> conditions;
+	private final boolean byStartTime;
 	
-	public DeleteMultipleTask(BlueCollectionOnDisk<T> collection, long min, long max, List<Condition<T>> conditions) {
+	public DeleteMultipleTask(BlueCollectionOnDisk<T> collection, long min, long max, List<Condition<T>> conditions, boolean byStartTime) {
 		this.collection = collection;
 		this.minGroupingValue = min;
 		this.maxGroupingValue = max;
 		this.conditions = conditions;
+		this.byStartTime = byStartTime;
 	}
 
 	@Override
 	public void execute() throws BlueDbException {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 		Range range = new Range(minGroupingValue, maxGroupingValue);
-		List<BlueEntity<T>> entities = collection.findMatches(range, conditions);
+		List<BlueEntity<T>> entities = collection.findMatches(range, conditions, byStartTime);
 		List<PendingChange<T>> changes = createDeletePendingChanges(entities);
 		for (PendingChange<T> change: changes) {
 			recoveryManager.saveChange(change);

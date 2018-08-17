@@ -18,9 +18,9 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 
-	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, Range range) {
+	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, Range range, boolean byStartTime) {
 		this.range = range;
-		this.endGroupingValueOfCompletedSegments = Long.MIN_VALUE;
+		this.endGroupingValueOfCompletedSegments = byStartTime ? (range.getStart()) - 1 : Long.MIN_VALUE;
 		segments = collection.getSegmentManager().getExistingSegments(range);
 		Collections.sort(segments);
 	}
