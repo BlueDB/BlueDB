@@ -5,8 +5,10 @@ import static org.junit.Assert.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import io.bluedb.api.Condition;
+import io.bluedb.disk.Blutils.UnreliableFunction;
 
 public class BlutilsTest {
 
@@ -95,5 +97,45 @@ public class BlutilsTest {
 			e.printStackTrace();
 		}
 		assertTrue(isDoneSleeping.get());
+	}
+
+	@Test
+	public void test_tryMultipleTimes() {
+		try {
+			AtomicInteger one = new AtomicInteger(1);
+			AtomicInteger two = new AtomicInteger(2);
+			AtomicInteger three = new AtomicInteger(3);
+			AtomicInteger four = new AtomicInteger(4);
+			UnreliableFunction<Long, Throwable> alwaysSucceed = () -> 0L;
+			UnreliableFunction<Long, Throwable> fail1Time = () -> {if (one.getAndDecrement() > 0) throw new RuntimeException(); return 1L;};
+			UnreliableFunction<Long, Throwable> fail2Times = () -> {if (two.getAndDecrement() > 0) throw new RuntimeException(); return 2L;};
+			UnreliableFunction<Long, Throwable> fail3Times = () -> {if (three.getAndDecrement() > 0) throw new RuntimeException(); return 3L;};
+			UnreliableFunction<Long, Throwable> fail4Times = () -> {if (four.getAndDecrement() > 0) throw new RuntimeException(); return 4L;};
+			UnreliableFunction<Long, Throwable> alwaysFail = () -> {throw new RuntimeException();};
+		
+			assertEquals(Long.valueOf(0L), Blutils.tryMultipleTimes(3, alwaysSucceed));
+			assertEquals(Long.valueOf(1L), Blutils.tryMultipleTimes(3, fail1Time));
+			assertEquals(Long.valueOf(2L), Blutils.tryMultipleTimes(3, fail2Times));
+			try {
+				Blutils.tryMultipleTimes(3, fail3Times);
+				fail();
+			} catch (Exception e) {}
+			try {
+				Blutils.tryMultipleTimes(3, fail4Times);
+				fail();
+			} catch (Exception e) {}
+			try {
+				Blutils.tryMultipleTimes(3, alwaysFail);
+				fail();
+			} catch (Exception e) {}
+
+			try {
+				Blutils.tryMultipleTimes(0, alwaysSucceed);
+				fail();
+			} catch (Exception e) {}
+		} catch (Throwable e1) {
+			e1.printStackTrace();
+			fail();
+		}
 	}
 }
