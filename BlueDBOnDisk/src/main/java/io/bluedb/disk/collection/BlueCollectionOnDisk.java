@@ -84,10 +84,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		ensureCorrectKeyType(key);
-		// TODO roll up to a smaller time range?
-		// TODO report insert when the insert task actually runs?
-		Range timeRange = segmentManager.getSegmentRange(key.getGroupingNumber());
-		rollupScheduler.reportInsert(timeRange);
 		Runnable insertTask = new InsertTask<T>(this, key, value);
 		executeTask(insertTask);
 	}
@@ -149,6 +145,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public SegmentManager<T> getSegmentManager() {
 		return segmentManager;
+	}
+
+	public RollupScheduler getRollupScheduler() {
+		return rollupScheduler;
 	}
 
 	public RecoveryManager<T> getRecoveryManager() {
