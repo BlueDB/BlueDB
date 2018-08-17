@@ -37,8 +37,10 @@ public class RollupTaskTest extends BlueDbDiskTestBase {
 			long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
 			Range offByOneSegmentTimeRange = new Range(0, segmentSize);
 			Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
-			RollupTask<TestValue> invalidRollup = new RollupTask<>(getTimeCollection(), offByOneSegmentTimeRange);
-			RollupTask<TestValue> validRollup = new RollupTask<>(getTimeCollection(), entireFirstSegmentTimeRange);
+			RollupTarget offByOneRollupTarget = new RollupTarget(0, offByOneSegmentTimeRange);
+			RollupTarget entireFirstRollupTarget = new RollupTarget(0, entireFirstSegmentTimeRange);
+			RollupTask<TestValue> invalidRollup = new RollupTask<>(getTimeCollection(), offByOneRollupTarget);
+			RollupTask<TestValue> validRollup = new RollupTask<>(getTimeCollection(), entireFirstRollupTarget);
 
 			invalidRollup.run();
 			segmentDirectoryContents = segment.getPath().toFile().listFiles();

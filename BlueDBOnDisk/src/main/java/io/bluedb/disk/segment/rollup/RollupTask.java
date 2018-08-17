@@ -12,17 +12,17 @@ import io.bluedb.disk.segment.Range;
 public class RollupTask<T extends Serializable> implements Runnable {
 
 	private final BlueCollectionOnDisk<T> collection;
-	private final Range timeRange;
+	private final RollupTarget rollupTarget;
 	
-	public RollupTask(BlueCollectionOnDisk<T> collection, Range timeRange) {
+	public RollupTask(BlueCollectionOnDisk<T> collection, RollupTarget rollupTarget) {
 		this.collection = collection;
-		this.timeRange = timeRange;
+		this.rollupTarget = rollupTarget;
 	}
 
 	@Override
 	public void run() {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-		Recoverable<T> change = new PendingRollup<>(timeRange);
+		Recoverable<T> change = new PendingRollup<>(rollupTarget);
 		try {
 			recoveryManager.saveChange(change);
 			change.apply(collection);

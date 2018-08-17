@@ -31,6 +31,7 @@ import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
+import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 
@@ -304,7 +305,8 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
 		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
-		getTimeCollection().scheduleRollup(entireFirstSegmentTimeRange);
+		RollupTarget rollupTarget = new RollupTarget(0, entireFirstSegmentTimeRange);
+		getTimeCollection().scheduleRollup(rollupTarget);
 		waitForExecutorToFinish();
 
 		values = getTimeCollection().query().getList();
