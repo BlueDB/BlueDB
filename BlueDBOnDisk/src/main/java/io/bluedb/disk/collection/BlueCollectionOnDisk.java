@@ -47,7 +47,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 
-	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, Class<? extends Serializable>... additionalRegisteredClasses) throws BlueDbException {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalRegisteredClasses) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
@@ -109,9 +109,9 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
-	public List<BlueEntity<T>> findMatches(long min, long max, List<Condition<T>> conditions) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, min, max)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, range)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
 				T value = entity.getValue();

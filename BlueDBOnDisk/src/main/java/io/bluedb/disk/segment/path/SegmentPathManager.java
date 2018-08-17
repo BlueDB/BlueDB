@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.segment.Range;
 
 
 public interface SegmentPathManager {
@@ -43,6 +44,10 @@ public interface SegmentPathManager {
 			i += segmentSize;
 		}
 		return paths;
+	}
+
+	public default List<File> getExistingSegmentFiles(Range range) {
+		return getExistingSegmentFiles(range.getStart(), range.getEnd());
 	}
 
 	public default List<File> getExistingSegmentFiles(long minValue, long maxValue) {

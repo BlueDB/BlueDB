@@ -9,6 +9,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
@@ -27,7 +28,8 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 	@Override
 	public void execute() throws BlueDbException {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-		List<BlueEntity<T>> entities = collection.findMatches(minGroupingValue, maxGroupingValue, conditions);
+		Range range = new Range(minGroupingValue, maxGroupingValue);
+		List<BlueEntity<T>> entities = collection.findMatches(range, conditions);
 		List<PendingChange<T>> changes = createDeletePendingChanges(entities);
 		for (PendingChange<T> change: changes) {
 			recoveryManager.saveChange(change);

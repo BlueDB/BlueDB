@@ -13,13 +13,14 @@ import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
+import io.bluedb.disk.segment.Range;
 
 public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
 	private BlueCollectionOnDisk<T> collection;
 	private List<Condition<T>> objectConditions = new LinkedList<>();
-	private long maxTime = Long.MAX_VALUE;
-	private long minTime = Long.MIN_VALUE;
+	private long max = Long.MAX_VALUE;
+	private long min = Long.MIN_VALUE;
 
 	public BlueQueryOnDisk(BlueCollectionOnDisk<T> collection) {
 		this.collection = collection;
@@ -35,31 +36,32 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public BlueQuery<T> afterTime(long time) {
-		minTime = Math.max(minTime, Math.max(time + 1,time)); // last part to avoid overflow errors
+		min = Math.max(min, Math.max(time + 1,time)); // last part to avoid overflow errors
 		return this;
 	}
 
 	@Override
 	public BlueQuery<T> afterOrAtTime(long time) {
-		minTime = Math.max(minTime, time);
+		min = Math.max(min, time);
 		return this;
 	}
 
 	@Override
 	public BlueQuery<T> beforeTime(long time) {
-		maxTime = Math.min(maxTime, Math.min(time - 1,time)); // last part to avoid overflow errors
+		max = Math.min(max, Math.min(time - 1,time)); // last part to avoid overflow errors
 		return this;
 	}
 
 	@Override
 	public BlueQuery<T> beforeOrAtTime(long time) {
-		maxTime = Math.min(maxTime, time);
+		max = Math.min(max, time);
 		return this;
 	}
 
 	@Override
 	public List<T> getList() throws BlueDbException {
-		return collection.findMatches(minTime, maxTime, objectConditions)
+		Range range = new Range(min, max);
+		return collection.findMatches(range, objectConditions)
 				.stream()
 				.map((e) -> e.getValue())
 				.collect(Collectors.toList());
@@ -67,18 +69,19 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
-		return new CollectionValueIterator<T>(collection, minTime, maxTime);
+		Range range = new Range(min, max);
+		return new CollectionValueIterator<T>(collection, range);
 	}
 
 	@Override
 	public void delete() throws BlueDbException {
-		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, minTime, maxTime, objectConditions);
+		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, min, max, objectConditions);
 		collection.executeTask(deleteAllTask);
 	}
 
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
-		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, minTime, maxTime, objectConditions, updater);
+		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, min, max, objectConditions, updater);
 		collection.executeTask(updateMultipleTask);
 	}
 

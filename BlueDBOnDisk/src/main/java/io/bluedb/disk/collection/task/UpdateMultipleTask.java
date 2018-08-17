@@ -10,6 +10,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
+import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 
@@ -31,7 +32,8 @@ public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 
 	@Override
 	public void execute() throws BlueDbException {
-		List<BlueEntity<T>> entities = collection.findMatches(min, max, conditions);
+		Range range = new Range(min, max);
+		List<BlueEntity<T>> entities = collection.findMatches(range, conditions);
 		List<PendingChange<T>> updates;
 		try {
 			updates = createUpdates(entities, updater);

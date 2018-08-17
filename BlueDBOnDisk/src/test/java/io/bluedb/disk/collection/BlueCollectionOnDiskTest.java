@@ -171,12 +171,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<BlueEntity<TestValue>> allEntities, entitiesWithJoe, entities3to5, entities2to3, entities0to1, entities0to0;
 
 		Condition<TestValue> isJoe = (v) -> v.getName().equals("Joe");
-		allEntities = getTimeCollection().findMatches(0, 3, new ArrayList<>());
-		entitiesWithJoe = getTimeCollection().findMatches(0, 5, Arrays.asList(isJoe));
-		entities3to5 = getTimeCollection().findMatches(3, 5, new ArrayList<>());
-		entities2to3 = getTimeCollection().findMatches(2, 3, new ArrayList<>());
-		entities0to1 = getTimeCollection().findMatches(0, 1, new ArrayList<>());
-		entities0to0 = getTimeCollection().findMatches(0, 0, new ArrayList<>());
+		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>());
+		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), Arrays.asList(isJoe));
+		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>());
+		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>());
+		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>());
+		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>());
 
 		assertEquals(2, allEntities.size());
 		assertEquals(1, entitiesWithJoe.size());
