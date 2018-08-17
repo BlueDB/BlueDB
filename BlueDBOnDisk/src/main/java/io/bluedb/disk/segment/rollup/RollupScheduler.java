@@ -72,6 +72,13 @@ public class RollupScheduler implements Runnable {
 		}
 	}
 
+	public void forceScheduleRollups() {
+		List<Range> allRangesWaitingForRollups = new ArrayList<>(lastInsertTimes.keySet());
+		for (Range timeRange: allRangesWaitingForRollups) {
+			scheduleRollup(timeRange);
+		}
+	}
+
 	public void setWaitBetweenReviews(long newWaitTimeMillis) {
 		waitBetweenReviews = newWaitTimeMillis;
 	}
