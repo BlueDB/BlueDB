@@ -89,7 +89,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		}
 		// TODO roll up to a smaller time range?
 		Range targetRange = collection.getSegmentManager().getSegmentRange(groupingNumber);
-		collection.getRollupScheduler().reportInsert(segmentRange.getStart(), targetRange);
+		collection.getRollupScheduler().reportWrite(segmentRange.getStart(), targetRange);
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
@@ -227,6 +227,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
+		Range rollupRange = collection.getSegmentManager().getSegmentRange(groupingNumber);
+		collection.getRollupScheduler().reportRead(segmentRange.getStart(), rollupRange);
 		return fileManager.getBlueInputStream(lock);
 	}
 
