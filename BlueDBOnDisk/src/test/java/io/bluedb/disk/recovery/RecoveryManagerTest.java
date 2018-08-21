@@ -113,7 +113,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(thirtyMinutesAgo, change30.getTimeCreated());
 		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
-		getRecoveryManager().getChangeHistoryCleaner().setWaitBetweenCleanups(100_000);  // to prevent automatic cleanup
+		getRecoveryManager().getChangeHistoryCleaner().cleanupHistory(); // to reset timer and prevent automatic cleanup
 		List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		getRecoveryManager().saveChange(change30);
 		getRecoveryManager().saveChange(change60);

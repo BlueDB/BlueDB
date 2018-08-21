@@ -10,9 +10,10 @@ import io.bluedb.disk.Blutils;
 public class ChangeHistoryCleaner implements Runnable {
 
 	private static int DEFAULT_RETENTION_LIMIT = 200;
+	private static int DEFAULT_NUMBER_CHANGES_BETWEEN_CLEANUPS = 100;
 	private int completedChangeLimit = DEFAULT_RETENTION_LIMIT;
 	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
-	private long waitBetweenCleanups = 500;
+	private AtomicInteger changesSinceLastCleanup = new AtomicInteger(0);
 	private boolean isStopped = false;
 	final Path historyFolderPath;
 	RecoveryManager<?> recoveryManager;
@@ -23,6 +24,14 @@ public class ChangeHistoryCleaner implements Runnable {
 		this.historyFolderPath = recoveryManager.getHistoryFolder();
 		thread = new Thread(this);
 		thread.start();
+	}
+
+	public void reportChange() {
+		changesSinceLastCleanup.incrementAndGet();
+	}
+
+	public boolean isTimeForHistoryCleanup() {	
+		return changesSinceLastCleanup.get() > DEFAULT_NUMBER_CHANGES_BETWEEN_CLEANUPS;	
 	}
 
 	public void setRetentionLimit(int completedChangeLimit) {
@@ -47,15 +56,12 @@ public class ChangeHistoryCleaner implements Runnable {
 		if (holdsOnHistoryCleanup.get() > 0) {
 			return;
 		}
+		changesSinceLastCleanup.set(0);
 		List<TimeStampedFile> timestampedFiles = getCompletedTimeStampedFiles();
 		Collections.sort(timestampedFiles);
 		int numFilesToDelete = Math.max(0, timestampedFiles.size() - completedChangeLimit);
 		List<TimeStampedFile> filesToDelete = timestampedFiles.subList(0, numFilesToDelete);
 		filesToDelete.forEach((f) -> f.getFile().delete());
-	}
-
-	public void setWaitBetweenCleanups(long millis) {
-		this.waitBetweenCleanups = millis;
 	}
 
 	public void stop() {
@@ -65,9 +71,10 @@ public class ChangeHistoryCleaner implements Runnable {
 	@Override
 	public void run() {
 		while(!isStopped) {
+			while (changesSinceLastCleanup.get() < DEFAULT_NUMBER_CHANGES_BETWEEN_CLEANUPS) {
+				Blutils.trySleep(500);
+			}
 			cleanupHistory();
-			Blutils.trySleep(waitBetweenCleanups);
 		}
-		
 	}
 }

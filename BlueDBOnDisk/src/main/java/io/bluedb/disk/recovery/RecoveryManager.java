@@ -56,6 +56,7 @@ public class RecoveryManager<T extends Serializable> {
 		Path pendingPath = Paths.get(historyFolderPath.toString(), pendingFileName);
 		Path completedPath = Paths.get(historyFolderPath.toString(), completedFileName);
 		FileManager.moveWithoutLock(pendingPath, completedPath);
+		cleaner.reportChange();
 	}
 
 	public void markChangePending(Path completedPath) throws BlueDbException {

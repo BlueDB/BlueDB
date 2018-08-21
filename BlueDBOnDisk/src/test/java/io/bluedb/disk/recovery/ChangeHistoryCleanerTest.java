@@ -9,6 +9,31 @@ import io.bluedb.disk.TestValue;
 public class ChangeHistoryCleanerTest extends BlueDbDiskTestBase {
 
 	@Test
+	public void test_isTimeForHistoryCleanup() throws Exception {
+		RecoveryManager<?> recoveryManager = getTimeCollection().getRecoveryManager();
+		assertFalse(recoveryManager.getChangeHistoryCleaner().isTimeForHistoryCleanup());
+		
+		getRecoveryManager().placeHoldOnHistoryCleanup();
+
+		Recoverable<TestValue> change = null;
+		for (int i = 0; i < 300; i++) {
+			change = createRecoverable(i);
+			getRecoveryManager().saveChange(change);
+			getRecoveryManager().markComplete(change);
+		}
+
+		assertTrue(recoveryManager.getChangeHistoryCleaner().isTimeForHistoryCleanup());
+
+		// re-enable trigger cleanup
+		getRecoveryManager().removeHoldOnHistoryCleanup();
+		change = createRecoverable(301);
+		getRecoveryManager().saveChange(change);
+		getRecoveryManager().markComplete(change);
+
+		assertFalse(recoveryManager.getChangeHistoryCleaner().isTimeForHistoryCleanup());
+	}
+
+	@Test
 	public void test_cleanupHistory() throws Exception {
 		long thirtyMinutesAgo = System.currentTimeMillis() - 30 * 60 * 1000;
 		long sixtyMinutesAgo = System.currentTimeMillis() - 60 * 60 * 1000;
@@ -23,8 +48,7 @@ public class ChangeHistoryCleanerTest extends BlueDbDiskTestBase {
 		assertEquals(sixtyMinutesAgo, change60.getTimeCreated());
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
 		assertEquals(oneHundredMinutesAgo, change100.getTimeCreated());
-		getRecoveryManager().getChangeHistoryCleaner().setWaitBetweenCleanups(100_000);  // to prevent automatic cleanup
-//		getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
+		getRecoveryManager().getChangeHistoryCleaner().cleanupHistory(); // to reset timer and prevent automatic cleanup
 		List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		getRecoveryManager().saveChange(changePending);
 		getRecoveryManager().saveChange(change30);
