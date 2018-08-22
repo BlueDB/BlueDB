@@ -3,35 +3,27 @@ package io.bluedb.disk.collection.task;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.query.BlueQueryOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionOnDisk<T> collection;
-	private final long minGroupingValue;
-	private final long maxGroupingValue;
-	private final List<Condition<T>> conditions;
-	private final boolean byStartTime;
+	BlueQueryOnDisk<T> query;
 	
-	public DeleteMultipleTask(BlueCollectionOnDisk<T> collection, long min, long max, List<Condition<T>> conditions, boolean byStartTime) {
+	public DeleteMultipleTask(BlueCollectionOnDisk<T> collection, BlueQueryOnDisk<T> query) {
 		this.collection = collection;
-		this.minGroupingValue = min;
-		this.maxGroupingValue = max;
-		this.conditions = conditions;
-		this.byStartTime = byStartTime;
+		this.query = query;
 	}
 
 	@Override
 	public void execute() throws BlueDbException {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-		Range range = new Range(minGroupingValue, maxGroupingValue);
-		List<BlueEntity<T>> entities = collection.findMatches(range, conditions, byStartTime);
+		List<BlueEntity<T>> entities = query.getEntities();
 		List<PendingChange<T>> changes = createDeletePendingChanges(entities);
 		for (PendingChange<T> change: changes) {
 			recoveryManager.saveChange(change);
@@ -52,6 +44,6 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 
 	@Override
 	public String toString() {
-		return "<DeleteMultipleTask [" + minGroupingValue + ", " + maxGroupingValue + "] with " + conditions.size() + " conditions>";
+		return "<DeleteMultipleTask on query " + query.toString() + ">";
 	}
 }
