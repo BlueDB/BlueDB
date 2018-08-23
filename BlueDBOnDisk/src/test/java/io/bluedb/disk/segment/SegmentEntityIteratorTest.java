@@ -216,7 +216,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		
 		assertEquals(2, entitiesInRealSegment.size());
 
-		Segment<TestValue> mockSegment = new Segment<TestValue>(segment.getPath(), null, getTimeCollection(), null) {
+		Segment<TestValue> mockSegment = new Segment<TestValue>(segment.getPath(), null, null, null, null) {
 			@Override
 			protected BlueObjectInput<BlueEntity<TestValue>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 				throw new BlueDbException("segment fail");

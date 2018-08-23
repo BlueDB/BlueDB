@@ -58,9 +58,9 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
 		this.keyType = determineKeyType(metaData, requestedKeyType);
-		segmentManager = new SegmentManager<T>(this, this.keyType);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
+		segmentManager = new SegmentManager<T>(collectionPath, fileManager, rollupScheduler, this.keyType);
 		rollupScheduler.start();
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
@@ -147,10 +147,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public SegmentManager<T> getSegmentManager() {
 		return segmentManager;
-	}
-
-	public RollupScheduler getRollupScheduler() {
-		return rollupScheduler;
 	}
 
 	public RecoveryManager<T> getRecoveryManager() {

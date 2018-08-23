@@ -13,13 +13,11 @@ import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
-import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.segment.writer.DeleteWriter;
 import io.bluedb.disk.segment.writer.InsertWriter;
 import io.bluedb.disk.segment.writer.StreamingWriter;
@@ -28,27 +26,25 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> implements Comparable<Segment<T>> {
 
-	BlueCollectionOnDisk<T> collection;
+	private final SegmentManager<T> segmentManager;
 	private final FileManager fileManager;
 	private final Path segmentPath;
 	private final Range segmentRange;
-	private final LockManager<Path> lockManager;
 	private final List<Long> rollupLevels;
 
-	public Segment(Path segmentPath, Range segmentRange, BlueCollectionOnDisk<T> collection, final List<Long> rollupLevels) {
-		this.collection = collection;
+	public Segment(Path segmentPath, Range segmentRange, SegmentManager<T> segmentManager, FileManager fileManager, final List<Long> rollupLevels) {
 		this.segmentPath = segmentPath;
 		this.segmentRange = segmentRange;
-		this.fileManager = collection.getFileManager();
+		this.fileManager = fileManager;
 		this.rollupLevels = rollupLevels;
-		lockManager = fileManager.getLockManager();
+		this.segmentManager = segmentManager;
 	}
 
 	protected static <T extends Serializable> Segment<T> getTestSegment () {
 		return new Segment<T>();
 	}
 
-	protected Segment() {segmentPath = null;segmentRange = null;fileManager = null;lockManager = null; rollupLevels = null;}
+	protected Segment() {segmentPath = null;segmentRange = null;fileManager = null;rollupLevels = null;segmentManager = null;}
 
 	@Override
 	public String toString() {
@@ -84,12 +80,12 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			}
 		}
 
-		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(targetPath)) {
+		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(targetPath)) {
 			FileManager.moveFile(tmpPath, targetFileLock);
 		}
 		// TODO roll up to a smaller time range?
-		Range targetRange = collection.getSegmentManager().getSegmentRange(groupingNumber);
-		collection.getRollupScheduler().reportWrite(segmentRange.getStart(), targetRange);
+		Range targetRange = segmentManager.getSegmentRange(groupingNumber);
+		segmentManager.getRollupScheduler().reportWrite(segmentRange.getStart(), targetRange);
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
@@ -151,7 +147,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	private void cleanupFiles(List<File> filesToRollup) throws BlueDbException {
 		for (File file: filesToRollup) {
-			try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(file.toPath())){
+			try (BlueWriteLock<Path> writeLock = acquireWriteLock(file.toPath())){
 				FileManager.deleteFile(writeLock);
 			}
 		}
@@ -159,9 +155,9 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	private void moveRolledUpFileAndDeleteSourceFiles(Path newRolledupPath, Path tempRolledupPath, List<File> filesToRollup) throws BlueDbException {
 		List<BlueWriteLock<Path>> sourceFileWriteLocks = new ArrayList<>();
-		try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(newRolledupPath)){
+		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(newRolledupPath)){
 			for (File file: filesToRollup) {
-				sourceFileWriteLocks.add(lockManager.acquireWriteLock(file.toPath()));
+				sourceFileWriteLocks.add(acquireWriteLock(file.toPath()));
 			}
 
 			FileManager.moveFile(tempRolledupPath, targetFileLock);
@@ -216,19 +212,19 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	protected BlueObjectOutput<BlueEntity<T>> getObjectOutputFor(Path path) throws BlueDbException {
-		BlueWriteLock<Path> lock = lockManager.acquireWriteLock(path);
+		BlueWriteLock<Path> lock = acquireWriteLock(path);
 		return fileManager.getBlueOutputStream(lock);
 	}
 
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(Path path) throws BlueDbException {
-		BlueReadLock<Path> lock = lockManager.acquireReadLock(path);
+		BlueReadLock<Path> lock = acquireReadLock(path);
 		return fileManager.getBlueInputStream(lock);
 	}
 
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
-		Range rollupRange = collection.getSegmentManager().getSegmentRange(groupingNumber);
-		collection.getRollupScheduler().reportRead(segmentRange.getStart(), rollupRange);
+		Range rollupRange = segmentManager.getSegmentRange(groupingNumber);
+		segmentManager.getRollupScheduler().reportRead(segmentRange.getStart(), rollupRange);
 		return fileManager.getBlueInputStream(lock);
 	}
 
@@ -241,7 +237,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			}
 		}
 		Path path = getPathFor(groupingNumber, 1);
-		return lockManager.acquireReadLock(path);
+		return acquireReadLock(path);
 	}
 
 	public Path getPath() {
@@ -256,6 +252,14 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	private Path getPathFor(long groupingNumber, long rollupLevel) {
 		String fileName = getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
+	}
+
+	private BlueReadLock<Path> acquireReadLock(Path path) {
+		return fileManager.getLockManager().acquireReadLock(path);
+	}
+
+	private BlueWriteLock<Path> acquireWriteLock(Path path) {
+		return fileManager.getLockManager().acquireWriteLock(path);
 	}
 
 	protected static <T extends Serializable> T get(BlueKey key, BlueObjectInput<BlueEntity<T>> inputStream) {

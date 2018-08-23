@@ -8,22 +8,24 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.HashGroupedKey;
 import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.TimeKey;
-import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.segment.path.LongSegmentPathManager;
 import io.bluedb.disk.segment.path.IntegerSegmentPathManager;
 import io.bluedb.disk.segment.path.SegmentPathManager;
 import io.bluedb.disk.segment.path.TimeSegmentPathManager;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
 
 public class SegmentManager<T extends Serializable> {
 
 
-	private final BlueCollectionOnDisk<T> collection;
 	private final SegmentPathManager pathManager;
+	private final FileManager fileManager;
+	private final RollupScheduler rollupScheduler;
 
-	public SegmentManager(BlueCollectionOnDisk<T> collection, Class<? extends BlueKey> keyType) {
-		this.collection = collection;
-		Path collectionPath = collection.getPath();
-		this.pathManager =createSegmentPathManager(collectionPath, keyType);
+	public SegmentManager(Path collectionPath, FileManager fileManager, RollupScheduler rollupScheduler, Class<? extends BlueKey> keyType) {
+		this.fileManager = fileManager;
+		this.rollupScheduler = rollupScheduler;
+		this.pathManager = createSegmentPathManager(collectionPath, keyType);
 	}
 
 	public Range getSegmentRange(long groupingValue) {
@@ -64,7 +66,7 @@ public class SegmentManager<T extends Serializable> {
 
 	protected Segment<T> toSegment(Path path) {
 		Range range = toRange(path);
-		return new Segment<T>(path, range, collection, pathManager.getRollupLevels());
+		return new Segment<T>(path, range, this, fileManager, pathManager.getRollupLevels());
 	}
 
 	public Range toRange(Path path) {
@@ -76,6 +78,10 @@ public class SegmentManager<T extends Serializable> {
 
 	public long getSegmentSize() {
 		return pathManager.getSegmentSize();
+	}
+
+	public RollupScheduler getRollupScheduler() {
+		return rollupScheduler;
 	}
 
 	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
