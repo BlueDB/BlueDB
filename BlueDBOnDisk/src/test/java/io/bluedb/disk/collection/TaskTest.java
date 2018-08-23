@@ -1,8 +1,6 @@
 package io.bluedb.disk.collection;
 
-import java.util.ArrayList;
 import org.junit.Test;
-import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeKey;
@@ -12,6 +10,7 @@ import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.collection.task.UpdateTask;
+import io.bluedb.disk.query.BlueQueryOnDisk;
 import junit.framework.TestCase;
 
 public class TaskTest extends TestCase {
@@ -20,9 +19,10 @@ public class TaskTest extends TestCase {
 	public void test_DeleteMultipleTask_toString() {
 		long min = 37;
 		long max = 101;
-		ArrayList<Condition<?>> conditions = new ArrayList<>();
+		BlueQueryOnDisk<?> query = new BlueQueryOnDisk<TestValue>(null);
+		query.afterOrAtTime(min).beforeOrAtTime(max);		
 		@SuppressWarnings({"rawtypes", "unchecked"})
-		Runnable task = new DeleteMultipleTask(null, min, max, conditions, false);
+		Runnable task = new DeleteMultipleTask(null, query);
 		String taskString = task.toString();
 		assertTrue(taskString.contains(task.getClass().getSimpleName()));
 		assertTrue(taskString.contains(String.valueOf(min)));
@@ -43,9 +43,10 @@ public class TaskTest extends TestCase {
 	public void test_UpdateMultipleTask_toString() {
 		long min = 37;
 		long max = 101;
-		ArrayList<Condition<?>> conditions = new ArrayList<>();
+		BlueQueryOnDisk<?> query = new BlueQueryOnDisk<TestValue>(null);
+		query.afterOrAtTime(min).beforeOrAtTime(max);		
 		@SuppressWarnings({"rawtypes", "unchecked"})
-		Runnable task = new UpdateMultipleTask(null, min, max, conditions, null, false);
+		Runnable task = new UpdateMultipleTask(null, query, null);
 		String taskString = task.toString();
 		assertTrue(taskString.contains(task.getClass().getSimpleName()));
 		assertTrue(taskString.contains(String.valueOf(min)));
