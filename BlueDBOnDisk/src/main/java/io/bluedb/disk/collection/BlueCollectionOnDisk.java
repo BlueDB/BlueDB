@@ -29,12 +29,13 @@ import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.rollup.RollupScheduler;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.rollup.RollupTask;
+import io.bluedb.disk.segment.rollup.Rollupable;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
-public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T> {
+public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
