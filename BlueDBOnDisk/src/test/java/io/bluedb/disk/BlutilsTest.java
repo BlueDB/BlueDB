@@ -152,4 +152,15 @@ public class BlutilsTest {
 			fail();
 		}
 	}
+
+	
+	@Test
+	public void test_nullSafeEquals() {
+		assertTrue(Blutils.nullSafeEquals(null, null));
+		assertTrue(Blutils.nullSafeEquals("1", "1"));
+
+		assertFalse(Blutils.nullSafeEquals(null, "1"));
+		assertFalse(Blutils.nullSafeEquals("1", null));
+		assertFalse(Blutils.nullSafeEquals("1", "2"));
+	}
 }
