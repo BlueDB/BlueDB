@@ -29,6 +29,7 @@ import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentEntityIterator;
+import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.rollup.RollupScheduler;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
@@ -77,6 +78,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public BlueCollectionOnDisk<TestValue> getTimeCollection() {
 		return timeCollection;
+	}
+
+	public SegmentManager<TestValue> getTimeSegmentManager() {
+		return timeCollection.getSegmentManager();
 	}
 
 	public BlueCollectionOnDisk<TestValue> getHashGroupedCollection() {

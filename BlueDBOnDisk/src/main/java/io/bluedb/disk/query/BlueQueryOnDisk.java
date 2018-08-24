@@ -14,6 +14,7 @@ import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
@@ -73,8 +74,8 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
-		Range range = new Range(min, max);
-		return new CollectionValueIterator<T>(collection, range, byStartTime);
+		SegmentManager<T> segmentManager = collection.getSegmentManager();
+		return new CollectionValueIterator<T>(segmentManager, getRange(), byStartTime);
 	}
 
 	@Override
@@ -101,8 +102,7 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	}
 
 	public List<BlueEntity<T>> getEntities() throws BlueDbException {
-		Range range = new Range(min, max);
-		return collection.findMatches(range, objectConditions, byStartTime);
+		return collection.findMatches(getRange(), objectConditions, byStartTime);
 	}
 
 	public BlueQueryOnDisk<T> clone() {
@@ -117,5 +117,9 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	@Override
 	public String toString() {
 		return "<" + this.getClass().getSimpleName() + " [" + min + ", " + max + "] with " + objectConditions.size() + " conditions>";
+	}
+
+	public Range getRange() {
+		return new Range(min, max);
 	}
 }

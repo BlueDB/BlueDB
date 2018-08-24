@@ -113,7 +113,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions, boolean byStartTime) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, range, byStartTime)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
 				T value = entity.getValue();

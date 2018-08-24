@@ -5,6 +5,7 @@ import java.io.Serializable;
 import io.bluedb.api.CloseableIterator;
 import io.bluedb.disk.lock.AutoCloseCountdown;
 import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.segment.SegmentManager;
 
 public class CollectionValueIterator<T extends Serializable> implements CloseableIterator<T> {
 
@@ -12,13 +13,13 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 	private CollectionEntityIterator<T> entityIterator;
 	private AutoCloseCountdown timeoutCloser;
 	
-	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range, boolean byStartTime) {
-		entityIterator = new CollectionEntityIterator<T>(collection, range, byStartTime);
+	public CollectionValueIterator(SegmentManager<T> segmentManager, Range range, boolean byStartTime) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime);
 		timeoutCloser = new AutoCloseCountdown(this, TIMEOUT_DEFAULT_MILLIS);
 	}
 
-	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range, long timeout, boolean byStartTime) {
-		entityIterator = new CollectionEntityIterator<T>(collection, range, byStartTime);
+	public CollectionValueIterator(SegmentManager<T> segmentManager, Range range, long timeout, boolean byStartTime) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime);
 		timeoutCloser = new AutoCloseCountdown(this, timeout);
 	}
 
