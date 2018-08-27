@@ -1,6 +1,5 @@
 package io.bluedb.disk;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -115,6 +114,13 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         List<TestValue> joeOnly = getTimeCollection().query().where((v) -> v.getName().equals("Joe")).getList();
         assertEquals(1, joeOnly.size());
         assertEquals(valueJoe, joeOnly.get(0));
+
+        Iterator<TestValue> iter = getTimeCollection().query().where((v) -> v.getName().equals("Bob")).getIterator();
+        List<TestValue> onlyBob = new ArrayList<>();
+        iter.forEachRemaining(onlyBob::add);
+        assertEquals(1, onlyBob.size());
+        assertFalse(onlyBob.contains(valueJoe));
+        assertTrue(onlyBob.contains(valueBob));
 	}
 
 	@Test
@@ -127,6 +133,20 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         List<TestValue> before3 = getTimeCollection().query().beforeTime(3).getList();
         List<TestValue> before2 = getTimeCollection().query().beforeTime(2).getList();
         List<TestValue> before1 = getTimeCollection().query().beforeTime(1).getList();
+        assertEquals(2, before3.size());
+        assertEquals(1, before2.size());
+        assertEquals(0, before1.size());
+        assertTrue(before3.contains(value2to3));
+        assertTrue(before3.contains(value1to2));
+        assertTrue(before2.contains(value1to2));
+        assertFalse(before1.contains(value1to2));
+
+        before3.clear();
+        before2.clear();
+        before1.clear();
+        getTimeCollection().query().beforeTime(3).getIterator().forEachRemaining(before3::add);
+        getTimeCollection().query().beforeTime(2).getIterator().forEachRemaining(before2::add);
+        getTimeCollection().query().beforeTime(1).getIterator().forEachRemaining(before1::add);
         assertEquals(2, before3.size());
         assertEquals(1, before2.size());
         assertEquals(0, before1.size());
@@ -153,7 +173,21 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertTrue(before3.contains(valueAt1));
         assertTrue(before2.contains(valueAt1));
         assertFalse(before1.contains(valueAt1));
-	}
+
+        before3.clear();
+        before2.clear();
+        before1.clear();
+        getTimeCollection().query().beforeTime(3).getIterator().forEachRemaining(before3::add);
+        getTimeCollection().query().beforeTime(2).getIterator().forEachRemaining(before2::add);
+        getTimeCollection().query().beforeTime(1).getIterator().forEachRemaining(before1::add);
+        assertEquals(2, before3.size());
+        assertEquals(1, before2.size());
+        assertEquals(0, before1.size());
+        assertTrue(before3.contains(valueAt2));
+        assertTrue(before3.contains(valueAt1));
+        assertTrue(before2.contains(valueAt1));
+        assertFalse(before1.contains(valueAt1));
+        }
 
 	@Test
 	public void test_query_beforeOrAtTime_timeframe() throws Exception {
@@ -166,6 +200,21 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         List<TestValue> beforeOrAt2 = getTimeCollection().query().beforeOrAtTime(2).getList();
         List<TestValue> beforeOrAt1 = getTimeCollection().query().beforeOrAtTime(1).getList();
         List<TestValue> beforeOrAt0 = getTimeCollection().query().beforeOrAtTime(0).getList();
+        assertEquals(2, beforeOrAt3.size());
+        assertEquals(2, beforeOrAt2.size());
+        assertEquals(1, beforeOrAt1.size());
+        assertEquals(0, beforeOrAt0.size());
+        assertTrue(beforeOrAt3.contains(value2to3));
+        assertTrue(beforeOrAt3.contains(value1to2));
+        assertTrue(beforeOrAt2.contains(value2to3));
+        assertTrue(beforeOrAt2.contains(value1to2));
+        assertTrue(beforeOrAt1.contains(value1to2));
+        assertFalse(beforeOrAt0.contains(value1to2));
+
+        beforeOrAt3.clear(); getTimeCollection().query().beforeOrAtTime(3).getIterator().forEachRemaining(beforeOrAt3::add);
+        beforeOrAt2.clear(); getTimeCollection().query().beforeOrAtTime(2).getIterator().forEachRemaining(beforeOrAt2::add);
+        beforeOrAt1.clear(); getTimeCollection().query().beforeOrAtTime(1).getIterator().forEachRemaining(beforeOrAt1::add);
+        beforeOrAt0.clear(); getTimeCollection().query().beforeOrAtTime(0).getIterator().forEachRemaining(beforeOrAt0::add);
         assertEquals(2, beforeOrAt3.size());
         assertEquals(2, beforeOrAt2.size());
         assertEquals(1, beforeOrAt1.size());
@@ -197,10 +246,23 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertTrue(beforeOrAt2.contains(valueAt1));
         assertFalse(beforeOrAt1.contains(valueAt2));
         assertTrue(beforeOrAt1.contains(valueAt1));
+
+        beforeOrAt3.clear(); getTimeCollection().query().beforeOrAtTime(3).getIterator().forEachRemaining(beforeOrAt3::add);
+        beforeOrAt2.clear(); getTimeCollection().query().beforeOrAtTime(2).getIterator().forEachRemaining(beforeOrAt2::add);
+        beforeOrAt1.clear(); getTimeCollection().query().beforeOrAtTime(1).getIterator().forEachRemaining(beforeOrAt1::add);
+        assertEquals(2, beforeOrAt3.size());
+        assertEquals(2, beforeOrAt2.size());
+        assertEquals(1, beforeOrAt1.size());
+        assertTrue(beforeOrAt3.contains(valueAt2));
+        assertTrue(beforeOrAt3.contains(valueAt1));
+        assertTrue(beforeOrAt2.contains(valueAt2));
+        assertTrue(beforeOrAt2.contains(valueAt1));
+        assertFalse(beforeOrAt1.contains(valueAt2));
+        assertTrue(beforeOrAt1.contains(valueAt1));
 	}
 
 	@Test
-	public void test_query_AfterTime_timeframe() throws Exception {
+	public void test_query_afterTime_timeframe() throws Exception {
         TestValue value1to2 = new TestValue("Joe");
         TestValue value2to3 = new TestValue("Bob");
         insertAtTimeFrame(1, 2, value1to2);
@@ -220,10 +282,25 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertTrue(after1.contains(value1to2));
         assertTrue(after2.contains(value2to3));
         assertFalse(after3.contains(value2to3));
+
+        after3.clear(); getTimeCollection().query().afterTime(3).getIterator().forEachRemaining(after3::add);
+        after2.clear(); getTimeCollection().query().afterTime(2).getIterator().forEachRemaining(after2::add);
+        after1.clear(); getTimeCollection().query().afterTime(1).getIterator().forEachRemaining(after1::add);
+        after0.clear(); getTimeCollection().query().afterTime(0).getIterator().forEachRemaining(after0::add);
+        assertEquals(2, after0.size());
+        assertEquals(2, after1.size());
+        assertEquals(1, after2.size());
+        assertEquals(0, after3.size());
+        assertTrue(after0.contains(value2to3));
+        assertTrue(after0.contains(value1to2));
+        assertTrue(after1.contains(value2to3));
+        assertTrue(after1.contains(value1to2));
+        assertTrue(after2.contains(value2to3));
+        assertFalse(after3.contains(value2to3));
 	}
 
 	@Test
-	public void test_query_AfterTime() throws Exception {
+	public void test_query_afterTime() throws Exception {
         TestValue valueAt1 = new TestValue("Joe");
         TestValue valueAt2 = new TestValue("Bob");
         insertAtTime(1, valueAt1);
@@ -239,10 +316,21 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertTrue(after0.contains(valueAt1));
         assertTrue(after1.contains(valueAt2));
         assertFalse(after2.contains(valueAt2));
+
+        after2.clear(); getTimeCollection().query().afterTime(2).getIterator().forEachRemaining(after2::add);
+        after1.clear(); getTimeCollection().query().afterTime(1).getIterator().forEachRemaining(after1::add);
+        after0.clear(); getTimeCollection().query().afterTime(0).getIterator().forEachRemaining(after0::add);
+        assertEquals(2, after0.size());
+        assertEquals(1, after1.size());
+        assertEquals(0, after2.size());
+        assertTrue(after0.contains(valueAt2));
+        assertTrue(after0.contains(valueAt1));
+        assertTrue(after1.contains(valueAt2));
+        assertFalse(after2.contains(valueAt2));
 	}
 
 	@Test
-	public void test_query_AfterOrAtTime_timeframe() throws Exception {
+	public void test_query_afterOrAtTime_timeframe() throws Exception {
         TestValue value1to2 = new TestValue("Joe");
         TestValue value2to3 = new TestValue("Bob");
         insertAtTimeFrame(1, 2, value1to2);
@@ -266,10 +354,29 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertTrue(afterOrAt2.contains(value1to2));
         assertTrue(afterOrAt3.contains(value2to3));
         assertFalse(afterOrAt4.contains(value2to3));
-	}
+
+        afterOrAt4.clear(); getTimeCollection().query().afterOrAtTime(4).getIterator().forEachRemaining(afterOrAt4::add);
+        afterOrAt3.clear(); getTimeCollection().query().afterOrAtTime(3).getIterator().forEachRemaining(afterOrAt3::add);
+        afterOrAt2.clear(); getTimeCollection().query().afterOrAtTime(2).getIterator().forEachRemaining(afterOrAt2::add);
+        afterOrAt1.clear(); getTimeCollection().query().afterOrAtTime(1).getIterator().forEachRemaining(afterOrAt1::add);
+        afterOrAt0.clear(); getTimeCollection().query().afterOrAtTime(0).getIterator().forEachRemaining(afterOrAt0::add);
+        assertEquals(2, afterOrAt0.size());
+        assertEquals(2, afterOrAt1.size());
+        assertEquals(2, afterOrAt2.size());
+        assertEquals(1, afterOrAt3.size());
+        assertEquals(0, afterOrAt4.size());
+        assertTrue(afterOrAt0.contains(value2to3));
+        assertTrue(afterOrAt0.contains(value1to2));
+        assertTrue(afterOrAt1.contains(value2to3));
+        assertTrue(afterOrAt1.contains(value1to2));
+        assertTrue(afterOrAt2.contains(value2to3));
+        assertTrue(afterOrAt2.contains(value1to2));
+        assertTrue(afterOrAt3.contains(value2to3));
+        assertFalse(afterOrAt4.contains(value2to3));
+    }
 
 	@Test
-	public void test_query_AfterOrAtTime() throws Exception {
+	public void test_query_afterOrAtTime() throws Exception {
         TestValue valueAt1 = new TestValue("Joe");
         TestValue valueAt2 = new TestValue("Bob");
         insertAtTime(1, valueAt1);
@@ -278,6 +385,19 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         List<TestValue> afterOrAt2 = getTimeCollection().query().afterOrAtTime(2).getList();
         List<TestValue> afterOrAt1 = getTimeCollection().query().afterOrAtTime(1).getList();
         List<TestValue> afterOrAt0 = getTimeCollection().query().afterOrAtTime(0).getList();
+        assertEquals(2, afterOrAt0.size());
+        assertEquals(2, afterOrAt1.size());
+        assertEquals(1, afterOrAt2.size());
+        assertTrue(afterOrAt0.contains(valueAt2));
+        assertTrue(afterOrAt0.contains(valueAt1));
+        assertTrue(afterOrAt1.contains(valueAt2));
+        assertTrue(afterOrAt1.contains(valueAt1));
+        assertTrue(afterOrAt2.contains(valueAt2));
+        assertFalse(afterOrAt2.contains(valueAt1));
+
+        afterOrAt2.clear(); getTimeCollection().query().afterOrAtTime(2).getIterator().forEachRemaining(afterOrAt2::add);
+        afterOrAt1.clear(); getTimeCollection().query().afterOrAtTime(1).getIterator().forEachRemaining(afterOrAt1::add);
+        afterOrAt0.clear(); getTimeCollection().query().afterOrAtTime(0).getIterator().forEachRemaining(afterOrAt0::add);
         assertEquals(2, afterOrAt0.size());
         assertEquals(2, afterOrAt1.size());
         assertEquals(1, afterOrAt2.size());
@@ -374,6 +494,13 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertEquals(2, list.size());
         assertTrue(list.contains(valueJoe));
         assertTrue(list.contains(valueBob));
+
+        iter = getTimeCollection().query().where((v) -> v.getName().equals("Bob")).getIterator();
+        List<TestValue> onlyBob = new ArrayList<>();
+        iter.forEachRemaining(onlyBob::add);
+        assertEquals(1, onlyBob.size());
+        assertFalse(onlyBob.contains(valueJoe));
+        assertTrue(onlyBob.contains(valueBob));
 	}
 	
 	@Test

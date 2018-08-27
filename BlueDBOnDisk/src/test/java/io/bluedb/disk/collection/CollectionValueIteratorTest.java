@@ -2,6 +2,7 @@ package io.bluedb.disk.collection;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.keys.BlueKey;
@@ -114,7 +115,7 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
         getTimeCollection().insert(key3at3, value3);
 
 		// validate that the iterator is working normally
-		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), new Range(0, 3), false)) {
+		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), new Range(0, 3), false, new ArrayList<>())) {
 			iteratorContents = toList(iterator);
 			iterator.close();
 			assertEquals(3, iteratorContents.size());
@@ -125,7 +126,7 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 		String fileName = Range.forValueAndRangeSize(1, 1).toUnderscoreDelimitedString();
 		Path firstFilePath = Paths.get(segmentPath.toString(), fileName);
 
-		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), new Range(0, 3), 20, false)) {
+		try (CollectionValueIterator<TestValue> iterator =  new CollectionValueIterator<>(getTimeCollection(), new Range(0, 3), 20, false, new ArrayList<>())) {
 			TestValue first = iterator.next(); // make sure that the underlying resources are acquired
 			assertEquals(value1, first);
 

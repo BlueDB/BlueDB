@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import io.bluedb.disk.segment.SegmentEntityIterator;
+import io.bluedb.api.Condition;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.serialization.BlueEntity;
@@ -17,12 +19,14 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 	private long endGroupingValueOfCompletedSegments;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
+	private final List<Condition<T>> conditions;	
 
-	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, Range range, boolean byStartTime) {
+	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
 		this.range = range;
 		this.endGroupingValueOfCompletedSegments = byStartTime ? (range.getStart()) - 1 : Long.MIN_VALUE;
 		segments = collection.getSegmentManager().getExistingSegments(range);
 		Collections.sort(segments);
+		conditions = objectConditions;
 	}
 
 	@Override
@@ -52,9 +56,13 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 
 	private BlueEntity<T> nextFromSegment() {
 		while (!segments.isEmpty() || segmentIterator != null) {
-			if (segmentIterator != null && segmentIterator.hasNext()) {
-				BlueEntity<T> result = segmentIterator.next();
-				return result;
+			if (segmentIterator != null) {
+				while(segmentIterator.hasNext()) {
+					BlueEntity<T> result = segmentIterator.next();
+					if (Blutils.meetsConditions(conditions, result.getValue())) {
+						return result;
+					}
+				}
 			}
 			if (segmentIterator != null) {
 				segmentIterator.close();

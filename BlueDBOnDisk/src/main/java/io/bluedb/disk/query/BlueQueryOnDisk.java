@@ -77,7 +77,7 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
 		Range range = new Range(min, max);
-		return new CollectionValueIterator<T>(collection, range, byStartTime);
+		return new CollectionValueIterator<T>(collection, range, byStartTime, objectConditions);
 	}
 
 	@Override
