@@ -11,13 +11,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import io.bluedb.api.BlueCollection;
+import io.bluedb.api.BlueIndex;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
+import io.bluedb.api.KeyExtractor;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.collection.index.IndexManager;
 import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateTask;
@@ -48,6 +51,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
+	private final IndexManager<T> indexManager;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalRegisteredClasses) throws BlueDbException {
 		this.valueType = valueType;
@@ -61,6 +65,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
 		segmentManager = new SegmentManager<T>(collectionPath, fileManager, rollupScheduler, this.keyType);
+		indexManager = new IndexManager<>(this, collectionPath);
 		rollupScheduler.start();
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
@@ -202,5 +207,19 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		} else {
 			return providedKeyType;
 		}
+	}
+
+	@Override
+	public <K extends BlueKey> BlueIndex<K, T> createIndex(String name, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+		return indexManager.createIndex(name, keyType, keyExtractor);
+	}
+
+	@Override
+	public <K extends BlueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
+		return indexManager.getIndex(indexName, keyType);
+	}
+
+	public IndexManager<T> getIndexManager() {
+		return indexManager;
 	}
 }

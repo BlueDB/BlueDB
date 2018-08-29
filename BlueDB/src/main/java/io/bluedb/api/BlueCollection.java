@@ -6,9 +6,9 @@ import io.bluedb.api.keys.BlueKey;
 
 public interface BlueCollection<T extends Serializable> {
 
-	public <K extends BlueKey> BlueIndex<T> createIndex(String name, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException;
+	public <K extends BlueKey> BlueIndex<K, T> createIndex(String name, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException;
 
-	public <K extends BlueKey> BlueIndex<T> getIndex(String name, Class<K> keyType) throws BlueDbException;
+	public <K extends BlueKey> BlueIndex<K, T> getIndex(String name, Class<K> keyType) throws BlueDbException;
 
 	public boolean contains(BlueKey key) throws BlueDbException;
 
