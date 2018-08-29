@@ -30,8 +30,8 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 		timeCreated = System.currentTimeMillis();
 	}
 	
-	public static <X extends Serializable> PendingChange<X> createDelete(BlueKey key){
-		return new PendingChange<X>(key, null, null);
+	public static <T extends Serializable> PendingChange<T> createDelete(BlueKey key, T value){
+		return new PendingChange<T>(key, value, null);
 	}
 
 	public static <T extends Serializable> PendingChange<T> createInsert(BlueKey key, T value, BlueSerializer serializer){
@@ -54,12 +54,12 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 
 	@Override
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
+		IndexManager<T> indexManager = collection.getIndexManager();
+		indexManager.removeFromAllIndexes(key, oldValue);
 		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
 		for (Segment<T> segment: segments) {
 			applyChange(segment);
 		}
-		IndexManager<T> indexManager = collection.getIndexManager();
-		indexManager.removeFromAllIndexes(key, oldValue);
 		indexManager.addToAllIndexes(key, newValue);
 	}
 

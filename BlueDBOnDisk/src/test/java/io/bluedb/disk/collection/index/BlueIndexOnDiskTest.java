@@ -1,14 +1,11 @@
 package io.bluedb.disk.collection.index;
 
-import static org.junit.Assert.*;
-import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import io.bluedb.api.BlueIndex;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
-import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
@@ -18,19 +15,48 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getKeys() throws Exception {
-		// TODO test ranges?
 		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
-		TestValue value = new TestValue("Joe", 3);
-		TimeKey timeKey = createTimeKey(1, value);
-		IntegerKey integerKey = new IntegerKey(3);
-		Path indexPath = createTempFolder().toPath();
 
-		collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
-		BlueIndexOnDisk<IntegerKey, TestValue> index = (BlueIndexOnDisk<IntegerKey, TestValue>) collection.getIndex("test_index", IntegerKey.class);
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
 
-		assertFalse(index.getKeys(integerKey).contains(timeKey));
-		collection.insert(timeKey,  value);
-		assertEquals(1, collection.query().count());
-		assertTrue(index.getKeys(integerKey).contains(timeKey));
+		IntegerKey integerKey1 = new IntegerKey(1);
+		IntegerKey integerKey2 = new IntegerKey(2);
+		IntegerKey integerKey3 = new IntegerKey(3);
+
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+
+		List<BlueKey> emptyList = Arrays.asList();
+		List<BlueKey> bobAndJoe = Arrays.asList(timeKeyBob3, timeKeyJoe3);
+		List<BlueKey> justBob = Arrays.asList(timeKeyBob3);
+		List<BlueKey> justFred = Arrays.asList(timeKeyFred1);
+
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey3));
+
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+
+		assertEquals(justFred, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
+		assertEquals(bobAndJoe, indexOnDisk.getKeys(integerKey3));
+
+		collection.delete(timeKeyFred1);
+		collection.delete(timeKeyJoe3);
+
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
+		assertEquals(justBob, indexOnDisk.getKeys(integerKey3));
 	}
+
+//	get
+//	scheduleRollup
+//	shutdown
 }

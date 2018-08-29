@@ -36,7 +36,8 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 		List<PendingChange<T>> changes = new ArrayList<>();
 		for (BlueEntity<T> entity: entities) {
 			BlueKey key = entity.getKey();
-			PendingChange<T> delete = PendingChange.createDelete(key);
+			T value = entity.getValue();
+			PendingChange<T> delete = PendingChange.createDelete(key, value);
 			changes.add(delete);
 		}
 		return changes;

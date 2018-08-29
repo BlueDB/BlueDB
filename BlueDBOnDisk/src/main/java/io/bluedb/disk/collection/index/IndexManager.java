@@ -43,14 +43,12 @@ public class IndexManager<T extends Serializable> {
 		for (BlueIndexOnDisk<BlueKey, T> index: indexesByName.values()) {
 			index.remove(key, value);
 		}
-		// TODO remember to handle nulls
 	}
 
 	public void addToAllIndexes(BlueKey key, T value) throws BlueDbException {
 		for (BlueIndexOnDisk<BlueKey, T> index: indexesByName.values()) {
 			index.add(key,  value);
 		}
-		// TODO remember to handle nulls
 	}
 
 	protected Map<String, BlueIndexOnDisk<BlueKey, T>> getIndexesFromDisk(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {

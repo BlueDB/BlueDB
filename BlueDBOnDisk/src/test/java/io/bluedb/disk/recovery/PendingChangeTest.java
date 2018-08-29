@@ -14,7 +14,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_createDelete() {
 		BlueKey key = createKey(1, 2);
-		PendingChange<TestValue> change = PendingChange.createDelete(key);
+		PendingChange<TestValue> change = PendingChange.createDelete(key, null);
 		assertNull(change.getOldValue());
 		assertNull(change.getNewValue());
 		assertTrue(change.isDelete());
@@ -73,7 +73,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		insertToTimeCollection(key, value);
-		PendingChange<TestValue> change = PendingChange.createDelete(key);
+		PendingChange<TestValue> change = PendingChange.createDelete(key, value);
 
 		assertEquals(value, getTimeCollection().get(key));
 		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
