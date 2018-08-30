@@ -45,6 +45,10 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		return new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 	}
 
+	public Class<K> getType() {
+		return keyExtractor.getType();
+	}
+
 	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) {
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
@@ -94,8 +98,9 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 
 	@Override
 	public void scheduleRollup(RollupTarget target) {
-		// TODO Auto-generated method stub
-		
+		// TODO
+//		Runnable rollupRunnable = new RollupTask<T>(this, rollupTarget);
+//		executor.submit(rollupRunnable);
 	}
 
 	public void shutdown() {

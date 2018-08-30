@@ -175,6 +175,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public void shutdown() {
+		indexManager.shutdown();
 		recoveryManager.getChangeHistoryCleaner().stop();
 		rollupScheduler.forceScheduleRollups();
 		rollupScheduler.stop();

@@ -34,9 +34,13 @@ public class IndexManager<T extends Serializable> {
 	}
 
 	public <K extends BlueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
-		BlueIndex<BlueKey, T> index = indexesByName.get(indexName);
-		// TODO make sure type is correct
-		return (BlueIndex<K, T>) index;
+		BlueIndexOnDisk<BlueKey, T> index = indexesByName.get(indexName);
+		if (index.getType() != keyType) {
+			throw new BlueDbException("Invalid type (" + keyType.getName() + ") for index " + indexName + " of type " + index.getType());
+		}
+		@SuppressWarnings("unchecked")
+		BlueIndex<K, T> typedIndex = (BlueIndex<K, T>) index;
+		return typedIndex;
 	}
 
 	public void removeFromAllIndexes(BlueKey key, T value) throws BlueDbException {
@@ -51,7 +55,7 @@ public class IndexManager<T extends Serializable> {
 		}
 	}
 
-	protected Map<String, BlueIndexOnDisk<BlueKey, T>> getIndexesFromDisk(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+	private Map<String, BlueIndexOnDisk<BlueKey, T>> getIndexesFromDisk(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		Map<String, BlueIndexOnDisk<BlueKey, T>> map = new HashMap<>();
 		Path indexesPath = Paths.get(collectionPath.toString(), INDEXES_SUBFOLDER);
 		List<File> subfolders = FileManager.getFolderContents(indexesPath.toFile(), (f) -> f.isDirectory());
@@ -61,5 +65,11 @@ public class IndexManager<T extends Serializable> {
 			map.put(indexName, index);
 		}
 		return map;
+	}
+
+	public void shutdown() {
+		for (BlueIndexOnDisk<?,?> index: indexesByName.values()) {
+			index.shutdown();
+		}
 	}
 }
