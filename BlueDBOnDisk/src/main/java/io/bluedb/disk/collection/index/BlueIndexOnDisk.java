@@ -29,6 +29,7 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 	private final FileManager fileManager;
 	private final SegmentManager<BlueKey> segmentManager;
 	private final RollupScheduler rollupScheduler;
+	private final String indexName;
 
 	public static <K extends BlueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
@@ -53,6 +54,7 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
 		this.fileManager = collection.getFileManager();
+		this.indexName = indexPath.toFile().getName();
 		rollupScheduler = new RollupScheduler(this);
 		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, rollupScheduler, keyExtractor.getType());
 	}
@@ -98,14 +100,31 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 
 	@Override
 	public void scheduleRollup(RollupTarget target) {
-		// TODO
-//		Runnable rollupRunnable = new RollupTask<T>(this, rollupTarget);
-//		executor.submit(rollupRunnable);
+		Runnable rollupRunnable = new IndexRollupTask<T>(this, target);
+		collection.submitTask(rollupRunnable);
+	}
+
+	public String getName() {
+		return indexName;
 	}
 
 	public void shutdown() {
 		rollupScheduler.forceScheduleRollups();
 		rollupScheduler.stop();
+	}
+
+	public BlueCollectionOnDisk<T> getCollection() {
+		return collection;
+	}
+
+	public void rollup(Range range) throws BlueDbException {
+		Segment<?> segment = segmentManager.getSegment(range.getStart());
+		segment.rollup(range);
+	}
+
+
+	public SegmentManager<BlueKey> getSegmentManager() {
+		return segmentManager;
 	}
 
 	private IndexCompositeKey<K> toIndexKey(BlueKey key, T newItem) {

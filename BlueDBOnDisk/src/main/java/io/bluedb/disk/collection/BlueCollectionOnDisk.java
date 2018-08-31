@@ -20,6 +20,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.collection.index.BlueIndexOnDisk;
 import io.bluedb.disk.collection.index.IndexManager;
 import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
@@ -130,6 +131,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return results;
 	}
 
+	public void submitTask(Runnable task) {
+		executor.submit(task);
+	}
+
 	public void executeTask(Runnable task) throws BlueDbException{
 		Future<?> future = executor.submit(task);
 		try {
@@ -218,6 +223,11 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	@Override
 	public <K extends BlueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
 		return indexManager.getIndex(indexName, keyType);
+	}
+
+	public void rollupIndex(String indexName, Range range) throws BlueDbException {
+		BlueIndexOnDisk<?, T> index = indexManager.getUntypedIndex(indexName);
+		index.rollup(range);
 	}
 
 	public IndexManager<T> getIndexManager() {

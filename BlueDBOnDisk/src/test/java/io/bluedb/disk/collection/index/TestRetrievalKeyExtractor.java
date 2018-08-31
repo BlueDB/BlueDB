@@ -6,6 +6,8 @@ import io.bluedb.disk.TestValue;
 
 public class TestRetrievalKeyExtractor implements KeyExtractor<IntegerKey, TestValue> {
 
+	private static final long serialVersionUID = 1L;
+
 	@Override
 	public IntegerKey extractKey(TestValue object) {
 		return new IntegerKey(object.getCupcakes());

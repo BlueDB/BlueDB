@@ -307,7 +307,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
 		RollupTarget rollupTarget = new RollupTarget(0, entireFirstSegmentTimeRange);
 		getTimeCollection().scheduleRollup(rollupTarget);
-		waitForExecutorToFinish();
+		CollectionTestTools.waitForExecutorToFinish(getTimeCollection());
 
 		values = getTimeCollection().query().getList();
 		assertEquals(2, values.size());
@@ -323,17 +323,6 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			getTimeCollection().query().update((v) -> v.doSomethingNaughty());
 			fail();
 		} catch (BlueDbException e) {
-		}
-	}
-
-	private void waitForExecutorToFinish() {
-		Runnable doNothing = new Runnable() {@Override public void run() {}};
-		Future<?> future = getTimeCollection().executor.submit(doNothing);
-		try {
-			future.get();
-		} catch (ExecutionException | InterruptedException e) {
-			e.printStackTrace();
-			fail();
 		}
 	}
 

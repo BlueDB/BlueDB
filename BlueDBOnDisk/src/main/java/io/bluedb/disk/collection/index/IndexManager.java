@@ -33,6 +33,10 @@ public class IndexManager<T extends Serializable> {
 		return index;
 	}
 
+	public BlueIndexOnDisk<?, T> getUntypedIndex(String indexName) throws BlueDbException {
+		return indexesByName.get(indexName);
+	}
+	
 	public <K extends BlueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
 		BlueIndexOnDisk<BlueKey, T> index = indexesByName.get(indexName);
 		if (index.getType() != keyType) {
