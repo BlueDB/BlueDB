@@ -74,8 +74,8 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
-		SegmentManager<T> segmentManager = collection.getSegmentManager();
-		return new CollectionValueIterator<T>(segmentManager, getRange(), byStartTime);
+		Range range = new Range(min, max);
+		return new CollectionValueIterator<T>(segmentManager, range, byStartTime, objectConditions);
 	}
 
 	@Override
