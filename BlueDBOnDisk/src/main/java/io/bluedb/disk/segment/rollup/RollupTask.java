@@ -7,7 +7,6 @@ import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.Range;
 
 public class RollupTask<T extends Serializable> implements Runnable {
 

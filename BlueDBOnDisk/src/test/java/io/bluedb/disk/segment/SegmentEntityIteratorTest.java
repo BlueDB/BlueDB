@@ -261,6 +261,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
 		String value = "longs";
 		int n = 100;
