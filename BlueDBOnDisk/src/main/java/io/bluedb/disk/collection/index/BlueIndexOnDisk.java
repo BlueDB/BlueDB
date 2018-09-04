@@ -89,7 +89,7 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 	public List<BlueKey> getKeys(K key) {
 		Range range = new Range(key.getGroupingNumber(), key.getGroupingNumber());
 		List<BlueKey> keys = new ArrayList<>();
-		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<>(segmentManager, range, true)) {
+		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<>(segmentManager, range, true, new ArrayList<>())) {
 			while (entityIterator.hasNext()) {
 				IndexCompositeKey<K> indexKey = (IndexCompositeKey<K>) entityIterator.next().getKey();
 				keys.add(indexKey.getValueKey());
