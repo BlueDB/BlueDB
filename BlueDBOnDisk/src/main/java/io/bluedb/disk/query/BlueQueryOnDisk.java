@@ -14,7 +14,6 @@ import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.segment.Range;
-import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
@@ -75,7 +74,7 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
 		Range range = new Range(min, max);
-		return new CollectionValueIterator<T>(segmentManager, range, byStartTime, objectConditions);
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions);
 	}
 
 	@Override

@@ -66,7 +66,7 @@ public class SegmentManager<T extends Serializable> {
 
 	protected Segment<T> toSegment(Path path) {
 		Range range = toRange(path);
-		return new Segment<T>(path, range, this, fileManager, pathManager.getRollupLevels());
+		return new Segment<T>(path, range, rollupScheduler, fileManager, pathManager.getRollupLevels());
 	}
 
 	public Range toRange(Path path) {
@@ -78,10 +78,6 @@ public class SegmentManager<T extends Serializable> {
 
 	public long getSegmentSize() {
 		return pathManager.getSegmentSize();
-	}
-
-	public RollupScheduler getRollupScheduler() {
-		return rollupScheduler;
 	}
 
 	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {

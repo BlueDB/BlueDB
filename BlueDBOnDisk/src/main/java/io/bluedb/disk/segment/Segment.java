@@ -18,6 +18,7 @@ import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
 import io.bluedb.disk.segment.writer.DeleteWriter;
 import io.bluedb.disk.segment.writer.InsertWriter;
 import io.bluedb.disk.segment.writer.StreamingWriter;
@@ -26,25 +27,25 @@ import io.bluedb.disk.serialization.BlueEntity;
 
 public class Segment <T extends Serializable> implements Comparable<Segment<T>> {
 
-	private final SegmentManager<T> segmentManager;
+	private final RollupScheduler rollupScheduler;
 	private final FileManager fileManager;
 	private final Path segmentPath;
 	private final Range segmentRange;
 	private final List<Long> rollupLevels;
 
-	public Segment(Path segmentPath, Range segmentRange, SegmentManager<T> segmentManager, FileManager fileManager, final List<Long> rollupLevels) {
+	public Segment(Path segmentPath, Range segmentRange, RollupScheduler rollupScheduler, FileManager fileManager, final List<Long> rollupLevels) {
 		this.segmentPath = segmentPath;
 		this.segmentRange = segmentRange;
 		this.fileManager = fileManager;
 		this.rollupLevels = rollupLevels;
-		this.segmentManager = segmentManager;
+		this.rollupScheduler = rollupScheduler;
 	}
 
 	protected static <T extends Serializable> Segment<T> getTestSegment () {
 		return new Segment<T>();
 	}
 
-	protected Segment() {segmentPath = null;segmentRange = null;fileManager = null;rollupLevels = null;segmentManager = null;}
+	protected Segment() {segmentPath = null;segmentRange = null;fileManager = null;rollupLevels = null;rollupScheduler = null;}
 
 	@Override
 	public String toString() {
@@ -83,9 +84,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(targetPath)) {
 			FileManager.moveFile(tmpPath, targetFileLock);
 		}
-		// TODO roll up to a smaller time range?
-		Range targetRange = segmentManager.getSegmentRange(groupingNumber);
-		segmentManager.getRollupScheduler().reportWrite(segmentRange.getStart(), targetRange);
+		Range targetRange = getRollupRange(groupingNumber);
+		rollupScheduler.reportWrite(segmentRange.getStart(), targetRange);
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
@@ -223,8 +223,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
-		Range rollupRange = segmentManager.getSegmentRange(groupingNumber);
-		segmentManager.getRollupScheduler().reportRead(segmentRange.getStart(), rollupRange);
+		Range rollupRange = getRollupRange(groupingNumber);
+		rollupScheduler.reportRead(segmentRange.getStart(), rollupRange);
 		return fileManager.getBlueInputStream(lock);
 	}
 
@@ -242,6 +242,12 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	public Path getPath() {
 		return segmentPath;
+	}
+
+	protected Range getRollupRange(long groupingNumber) {
+		// TODO roll up to a smaller time range?+
+		long rollupSize = rollupLevels.get(rollupLevels.size() - 1);
+		return Range.forValueAndRangeSize(groupingNumber, rollupSize);
 	}
 
 	protected static String getRangeFileName(long groupingValue, long multiple) {
