@@ -19,7 +19,6 @@ import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbOnDisk;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.index.BlueIndexOnDisk;
 import io.bluedb.disk.collection.index.IndexManager;
 import io.bluedb.disk.collection.task.DeleteTask;
@@ -65,7 +64,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		this.keyType = determineKeyType(metaData, requestedKeyType);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
-		segmentManager = new SegmentManager<T>(collectionPath, fileManager, rollupScheduler, this.keyType);
+		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, this.keyType);
 		indexManager = new IndexManager<>(this, collectionPath);
 		rollupScheduler.start();
 		recoveryManager.recover();  // everything else has to be in place before running this
@@ -122,7 +121,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, conditions)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
-				T value = entity.getValue();
 				results.add(entity);
 			}
 		}
@@ -230,5 +228,17 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public IndexManager<T> getIndexManager() {
 		return indexManager;
+	}
+
+	@Override
+	public void reportRead(long segmentGroupingNumber, Range range) {
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		rollupScheduler.reportRead(target);
+	}
+
+	@Override
+	public void reportWrite(long segmentGroupingNumber, Range range) {
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		rollupScheduler.reportWrite(target);
 	}
 }

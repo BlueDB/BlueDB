@@ -42,6 +42,7 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 	public static <K extends BlueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(BlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
+		@SuppressWarnings("unchecked")
 		KeyExtractor<K, T> keyExtractor = (KeyExtractor<K, T>) fileManager.loadObject(keyExtractorPath);
 		return new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 	}
@@ -56,7 +57,7 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		this.fileManager = collection.getFileManager();
 		this.indexName = indexPath.toFile().getName();
 		rollupScheduler = new RollupScheduler(this);
-		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, rollupScheduler, keyExtractor.getType());
+		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, keyExtractor.getType());
 	}
 
 	@Override
@@ -91,6 +92,7 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		List<BlueKey> keys = new ArrayList<>();
 		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<>(segmentManager, range, true, new ArrayList<>())) {
 			while (entityIterator.hasNext()) {
+				@SuppressWarnings("unchecked")
 				IndexCompositeKey<K> indexKey = (IndexCompositeKey<K>) entityIterator.next().getKey();
 				keys.add(indexKey.getValueKey());
 			}
@@ -129,5 +131,17 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 
 	private IndexCompositeKey<K> toIndexKey(BlueKey key, T newItem) {
 		return new IndexCompositeKey<K>(keyExtractor.extractKey(newItem), key);
+	}
+
+	@Override
+	public void reportRead(long segmentGroupingNumber, Range range) {
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		rollupScheduler.reportRead(target);
+	}
+
+	@Override
+	public void reportWrite(long segmentGroupingNumber, Range range) {
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		rollupScheduler.reportWrite(target);
 	}
 }

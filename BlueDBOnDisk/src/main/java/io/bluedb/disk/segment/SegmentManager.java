@@ -13,18 +13,18 @@ import io.bluedb.disk.segment.path.LongSegmentPathManager;
 import io.bluedb.disk.segment.path.IntegerSegmentPathManager;
 import io.bluedb.disk.segment.path.SegmentPathManager;
 import io.bluedb.disk.segment.path.TimeSegmentPathManager;
-import io.bluedb.disk.segment.rollup.RollupScheduler;
+import io.bluedb.disk.segment.rollup.Rollupable;
 
 public class SegmentManager<T extends Serializable> {
 
 
 	private final SegmentPathManager pathManager;
 	private final FileManager fileManager;
-	private final RollupScheduler rollupScheduler;
+	private final Rollupable rollupable;
 
-	public SegmentManager(Path collectionPath, FileManager fileManager, RollupScheduler rollupScheduler, Class<? extends BlueKey> keyType) {
+	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, Class<? extends BlueKey> keyType) {
 		this.fileManager = fileManager;
-		this.rollupScheduler = rollupScheduler;
+		this.rollupable = rollupable;
 		this.pathManager = createSegmentPathManager(collectionPath, keyType);
 	}
 
@@ -66,7 +66,7 @@ public class SegmentManager<T extends Serializable> {
 
 	protected Segment<T> toSegment(Path path) {
 		Range range = toRange(path);
-		return new Segment<T>(path, range, rollupScheduler, fileManager, pathManager.getRollupLevels());
+		return new Segment<T>(path, range, rollupable, fileManager, pathManager.getRollupLevels());
 	}
 
 	public Range toRange(Path path) {

@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.segment.Range;
 
 public class RollupScheduler implements Runnable {
 
@@ -44,14 +43,14 @@ public class RollupScheduler implements Runnable {
 		isStopped = true;
 	}
 
-	public void reportRead(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		reportRead(target, System.currentTimeMillis());
+	public void reportRead(RollupTarget rollupTarget) {
+		long timeMillis = System.currentTimeMillis();
+		reportRead(rollupTarget, timeMillis);
 	}
 
-	public void reportWrite(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		reportWrite(target, System.currentTimeMillis());
+	public void reportWrite(RollupTarget rollupTarget) {
+		long timeMillis = System.currentTimeMillis();
+		reportWrite(rollupTarget, timeMillis);
 	}
 
 	public void reportRead(RollupTarget rollupTarget, long timeMillis) {
