@@ -148,44 +148,4 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		segmentDirectoryContents = segmentFolder.listFiles();
 		assertEquals(1, segmentDirectoryContents.length);
 	}
-
-
-	@Test
-	public void test_scheduleRollup() throws Exception {
-		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
-		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
-		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, keyExtractor);
-		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
-
-		BlueKey key1At1 = createKey(1, 1);
-		BlueKey key3At3 = createKey(3, 3);
-		TestValue value1 = createValue("Anna", 1);
-		TestValue value3 = createValue("Chuck", 3);
-		List<TestValue> values;
-
-		values = collection.query().getList();
-		assertEquals(0, values.size());
-
-		collection.insert(key1At1, value1);
-		collection.insert(key3At3, value3);
-		values = collection.query().getList();
-		assertEquals(2, values.size());
-
-		BlueKey retrievalKey1 = keyExtractor.extractKey(value1);
-		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
-		File segmentFolder = indexSegment.getPath().toFile();
-		File[] segmentDirectoryContents = segmentFolder.listFiles();
-		assertEquals(2, segmentDirectoryContents.length);
-
-		
-		Range entireFirstSegmentTimeRange = indexSegment.getRange();
-		RollupTarget rollupTarget = new RollupTarget(0, entireFirstSegmentTimeRange);
-		indexOnDisk.scheduleRollup(rollupTarget);
-		CollectionTestTools.waitForExecutorToFinish(collection);
-
-		values = collection.query().getList();
-		assertEquals(2, values.size());
-		segmentDirectoryContents = segmentFolder.listFiles();
-		assertEquals(1, segmentDirectoryContents.length);
-	}
 }

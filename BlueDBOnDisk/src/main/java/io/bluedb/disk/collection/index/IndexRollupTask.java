@@ -7,23 +7,22 @@ import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingIndexRollup;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.rollup.RollupTarget;
+import io.bluedb.disk.segment.rollup.IndexRollupTarget;
 
 public class IndexRollupTask<T extends Serializable> implements Runnable {
 
-	private final BlueIndexOnDisk<?, T> index;
-	private final RollupTarget rollupTarget;
+	private final BlueCollectionOnDisk<T> collection;
+	private final IndexRollupTarget rollupTarget;
 	
-	public IndexRollupTask(BlueIndexOnDisk<?, T> index, RollupTarget rollupTarget) {
-		this.index = index;
+	public IndexRollupTask(BlueCollectionOnDisk<T> collection, IndexRollupTarget rollupTarget) {
+		this.collection = collection;
 		this.rollupTarget = rollupTarget;
 	}
 
 	@Override
 	public void run() {
-		BlueCollectionOnDisk<T> collection = index.getCollection();
-		RecoveryManager<T> recoveryManager = index.getCollection().getRecoveryManager();
-		String indexName = index.getName();
+		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+		String indexName = rollupTarget.getIndexName();
 		Recoverable<T> change = new PendingIndexRollup<>(indexName, rollupTarget);
 		try {
 			recoveryManager.saveChange(change);

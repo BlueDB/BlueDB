@@ -16,7 +16,7 @@ import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
-import io.bluedb.disk.segment.rollup.RollupScheduler;
+import io.bluedb.disk.segment.rollup.IndexRollupTarget;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.rollup.Rollupable;
 
@@ -28,7 +28,6 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 	private final KeyExtractor<K, T> keyExtractor;
 	private final FileManager fileManager;
 	private final SegmentManager<BlueKey> segmentManager;
-	private final RollupScheduler rollupScheduler;
 	private final String indexName;
 
 	public static <K extends BlueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
@@ -56,7 +55,6 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		this.keyExtractor = keyExtractor;
 		this.fileManager = collection.getFileManager();
 		this.indexName = indexPath.toFile().getName();
-		rollupScheduler = new RollupScheduler(this);
 		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, keyExtractor.getType());
 	}
 
@@ -100,25 +98,6 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		return keys;
 	}
 
-	@Override
-	public void scheduleRollup(RollupTarget target) {
-		Runnable rollupRunnable = new IndexRollupTask<T>(this, target);
-		collection.submitTask(rollupRunnable);
-	}
-
-	public String getName() {
-		return indexName;
-	}
-
-	public void shutdown() {
-		rollupScheduler.forceScheduleRollups();
-		rollupScheduler.stop();
-	}
-
-	public BlueCollectionOnDisk<T> getCollection() {
-		return collection;
-	}
-
 	public void rollup(Range range) throws BlueDbException {
 		Segment<?> segment = segmentManager.getSegment(range.getStart());
 		segment.rollup(range);
@@ -135,13 +114,13 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 
 	@Override
 	public void reportRead(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		rollupScheduler.reportRead(target);
+		IndexRollupTarget target = new IndexRollupTarget(indexName, segmentGroupingNumber, range);
+		collection.getRollupScheduler().reportRead(target);
 	}
 
 	@Override
 	public void reportWrite(long segmentGroupingNumber, Range range) {
 		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		rollupScheduler.reportWrite(target);
+		collection.getRollupScheduler().reportWrite(target);
 	}
 }

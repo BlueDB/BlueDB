@@ -31,7 +31,6 @@ import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.rollup.RollupScheduler;
 import io.bluedb.disk.segment.rollup.RollupTarget;
-import io.bluedb.disk.segment.rollup.RollupTask;
 import io.bluedb.disk.segment.rollup.Rollupable;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
@@ -146,11 +145,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		segment.rollup(timeRange);
 	}
 
-	public void scheduleRollup(RollupTarget rollupTarget) {
-		Runnable rollupRunnable = new RollupTask<T>(this, rollupTarget);
-		executor.submit(rollupRunnable);
-	}
-
 	public SegmentManager<T> getSegmentManager() {
 		return segmentManager;
 	}
@@ -176,7 +170,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public void shutdown() {
-		indexManager.shutdown();
 		recoveryManager.getChangeHistoryCleaner().stop();
 		rollupScheduler.forceScheduleRollups();
 		rollupScheduler.stop();
@@ -240,5 +233,9 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	public void reportWrite(long segmentGroupingNumber, Range range) {
 		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
 		rollupScheduler.reportWrite(target);
+	}
+
+	public RollupScheduler getRollupScheduler() {
+		return rollupScheduler;
 	}
 }

@@ -70,10 +70,4 @@ public class IndexManager<T extends Serializable> {
 		}
 		return map;
 	}
-
-	public void shutdown() {
-		for (BlueIndexOnDisk<?,?> index: indexesByName.values()) {
-			index.shutdown();
-		}
-	}
 }

@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.collection.index.IndexRollupTask;
 
 public class RollupScheduler implements Runnable {
 
@@ -14,15 +16,15 @@ public class RollupScheduler implements Runnable {
 	protected static final long WAIT_AFTER_READ_BEFORE_ROLLUP = 60_000;
 
 	private long waitBetweenReviews = WAIT_BETWEEN_REVIEWS_DEFAULT;
-	private final Rollupable rollupable;
+	private final BlueCollectionOnDisk<?> collection;
 	private final Map<RollupTarget, Long> rollupTimes;
 
 	private Thread thread;
 	private boolean isStopped;
 
-	public RollupScheduler(Rollupable rollupable) {
+	public RollupScheduler(BlueCollectionOnDisk<?> collection) {
 		rollupTimes = new ConcurrentHashMap<>();
-		this.rollupable = rollupable;
+		this.collection = collection;
 	}
 
 	public void start() {
@@ -105,8 +107,14 @@ public class RollupScheduler implements Runnable {
 		return results;
 	}
 
-	private void scheduleRollup(RollupTarget target) {
-		rollupable.scheduleRollup(target);
-		rollupTimes.remove(target);
+	protected void scheduleRollup(RollupTarget target) {
+		Runnable rollupRunnable;
+		if (target instanceof IndexRollupTarget) {
+			IndexRollupTarget indexTarget = (IndexRollupTarget) target;
+			rollupRunnable = new IndexRollupTask<>(collection, indexTarget);
+		} else {
+			rollupRunnable = new RollupTask<>(collection, target);
+		}
+		collection.submitTask(rollupRunnable);
 	}
 }

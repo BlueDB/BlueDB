@@ -18,6 +18,10 @@ public class RollupTask<T extends Serializable> implements Runnable {
 		this.rollupTarget = rollupTarget;
 	}
 
+	public RollupTarget getTarget() {
+		return rollupTarget;
+	}
+
 	@Override
 	public void run() {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();

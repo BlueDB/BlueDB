@@ -23,7 +23,8 @@ public class IndexRollupTaskTest extends BlueDbDiskTestBase {
 	public void test_rollup() throws Exception {
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
 		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
-		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, keyExtractor);
+		String indexName = "test_index";
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, keyExtractor);
 		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
 
 		BlueKey key1At1 = createKey(1, 1);
@@ -46,13 +47,12 @@ public class IndexRollupTaskTest extends BlueDbDiskTestBase {
 			File[] segmentDirectoryContents = segmentFolder.listFiles();
 			assertEquals(2, segmentDirectoryContents.length);
 
-			long segmentSize = collection.getSegmentManager().getSegmentSize();
 			Range entireFirstSegmentTimeRange = indexSegment.getRange();
 			Range offByOneSegmentTimeRange = new Range(entireFirstSegmentTimeRange.getStart(), entireFirstSegmentTimeRange.getEnd() + 1);
-			RollupTarget offByOneRollupTarget = new RollupTarget(0, offByOneSegmentTimeRange);
-			RollupTarget entireFirstRollupTarget = new RollupTarget(0, entireFirstSegmentTimeRange);
-			IndexRollupTask<TestValue> invalidRollup = new IndexRollupTask<>(indexOnDisk, offByOneRollupTarget);
-			IndexRollupTask<TestValue> validRollup = new IndexRollupTask<>(indexOnDisk, entireFirstRollupTarget);
+			IndexRollupTarget offByOneRollupTarget = new IndexRollupTarget(indexName, 0, offByOneSegmentTimeRange);
+			IndexRollupTarget entireFirstRollupTarget = new IndexRollupTarget(indexName, 0, entireFirstSegmentTimeRange);
+			IndexRollupTask<TestValue> invalidRollup = new IndexRollupTask<TestValue>(collection, offByOneRollupTarget);
+			IndexRollupTask<TestValue> validRollup = new IndexRollupTask<>(collection, entireFirstRollupTarget);
 
 			invalidRollup.run();
 			segmentDirectoryContents = indexSegment.getPath().toFile().listFiles();
