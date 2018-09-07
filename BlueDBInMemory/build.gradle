@@ -1,3 +1,0 @@
-dependencies{
-    compile group: 'de.ruedigermoeller', name: 'fst', version: '2.57'
-}
