@@ -134,12 +134,4 @@ public class Blutils {
 		}
 		throw lastThrowable;
 	}
-
-	public static boolean nullSafeEquals(Object a, Object b) {
-		if (a == null) {
-			return b == null;
-		} else {
-			return a.equals(b);
-		}
-	}
 }

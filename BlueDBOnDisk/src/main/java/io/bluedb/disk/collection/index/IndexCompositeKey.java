@@ -1,7 +1,7 @@
 package io.bluedb.disk.collection.index;
 
 import io.bluedb.api.keys.BlueKey;
-import static io.bluedb.disk.Blutils.nullSafeEquals;
+import java.util.Objects;
 
 public class IndexCompositeKey<K extends BlueKey> implements BlueKey {
 
@@ -54,8 +54,7 @@ public class IndexCompositeKey<K extends BlueKey> implements BlueKey {
 			return false;
 		}
 		IndexCompositeKey<?> other = (IndexCompositeKey<?>) obj;
-		nullSafeEquals(null, null);
-		return nullSafeEquals(this.indexKey, other.indexKey) && nullSafeEquals(this.valueKey, other.valueKey);
+		return Objects.equals(this.indexKey, other.indexKey) && Objects.equals(this.valueKey, other.valueKey);
 	}
 
 	@Override

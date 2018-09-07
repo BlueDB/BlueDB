@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import io.bluedb.api.Condition;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.Blutils.UnreliableFunction;
 
 public class BlutilsTest {
@@ -151,16 +150,5 @@ public class BlutilsTest {
 			e1.printStackTrace();
 			fail();
 		}
-	}
-
-	
-	@Test
-	public void test_nullSafeEquals() {
-		assertTrue(Blutils.nullSafeEquals(null, null));
-		assertTrue(Blutils.nullSafeEquals("1", "1"));
-
-		assertFalse(Blutils.nullSafeEquals(null, "1"));
-		assertFalse(Blutils.nullSafeEquals("1", null));
-		assertFalse(Blutils.nullSafeEquals("1", "2"));
 	}
 }

@@ -1,6 +1,6 @@
 package io.bluedb.disk.segment.rollup;
 
-import io.bluedb.disk.Blutils;
+import java.util.Objects;
 import io.bluedb.disk.segment.Range;
 
 public class IndexRollupTarget extends RollupTarget {
@@ -31,8 +31,8 @@ public class IndexRollupTarget extends RollupTarget {
 		if (obj instanceof IndexRollupTarget) {
 			IndexRollupTarget other = (IndexRollupTarget) obj;
 			return getSegmentGroupingNumber() == other.getSegmentGroupingNumber()
-					&& Blutils.nullSafeEquals(getRange(), other.getRange())
-					&& Blutils.nullSafeEquals(indexName, other.indexName);
+					&& Objects.equals(getRange(), other.getRange())
+					&& Objects.equals(indexName, other.indexName);
 		} else {
 			return false;
 		}
