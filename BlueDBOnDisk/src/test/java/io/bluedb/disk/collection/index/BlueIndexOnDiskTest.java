@@ -122,7 +122,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		values = collection.query().getList();
 		assertEquals(2, values.size());
 
-		BlueKey retrievalKey1 = keyExtractor.extractKey(value1);
+		BlueKey retrievalKey1 = keyExtractor.extractKeys(value1).get(0);
 		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
 		File segmentFolder = indexSegment.getPath().toFile();
 		File[] segmentDirectoryContents = segmentFolder.listFiles();

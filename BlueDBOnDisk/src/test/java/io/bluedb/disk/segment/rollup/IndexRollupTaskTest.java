@@ -31,7 +31,7 @@ public class IndexRollupTaskTest extends BlueDbDiskTestBase {
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna", 1);
 		TestValue value3 = createValue("Chuck", 3);
-		BlueKey retrievalKey1 = keyExtractor.extractKey(value1);
+		BlueKey retrievalKey1 = keyExtractor.extractKeys(value1).get(0);
 		List<TestValue> values;
 		try {
 			values = collection.query().getList();

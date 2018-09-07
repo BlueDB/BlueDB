@@ -62,18 +62,20 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		if (newItem == null) {
 			return;
 		}
-		IndexCompositeKey<K> indexKey = toIndexKey(key, newItem);
-		Segment<BlueKey> segment = segmentManager.getFirstSegment(indexKey);
-		segment.insert(indexKey, key);
+		for (IndexCompositeKey<K> compositeKey: toCompositeKeys(key, newItem)) {
+			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
+			segment.insert(compositeKey, key);
+		}
 	}
 
 	public void remove(K key, T oldItem) throws BlueDbException {
 		if (oldItem == null) {
 			return;
 		}
-		IndexCompositeKey<K> indexKey = toIndexKey(key, oldItem);
-		Segment<BlueKey> segment = segmentManager.getFirstSegment(indexKey);
-		segment.delete(indexKey);
+		for (IndexCompositeKey<K> compositeKey: toCompositeKeys(key, oldItem)) {
+			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
+			segment.delete(compositeKey);
+		}
 	}
 
 	@Override
@@ -106,8 +108,10 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		return segmentManager;
 	}
 
-	private IndexCompositeKey<K> toIndexKey(BlueKey key, T newItem) {
-		return new IndexCompositeKey<K>(keyExtractor.extractKey(newItem), key);
+	private List<IndexCompositeKey<K>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
+		List<K> indexKeys = keyExtractor.extractKeys(newItem);
+		List<IndexCompositeKey<K>> compositeKeys = Blutils.map(indexKeys, (k) -> new IndexCompositeKey<K>(k, destination));
+		return compositeKeys;
 	}
 
 	@Override
