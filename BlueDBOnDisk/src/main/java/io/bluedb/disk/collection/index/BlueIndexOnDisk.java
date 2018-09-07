@@ -58,7 +58,6 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, keyExtractor.getType());
 	}
 
-	@Override
 	public void add(BlueKey key, T newItem) throws BlueDbException {
 		if (newItem == null) {
 			return;
@@ -68,7 +67,6 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		segment.insert(indexKey, key);
 	}
 
-	@Override
 	public void remove(K key, T oldItem) throws BlueDbException {
 		if (oldItem == null) {
 			return;
