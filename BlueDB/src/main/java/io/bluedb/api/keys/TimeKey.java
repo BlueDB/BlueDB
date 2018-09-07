@@ -1,5 +1,7 @@
 package io.bluedb.api.keys;
 
+import java.util.UUID;
+
 public class TimeKey implements BlueKey {
 	private static final long serialVersionUID = 1L;
 
@@ -12,6 +14,10 @@ public class TimeKey implements BlueKey {
 
 	public TimeKey(String id, long time) {
 		this(new StringKey(id), time);
+	}
+
+	public TimeKey(UUID id, long time) {
+		this(new UUIDKey(id), time);
 	}
 
 	public TimeKey(ValueKey id, long time) {

@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-
+import java.util.UUID;
 import org.nustaq.serialization.simpleapi.DefaultCoder;
 
 import io.bluedb.api.keys.IntegerKey;
@@ -13,6 +13,7 @@ import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.api.keys.UUIDKey;
 import io.bluedb.disk.recovery.PendingChange;
 
 public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
@@ -39,10 +40,12 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			BlueEntity.class, 
 			IntegerKey.class, 
 			LongKey.class, 
-			StringKey.class, 
+			StringKey.class,
 			TimeKey.class, 
 			TimeFrameKey.class, 
-			PendingChange.class
+			PendingChange.class,
+			UUID.class,
+			UUIDKey.class
 		);
 	}
 

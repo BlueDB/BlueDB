@@ -1,5 +1,6 @@
 package io.bluedb.api.keys;
 
+import java.util.UUID;
 import org.junit.Test;
 import junit.framework.TestCase;
 
@@ -64,12 +65,14 @@ public class IntegerKeyTest extends TestCase {
 		IntegerKey one = new IntegerKey(1);
 		IntegerKey oneCopy = new IntegerKey(1);
 		StringKey stringKey = new StringKey("1");
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
 		assertEquals(one, one);
 		assertEquals(one, oneCopy);
 		assertTrue(one.equals(oneCopy));
 		assertFalse(one.equals(zero));
 		assertFalse(min.equals(max));
 		assertFalse(one.equals(stringKey));
+		assertFalse(one.equals(uuidKey));
 		assertFalse(one.equals(null));
 		assertFalse(one.equals("1"));
 	}
@@ -96,6 +99,7 @@ public class IntegerKeyTest extends TestCase {
 		IntegerKey one = new IntegerKey(1);
 		IntegerKey oneCopy = new IntegerKey(1);
 		StringKey stringKey = new StringKey("1");
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
 		assertTrue(zero.compareTo(one) < 0);  // basic
 		assertTrue(one.compareTo(zero) > 0);  // reverse
 		assertTrue(min.compareTo(max) < 0);  // extreme
@@ -103,6 +107,7 @@ public class IntegerKeyTest extends TestCase {
 		assertTrue(one.compareTo(oneCopy) == 0);  // equals
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
+		assertTrue(one.compareTo(uuidKey) != 0);  // sanity check
 	}
 
 	@Test
