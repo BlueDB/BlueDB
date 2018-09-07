@@ -31,7 +31,7 @@ public class RollupTarget {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof RollupTarget) {
+		if (obj != null && getClass().equals(obj.getClass())) {
 			RollupTarget other = (RollupTarget) obj;
 			return (segmentGroupingNumber == other.getSegmentGroupingNumber()) && (range.equals(other.getRange())); 
 		} else {

@@ -7,7 +7,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.collection.index.IndexRollupTask;
 
 public class RollupScheduler implements Runnable {
 
@@ -45,14 +45,14 @@ public class RollupScheduler implements Runnable {
 		isStopped = true;
 	}
 
-	public void reportRead(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		reportRead(target, System.currentTimeMillis());
+	public void reportRead(RollupTarget rollupTarget) {
+		long timeMillis = System.currentTimeMillis();
+		reportRead(rollupTarget, timeMillis);
 	}
 
-	public void reportWrite(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		reportWrite(target, System.currentTimeMillis());
+	public void reportWrite(RollupTarget rollupTarget) {
+		long timeMillis = System.currentTimeMillis();
+		reportWrite(rollupTarget, timeMillis);
 	}
 
 	public void reportRead(RollupTarget rollupTarget, long timeMillis) {
@@ -107,8 +107,14 @@ public class RollupScheduler implements Runnable {
 		return results;
 	}
 
-	private void scheduleRollup(RollupTarget target) {
-		collection.scheduleRollup(target);
-		rollupTimes.remove(target);
+	protected void scheduleRollup(RollupTarget target) {
+		Runnable rollupRunnable;
+		if (target instanceof IndexRollupTarget) {
+			IndexRollupTarget indexTarget = (IndexRollupTarget) target;
+			rollupRunnable = new IndexRollupTask<>(collection, indexTarget);
+		} else {
+			rollupRunnable = new RollupTask<>(collection, target);
+		}
+		collection.submitTask(rollupRunnable);
 	}
 }

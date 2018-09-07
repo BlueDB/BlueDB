@@ -175,7 +175,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(1, allValues.size());
 
-		PendingChange<TestValue> change = PendingChange.createDelete(key);
+		PendingChange<TestValue> change = PendingChange.createDelete(key, value);
 		getRecoveryManager().saveChange(change);
 		getRecoveryManager().recover();
 		allValues = getTimeCollection().query().getList();

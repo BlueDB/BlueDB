@@ -19,7 +19,8 @@ public class DeleteTask<T extends Serializable> extends QueryTask {
 	@Override
 	public void execute() throws BlueDbException {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-		PendingChange<T> change = PendingChange.createDelete(key);
+		T value = collection.get(key);
+		PendingChange<T> change = PendingChange.createDelete(key, value);
 		recoveryManager.saveChange(change);
 		change.apply(collection);
 		recoveryManager.markComplete(change);

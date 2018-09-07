@@ -6,6 +6,7 @@ import io.bluedb.api.CloseableIterator;
 import io.bluedb.api.Condition;
 import io.bluedb.disk.lock.AutoCloseCountdown;
 import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.segment.SegmentManager;
 
 public class CollectionValueIterator<T extends Serializable> implements CloseableIterator<T> {
 
@@ -13,13 +14,13 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 	private CollectionEntityIterator<T> entityIterator;
 	private AutoCloseCountdown timeoutCloser;
 
-	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
-		entityIterator = new CollectionEntityIterator<T>(collection, range, byStartTime, objectConditions);
+	public CollectionValueIterator(SegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, objectConditions);
 		timeoutCloser = new AutoCloseCountdown(this, TIMEOUT_DEFAULT_MILLIS);
 	}
 
-	public CollectionValueIterator(BlueCollectionOnDisk<T> collection, Range range, long timeout, boolean byStartTime, List<Condition<T>> objectConditions) {
-		entityIterator = new CollectionEntityIterator<T>(collection, range, byStartTime, objectConditions);
+	public CollectionValueIterator(SegmentManager<T> segmentManager, Range range, long timeout, boolean byStartTime, List<Condition<T>> objectConditions) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, objectConditions);
 		timeoutCloser = new AutoCloseCountdown(this, timeout);
 	}
 

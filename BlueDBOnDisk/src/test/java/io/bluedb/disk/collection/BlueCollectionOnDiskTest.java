@@ -9,8 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
@@ -285,36 +283,6 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(1, segmentDirectoryContents.length);
 	}
 
-
-	@Test
-	public void test_scheduleRollup() throws Exception {
-		BlueKey key1At1 = createKey(1, 1);
-		BlueKey key3At3 = createKey(3, 3);
-		TestValue value1 = createValue("Anna");
-		TestValue value3 = createValue("Chuck");
-		List<TestValue> values;
-
-		getTimeCollection().insert(key1At1, value1);
-		getTimeCollection().insert(key3At3, value3);
-		values = getTimeCollection().query().getList();
-		assertEquals(2, values.size());
-
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
-		File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(2, segmentDirectoryContents.length);
-
-		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
-		RollupTarget rollupTarget = new RollupTarget(0, entireFirstSegmentTimeRange);
-		getTimeCollection().scheduleRollup(rollupTarget);
-		waitForExecutorToFinish();
-
-		values = getTimeCollection().query().getList();
-		assertEquals(2, values.size());
-		segmentDirectoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(1, segmentDirectoryContents.length);
-	}
-
 	@Test
 	public void test_updateAll_invalid() {
 		TestValue value = new TestValue("Joe", 0);
@@ -323,17 +291,6 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			getTimeCollection().query().update((v) -> v.doSomethingNaughty());
 			fail();
 		} catch (BlueDbException e) {
-		}
-	}
-
-	private void waitForExecutorToFinish() {
-		Runnable doNothing = new Runnable() {@Override public void run() {}};
-		Future<?> future = getTimeCollection().executor.submit(doNothing);
-		try {
-			future.get();
-		} catch (ExecutionException | InterruptedException e) {
-			e.printStackTrace();
-			fail();
 		}
 	}
 

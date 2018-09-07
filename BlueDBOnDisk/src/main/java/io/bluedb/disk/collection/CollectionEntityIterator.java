@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import io.bluedb.disk.segment.SegmentEntityIterator;
+import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.api.Condition;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.segment.Range;
@@ -19,12 +20,12 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 	private long endGroupingValueOfCompletedSegments;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
-	private final List<Condition<T>> conditions;	
+	private final List<Condition<T>> conditions;
 
-	public CollectionEntityIterator(final BlueCollectionOnDisk<T> collection, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
+	public CollectionEntityIterator(final SegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
 		this.range = range;
 		this.endGroupingValueOfCompletedSegments = byStartTime ? (range.getStart()) - 1 : Long.MIN_VALUE;
-		segments = collection.getSegmentManager().getExistingSegments(range);
+		segments = segmentManager.getExistingSegments(range);
 		Collections.sort(segments);
 		conditions = objectConditions;
 	}

@@ -4,38 +4,30 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.query.BlueQueryOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.RecoveryManager;
-import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionOnDisk<T> collection;
+	private final BlueQueryOnDisk<T> query;
 	private final Updater<T> updater;
-	private final long min;
-	private final long max;
-	private final  List<Condition<T>> conditions;
-	private final boolean byStartTime;
 
 
-	public UpdateMultipleTask(BlueCollectionOnDisk<T> collection, long min, long max, List<Condition<T>> conditions, Updater<T> updater, boolean byStartTime) {
+	public UpdateMultipleTask(BlueCollectionOnDisk<T> collection, BlueQueryOnDisk<T> query, Updater<T> updater) {
 		this.collection = collection;
-		this.min = min;
-		this.max = max;
-		this.conditions = conditions;
+		this.query = query;
 		this.updater = updater;
-		this.byStartTime = byStartTime;
 	}
 
 	@Override
 	public void execute() throws BlueDbException {
-		Range range = new Range(min, max);
-		List<BlueEntity<T>> entities = collection.findMatches(range, conditions, byStartTime);
+		List<BlueEntity<T>> entities = query.getEntities();
 		List<PendingChange<T>> updates;
 		try {
 			updates = createUpdates(entities, updater);
@@ -65,6 +57,6 @@ public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 
 	@Override
 	public String toString() {
-		return "<UpdateMultipleTask [" + min + ", " + max + "] with " + conditions.size() + " conditions>";
+		return "<UpdateMultipleTask on query " + query.toString() + ">";
 	}
 }

@@ -216,7 +216,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		
 		assertEquals(2, entitiesInRealSegment.size());
 
-		Segment<TestValue> mockSegment = new Segment<TestValue>(segment.getPath(), null, getTimeCollection(), null) {
+		Segment<TestValue> mockSegment = new Segment<TestValue>(segment.getPath(), null, null, null, null) {
 			@Override
 			protected BlueObjectInput<BlueEntity<TestValue>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 				throw new BlueDbException("segment fail");
@@ -261,6 +261,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
 		String value = "longs";
 		int n = 100;

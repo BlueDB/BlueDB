@@ -3,17 +3,18 @@ package io.bluedb.disk.query;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.CloseableIterator;
 import io.bluedb.api.Condition;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionValueIterator;
 import io.bluedb.disk.collection.task.DeleteMultipleTask;
 import io.bluedb.disk.collection.task.UpdateMultipleTask;
 import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.serialization.BlueEntity;
 
 public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
@@ -67,28 +68,24 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 
 	@Override
 	public List<T> getList() throws BlueDbException {
-		Range range = new Range(min, max);
-		return collection.findMatches(range, objectConditions, byStartTime)
-				.stream()
-				.map((e) -> e.getValue())
-				.collect(Collectors.toList());
+		return Blutils.map(getEntities(), (e) -> e.getValue());
 	}
 
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
 		Range range = new Range(min, max);
-		return new CollectionValueIterator<T>(collection, range, byStartTime, objectConditions);
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions);
 	}
 
 	@Override
 	public void delete() throws BlueDbException {
-		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, min, max, objectConditions, byStartTime);
+		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, clone());
 		collection.executeTask(deleteAllTask);
 	}
 
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
-		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, min, max, objectConditions, updater, byStartTime);
+		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, clone(), updater);
 		collection.executeTask(updateMultipleTask);
 	}
 
@@ -101,5 +98,27 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 			iter.next();
 		}
 		return count;
+	}
+
+	public List<BlueEntity<T>> getEntities() throws BlueDbException {
+		return collection.findMatches(getRange(), objectConditions, byStartTime);
+	}
+
+	public BlueQueryOnDisk<T> clone() {
+		BlueQueryOnDisk<T> clone = new BlueQueryOnDisk<T>(collection);
+		clone.objectConditions = new LinkedList<>(objectConditions);
+		clone.min = min;
+		clone.max = max;
+		clone.byStartTime = byStartTime;
+		return clone;
+	}
+
+	@Override
+	public String toString() {
+		return "<" + this.getClass().getSimpleName() + " [" + min + ", " + max + "] with " + objectConditions.size() + " conditions>";
+	}
+
+	public Range getRange() {
+		return new Range(min, max);
 	}
 }

@@ -11,13 +11,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import io.bluedb.api.BlueCollection;
+import io.bluedb.api.BlueIndex;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
+import io.bluedb.api.KeyExtractor;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbOnDisk;
-import io.bluedb.disk.Blutils;
+import io.bluedb.disk.collection.index.BlueIndexOnDisk;
+import io.bluedb.disk.collection.index.IndexManager;
 import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateTask;
@@ -28,13 +31,13 @@ import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.rollup.RollupScheduler;
 import io.bluedb.disk.segment.rollup.RollupTarget;
-import io.bluedb.disk.segment.rollup.RollupTask;
+import io.bluedb.disk.segment.rollup.Rollupable;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
-public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T> {
+public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
 	ExecutorService executor = Executors.newFixedThreadPool(1);
 
@@ -47,6 +50,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
+	private final IndexManager<T> indexManager;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalRegisteredClasses) throws BlueDbException {
 		this.valueType = valueType;
@@ -57,9 +61,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
 		this.keyType = determineKeyType(metaData, requestedKeyType);
-		segmentManager = new SegmentManager<T>(this, this.keyType);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
+		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, this.keyType);
+		indexManager = new IndexManager<>(this, collectionPath);
 		rollupScheduler.start();
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
@@ -112,14 +117,17 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions, boolean byStartTime) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(this, range, byStartTime, conditions)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, conditions)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
-				T value = entity.getValue();
 				results.add(entity);
 			}
 		}
 		return results;
+	}
+
+	public void submitTask(Runnable task) {
+		executor.submit(task);
 	}
 
 	public void executeTask(Runnable task) throws BlueDbException{
@@ -137,17 +145,8 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		segment.rollup(timeRange);
 	}
 
-	public void scheduleRollup(RollupTarget rollupTarget) {
-		Runnable rollupRunnable = new RollupTask<T>(this, rollupTarget);
-		executor.submit(rollupRunnable);
-	}
-
 	public SegmentManager<T> getSegmentManager() {
 		return segmentManager;
-	}
-
-	public RollupScheduler getRollupScheduler() {
-		return rollupScheduler;
 	}
 
 	public RecoveryManager<T> getRecoveryManager() {
@@ -203,5 +202,40 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		} else {
 			return providedKeyType;
 		}
+	}
+
+	@Override
+	public <K extends BlueKey> BlueIndex<K, T> createIndex(String name, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+		return indexManager.createIndex(name, keyType, keyExtractor);
+	}
+
+	@Override
+	public <K extends BlueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
+		return indexManager.getIndex(indexName, keyType);
+	}
+
+	public void rollupIndex(String indexName, Range range) throws BlueDbException {
+		BlueIndexOnDisk<?, T> index = indexManager.getUntypedIndex(indexName);
+		index.rollup(range);
+	}
+
+	public IndexManager<T> getIndexManager() {
+		return indexManager;
+	}
+
+	@Override
+	public void reportRead(long segmentGroupingNumber, Range range) {
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		rollupScheduler.reportRead(target);
+	}
+
+	@Override
+	public void reportWrite(long segmentGroupingNumber, Range range) {
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		rollupScheduler.reportWrite(target);
+	}
+
+	public RollupScheduler getRollupScheduler() {
+		return rollupScheduler;
 	}
 }

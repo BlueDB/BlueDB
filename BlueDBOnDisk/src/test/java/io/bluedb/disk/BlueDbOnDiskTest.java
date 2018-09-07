@@ -9,18 +9,22 @@ import java.util.List;
 
 import org.junit.Test;
 import io.bluedb.api.BlueCollection;
+import io.bluedb.api.BlueIndex;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.HashGroupedKey;
+import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import io.bluedb.zip.ZipUtils;
 
 public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_shutdown() throws Exception{
+		BlueIndex<IntegerKey, TestValue> index = getTimeCollection().createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 		db.shutdown();
 	}
 

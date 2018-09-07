@@ -7,6 +7,7 @@ import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.collection.index.IndexManager;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.serialization.BlueEntity;
@@ -29,8 +30,8 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 		timeCreated = System.currentTimeMillis();
 	}
 	
-	public static <X extends Serializable> PendingChange<X> createDelete(BlueKey key){
-		return new PendingChange<X>(key, null, null);
+	public static <T extends Serializable> PendingChange<T> createDelete(BlueKey key, T value){
+		return new PendingChange<T>(key, value, null);
 	}
 
 	public static <T extends Serializable> PendingChange<T> createInsert(BlueKey key, T value, BlueSerializer serializer){
@@ -53,10 +54,13 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 
 	@Override
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
+		IndexManager<T> indexManager = collection.getIndexManager();
+		indexManager.removeFromAllIndexes(key, oldValue);
 		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
 		for (Segment<T> segment: segments) {
 			applyChange(segment);
-		}	
+		}
+		indexManager.addToAllIndexes(key, newValue);
 	}
 
 	public void applyChange(Segment<T> segment) throws BlueDbException {
