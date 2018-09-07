@@ -4,18 +4,16 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
-import io.bluedb.api.BlueIndex;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.collection.CollectionTestTools;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
-import io.bluedb.disk.segment.rollup.RollupTarget;
 
 public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 

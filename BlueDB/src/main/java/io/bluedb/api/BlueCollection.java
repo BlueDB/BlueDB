@@ -2,6 +2,8 @@ package io.bluedb.api;
 
 import java.io.Serializable;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
+import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 
 public interface BlueCollection<T extends Serializable> {

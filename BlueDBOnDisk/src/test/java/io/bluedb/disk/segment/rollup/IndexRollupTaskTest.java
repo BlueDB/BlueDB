@@ -4,8 +4,8 @@ import java.io.File;
 import java.util.List;
 
 import org.junit.Test;
-import io.bluedb.api.BlueIndex;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.disk.BlueDbDiskTestBase;

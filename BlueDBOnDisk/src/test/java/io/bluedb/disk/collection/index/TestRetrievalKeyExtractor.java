@@ -1,6 +1,6 @@
 package io.bluedb.disk.collection.index;
 
-import io.bluedb.api.KeyExtractor;
+import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.disk.TestValue;
 
