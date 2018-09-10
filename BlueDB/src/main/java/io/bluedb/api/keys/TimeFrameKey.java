@@ -1,5 +1,7 @@
 package io.bluedb.api.keys;
 
+import java.util.UUID;
+
 public final class TimeFrameKey extends TimeKey {
 	@Override
 	public int hashCode() {
@@ -35,6 +37,16 @@ public final class TimeFrameKey extends TimeKey {
 	private long endTime;
 
 	public TimeFrameKey(long id, long startTime, long endTime) {
+		super(id, startTime);
+		this.endTime = endTime;
+	}
+
+	public TimeFrameKey(String id, long startTime, long endTime) {
+		super(id, startTime);
+		this.endTime = endTime;
+	}
+
+	public TimeFrameKey(UUID id, long startTime, long endTime) {
 		super(id, startTime);
 		this.endTime = endTime;
 	}

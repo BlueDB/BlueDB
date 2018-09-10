@@ -1,5 +1,6 @@
 package io.bluedb.api.keys;
 
+import java.util.UUID;
 import org.junit.Test;
 import junit.framework.TestCase;
 
@@ -65,6 +66,7 @@ public class TimeFrameKeyTest extends TestCase {
 		TimeFrameKey oneToTwoCopy = new TimeFrameKey(4, 1, 2);
 		TimeFrameKey oneToTwoDifferent = new TimeFrameKey(5, 1, 2);
 		StringKey stringKey = new StringKey("1");
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
 		assertEquals(one, one);
 		assertEquals(one, oneCopy);
 		assertTrue(one.equals(oneCopy));
@@ -77,6 +79,7 @@ public class TimeFrameKeyTest extends TestCase {
 		assertFalse(one.equals(zero));
 		assertFalse(min.equals(max));
 		assertFalse(one.equals(stringKey));
+		assertFalse(one.equals(uuidKey));
 		assertFalse(one.equals(null));
 		assertFalse(one.equals("1"));
 	}
@@ -110,6 +113,7 @@ public class TimeFrameKeyTest extends TestCase {
 		TimeFrameKey oneToTwo = new TimeFrameKey(4, 1, 2);
 		TimeFrameKey oneToTwoCopy = new TimeFrameKey(4, 1, 2);
 		StringKey stringKey = new StringKey("1");
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
 		assertTrue(zero.compareTo(one) < 0);  // basic
 		assertTrue(one.compareTo(zero) > 0);  // reverse
 		assertTrue(min.compareTo(max) < 0);  // extreme
@@ -120,6 +124,7 @@ public class TimeFrameKeyTest extends TestCase {
 		assertTrue(one.compareTo(oneDifferent) != 0);  // same time but not equals
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
+		assertTrue(one.compareTo(uuidKey) != 0);  // sanity check
 	}
 
 	@Test
