@@ -5,7 +5,7 @@ import java.util.UUID;
 public final class UUIDKey extends HashGroupedKey {
 	private static final long serialVersionUID = 1L;
 
-	private UUID id;
+	private final UUID id;
 
 	public UUIDKey(UUID id) {
 		this.id = id;

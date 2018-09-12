@@ -3,7 +3,7 @@ package io.bluedb.api.keys;
 public final class StringKey extends HashGroupedKey {
 	private static final long serialVersionUID = 1L;
 
-	private String id;
+	private final String id;
 
 	public StringKey(String id) {
 		this.id = id;
