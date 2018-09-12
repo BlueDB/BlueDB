@@ -1,6 +1,7 @@
 package io.bluedb.disk.collection.task;
 
 import java.io.Serializable;
+import java.util.NoSuchElementException;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
@@ -25,6 +26,9 @@ public class UpdateTask<T extends Serializable> extends QueryTask {
 		BlueSerializer serializer = collection.getSerializer();
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 		T value = collection.get(key);
+		if (value == null) {
+			throw new NoSuchElementException("Cannot find object for key: " + key.toString());
+		}
 		PendingChange<T> change;
 		try {
 			change = PendingChange.createUpdate(key, value, updater, serializer);
