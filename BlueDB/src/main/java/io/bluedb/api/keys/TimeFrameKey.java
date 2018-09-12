@@ -34,25 +34,29 @@ public final class TimeFrameKey extends TimeKey {
 
 	private static final long serialVersionUID = 1L;
 
-	private long endTime;
+	private final long endTime;
 
 	public TimeFrameKey(long id, long startTime, long endTime) {
 		super(id, startTime);
+		validateEndTime(endTime);
 		this.endTime = endTime;
 	}
 
 	public TimeFrameKey(String id, long startTime, long endTime) {
 		super(id, startTime);
+		validateEndTime(endTime);
 		this.endTime = endTime;
 	}
 
 	public TimeFrameKey(UUID id, long startTime, long endTime) {
 		super(id, startTime);
+		validateEndTime(endTime);
 		this.endTime = endTime;
 	}
 
 	public TimeFrameKey(ValueKey key, long startTime, long endTime) {
 		super(key, startTime);
+		validateEndTime(endTime);
 		this.endTime = endTime;
 	}
 
@@ -67,5 +71,11 @@ public final class TimeFrameKey extends TimeKey {
 	@Override
 	public String toString() {
 		return "TimeFrameKey [key=" + getId() + ", time=[" + getStartTime() + ", " + endTime + "] ]";
+	}
+
+	private void validateEndTime(long endTime) {
+		if (endTime < this.getStartTime()) {
+			throw new IllegalArgumentException("TimeFrameKey endTime must be >= startTime.");
+		}
 	}
 }
