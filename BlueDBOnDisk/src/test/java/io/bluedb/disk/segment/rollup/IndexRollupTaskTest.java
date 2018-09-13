@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.junit.Test;
 import io.bluedb.api.BlueIndex;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
@@ -33,40 +32,35 @@ public class IndexRollupTaskTest extends BlueDbDiskTestBase {
 		TestValue value3 = createValue("Chuck", 3);
 		BlueKey retrievalKey1 = keyExtractor.extractKey(value1);
 		List<TestValue> values;
-		try {
-			values = collection.query().getList();
-			assertEquals(0, values.size());
 
-			collection.insert(key1At1, value1);
-			collection.insert(key3At3, value3);
-			values = collection.query().getList();
-			assertEquals(2, values.size());
-			
-			Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
-			File segmentFolder = indexSegment.getPath().toFile();
-			File[] segmentDirectoryContents = segmentFolder.listFiles();
-			assertEquals(2, segmentDirectoryContents.length);
+		values = collection.query().getList();
+		assertEquals(0, values.size());
 
-			Range entireFirstSegmentTimeRange = indexSegment.getRange();
-			Range offByOneSegmentTimeRange = new Range(entireFirstSegmentTimeRange.getStart(), entireFirstSegmentTimeRange.getEnd() + 1);
-			IndexRollupTarget offByOneRollupTarget = new IndexRollupTarget(indexName, 0, offByOneSegmentTimeRange);
-			IndexRollupTarget entireFirstRollupTarget = new IndexRollupTarget(indexName, 0, entireFirstSegmentTimeRange);
-			IndexRollupTask<TestValue> invalidRollup = new IndexRollupTask<TestValue>(collection, offByOneRollupTarget);
-			IndexRollupTask<TestValue> validRollup = new IndexRollupTask<>(collection, entireFirstRollupTarget);
+		collection.insert(key1At1, value1);
+		collection.insert(key3At3, value3);
+		values = collection.query().getList();
+		assertEquals(2, values.size());
+		
+		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
+		File segmentFolder = indexSegment.getPath().toFile();
+		File[] segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
 
-			invalidRollup.run();
-			segmentDirectoryContents = indexSegment.getPath().toFile().listFiles();
-			assertEquals(2, segmentDirectoryContents.length);
+		Range entireFirstSegmentTimeRange = indexSegment.getRange();
+		Range offByOneSegmentTimeRange = new Range(entireFirstSegmentTimeRange.getStart(), entireFirstSegmentTimeRange.getEnd() + 1);
+		IndexRollupTarget offByOneRollupTarget = new IndexRollupTarget(indexName, 0, offByOneSegmentTimeRange);
+		IndexRollupTarget entireFirstRollupTarget = new IndexRollupTarget(indexName, 0, entireFirstSegmentTimeRange);
+		IndexRollupTask<TestValue> invalidRollup = new IndexRollupTask<TestValue>(collection, offByOneRollupTarget);
+		IndexRollupTask<TestValue> validRollup = new IndexRollupTask<>(collection, entireFirstRollupTarget);
 
-			validRollup.run();
-			values = collection.query().getList();
-			assertEquals(2, values.size());
-			segmentDirectoryContents = indexSegment.getPath().toFile().listFiles();
-			assertEquals(1, segmentDirectoryContents.length);
+		invalidRollup.run();
+		segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
 
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		validRollup.run();
+		values = collection.query().getList();
+		assertEquals(2, values.size());
+		segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(1, segmentDirectoryContents.length);
 	}
 }
