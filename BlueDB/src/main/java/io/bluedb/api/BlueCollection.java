@@ -3,12 +3,13 @@ package io.bluedb.api;
 import java.io.Serializable;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.ValueKey;
 
 public interface BlueCollection<T extends Serializable> {
 
-	public <K extends BlueKey> BlueIndex<K, T> createIndex(String name, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException;
+	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException;
 
-	public <K extends BlueKey> BlueIndex<K, T> getIndex(String name, Class<K> keyType) throws BlueDbException;
+	public <I extends ValueKey> BlueIndex<I, T> getIndex(String name, Class<I> keyType) throws BlueDbException;
 
 	public boolean contains(BlueKey key) throws BlueDbException;
 
