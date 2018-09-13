@@ -14,6 +14,7 @@ import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.api.keys.UUIDKey;
+import io.bluedb.disk.collection.index.IndexCompositeKey;
 import io.bluedb.disk.recovery.PendingChange;
 
 public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
@@ -45,7 +46,8 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			TimeFrameKey.class, 
 			PendingChange.class,
 			UUID.class,
-			UUIDKey.class
+			UUIDKey.class,
+			IndexCompositeKey.class
 		);
 	}
 
