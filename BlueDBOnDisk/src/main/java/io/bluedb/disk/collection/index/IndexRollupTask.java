@@ -32,4 +32,9 @@ public class IndexRollupTask<T extends Serializable> implements Runnable {
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "IndexRollupTask [" + rollupTarget.getIndexName()+ "@" + rollupTarget.getSegmentGroupingNumber() + ", " + rollupTarget.getRange().getStart() + "_" + rollupTarget.getRange().getEnd() + "]";
+	}
 }

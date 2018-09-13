@@ -43,7 +43,7 @@ public final class Range implements Comparable<Range> {
 
 	@Override
 	public String toString() {
-		return "TimeRange [start=" + start + ", end=" + end + "]";
+		return "Range [start=" + start + ", end=" + end + "]";
 	}
 
 	@Override

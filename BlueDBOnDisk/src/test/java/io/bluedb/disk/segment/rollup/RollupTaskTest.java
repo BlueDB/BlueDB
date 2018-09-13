@@ -104,4 +104,19 @@ public class RollupTaskTest extends BlueDbDiskTestBase {
 		segmentXDirectoryContents = segmentFolder.listFiles();
 		assertEquals(1, segmentXDirectoryContents.length);
 	}
+
+	@Test
+	public void test_toString() {
+		long rangeStart = 51;
+		long rangeEnd = 61;
+		Range range = new Range(rangeStart, rangeEnd);
+		long segmentGroupingNumber = 71;
+		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
+		RollupTask<?> task = new RollupTask<>(null, target);
+		String taskString = task.toString();
+		assertTrue(taskString.contains(String.valueOf(rangeStart)));
+		assertTrue(taskString.contains(String.valueOf(rangeEnd)));
+		assertTrue(taskString.contains(String.valueOf(segmentGroupingNumber)));
+		assertTrue(taskString.contains(task.getClass().getSimpleName()));
+	}
 }
