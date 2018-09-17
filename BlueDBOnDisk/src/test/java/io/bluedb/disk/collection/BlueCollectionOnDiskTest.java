@@ -131,6 +131,18 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_update_nonexisting() {
+		AtomicBoolean wasUpdaterCalled = new AtomicBoolean(false);
+		BlueKey key = new TimeKey(1, 1);
+		try {
+			getTimeCollection().update(key, (v) -> wasUpdaterCalled.set(true));
+			fail();
+		} catch (BlueDbException e) {
+		}
+		assertFalse(wasUpdaterCalled.get());
+	}
+
+	@Test
 	public void test_update_invalid() {
 		TestValue value = new TestValue("Joe", 0);
 		BlueKey key = insertAtTime(1, value);
