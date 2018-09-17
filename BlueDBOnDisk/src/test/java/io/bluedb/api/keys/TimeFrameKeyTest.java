@@ -6,6 +6,27 @@ import junit.framework.TestCase;
 
 public class TimeFrameKeyTest extends TestCase {
 
+
+	@Test
+	public void test_constructor_invalid_times() {
+		try {
+			new TimeFrameKey(Long.MIN_VALUE, 2, 1);
+			fail();
+		} catch(IllegalArgumentException e) {}
+		try {
+			new TimeFrameKey("", 2, 1);
+			fail();
+		} catch(IllegalArgumentException e) {}
+		try {
+			new TimeFrameKey(UUID.randomUUID(), 2, 1);
+			fail();
+		} catch(IllegalArgumentException e) {}
+		try {
+			new TimeFrameKey(new LongKey(1), 2, 1);
+			fail();
+		} catch(IllegalArgumentException e) {}
+	}
+
 	@Test
 	public void test_getId() {
 		TimeFrameKey min = new TimeFrameKey(Long.MIN_VALUE, 1, 1);
