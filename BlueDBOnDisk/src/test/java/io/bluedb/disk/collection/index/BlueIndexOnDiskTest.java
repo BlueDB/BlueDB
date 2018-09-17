@@ -4,18 +4,16 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
-import io.bluedb.api.BlueIndex;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.collection.CollectionTestTools;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
-import io.bluedb.disk.segment.rollup.RollupTarget;
 
 public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
@@ -59,6 +57,39 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
 		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
 		assertEquals(justBob, indexOnDisk.getKeys(integerKey3));
+	}
+
+	@Test
+	public void test_getKeys_multi() throws Exception {
+		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestMultiRetrievalKeyExtractor());
+		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+
+		IntegerKey integerKey1 = new IntegerKey(1);
+		IntegerKey integerKey2 = new IntegerKey(2);
+		IntegerKey integerKey3 = new IntegerKey(3);
+
+		List<BlueKey> emptyList = Arrays.asList();
+		List<BlueKey> justFred = Arrays.asList(timeKeyFred1);
+
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey3));
+
+		collection.insert(timeKeyFred1, valueFred1);
+
+		assertEquals(justFred, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
+		assertEquals(justFred, indexOnDisk.getKeys(integerKey3));
+
+		collection.delete(timeKeyFred1);
+
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
+		assertEquals(emptyList, indexOnDisk.getKeys(integerKey3));
 	}
 
 	@Test
@@ -124,7 +155,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		values = collection.query().getList();
 		assertEquals(2, values.size());
 
-		BlueKey retrievalKey1 = keyExtractor.extractKey(value1);
+		BlueKey retrievalKey1 = keyExtractor.extractKeys(value1).get(0);
 		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
 		File segmentFolder = indexSegment.getPath().toFile();
 		File[] segmentDirectoryContents = segmentFolder.listFiles();

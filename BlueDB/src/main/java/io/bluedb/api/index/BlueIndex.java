@@ -1,4 +1,4 @@
-package io.bluedb.api;
+package io.bluedb.api.index;
 
 import java.io.Serializable;
 import java.util.List;

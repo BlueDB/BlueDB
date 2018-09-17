@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
-import io.bluedb.api.BlueIndex;
+import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.TimeKey;
@@ -138,7 +138,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		values = collection.query().getList();
 		assertEquals(2, values.size());
 
-		BlueKey retrievalKey1 = keyExtractor.extractKey(value1);
+		BlueKey retrievalKey1 = keyExtractor.extractKeys(value1).get(0);
 		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
 		File segmentFolder = indexSegment.getPath().toFile();
 		File[] segmentDirectoryContents = segmentFolder.listFiles();

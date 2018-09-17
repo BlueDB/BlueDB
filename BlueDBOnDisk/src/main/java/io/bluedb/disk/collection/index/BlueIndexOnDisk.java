@@ -5,11 +5,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import io.bluedb.api.BlueIndex;
-import io.bluedb.api.KeyExtractor;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
+import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.file.FileManager;
@@ -62,18 +63,20 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		if (newItem == null) {
 			return;
 		}
-		IndexCompositeKey<K> indexKey = toIndexKey(key, newItem);
-		Segment<BlueKey> segment = segmentManager.getFirstSegment(indexKey);
-		segment.insert(indexKey, key);
+		for (IndexCompositeKey<K> compositeKey: toCompositeKeys(key, newItem)) {
+			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
+			segment.insert(compositeKey, key);
+		}
 	}
 
 	public void remove(K key, T oldItem) throws BlueDbException {
 		if (oldItem == null) {
 			return;
 		}
-		IndexCompositeKey<K> indexKey = toIndexKey(key, oldItem);
-		Segment<BlueKey> segment = segmentManager.getFirstSegment(indexKey);
-		segment.delete(indexKey);
+		for (IndexCompositeKey<K> compositeKey: toCompositeKeys(key, oldItem)) {
+			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
+			segment.delete(compositeKey);
+		}
 	}
 
 	@Override
@@ -106,8 +109,11 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		return segmentManager;
 	}
 
-	private IndexCompositeKey<K> toIndexKey(BlueKey key, T newItem) {
-		return new IndexCompositeKey<K>(keyExtractor.extractKey(newItem), key);
+	private List<IndexCompositeKey<K>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
+		List<K> indexKeys = keyExtractor.extractKeys(newItem);
+		CheckedFunction<K, IndexCompositeKey<K>> indexToComposite = (indexKey) -> new IndexCompositeKey<K>(indexKey, destination);
+		List<IndexCompositeKey<K>> compositeKeys = Blutils.map(indexKeys, indexToComposite);
+		return compositeKeys;
 	}
 
 	@Override
