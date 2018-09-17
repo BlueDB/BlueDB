@@ -5,6 +5,7 @@ import java.io.Serializable;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 
 public class PendingRollup<T extends Serializable> implements Serializable, Recoverable<T>{
@@ -31,7 +32,8 @@ public class PendingRollup<T extends Serializable> implements Serializable, Reco
 	@Override
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
 		Range range = new Range(min, max);
-		collection.rollup(range);
+		Segment<T> segment = collection.getSegmentManager().getSegment(segmentGroupingNumber);
+		segment.rollup(range);
 	}
 
 	@Override

@@ -34,4 +34,9 @@ public class RollupTask<T extends Serializable> implements Runnable {
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "RollupTask [@" + rollupTarget.getSegmentGroupingNumber() + ", " + rollupTarget.getRange().getStart() + "_" + rollupTarget.getRange().getEnd() + "]";
+	}
 }

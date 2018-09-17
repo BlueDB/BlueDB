@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.List;
 
 import org.junit.Test;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.IntegerKey;
@@ -33,40 +32,53 @@ public class IndexRollupTaskTest extends BlueDbDiskTestBase {
 		TestValue value3 = createValue("Chuck", 3);
 		BlueKey retrievalKey1 = keyExtractor.extractKeys(value1).get(0);
 		List<TestValue> values;
-		try {
-			values = collection.query().getList();
-			assertEquals(0, values.size());
 
-			collection.insert(key1At1, value1);
-			collection.insert(key3At3, value3);
-			values = collection.query().getList();
-			assertEquals(2, values.size());
-			
-			Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
-			File segmentFolder = indexSegment.getPath().toFile();
-			File[] segmentDirectoryContents = segmentFolder.listFiles();
-			assertEquals(2, segmentDirectoryContents.length);
+		values = collection.query().getList();
+		assertEquals(0, values.size());
 
-			Range entireFirstSegmentTimeRange = indexSegment.getRange();
-			Range offByOneSegmentTimeRange = new Range(entireFirstSegmentTimeRange.getStart(), entireFirstSegmentTimeRange.getEnd() + 1);
-			IndexRollupTarget offByOneRollupTarget = new IndexRollupTarget(indexName, 0, offByOneSegmentTimeRange);
-			IndexRollupTarget entireFirstRollupTarget = new IndexRollupTarget(indexName, 0, entireFirstSegmentTimeRange);
-			IndexRollupTask<TestValue> invalidRollup = new IndexRollupTask<TestValue>(collection, offByOneRollupTarget);
-			IndexRollupTask<TestValue> validRollup = new IndexRollupTask<>(collection, entireFirstRollupTarget);
+		collection.insert(key1At1, value1);
+		collection.insert(key3At3, value3);
+		values = collection.query().getList();
+		assertEquals(2, values.size());
 
-			invalidRollup.run();
-			segmentDirectoryContents = indexSegment.getPath().toFile().listFiles();
-			assertEquals(2, segmentDirectoryContents.length);
+		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
+		File segmentFolder = indexSegment.getPath().toFile();
+		File[] segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
 
-			validRollup.run();
-			values = collection.query().getList();
-			assertEquals(2, values.size());
-			segmentDirectoryContents = indexSegment.getPath().toFile().listFiles();
-			assertEquals(1, segmentDirectoryContents.length);
+		Range entireFirstSegmentTimeRange = indexSegment.getRange();
+		Range offByOneSegmentTimeRange = new Range(entireFirstSegmentTimeRange.getStart(), entireFirstSegmentTimeRange.getEnd() + 1);
+		IndexRollupTarget offByOneRollupTarget = new IndexRollupTarget(indexName, 0, offByOneSegmentTimeRange);
+		IndexRollupTarget entireFirstRollupTarget = new IndexRollupTarget(indexName, 0, entireFirstSegmentTimeRange);
+		IndexRollupTask<TestValue> invalidRollup = new IndexRollupTask<TestValue>(collection, offByOneRollupTarget);
+		IndexRollupTask<TestValue> validRollup = new IndexRollupTask<>(collection, entireFirstRollupTarget);
 
-		} catch (BlueDbException e) {
-			e.printStackTrace();
-			fail();
-		}
+		invalidRollup.run();
+		segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
+
+		validRollup.run();
+		values = collection.query().getList();
+		assertEquals(2, values.size());
+		segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(1, segmentDirectoryContents.length);
+	}
+
+
+	@Test
+	public void test_toString() {
+		String indexName = "indexName";
+		long rangeStart = 51;
+		long rangeEnd = 61;
+		Range range = new Range(rangeStart, rangeEnd);
+		long segmentGroupingNumber = 71;
+		IndexRollupTarget target = new IndexRollupTarget(indexName, segmentGroupingNumber, range);
+		IndexRollupTask<?> task = new IndexRollupTask<>(null, target);
+		String taskString = task.toString();
+		assertTrue(taskString.contains(indexName));
+		assertTrue(taskString.contains(String.valueOf(rangeStart)));
+		assertTrue(taskString.contains(String.valueOf(rangeEnd)));
+		assertTrue(taskString.contains(String.valueOf(segmentGroupingNumber)));
+		assertTrue(taskString.contains(task.getClass().getSimpleName()));
 	}
 }

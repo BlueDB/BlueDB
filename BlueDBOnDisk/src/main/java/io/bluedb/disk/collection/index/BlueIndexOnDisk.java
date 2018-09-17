@@ -9,6 +9,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
@@ -21,17 +22,17 @@ import io.bluedb.disk.segment.rollup.IndexRollupTarget;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.rollup.Rollupable;
 
-public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implements BlueIndex<K, T>, Rollupable {
+public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T>, Rollupable {
 
 	private final static String FILE_KEY_EXTRACTOR = ".extractor";
 
 	private final BlueCollectionOnDisk<T> collection;
-	private final KeyExtractor<K, T> keyExtractor;
+	private final KeyExtractor<I, T> keyExtractor;
 	private final FileManager fileManager;
 	private final SegmentManager<BlueKey> segmentManager;
 	private final String indexName;
 
-	public static <K extends BlueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
@@ -39,7 +40,7 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		return new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 	}
 
-	public static <K extends BlueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(BlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(BlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		@SuppressWarnings("unchecked")
@@ -47,11 +48,11 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		return new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 	}
 
-	public Class<K> getType() {
+	public Class<I> getType() {
 		return keyExtractor.getType();
 	}
 
-	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) {
+	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) {
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
 		this.fileManager = collection.getFileManager();
@@ -63,36 +64,36 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		if (newItem == null) {
 			return;
 		}
-		for (IndexCompositeKey<K> compositeKey: toCompositeKeys(key, newItem)) {
+		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, newItem)) {
 			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
 			segment.insert(compositeKey, key);
 		}
 	}
 
-	public void remove(K key, T oldItem) throws BlueDbException {
+	public void remove(BlueKey key, T oldItem) throws BlueDbException {
 		if (oldItem == null) {
 			return;
 		}
-		for (IndexCompositeKey<K> compositeKey: toCompositeKeys(key, oldItem)) {
+		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, oldItem)) {
 			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
 			segment.delete(compositeKey);
 		}
 	}
 
 	@Override
-	public List<T> get(K key) throws BlueDbException {
+	public List<T> get(I key) throws BlueDbException {
 		List<BlueKey> underlyingKeys = getKeys(key);
 		List<T> values = Blutils.map(underlyingKeys, (k) -> collection.get(k));
 		return values;
 	}
 
-	public List<BlueKey> getKeys(K key) {
+	public List<BlueKey> getKeys(I key) {
 		Range range = new Range(key.getGroupingNumber(), key.getGroupingNumber());
 		List<BlueKey> keys = new ArrayList<>();
 		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<>(segmentManager, range, true, new ArrayList<>())) {
 			while (entityIterator.hasNext()) {
 				@SuppressWarnings("unchecked")
-				IndexCompositeKey<K> indexKey = (IndexCompositeKey<K>) entityIterator.next().getKey();
+				IndexCompositeKey<I> indexKey = (IndexCompositeKey<I>) entityIterator.next().getKey();
 				keys.add(indexKey.getValueKey());
 			}
 		}
@@ -109,10 +110,10 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 		return segmentManager;
 	}
 
-	private List<IndexCompositeKey<K>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
-		List<K> indexKeys = keyExtractor.extractKeys(newItem);
-		CheckedFunction<K, IndexCompositeKey<K>> indexToComposite = (indexKey) -> new IndexCompositeKey<K>(indexKey, destination);
-		List<IndexCompositeKey<K>> compositeKeys = Blutils.map(indexKeys, indexToComposite);
+	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
+		List<I> indexKeys = keyExtractor.extractKeys(newItem);
+		CheckedFunction<I, IndexCompositeKey<I>> indexToComposite = (indexKey) -> new IndexCompositeKey<I>(indexKey, destination);
+		List<IndexCompositeKey<I>> compositeKeys = Blutils.map(indexKeys, indexToComposite);
 		return compositeKeys;
 	}
 

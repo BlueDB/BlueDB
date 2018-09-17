@@ -65,6 +65,7 @@ public class RangeTest {
 	public void test_toString() {
 		Range _12_24 = new Range(12, 24);
 		String string = _12_24.toString();
+		assertTrue(string.contains(_12_24.getClass().getSimpleName()));
 		assertTrue(string.contains("12"));
 		assertTrue(string.contains("24"));
 		assertTrue(string.contains(_12_24.getClass().getSimpleName()));
