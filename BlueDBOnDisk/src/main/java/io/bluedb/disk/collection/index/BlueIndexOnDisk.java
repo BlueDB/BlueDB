@@ -10,6 +10,7 @@ import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.file.FileManager;
@@ -110,7 +111,8 @@ public class BlueIndexOnDisk<K extends BlueKey, T extends Serializable> implemen
 
 	private List<IndexCompositeKey<K>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
 		List<K> indexKeys = keyExtractor.extractKeys(newItem);
-		List<IndexCompositeKey<K>> compositeKeys = Blutils.map(indexKeys, (k) -> new IndexCompositeKey<K>(k, destination));
+		CheckedFunction<K, IndexCompositeKey<K>> indexToComposite = (indexKey) -> new IndexCompositeKey<K>(indexKey, destination);
+		List<IndexCompositeKey<K>> compositeKeys = Blutils.map(indexKeys, indexToComposite);
 		return compositeKeys;
 	}
 
