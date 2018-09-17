@@ -5,8 +5,8 @@ import java.util.UUID;
 public class TimeKey implements BlueKey {
 	private static final long serialVersionUID = 1L;
 
-	private ValueKey id;
-	private long time;
+	private final ValueKey id;
+	private final long time;
 
 	public TimeKey(long id, long time) {
 		this(new LongKey(id), time);

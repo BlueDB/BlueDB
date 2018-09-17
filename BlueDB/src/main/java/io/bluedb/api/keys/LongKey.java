@@ -3,7 +3,7 @@ package io.bluedb.api.keys;
 public final class LongKey extends ValueKey {
 	private static final long serialVersionUID = 1L;
 
-	private long id;
+	private final long id;
 
 	public LongKey(long id) {
 		this.id = id;

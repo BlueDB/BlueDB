@@ -11,12 +11,6 @@ subprojects {
     }
 }
 
-project(':BlueDBInMemory') {
-	dependencies {
-		compile project(':BlueDB')
-	}
-}
-
 project(':BlueDBOnDisk') {
 	dependencies {
 		compile project(':BlueDB')
@@ -28,14 +22,5 @@ task onDiskJar(type: Jar) {
 	baseName = 'bluedb-on-disk'
 	from {
 		files(onDiskProjects.collect{ project(it).sourceSets.main.output })
-	}
-}
-
-
-def inMemoryProjects = [':BlueDB',':BlueDBInMemory']
-task inMemoryJar(type: Jar) {
-	baseName = 'bluedb-in-memory'
-	from {
-		files(inMemoryProjects.collect{ project(it).sourceSets.main.output })
 	}
 }

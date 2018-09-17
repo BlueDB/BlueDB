@@ -5,12 +5,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import io.bluedb.api.BlueIndex;
-import io.bluedb.api.KeyExtractor;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
+import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.Blutils;
+import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.file.FileManager;
@@ -63,18 +64,20 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		if (newItem == null) {
 			return;
 		}
-		IndexCompositeKey<I> indexKey = toIndexKey(key, newItem);
-		Segment<BlueKey> segment = segmentManager.getFirstSegment(indexKey);
-		segment.insert(indexKey, key);
+		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, newItem)) {
+			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
+			segment.insert(compositeKey, key);
+		}
 	}
 
 	public void remove(BlueKey key, T oldItem) throws BlueDbException {
 		if (oldItem == null) {
 			return;
 		}
-		IndexCompositeKey<I> indexKey = toIndexKey(key, oldItem);
-		Segment<BlueKey> segment = segmentManager.getFirstSegment(indexKey);
-		segment.delete(indexKey);
+		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, oldItem)) {
+			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
+			segment.delete(compositeKey);
+		}
 	}
 
 	@Override
@@ -107,8 +110,11 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return segmentManager;
 	}
 
-	private IndexCompositeKey<I> toIndexKey(BlueKey key, T newItem) {
-		return new IndexCompositeKey<I>(keyExtractor.extractKey(newItem), key);
+	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
+		List<I> indexKeys = keyExtractor.extractKeys(newItem);
+		CheckedFunction<I, IndexCompositeKey<I>> indexToComposite = (indexKey) -> new IndexCompositeKey<I>(indexKey, destination);
+		List<IndexCompositeKey<I>> compositeKeys = Blutils.map(indexKeys, indexToComposite);
+		return compositeKeys;
 	}
 
 	@Override

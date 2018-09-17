@@ -11,12 +11,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import io.bluedb.api.BlueCollection;
-import io.bluedb.api.BlueIndex;
 import io.bluedb.api.BlueQuery;
 import io.bluedb.api.Condition;
-import io.bluedb.api.KeyExtractor;
 import io.bluedb.api.Updater;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
+import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BlueDbOnDisk;
