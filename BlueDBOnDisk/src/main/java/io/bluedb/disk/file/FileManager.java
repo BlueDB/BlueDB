@@ -20,6 +20,8 @@ import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class FileManager {
+
+	private final static String TEMP_FILE_PREFIX = "_tmp_";
 	private final BlueSerializer serializer;
 	private final LockManager<Path> lockManager;
 
@@ -142,10 +144,18 @@ public class FileManager {
 	public static Path createTempFilePath(Path originalPath) {
 		File parentFile = originalPath.toFile().getParentFile();
 		if (parentFile != null) {
-			return Paths.get(parentFile.toPath().toString(), "_tmp_" + originalPath.getFileName().toString());
+			return Paths.get(parentFile.toPath().toString(), TEMP_FILE_PREFIX + originalPath.getFileName().toString());
 		} else {
-			return Paths.get("_tmp_" + originalPath.getFileName().toString());
+			return Paths.get(TEMP_FILE_PREFIX + originalPath.getFileName().toString());
 		}
+	}
+
+	public static boolean isTempFile(File file) {
+		if (file == null) {
+			return false;
+		}
+		String fileName = file.getName();
+		return fileName.startsWith(TEMP_FILE_PREFIX);
 	}
 
 	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
