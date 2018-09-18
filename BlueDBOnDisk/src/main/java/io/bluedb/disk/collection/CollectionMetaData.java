@@ -66,6 +66,11 @@ public class CollectionMetaData {
 	public final Class<? extends Serializable>[] getAndAddToSerializedClassList(Class<? extends Serializable> primaryClass, Class<? extends Serializable>... additionalClasses) throws BlueDbException {
 		List<Class<? extends Serializable>> existingClassList = getSerializedClassList();
 		List<Class<? extends Serializable>> newClassList = (existingClassList == null) ? new ArrayList<>() : new ArrayList<>(existingClassList);
+		for (Class<? extends Serializable> clazz: ThreadLocalFstSerializer.getClassesToAlwaysRegister()) {
+			if (!newClassList.contains(clazz)) {  // don't keep expanding the list every time we call this method
+				newClassList.add(clazz);
+			}
+		}
 		if (!newClassList.contains(primaryClass)) {  // don't keep expanding the list every time we call this method
 			newClassList.add(primaryClass);
 		}

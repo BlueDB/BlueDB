@@ -5,12 +5,14 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.TestValue2;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
@@ -62,19 +64,39 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getAndAddToSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
+		Class<? extends Serializable>[] defaultClasses = getClassesToAlwaysRegister();
 
 		assertNull(metaData.getSerializedClassList());
+		@SuppressWarnings("unchecked")
 		Class<? extends Serializable>[] testValue1 = new Class[] {TestValue.class};
+		@SuppressWarnings("unchecked")
 		Class<? extends Serializable>[] testValueBoth = new Class[] {TestValue.class, TestValue2.class};
+		Class<? extends Serializable>[] testValue1PlusDefaults = concatenate(defaultClasses, testValue1);
+		Class<? extends Serializable>[] testValueBothPlusDefaults =  concatenate(defaultClasses, testValueBoth);
 
 		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(TestValue.class);
-		assertArrayEquals(testValue1, afterAdding1);
+		assertArrayEquals(testValue1PlusDefaults, afterAdding1);
 
 		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(TestValue.class);
-		assertArrayEquals(testValue1, afterAdding1Again);
+		assertArrayEquals(testValue1PlusDefaults, afterAdding1Again);
 
 		Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(TestValue.class, TestValue2.class);
-		assertArrayEquals(testValueBoth, afterAddingBoth);
+		assertArrayEquals(testValueBothPlusDefaults, afterAddingBoth);
+	}
+
+	private Class<? extends Serializable>[] getClassesToAlwaysRegister() {
+		Collection<? extends Class<? extends Serializable>> classesToAlwaysRegister = ThreadLocalFstSerializer.getClassesToAlwaysRegister();
+		@SuppressWarnings("unchecked")
+		Class<? extends Serializable>[] array = new Class[classesToAlwaysRegister.size()];
+		classesToAlwaysRegister.toArray(array);
+		return array;
+	}
+
+	private <T> T[] concatenate(T[] a, T[] b) {
+		int combinedLength = a.length + b.length;
+		T[] combined = Arrays.copyOf(a, combinedLength);
+	    System.arraycopy(b, 0, combined, a.length, b.length);
+	    return combined;
 	}
 
 	private CollectionMetaData createNewMetaData() {
