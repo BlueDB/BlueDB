@@ -81,9 +81,8 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<Recoverable<T>> getPendingChanges() throws BlueDbException {
-		List<File> pendingChangeFiles = FileManager.getFolderContents(historyFolderPath, SUFFIX_PENDING);
 		List<Recoverable<T>> changes = new ArrayList<>();
-		for (File file: pendingChangeFiles) {
+		for (File file: getPendingChangeFiles()) {
 			@SuppressWarnings("unchecked")
 			Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
 			changes.add(change);
@@ -93,7 +92,15 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<File> getCompletedChangeFiles() {
-		return FileManager.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
+		List<File> completedChangeFilesIncludingTemps = FileManager.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
+		List<File> completedChangeFiles = Blutils.filter(completedChangeFilesIncludingTemps, (f) -> !FileManager.isTempFile(f));
+		return completedChangeFiles;
+	}
+
+	public List<File> getPendingChangeFiles() {
+		List<File> pendingChangeFilesIncludingTemps = FileManager.getFolderContents(historyFolderPath, SUFFIX_PENDING);
+		List<File> pendingChangeFiles = Blutils.filter(pendingChangeFilesIncludingTemps, (f) -> !FileManager.isTempFile(f));
+		return pendingChangeFiles;
 	}
 
 	public void recover() throws BlueDbException {

@@ -27,16 +27,10 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 
 	@Override
 	protected DefaultCoder initialValue() {
-		List<Class<?>> classesToRegister = new LinkedList<>();
-		
-		classesToRegister.addAll(getClassesToAlwaysRegister());
-		classesToRegister.addAll(Arrays.asList(registeredSerializableClasses));
-		
-		Class<?>[] array = new Class<?>[0];
-		return new DefaultCoder(true, classesToRegister.toArray(array));
+		return new DefaultCoder(true, registeredSerializableClasses);
 	}
 
-	private Collection<? extends Class<?>> getClassesToAlwaysRegister() {
+	public static Collection<? extends Class<? extends Serializable>> getClassesToAlwaysRegister() {
 		return Arrays.asList(
 			BlueEntity.class, 
 			IntegerKey.class, 

@@ -459,6 +459,14 @@ public class FileManagerTest extends TestCase {
 		}
 	}
 
+	@Test
+	public void test_isTempFile() throws Exception {
+		File file = Paths.get(".", "whatever").toFile();
+		File tempFile = FileManager.createTempFilePath(file.toPath()).toFile();
+		assertFalse(FileManager.isTempFile(file));
+		assertTrue(FileManager.isTempFile(tempFile));
+		assertFalse(FileManager.isTempFile(null));
+	}
 
 
 	private File createFile(String fileName) throws Exception {
