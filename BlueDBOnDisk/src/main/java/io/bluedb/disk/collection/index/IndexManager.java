@@ -30,7 +30,9 @@ public class IndexManager<T extends Serializable> {
 	public <K extends ValueKey> BlueIndex<K, T> createIndex(String indexName, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		Path indexPath = Paths.get(collection.getPath().toString(), INDEXES_SUBFOLDER, indexName);
 		BlueIndexOnDisk<K, T> index = BlueIndexOnDisk.createNew(collection, indexPath, keyExtractor);
-		indexesByName.put(indexName, (BlueIndexOnDisk<ValueKey, T>) index);
+		@SuppressWarnings("unchecked")
+		BlueIndexOnDisk<ValueKey, T> typedIndex = (BlueIndexOnDisk<ValueKey, T>) index;
+		indexesByName.put(indexName, typedIndex);
 		return index;
 	}
 
