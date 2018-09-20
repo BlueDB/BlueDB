@@ -4,24 +4,29 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import io.bluedb.disk.segment.SegmentEntityIterator;
+import io.bluedb.disk.segment.SegmentManager;
+import io.bluedb.disk.collection.index.BlueIndexOnDisk;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.serialization.BlueEntity;
 
-public class LastEntityFinder<T extends Serializable> {
+public class LastEntityFinder {
 
-	final private List<Segment<T>> segments;
+	final private SegmentManager<?> segmentManager;
 
-	public LastEntityFinder(final BlueCollectionOnDisk<T> collection) {
-		segments = collection.getSegmentManager().getAllExistingSegments();
-		Collections.sort(segments);
-		Collections.reverse(segments);
+	public LastEntityFinder(final BlueIndexOnDisk<?, ?> index) {
+		segmentManager = index.getSegmentManager();
 	}
 
-	public BlueEntity<T> getLastEntity() {
+	public LastEntityFinder(final BlueCollectionOnDisk<?> collection) {
+		segmentManager = collection.getSegmentManager();
+	}
+
+	public BlueEntity<?> getLastEntity() {
+		List<Segment<? extends Serializable>> segments = getSegmentsInReverseOrder();
 		while (!segments.isEmpty()) {
-			BlueEntity<T> last = null;
-			Segment<T> segment = segments.remove(0);
-			try (SegmentEntityIterator<T> segmentIterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
+			BlueEntity<?> last = null;
+			Segment<?> segment = segments.remove(0);
+			try (SegmentEntityIterator<?> segmentIterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
 				while(segmentIterator.hasNext()) {
 					last = segmentIterator.next();
 				}
@@ -31,5 +36,14 @@ public class LastEntityFinder<T extends Serializable> {
 			}
 		}
 		return null;
+	}
+
+	public List<Segment<?>> getSegmentsInReverseOrder() {
+		List<?> existingSegmentsUntyped = segmentManager.getAllExistingSegments();
+		@SuppressWarnings("unchecked")
+		List<Segment<?>> segments = (List<Segment<?>>) existingSegmentsUntyped;
+		Collections.sort(segments);
+		Collections.reverse(segments);
+		return segments;
 	}
 }

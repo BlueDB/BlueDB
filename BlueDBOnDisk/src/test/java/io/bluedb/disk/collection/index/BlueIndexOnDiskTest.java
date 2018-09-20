@@ -179,4 +179,39 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		segmentDirectoryContents = segmentFolder.listFiles();
 		assertEquals(1, segmentDirectoryContents.length);
 	}
+
+	@Test
+	public void test_getLastKey() throws Exception {
+		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+
+		IntegerKey integerKey1 = new IntegerKey(1);
+		IntegerKey integerKey2 = new IntegerKey(2);
+		IntegerKey integerKey3 = new IntegerKey(3);
+
+		TestValue value1 = new TestValue("Fred", 1);
+		TestValue value2 = new TestValue("Bob", 2);
+		TestValue value3 = new TestValue("Joe", 3);
+		TestValue value3B = new TestValue("Sally", 3);
+
+		// make sure it's null if collection empty
+		assertNull(index.getLastKey());
+
+		// make sure it updates on first insert
+		insertAtTime(4, value1);
+		assertEquals(integerKey1, index.getLastKey());
+
+		// make sure it updates on additional insert
+		insertAtTime(5, value3);
+		assertEquals(integerKey3, index.getLastKey());
+
+		// make sure it doesn't go backwards
+		insertAtTime(6, value2);
+		assertEquals(integerKey3, index.getLastKey());
+
+		// make sure duplicates at the max don't break anything
+		insertAtTime(7, value3B);
+		assertEquals(integerKey3, index.getLastKey());
+	}
 }

@@ -67,6 +67,10 @@ public class IndexCompositeKey<K extends BlueKey> implements BlueKey {
 		return indexKey.isInRange(min, max);
 	}
 
+	public K getIndexKey() {
+		return indexKey;
+	}
+
 	public BlueKey getValueKey() {
 		return valueKey;
 	}
