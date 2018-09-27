@@ -14,6 +14,7 @@ import io.bluedb.disk.Blutils;
 import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
+import io.bluedb.disk.collection.LastEntityFinder;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
@@ -21,6 +22,7 @@ import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.rollup.IndexRollupTarget;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.rollup.Rollupable;
+import io.bluedb.disk.serialization.BlueEntity;
 
 public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T>, Rollupable {
 
@@ -129,5 +131,17 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		CheckedFunction<RollupTarget, IndexRollupTarget> indexToComposite = (r) -> new IndexRollupTarget(indexName, r.getSegmentGroupingNumber(), r.getRange());
 		List<IndexRollupTarget> indexRollupTargets = Blutils.mapIgnoringExceptions(rollupTargets, indexToComposite);
 		collection.getRollupScheduler().reportWrites(indexRollupTargets);
+	}
+
+	@Override
+	public I getLastKey() {
+		LastEntityFinder lastFinder = new LastEntityFinder(this);
+		BlueEntity<?> lastIndexEntity = lastFinder.getLastEntity();
+		if (lastIndexEntity == null) {
+			return null;
+		}
+		@SuppressWarnings("unchecked")
+		IndexCompositeKey<I> lastCompositeKey = (IndexCompositeKey<I>) lastIndexEntity.getKey();
+		return lastCompositeKey.getIndexKey();
 	}
 }

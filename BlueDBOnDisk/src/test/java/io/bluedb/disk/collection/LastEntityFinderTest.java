@@ -11,8 +11,8 @@ public class LastEntityFinderTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_empty() {
-		LastEntityFinder<TestValue> lastFinder = new LastEntityFinder<TestValue>(getTimeCollection());
-		BlueEntity<TestValue> lastEntity = lastFinder.getLastEntity();
+		LastEntityFinder lastFinder = new LastEntityFinder(getTimeCollection());
+		BlueEntity<?> lastEntity = lastFinder.getLastEntity();
 		assertNull(lastEntity);
 	}
 
@@ -25,8 +25,8 @@ public class LastEntityFinderTest extends BlueDbDiskTestBase {
 		insertAtTimeFrame(0, 1, value1);
 		insertAtTimeFrame(1, 2, value2);
 
-		LastEntityFinder<TestValue> lastFinder = new LastEntityFinder<TestValue>(getTimeCollection());
-		BlueEntity<TestValue> lastEntity = lastFinder.getLastEntity();
+		LastEntityFinder lastFinder = new LastEntityFinder(getTimeCollection());
+		BlueEntity<?> lastEntity = lastFinder.getLastEntity();
 		assertNotNull(lastEntity);
 		assertEquals(value2, lastEntity.getValue());
 	}
@@ -40,14 +40,14 @@ public class LastEntityFinderTest extends BlueDbDiskTestBase {
 		BlueKey key1 = insertAtTimeFrame(0, 1, valueInFirstSegment);
 		BlueKey key2 = insertAtTimeFrame(segmentSize, segmentSize + 1, valueInSecondSegment);
 
-		LastEntityFinder<TestValue> lastFinder = new LastEntityFinder<TestValue>(getTimeCollection());
-		BlueEntity<TestValue> lastEntity = lastFinder.getLastEntity();
+		LastEntityFinder lastFinder = new LastEntityFinder(getTimeCollection());
+		BlueEntity<?> lastEntity = lastFinder.getLastEntity();
 		assertNotNull(lastEntity);
 		assertEquals(valueInSecondSegment, lastEntity.getValue());
 
 		getTimeCollection().delete(key2);
 
-		lastFinder = new LastEntityFinder<TestValue>(getTimeCollection());
+		lastFinder = new LastEntityFinder(getTimeCollection());
 		lastEntity = lastFinder.getLastEntity();
 		assertNotNull(lastEntity);
 		assertEquals(valueInFirstSegment, lastEntity.getValue());
@@ -66,8 +66,8 @@ public class LastEntityFinderTest extends BlueDbDiskTestBase {
 		insertAtTimeFrame(segmentSize, segmentSize + 1, valueInSecondSegment);
 		insertAtTimeFrame(segmentSize * 2, segmentSize * 2 + 1, valueAfterSecondSegment);
 
-		LastEntityFinder<TestValue> lastFinder = new LastEntityFinder<TestValue>(getTimeCollection());
-		BlueEntity<TestValue> lastEntity = lastFinder.getLastEntity();
+		LastEntityFinder lastFinder = new LastEntityFinder(getTimeCollection());
+		BlueEntity<?> lastEntity = lastFinder.getLastEntity();
 		assertNotNull(lastEntity);
 		assertEquals(valueAfterSecondSegment, lastEntity.getValue());
 	}

@@ -111,8 +111,8 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	@Override
 	public BlueKey getLastKey() {
-		LastEntityFinder<T> lastFinder = new LastEntityFinder<T>(this);
-		BlueEntity<T> lastEntity = lastFinder.getLastEntity();
+		LastEntityFinder lastFinder = new LastEntityFinder(this);
+		BlueEntity<?> lastEntity = lastFinder.getLastEntity();
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
