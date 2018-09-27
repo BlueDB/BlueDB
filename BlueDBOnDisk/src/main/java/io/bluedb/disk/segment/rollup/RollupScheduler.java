@@ -1,6 +1,7 @@
 package io.bluedb.disk.segment.rollup;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,8 +13,6 @@ import io.bluedb.disk.collection.index.IndexRollupTask;
 public class RollupScheduler implements Runnable {
 
 	private static final long WAIT_BETWEEN_REVIEWS_DEFAULT = 30_000;
-	protected static final long WAIT_AFTER_WRITE_BEFORE_ROLLUP = 3600_000;
-	protected static final long WAIT_AFTER_READ_BEFORE_ROLLUP = 60_000;
 
 	private long waitBetweenReviews = WAIT_BETWEEN_REVIEWS_DEFAULT;
 	private final BlueCollectionOnDisk<?> collection;
@@ -45,22 +44,26 @@ public class RollupScheduler implements Runnable {
 		isStopped = true;
 	}
 
-	public void reportRead(RollupTarget rollupTarget) {
+	public void reportReads(List<? extends RollupTarget> rollupTargets) {
 		long timeMillis = System.currentTimeMillis();
-		reportRead(rollupTarget, timeMillis);
+		for (RollupTarget target: rollupTargets) {
+			reportRead(target, timeMillis);
+		}
 	}
 
-	public void reportWrite(RollupTarget rollupTarget) {
+	public void reportWrites(List< ? extends RollupTarget> rollupTargets) {
 		long timeMillis = System.currentTimeMillis();
-		reportWrite(rollupTarget, timeMillis);
+		for (RollupTarget target: rollupTargets) {
+			reportWrite(target, timeMillis);
+		}
 	}
 
 	public void reportRead(RollupTarget rollupTarget, long timeMillis) {
-		setRollupTime(rollupTarget, timeMillis + WAIT_AFTER_READ_BEFORE_ROLLUP);
+		setRollupTime(rollupTarget, timeMillis + rollupTarget.getWriteRollupDelay());
 	}
 
 	public void reportWrite(RollupTarget rollupTarget, long timeMillis) {
-		setRollupTime(rollupTarget, timeMillis + WAIT_AFTER_WRITE_BEFORE_ROLLUP);
+		setRollupTime(rollupTarget, timeMillis + rollupTarget.getWriteRollupDelay());
 	}
 
 	public void setRollupTime(RollupTarget rollupTarget, long timeMillis) {
@@ -116,5 +119,9 @@ public class RollupScheduler implements Runnable {
 			rollupRunnable = new RollupTask<>(collection, target);
 		}
 		collection.submitTask(rollupRunnable);
+	}
+
+	public Map<RollupTarget, Long> getRollupTimes() {
+		return new HashMap<>(rollupTimes);
 	}
 }

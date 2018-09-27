@@ -61,6 +61,26 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_isFileNameRangeEnclosed() {
+		File _x_to_1 = Paths.get("1_x").toFile();
+		File _1_to_x = Paths.get("1_x").toFile();
+		File _1_to_3 = Paths.get("1_3").toFile();
+		File _1 = Paths.get("1_").toFile();
+		File _1_to_3_in_subfolder = Paths.get("whatever", "1_3").toFile();
+		assertFalse(Segment.isFileNameRangeEnclosed(_1, 0, 10));
+		assertFalse(Segment.isFileNameRangeEnclosed(_x_to_1, 0, 10));
+		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_x, 0, 10));
+		assertTrue(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 10));
+		assertTrue(Segment.isFileNameRangeEnclosed(_1_to_3_in_subfolder, 0, 10));
+		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 0));  // above range
+		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 1));  // top of range
+		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 2, 2));  // point
+		assertTrue(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 5));  // middle of range
+		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 3, 4));  // bottom of range
+		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 4, 5));  // below range
+	}
+
+	@Test
 	public void test_contains() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
@@ -283,6 +303,32 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(2, values.size());
 		directoryContents = segment.getPath().toFile().listFiles();
 		assertEquals(1, directoryContents.length);
+	}
+
+
+	@Test
+	public void test_rollup_out_of_order() throws Exception {
+		Segment<TestValue> segment = getSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value3 = createValue("Chuck");
+		segment.insert(key1At1, value1);
+		segment.insert(key3At3, value3);
+
+		File[] directoryContentsBeforeRollups = segment.getPath().toFile().listFiles();
+		assertEquals(2, directoryContentsBeforeRollups.length);
+
+		Range topRollupRange = new Range(0, 3_600_000 - 1);
+		segment.rollup(topRollupRange);
+		File[] directoryContentsAfterTopRollup = segment.getPath().toFile().listFiles();
+		assertEquals(1, directoryContentsAfterTopRollup.length);
+
+		Range midRollupRange = new Range(0, 6_000 - 1);
+		segment.rollup(midRollupRange);
+		File[] directoryContentsAfterLaterMidRollup = segment.getPath().toFile().listFiles();
+		assertEquals(1, directoryContentsAfterLaterMidRollup.length);
+		assertEquals(directoryContentsAfterTopRollup[0].getName(), directoryContentsAfterLaterMidRollup[0].getName());
 	}
 
 	@Test
@@ -521,5 +567,68 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertTrue(valueSegment.isValidRollupRange(validValueSegmentRange));
 		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange1));
 		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange2));
+	}
+
+	@Test
+	public void test_getRollupRanges() {
+		Range segmentRange = new Range(0, 99);
+		Segment<?> segment = new Segment<>(null, segmentRange, null, null, Arrays.asList(1L, 10L, 100L));
+		Range _10_19 = new Range(10, 19);
+		Range _0_99 = new Range(0, 99);
+		Range _0_100 = new Range(0, 100);
+		Range _9_11 = new Range(9, 11);
+		Range _10_10 = new Range(10, 10);
+		Range _10_11 = new Range(10, 11);
+		
+		List<Range> ranges_none = Arrays.asList();
+		List<Range> ranges_10_100 = Arrays.asList(_10_19, _0_99);
+		List<Range> ranges_100 = Arrays.asList(_0_99);
+
+		List<Range> rangesFor9to11 = segment.getRollupRanges(_9_11);
+		List<Range> rangesFor10to10 = segment.getRollupRanges(_10_10);
+		List<Range> rangesFor10to11 = segment.getRollupRanges(_10_11);
+		List<Range> rangesFor10to19 = segment.getRollupRanges(_10_19);
+		List<Range> rangesFor0to99 = segment.getRollupRanges(_0_99);
+		List<Range> rangesFor0to100 = segment.getRollupRanges(_0_100);
+		
+		assertEquals(ranges_100, rangesFor9to11);
+		assertEquals(ranges_10_100, rangesFor10to10);
+		assertEquals(ranges_10_100, rangesFor10to11);
+		assertEquals(ranges_100, rangesFor10to19);
+		assertEquals(ranges_none, rangesFor0to99);
+		assertEquals(ranges_none, rangesFor0to100);
+	}
+
+	@Test
+	public void test_getRollupTargets() {
+		Range segmentRange = new Range(0, 99);
+		Segment<?> segment = new Segment<>(null, segmentRange, null, null, Arrays.asList(1L, 10L, 100L));
+		Range _10_19 = new Range(10, 19);
+		Range _0_99 = new Range(0, 99);
+		Range _0_100 = new Range(0, 100);
+		Range _9_11 = new Range(9, 11);
+		Range _10_10 = new Range(10, 10);
+		Range _10_11 = new Range(10, 11);
+		
+		RollupTarget target_10_19 = new RollupTarget(segmentRange.getStart(), _10_19);
+		RollupTarget target_10_99 = new RollupTarget(segmentRange.getStart(), _0_99);
+		
+		List<RollupTarget> targets_none = Arrays.asList();
+		List<RollupTarget> targets_10_100 = Arrays.asList(target_10_19, target_10_99);
+		List<RollupTarget> targets_100 = Arrays.asList(target_10_99);
+
+		List<RollupTarget> rangesFor9to11 = segment.getRollupTargets(_9_11);
+		List<RollupTarget> rangesFor10to10 = segment.getRollupTargets(_10_10);
+		List<RollupTarget> rangesFor10to11 = segment.getRollupTargets(_10_11);
+		List<RollupTarget> rangesFor10to19 = segment.getRollupTargets(_10_19);
+		List<RollupTarget> rangesFor0to99 = segment.getRollupTargets(_0_99);
+		List<RollupTarget> rangesFor0to100 = segment.getRollupTargets(_0_100);
+		
+		assertEquals(targets_100, rangesFor9to11);
+		assertEquals(targets_10_100, rangesFor10to10);
+		assertEquals(targets_10_100, rangesFor10to11);
+		assertEquals(targets_100, rangesFor10to19);
+		assertEquals(targets_none, rangesFor0to99);
+		assertEquals(targets_none, rangesFor0to100);
 	}
 }

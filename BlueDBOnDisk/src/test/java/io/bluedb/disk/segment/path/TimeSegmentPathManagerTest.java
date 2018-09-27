@@ -18,6 +18,14 @@ import io.bluedb.disk.segment.Range;
 public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
+	public void test_validate_rollup_levels() {
+		List<Long> rollupLevels = TimeSegmentPathManager.ROLLUP_LEVELS;
+		for (int i = 0; i < rollupLevels.size() - 1; i++) {
+			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
+		}
+	}
+
+	@Test
 	public void test_getSegmentRange() {
 		Range segmentRangeStartingAtZero = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());

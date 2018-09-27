@@ -2,7 +2,10 @@ package io.bluedb.disk.collection.index;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
@@ -14,6 +17,9 @@ import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.segment.rollup.IndexRollupTarget;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
+import io.bluedb.disk.segment.rollup.RollupTarget;
 
 public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
@@ -178,6 +184,42 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(2, values.size());
 		segmentDirectoryContents = segmentFolder.listFiles();
 		assertEquals(1, segmentDirectoryContents.length);
+	}
+
+	@Test
+	public void test_rollup_scheduling() throws Exception {
+		String indexName = "test_index";
+		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
+		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		collection.createIndex(indexName, IntegerKey.class, keyExtractor);
+
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna", 1);
+		TestValue value3 = createValue("Chuck", 3);
+		List<TestValue> values;
+		IntegerKey indexKey = keyExtractor.extractKeys(value1).get(0);
+		long groupingNumber = indexKey.getGroupingNumber();
+		long startOfRange = groupingNumber - (groupingNumber % 256);
+		Range rollupRange = new Range(startOfRange, startOfRange + 256 - 1);
+
+		Map<RollupTarget, Long> rollupTimes;
+		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
+		IndexRollupTarget target_256 = new IndexRollupTarget(indexName, rollupRange.getStart(), rollupRange);
+
+		rollupTimes = scheduler.getRollupTimes();
+		assertEquals(0, rollupTimes.size());
+
+		values = getTimeCollection().query().getList();
+		assertEquals(0, values.size());
+
+		getTimeCollection().insert(key1At1, value1);
+		getTimeCollection().insert(key3At3, value3);
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+
+		rollupTimes = scheduler.getRollupTimes();
+		assertTrue(rollupTimes.containsKey(target_256));
 	}
 
 	@Test

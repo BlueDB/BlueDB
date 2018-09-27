@@ -20,6 +20,14 @@ public class RollupTarget {
 		return range;
 	}
 
+	public long getWriteRollupDelay() {
+		return range.length();
+	}
+
+	public long getReadRollupDelay() {
+		return range.length();
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -37,5 +45,10 @@ public class RollupTarget {
 		} else {
 			return false;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "[" + this.getClass().getSimpleName() + " @ " + segmentGroupingNumber + " " + range.toString() + "]";
 	}
 }
