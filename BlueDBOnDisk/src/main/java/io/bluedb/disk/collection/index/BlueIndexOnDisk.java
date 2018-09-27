@@ -118,14 +118,16 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 	}
 
 	@Override
-	public void reportRead(long segmentGroupingNumber, Range range) {
-		IndexRollupTarget target = new IndexRollupTarget(indexName, segmentGroupingNumber, range);
-		collection.getRollupScheduler().reportRead(target);
+	public void reportReads(List<RollupTarget> rollupTargets) {
+		CheckedFunction<RollupTarget, IndexRollupTarget> indexToComposite = (r) -> new IndexRollupTarget(indexName, r.getSegmentGroupingNumber(), r.getRange());
+		List<IndexRollupTarget> indexRollupTargets = Blutils.mapIgnoringExceptions(rollupTargets, indexToComposite);
+		collection.getRollupScheduler().reportReads(indexRollupTargets);
 	}
 
 	@Override
-	public void reportWrite(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		collection.getRollupScheduler().reportWrite(target);
+	public void reportWrites(List<RollupTarget> rollupTargets) {
+		CheckedFunction<RollupTarget, IndexRollupTarget> indexToComposite = (r) -> new IndexRollupTarget(indexName, r.getSegmentGroupingNumber(), r.getRange());
+		List<IndexRollupTarget> indexRollupTargets = Blutils.mapIgnoringExceptions(rollupTargets, indexToComposite);
+		collection.getRollupScheduler().reportWrites(indexRollupTargets);
 	}
 }

@@ -1,8 +1,8 @@
 package io.bluedb.disk.segment.rollup;
 
-import io.bluedb.disk.segment.Range;
+import java.util.List;
 
 public interface Rollupable {
-	public void reportRead(long segmentGroupingNumber, Range range);
-	public void reportWrite(long segmentGroupingNumber, Range range);
+	public void reportReads(List<RollupTarget> rollupTargets);
+	public void reportWrites(List<RollupTarget> rollupTargets);
 }

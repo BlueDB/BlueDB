@@ -6,8 +6,11 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,6 +32,7 @@ import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
@@ -293,6 +297,39 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(2, values.size());
 		segmentDirectoryContents = segment.getPath().toFile().listFiles();
 		assertEquals(1, segmentDirectoryContents.length);
+	}
+
+	@Test
+	public void test_rollup_scheduling() throws Exception {
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value3 = createValue("Chuck");
+		List<TestValue> values;
+
+		Map<RollupTarget, Long> rollupTimes;
+		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
+		RollupTarget target_6000 = new RollupTarget(0, new Range(0, 5999));
+		RollupTarget target_3600000 = new RollupTarget(0, new Range(0, 3599999));
+		Set<RollupTarget> targets_none = new HashSet<>();
+		Set<RollupTarget> targets_mid_and_top = new HashSet<>(Arrays.asList(target_6000, target_3600000));
+		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
+		
+		rollupTimes = scheduler.getRollupTimes();
+		assertEquals(targets_none, rollupTimes.keySet());
+
+		values = getTimeCollection().query().getList();
+		assertEquals(0, values.size());
+
+		getTimeCollection().insert(key1At1, value1);
+		getTimeCollection().insert(key3At3, value3);
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+
+		rollupTimes = scheduler.getRollupTimes();
+		assertEquals(targets_mid_and_top, rollupTimes.keySet());
+		assertEquals(targets_mid_and_top, scheduler.getRollupTimes().keySet());
+		assertTrue(rollupTimes.get(target_3600000) > rollupTimes.get(target_6000));
 	}
 
 	@Test
