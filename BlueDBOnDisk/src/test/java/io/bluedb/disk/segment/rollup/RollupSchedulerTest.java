@@ -1,0 +1,235 @@
+package io.bluedb.disk.segment.rollup;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Test;
+import io.bluedb.api.index.BlueIndex;
+import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.IntegerKey;
+import io.bluedb.api.keys.TimeKey;
+import io.bluedb.disk.BlueDbDiskTestBase;
+import io.bluedb.disk.Blutils;
+import io.bluedb.disk.TestValue;
+import io.bluedb.disk.collection.BlueCollectionOnDisk;
+import io.bluedb.disk.collection.CollectionTestTools;
+import io.bluedb.disk.collection.index.BlueIndexOnDisk;
+import io.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.segment.rollup.RollupScheduler;
+
+public class RollupSchedulerTest extends BlueDbDiskTestBase {
+
+	@Test
+	public void test_reportWrite() {
+		Range timeRange = new Range(2, 5);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		long insertTime = System.currentTimeMillis();
+		getRollupScheduler().reportWrite(rollupTarget, insertTime);
+		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+
+		getRollupScheduler().reportWrite(rollupTarget, insertTime - 1); // report earlier time
+		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+	}
+
+	@Test
+	public void test_reportRead() {
+		Range timeRange = new Range(2, 5);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		long readTime = System.currentTimeMillis();
+		getRollupScheduler().reportRead(rollupTarget, readTime);
+		assertEquals(readTime + RollupScheduler.WAIT_AFTER_READ_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+
+		getRollupScheduler().reportRead(rollupTarget, readTime - 1); // report earlier time
+		assertEquals(readTime + RollupScheduler.WAIT_AFTER_READ_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+	}
+
+	@Test
+	public void test_getLastWriteTime() {
+		Range timeRange = new Range(2, 5);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		long insertTime = System.currentTimeMillis();
+		getRollupScheduler().reportWrite(rollupTarget, insertTime);
+		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+	}
+
+	@Test
+	public void test_rollupTargetsReadyForRollup() {
+		Range timeRange0to1 = new Range(0, 1);
+		Range timeRange2to3 = new Range(2, 3);
+		RollupTarget rollupTarget0to1 = new RollupTarget(0, timeRange0to1);
+		RollupTarget rollupTarget2to3 = new RollupTarget(0, timeRange2to3);
+		getRollupScheduler().reportWrite(rollupTarget0to1, 0);
+		getRollupScheduler().reportWrite(rollupTarget2to3, 0);
+		getRollupScheduler().reportWrite(rollupTarget2to3, System.currentTimeMillis());
+		List<RollupTarget> readyForRollup = getRollupScheduler().rollupTargetsReadyForRollup();
+		assertEquals(1, readyForRollup.size());
+		assertTrue(readyForRollup.contains(rollupTarget0to1));
+	}
+
+	@Test
+	public void test_scheduleReadyRollups() throws Exception {
+		List<RollupTarget> rollupsRequested = new ArrayList<>();
+		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
+		Range timeRange = new Range(0, 1);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+		mockRollupScheduler.reportWrite(rollupTarget, 0);
+		assertEquals(0 + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+		mockRollupScheduler.scheduleReadyRollups();
+
+		assertEquals(1, rollupsRequested.size());
+		assertTrue(rollupsRequested.contains(rollupTarget));
+	}
+
+	@Test
+	public void test_scheduleRollup_collection() throws Exception {
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value3 = createValue("Chuck");
+		List<TestValue> values;
+
+		getTimeCollection().insert(key1At1, value1);
+		getTimeCollection().insert(key3At3, value3);
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
+		File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
+
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
+		RollupTarget rollupTarget = new RollupTarget(0, entireFirstSegmentTimeRange);
+		getTimeCollection().getRollupScheduler().scheduleRollup(rollupTarget);
+		CollectionTestTools.waitForExecutorToFinish(getTimeCollection());
+
+		values = getTimeCollection().query().getList();
+		assertEquals(2, values.size());
+		segmentDirectoryContents = segment.getPath().toFile().listFiles();
+		assertEquals(1, segmentDirectoryContents.length);
+	}
+
+	@Test
+	public void test_scheduleRollup_index() throws Exception {
+		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
+		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		String indexName = "test_index";
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, keyExtractor);
+		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna", 1);
+		TestValue value3 = createValue("Chuck", 3);
+		List<TestValue> values;
+
+		values = collection.query().getList();
+		assertEquals(0, values.size());
+
+		collection.insert(key1At1, value1);
+		collection.insert(key3At3, value3);
+		values = collection.query().getList();
+		assertEquals(2, values.size());
+
+		BlueKey retrievalKey1 = keyExtractor.extractKeys(value1).get(0);
+		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
+		File segmentFolder = indexSegment.getPath().toFile();
+		File[] segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(2, segmentDirectoryContents.length);
+
+		
+		Range entireFirstSegmentRange = indexSegment.getRange();
+		IndexRollupTarget rollupTarget = new IndexRollupTarget(indexName, 0, entireFirstSegmentRange);
+		collection.getRollupScheduler().scheduleRollup(rollupTarget);
+		collection.getRollupScheduler().scheduleRollup(rollupTarget);
+		CollectionTestTools.waitForExecutorToFinish(collection);
+
+		values = collection.query().getList();
+		assertEquals(2, values.size());
+		segmentDirectoryContents = segmentFolder.listFiles();
+		assertEquals(1, segmentDirectoryContents.length);
+	}
+
+	@Test
+	public void test_forceScheduleRollups() throws Exception {
+		List<RollupTarget> rollupsRequested = new ArrayList<>();
+		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
+		Range timeRange = new Range(0, 1);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+
+		long now = System.currentTimeMillis();
+		mockRollupScheduler.reportWrite(rollupTarget, now);
+		assertEquals(now + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+
+		mockRollupScheduler.scheduleReadyRollups();
+		assertEquals(0, rollupsRequested.size());
+
+		mockRollupScheduler.forceScheduleRollups();
+		assertEquals(1, rollupsRequested.size());
+		assertTrue(rollupsRequested.contains(rollupTarget));
+	}
+
+	@Test
+	public void test_run() throws Exception {
+		List<RollupTarget> rollupsRequested = new ArrayList<>();
+		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
+		Range timeRange = new Range(0, 1);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+		mockRollupScheduler.reportWrite(rollupTarget, 0);
+		assertEquals(0 + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+
+		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
+		rollupSchedulerThread.start();
+
+		for (int i = 0; i < 100; i++) {
+			try { Thread.sleep(10);} catch (InterruptedException e) {e.printStackTrace();}
+			if(rollupsRequested.size() > 0)
+				break;
+		}
+		
+		rollupSchedulerThread.stop();
+//		getRollupScheduler().stop();
+
+		assertEquals(1, rollupsRequested.size());
+		assertTrue(rollupsRequested.contains(rollupTarget));
+	}
+
+	@Test
+	public void test_run_interruption() {
+		RollupScheduler mockRollupScheduler = new RollupScheduler(getTimeCollection());
+		mockRollupScheduler.setWaitBetweenReviews(0);
+		Range timeRange = new Range(0, 1);
+		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+
+
+		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
+		rollupSchedulerThread.start();
+		Blutils.trySleep(10);
+		assertTrue(mockRollupScheduler.isRunning());
+		rollupSchedulerThread.interrupt();
+		Blutils.trySleep(20);
+		assertFalse(mockRollupScheduler.isRunning());
+	}
+
+	private BlueCollectionOnDisk<TestValue> createMockCollection(List<RollupTarget> rollupsRequested) throws Exception {
+        return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class) {
+            @Override
+            public void submitTask(Runnable r) {
+            	RollupTask rollupTask = (RollupTask) r;
+                rollupsRequested.add(rollupTask.getTarget());
+            }
+        };
+	}
+}

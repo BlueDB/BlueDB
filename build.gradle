@@ -1,0 +1,26 @@
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    group = 'io.bluedb'
+    version = '0.0.1-SNAPSHOT'
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        testCompile "junit:junit:4.12"
+    }
+}
+
+project(':BlueDBOnDisk') {
+	dependencies {
+		compile project(':BlueDB')
+	}
+}
+
+def onDiskProjects = [':BlueDB',':BlueDBOnDisk']
+task onDiskJar(type: Jar) {
+	baseName = 'bluedb-on-disk'
+	from {
+		files(onDiskProjects.collect{ project(it).sourceSets.main.output })
+	}
+}
