@@ -328,7 +328,6 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		rollupTimes = scheduler.getRollupTimes();
 		assertEquals(targets_mid_and_top, rollupTimes.keySet());
-		assertEquals(targets_mid_and_top, scheduler.getRollupTimes().keySet());
 		assertTrue(rollupTimes.get(target_3600000) > rollupTimes.get(target_6000));
 	}
 
