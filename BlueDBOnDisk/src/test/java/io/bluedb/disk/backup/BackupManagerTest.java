@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.Test;
+
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
@@ -146,9 +148,6 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	}
 
 	private Path getbackedUpZipPath() throws URISyntaxException {
-		String absoluteBinPath = Paths.get(this.getClass().getResource("./").toURI()).toAbsolutePath().toString();
-		String absoluteTestPath = absoluteBinPath.replaceFirst("bin.*", "test");
-		String filename = "backup.zip";
-		return Paths.get(absoluteTestPath, "resources", filename);
+		return Paths.get(this.getClass().getResource("/backup.zip").toURI());
 	}
 }
