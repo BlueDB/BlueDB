@@ -60,7 +60,11 @@ public class ZipUtils {
 	private static void extractEntryContents(ZipInputStream zis, ZipEntry entry, String outputDirectory) throws IOException {
 		Path path = Paths.get(outputDirectory, entry.getName());
 		Files.createDirectories(path.getParent());
-		copyBytesIfNotEmpty(zis, path);
+		if(!entry.isDirectory()) {
+			try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(path))) {
+				copyBytes(zis, bos);
+			}
+		}
 	}
 
 	private static void copyBytes(InputStream inputStream, OutputStream outputStream) throws IOException {
@@ -71,18 +75,4 @@ public class ZipUtils {
 		}
 	}
 
-	private static void copyBytesIfNotEmpty(InputStream inputStream, Path destination) throws IOException {
-		byte[] buffer = new byte[1024];
-		int bytesRead = inputStream.read(buffer);
-		
-		if(bytesRead != -1) {
-			try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(destination))) {
-				bos.write(buffer, 0, bytesRead);
-				
-				while ((bytesRead = inputStream.read(buffer)) != -1) {
-					bos.write(buffer, 0, bytesRead);
-				}
-			}
-		}
-	}
 }
