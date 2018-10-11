@@ -12,7 +12,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.TestValue2;
-import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializerPair;
 
 public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
@@ -85,7 +85,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	}
 
 	private Class<? extends Serializable>[] getClassesToAlwaysRegister() {
-		Collection<? extends Class<? extends Serializable>> classesToAlwaysRegister = ThreadLocalFstSerializer.getClassesToAlwaysRegister();
+		Collection<? extends Class<? extends Serializable>> classesToAlwaysRegister = ThreadLocalFstSerializerPair.getClassesToAlwaysRegister();
 		@SuppressWarnings("unchecked")
 		Class<? extends Serializable>[] array = new Class[classesToAlwaysRegister.size()];
 		classesToAlwaysRegister.toArray(array);

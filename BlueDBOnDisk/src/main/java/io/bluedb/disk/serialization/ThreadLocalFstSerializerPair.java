@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 
-import org.nustaq.serialization.simpleapi.DefaultCoder;
-
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.StringKey;
@@ -16,17 +14,14 @@ import io.bluedb.api.keys.UUIDKey;
 import io.bluedb.disk.collection.index.IndexCompositeKey;
 import io.bluedb.disk.recovery.PendingChange;
 
-public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
+public class ThreadLocalFstSerializerPair implements BlueSerializer {
 	
-	private Class<?>[] registeredSerializableClasses;
+	private ThreadLocalFstSerializer writeSerializer;
+	private ThreadLocalFstSerializer readSerializer;
 	
-	public ThreadLocalFstSerializer(Class<?>...registeredSerializableClasses) {
-		this.registeredSerializableClasses = registeredSerializableClasses;
-	}
-
-	@Override
-	protected DefaultCoder initialValue() {
-		return new DefaultCoder(true, registeredSerializableClasses);
+	public ThreadLocalFstSerializerPair(Class<?>...registeredSerializableClasses) {
+		writeSerializer = new ThreadLocalFstSerializer(registeredSerializableClasses);
+		readSerializer = new ThreadLocalFstSerializer(registeredSerializableClasses);
 	}
 
 	public static Collection<? extends Class<? extends Serializable>> getClassesToAlwaysRegister() {
@@ -46,17 +41,17 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 
 	@Override
 	public byte[] serializeObjectToByteArray(Object o) {
-		return get().toByteArray(o);
+		return writeSerializer.get().toByteArray(o);
 	}
 
 	@Override
 	public Object deserializeObjectFromByteArray(byte[] bytes) {
-		return get().toObject(bytes);
+		return readSerializer.get().toObject(bytes);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Serializable> T clone(T object) {
-		return (T) get().toObject(get().toByteArray(object));
+		return (T) readSerializer.get().toObject(writeSerializer.get().toByteArray(object));
 	}
 }

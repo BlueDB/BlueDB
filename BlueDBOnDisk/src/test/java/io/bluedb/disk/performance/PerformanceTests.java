@@ -23,7 +23,7 @@ import java.util.stream.IntStream;
 
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.serialization.BlueSerializer;
-import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializerPair;
 
 public class PerformanceTests {
 
@@ -40,10 +40,10 @@ public class PerformanceTests {
 		file = tempDir.resolve("test.bin");
 
 		if(registerClass) {
-			serializer = new ThreadLocalFstSerializer(TestValue.class);
+			serializer = new ThreadLocalFstSerializerPair(TestValue.class);
 		}
 		else {
-			serializer = new ThreadLocalFstSerializer();
+			serializer = new ThreadLocalFstSerializerPair();
 		}
 		
 		Random r = new Random();

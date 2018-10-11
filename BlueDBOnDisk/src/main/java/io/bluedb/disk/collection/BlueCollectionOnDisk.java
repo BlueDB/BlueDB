@@ -36,7 +36,7 @@ import io.bluedb.disk.segment.rollup.Rollupable;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
-import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializerPair;
 
 public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
@@ -59,7 +59,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		collectionPath.toFile().mkdirs();
 		metaData = new CollectionMetaData(collectionPath);
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
-		serializer = new ThreadLocalFstSerializer(classesToRegister);
+		serializer = new ThreadLocalFstSerializerPair(classesToRegister);
 		fileManager = new FileManager(serializer);
 		this.keyType = determineKeyType(metaData, requestedKeyType);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);

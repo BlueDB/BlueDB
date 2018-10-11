@@ -19,7 +19,7 @@ import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
 import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
-import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializerPair;
 import junit.framework.TestCase;
 
 public class BlueObjectInputTest extends TestCase {
@@ -36,7 +36,7 @@ public class BlueObjectInputTest extends TestCase {
 		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
 		tempFilePath = FileManager.createTempFilePath(targetFilePath);
-		serializer = new ThreadLocalFstSerializer(new Class[]{});
+		serializer = new ThreadLocalFstSerializerPair(new Class[]{});
 		fileManager = new FileManager(serializer);
 		lockManager = fileManager.getLockManager();
 	}
