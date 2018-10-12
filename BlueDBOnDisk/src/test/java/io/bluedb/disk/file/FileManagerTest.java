@@ -21,7 +21,7 @@ import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
 import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
-import io.bluedb.disk.serialization.ThreadLocalFstSerializerPair;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import junit.framework.TestCase;
 
 public class FileManagerTest extends TestCase {
@@ -34,7 +34,7 @@ public class FileManagerTest extends TestCase {
 
 	@Override
 	protected void setUp() throws Exception {
-		serializer = new ThreadLocalFstSerializerPair(new Class[] {});
+		serializer = new ThreadLocalFstSerializer(new Class[] {});
 		fileManager = new FileManager(serializer);
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();

@@ -11,12 +11,12 @@ public class ThreadLocalFstSerializerTest {
 	
 	@Test
 	public void testStaticRegisteredClassesProblem() {
-		ThreadLocalFstSerializerPair s1 = new ThreadLocalFstSerializerPair(TestValue.class);
+		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer(TestValue.class);
 		TestValue value1 = new TestValue("Derek", 1);
 		TestValue clone1 = s1.clone(value1);
 		assertEquals(value1, clone1);
 		
-		ThreadLocalFstSerializerPair s2 = new ThreadLocalFstSerializerPair(TestValue2.class);
+		ThreadLocalFstSerializer s2 = new ThreadLocalFstSerializer(TestValue2.class);
 		TestValue value2 = new TestValue("Derek2", 2);
 		TestValue clone2 = s2.clone(value2);
 		assertEquals(value2, clone2);
@@ -28,8 +28,8 @@ public class ThreadLocalFstSerializerTest {
 	
 	@Test
 	public void testAddingRegisteredClass() {
-		ThreadLocalFstSerializerPair s1 = new ThreadLocalFstSerializerPair();
-		ThreadLocalFstSerializerPair s2 = new ThreadLocalFstSerializerPair(TestValue.class);
+		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer();
+		ThreadLocalFstSerializer s2 = new ThreadLocalFstSerializer(TestValue.class);
 		
 		TestValue originalValue = new TestValue("Derek", 3);
 		byte[] bytes = s1.serializeObjectToByteArray(originalValue);

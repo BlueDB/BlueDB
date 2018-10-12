@@ -9,7 +9,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.serialization.BlueSerializer;
-import io.bluedb.disk.serialization.ThreadLocalFstSerializerPair;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class CollectionMetaData {
 	
@@ -24,7 +24,7 @@ public class CollectionMetaData {
 
 	public CollectionMetaData(Path collectionPath) {
 		// meta data needs its own serialized because collection doesn't know which classes to register until metadata deserializes them from disk
-		BlueSerializer serializer = new ThreadLocalFstSerializerPair();
+		BlueSerializer serializer = new ThreadLocalFstSerializer();
 		
 		fileManager = new FileManager(serializer);  
 		folderPath = Paths.get(collectionPath.toString(), META_DATA_FOLDER);
@@ -66,7 +66,7 @@ public class CollectionMetaData {
 	public final Class<? extends Serializable>[] getAndAddToSerializedClassList(Class<? extends Serializable> primaryClass, Class<? extends Serializable>... additionalClasses) throws BlueDbException {
 		List<Class<? extends Serializable>> existingClassList = getSerializedClassList();
 		List<Class<? extends Serializable>> newClassList = (existingClassList == null) ? new ArrayList<>() : new ArrayList<>(existingClassList);
-		for (Class<? extends Serializable> clazz: ThreadLocalFstSerializerPair.getClassesToAlwaysRegister()) {
+		for (Class<? extends Serializable> clazz: ThreadLocalFstSerializer.getClassesToAlwaysRegister()) {
 			if (!newClassList.contains(clazz)) {  // don't keep expanding the list every time we call this method
 				newClassList.add(clazz);
 			}

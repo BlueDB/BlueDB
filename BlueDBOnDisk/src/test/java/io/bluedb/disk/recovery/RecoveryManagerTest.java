@@ -15,7 +15,7 @@ import io.bluedb.disk.TestValue;
 import io.bluedb.disk.collection.CollectionMetaData;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.serialization.BlueSerializer;
-import io.bluedb.disk.serialization.ThreadLocalFstSerializerPair;
+import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
@@ -24,14 +24,14 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		serializer = new ThreadLocalFstSerializerPair(new Class[] {});
+		serializer = new ThreadLocalFstSerializer(new Class[] {});
 	}
 
 	@Test
 	public void test_getPendingFileName() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		BlueSerializer serializer = new ThreadLocalFstSerializerPair(new Class[] {});
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		String fileName1 = RecoveryManager.getPendingFileName(change);
 
@@ -46,7 +46,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	public void test_getCompletedFileName() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		BlueSerializer serializer = new ThreadLocalFstSerializerPair(new Class[] {});
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		String pendingFileName = RecoveryManager.getPendingFileName(change);
 		String completedFileName = RecoveryManager.getCompletedFileName(change);

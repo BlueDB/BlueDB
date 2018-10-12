@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 
-import org.nustaq.serialization.simpleapi.DefaultCoder;
-
 import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.StringKey;
@@ -16,17 +14,14 @@ import io.bluedb.api.keys.UUIDKey;
 import io.bluedb.disk.collection.index.IndexCompositeKey;
 import io.bluedb.disk.recovery.PendingChange;
 
-public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
+public class ThreadLocalFstSerializer implements BlueSerializer {
 	
-	private Class<?>[] registeredSerializableClasses;
+	private ThreadLocalFstWriteSerializer writeSerializer;
+	private ThreadLocalFstReadSerializer readSerializer;
 	
 	public ThreadLocalFstSerializer(Class<?>...registeredSerializableClasses) {
-		this.registeredSerializableClasses = registeredSerializableClasses;
-	}
-
-	@Override
-	protected DefaultCoder initialValue() {
-		return new DefaultCoder(true, registeredSerializableClasses);
+		writeSerializer = new ThreadLocalFstWriteSerializer(registeredSerializableClasses);
+		readSerializer = new ThreadLocalFstReadSerializer(registeredSerializableClasses);
 	}
 
 	public static Collection<? extends Class<? extends Serializable>> getClassesToAlwaysRegister() {
@@ -46,17 +41,17 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 
 	@Override
 	public byte[] serializeObjectToByteArray(Object o) {
-		return get().toByteArray(o);
+		return writeSerializer.serializeObjectToByteArray(o);
 	}
 
 	@Override
 	public Object deserializeObjectFromByteArray(byte[] bytes) {
-		return get().toObject(bytes);
+		return readSerializer.deserializeObjectFromByteArray(bytes);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Serializable> T clone(T object) {
-		return (T) get().toObject(get().toByteArray(object));
+		return (T) readSerializer.deserializeObjectFromByteArray(writeSerializer.serializeObjectToByteArray(object));
 	}
 }
