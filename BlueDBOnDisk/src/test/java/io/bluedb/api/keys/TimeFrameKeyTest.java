@@ -86,6 +86,8 @@ public class TimeFrameKeyTest extends TestCase {
 		TimeFrameKey oneToTwo = new TimeFrameKey(4, 1, 2);
 		TimeFrameKey oneToTwoCopy = new TimeFrameKey(4, 1, 2);
 		TimeFrameKey oneToTwoDifferent = new TimeFrameKey(5, 1, 2);
+		TimeFrameKey oneToTwoString = new TimeFrameKey("string", 1, 2);
+		TimeFrameKey oneToTwoUuid = new TimeFrameKey(new UUID(0, 1), 1, 2);
 		StringKey stringKey = new StringKey("1");
 		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
 		assertEquals(one, one);
@@ -103,6 +105,11 @@ public class TimeFrameKeyTest extends TestCase {
 		assertFalse(one.equals(uuidKey));
 		assertFalse(one.equals(null));
 		assertFalse(one.equals("1"));
+		assertFalse(one.equals("1"));
+		assertFalse(oneToTwo.equals(oneToTwoString));
+		assertFalse(oneToTwo.equals(oneToTwoUuid));
+		assertFalse(oneToTwoString.equals(oneToTwo));
+		assertFalse(oneToTwoUuid.equals(oneToTwo));
 	}
 
 	@Test

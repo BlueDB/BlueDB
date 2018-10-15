@@ -61,6 +61,8 @@ public class UUIDKeyTest extends TestCase {
 		assertFalse(one.equals(zero));
 		assertTrue(nullKey.equals(nullKey2));
 		assertFalse(one.equals(null));
+		assertFalse(one.equals(nullKey));
+		assertFalse(nullKey.equals(one));
 		assertFalse(one.equals(new UUID(0, 1)));
 	}
 
