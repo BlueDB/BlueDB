@@ -60,8 +60,10 @@ public class ZipUtils {
 	private static void extractEntryContents(ZipInputStream zis, ZipEntry entry, String outputDirectory) throws IOException {
 		Path path = Paths.get(outputDirectory, entry.getName());
 		Files.createDirectories(path.getParent());
-		try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(path))) {
-			copyBytes(zis, bos);
+		if(!entry.isDirectory()) {
+			try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(path))) {
+				copyBytes(zis, bos);
+			}
 		}
 	}
 

@@ -58,4 +58,18 @@ public class IndexRollupTargetTest {
 		assertFalse(target1A.hashCode() == target1null.hashCode());
 		assertFalse(target1A.hashCode() == nullIndexTarget.hashCode());
 	}
+
+	@Test
+	public void test_toString() {
+		String indexName = "indexName";
+		long groupingNumber = 16;
+		Range range = new Range(24, 31);
+		IndexRollupTarget target = new IndexRollupTarget(indexName, groupingNumber, range);
+		String string = target.toString();
+		assertTrue(string.contains(target.getClass().getSimpleName()));
+		assertTrue(string.contains(indexName));
+		assertTrue(string.contains(String.valueOf(groupingNumber)));
+		assertTrue(string.contains(String.valueOf(range.getStart())));
+		assertTrue(string.contains(String.valueOf(range.getEnd())));
+	}
 }

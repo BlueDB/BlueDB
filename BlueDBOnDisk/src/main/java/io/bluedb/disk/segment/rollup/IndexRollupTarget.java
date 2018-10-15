@@ -37,4 +37,9 @@ public class IndexRollupTarget extends RollupTarget {
 			return false;
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "[" + this.getClass().getSimpleName() + " in " + indexName + " @ " + getSegmentGroupingNumber() + " " + getRange().toString() + "]";
+	}
 }

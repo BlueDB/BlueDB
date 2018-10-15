@@ -1,22 +1,33 @@
 package io.bluedb.disk.backup;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.Test;
+
+import io.bluedb.api.BlueCollection;
+import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.TestValue2;
+import io.bluedb.disk.TestValueSub;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.recovery.PendingChange;
 import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.recovery.Recoverable;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.rollup.RollupTarget;
+import io.bluedb.zip.ZipUtils;
 
 public class BackupManagerTest extends BlueDbDiskTestBase {
 
@@ -83,5 +94,60 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		assertEquals(1, restoredCollection.query().getList().size());
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
+	}
+
+	@Test
+	public void test_restore() throws Exception {
+		String collectionName = "time_collection";
+		BlueDbOnDisk newDb = createTestRestoreDatabase();
+
+		Path zipPath = getbackedUpZipPath();
+		if (!zipPath.toFile().exists()) {
+			zipPath.getParent().toFile().mkdirs();
+			newDb.backup(zipPath);
+			fail();
+		}
+
+		BlueCollection<TestValue> newCollection =  newDb.getCollection(collectionName, TestValue.class);
+		List<TestValue> valuesInNewCollection = newCollection.query().getList();
+		
+		BlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
+		@SuppressWarnings("unchecked")
+		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(collectionName, TimeKey.class, TestValue.class);
+		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
+		
+		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
+	}
+
+	private BlueDbOnDisk getRestoredDatabase(Path zipPath) throws BlueDbException, URISyntaxException, IOException {
+		Path restoredDirectory = createTempFolder().toPath();
+		ZipUtils.extractFiles(zipPath, restoredDirectory);
+		Path restoredDbPath = Paths.get(restoredDirectory.toString(), "bluedb");
+		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(restoredDbPath).build();
+		return restoredDb;
+	}
+
+	private BlueDbOnDisk createTestRestoreDatabase() throws BlueDbException {
+		Path newDbPath = createTempFolder().toPath();
+		BlueDbOnDisk newDb = new BlueDbOnDiskBuilder().setPath(newDbPath).build();
+		@SuppressWarnings("unchecked")
+		BlueCollectionOnDisk<TestValue> newCollection = (BlueCollectionOnDisk<TestValue>) newDb.initializeCollection("time_collection", TimeKey.class, TestValue.class, TestValue2.class, TestValueSub.class);
+
+		TestValue value1 = new TestValue("Anna");
+		TestValue value2 = new TestValueSub("Bob");
+		TestValue value3 = new TestValue("Carl");
+
+		BlueKey key1 = new TimeFrameKey(1, 1, 4);
+		BlueKey key2 = new TimeFrameKey(2, 2, 3);
+		BlueKey key3 = new TimeFrameKey(3, 3, 5);
+		
+		newCollection.insert(key1, value1);
+		newCollection.insert(key2, value2);
+		newCollection.insert(key3, value3);
+		return newDb;
+	}
+
+	private Path getbackedUpZipPath() throws URISyntaxException {
+		return Paths.get(this.getClass().getResource("/backup.zip").toURI());
 	}
 }

@@ -28,10 +28,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long insertTime = System.currentTimeMillis();
 		getRollupScheduler().reportWrite(rollupTarget, insertTime);
-		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(insertTime + rollupTarget.getWriteRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
 
 		getRollupScheduler().reportWrite(rollupTarget, insertTime - 1); // report earlier time
-		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(insertTime + rollupTarget.getWriteRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
 	}
 
 	@Test
@@ -41,10 +41,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long readTime = System.currentTimeMillis();
 		getRollupScheduler().reportRead(rollupTarget, readTime);
-		assertEquals(readTime + RollupScheduler.WAIT_AFTER_READ_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(readTime + rollupTarget.getReadRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
 
 		getRollupScheduler().reportRead(rollupTarget, readTime - 1); // report earlier time
-		assertEquals(readTime + RollupScheduler.WAIT_AFTER_READ_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(readTime + rollupTarget.getReadRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
 	}
 
 	@Test
@@ -54,7 +54,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long insertTime = System.currentTimeMillis();
 		getRollupScheduler().reportWrite(rollupTarget, insertTime);
-		assertEquals(insertTime + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(insertTime + rollupTarget.getWriteRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
 	}
 
 	@Test
@@ -80,7 +80,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
 		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 		mockRollupScheduler.reportWrite(rollupTarget, 0);
-		assertEquals(0 + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+		assertEquals(0 + rollupTarget.getWriteRollupDelay(), mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 		mockRollupScheduler.scheduleReadyRollups();
 
 		assertEquals(1, rollupsRequested.size());
@@ -168,7 +168,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 		long now = System.currentTimeMillis();
 		mockRollupScheduler.reportWrite(rollupTarget, now);
-		assertEquals(now + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+		assertEquals(now + rollupTarget.getWriteRollupDelay(), mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
 		mockRollupScheduler.scheduleReadyRollups();
 		assertEquals(0, rollupsRequested.size());
@@ -187,7 +187,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
 		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 		mockRollupScheduler.reportWrite(rollupTarget, 0);
-		assertEquals(0 + RollupScheduler.WAIT_AFTER_WRITE_BEFORE_ROLLUP, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
+		assertEquals(0 + rollupTarget.getWriteRollupDelay(), mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
 		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
 		rollupSchedulerThread.start();

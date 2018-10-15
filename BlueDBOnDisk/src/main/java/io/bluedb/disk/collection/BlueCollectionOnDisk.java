@@ -225,15 +225,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	@Override
-	public void reportRead(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		rollupScheduler.reportRead(target);
+	public void reportReads(List<RollupTarget> rollupTargets) {
+		rollupScheduler.reportReads(rollupTargets);
 	}
 
 	@Override
-	public void reportWrite(long segmentGroupingNumber, Range range) {
-		RollupTarget target = new RollupTarget(segmentGroupingNumber, range);
-		rollupScheduler.reportWrite(target);
+	public void reportWrites(List<RollupTarget> rollupTargets) {
+		rollupScheduler.reportReads(rollupTargets);
 	}
 
 	public RollupScheduler getRollupScheduler() {

@@ -20,6 +20,14 @@ public final class Range implements Comparable<Range> {
 		return end;
 	}
 
+	public long length() {
+		return getEnd() - getStart();
+	}
+
+	public boolean encloses(Range other) {
+		return getStart() <= other.getStart() && getEnd() >= other.getEnd();
+	}
+
 	public String toUnderscoreDelimitedString() {
 		return start + "_" + end;
 	}

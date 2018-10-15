@@ -30,6 +30,32 @@ public class RangeTest {
 	}
 
 	@Test
+	public void test_length() {
+		Range _12_12 = new Range(12, 12);
+		Range _12_24 = new Range(12, 24);
+		assertEquals(0, _12_12.length());
+		assertEquals(12, _12_24.length());
+	}
+
+	@Test
+	public void test_encloses() {
+		Range _1_2 = new Range(1, 2);
+		Range _2_3 = new Range(2, 3);
+		Range _3_4 = new Range(3, 4);
+		Range _1_4 = new Range(1, 4);
+		Range _0_5 = new Range(0, 5);
+		
+		assertTrue(_3_4.encloses(_3_4)); // same range
+		assertTrue(_1_4.encloses(_1_2)); // encloses on the lower edge
+		assertTrue(_1_4.encloses(_3_4)); // encloses on the upper edge
+		assertTrue(_0_5.encloses(_1_2)); // encloses in the middle
+
+		assertFalse(_1_2.encloses(_2_3)); // overlap but not enclosing
+		assertFalse(_1_2.encloses(_3_4)); // no overlap
+		assertFalse(_1_2.encloses(_0_5)); // reversed
+	}
+
+	@Test
 	public void test_toUnderscoreDelimitedString() {
 		Range _12_24 = new Range(12, 24);
 		assertEquals("12_24", _12_24.toUnderscoreDelimitedString());
