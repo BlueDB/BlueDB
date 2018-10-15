@@ -94,6 +94,46 @@ public class BlueObjectInputTest extends TestCase {
 	}
 
 	@Test
+	public void test_readLastBytes() throws Exception {
+		TestValue firstValue = new TestValue("Jobodo Monobodo");
+		TestValue secondValue = new TestValue("la la la");
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.write(firstValue);
+			outStream.write(secondValue);
+			outStream.close();
+		}
+
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertNull(inStream.getLastBytes());
+
+				assertTrue(inStream.hasNext());
+				assertNull(inStream.getLastBytes());  // hasNext should not populate lastBytes
+
+				assertEquals(firstValue, inStream.next());
+				byte[] firstValueBytes = inStream.getLastBytes();
+				TestValue restoredFirstValue = (TestValue) serializer.deserializeObjectFromByteArray(firstValueBytes);
+				assertEquals(firstValue, restoredFirstValue);
+				assertEquals(firstValue, restoredFirstValue);
+
+				assertTrue(inStream.hasNext());
+				assertEquals(firstValueBytes, inStream.getLastBytes());  // hasNext should not re-populate out lastBytes
+
+				assertEquals(secondValue, inStream.next());
+				byte[] secondValueBytes = inStream.getLastBytes();
+				TestValue restoredSecondValue = (TestValue) serializer.deserializeObjectFromByteArray(secondValueBytes);
+				assertEquals(secondValue, restoredSecondValue);
+
+				assertFalse(inStream.hasNext());
+				assertEquals(secondValueBytes, inStream.getLastBytes());  // hasNext should not clear out lastBytes
+
+				inStream.close();
+			}
+		}
+	}
+
+	@Test
 	public void test_next() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {

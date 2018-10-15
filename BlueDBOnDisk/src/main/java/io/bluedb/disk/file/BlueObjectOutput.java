@@ -41,6 +41,20 @@ public class BlueObjectOutput<T> implements Closeable {
 		this.dataOutputStream = dataOutputStream;
 	}
 
+	public void writeBytes(byte[] bytes) throws BlueDbException {
+		if (bytes == null) {
+			throw new BlueDbException("cannot write null to " + this.getClass().getSimpleName());
+		}
+		try {
+			int len = bytes.length;
+			dataOutputStream.writeInt(len);
+			dataOutputStream.write(bytes);
+		} catch (Throwable t) {
+			t.printStackTrace();
+			throw new BlueDbException("error writing to file " + path, t);
+		}
+	}
+
 	public void write(T value) throws BlueDbException {
 		if (value == null) {
 			throw new BlueDbException("cannot write null to " + this.getClass().getSimpleName());
@@ -58,8 +72,8 @@ public class BlueObjectOutput<T> implements Closeable {
 
 	public void writeAll(BlueObjectInput<T> input) throws BlueDbException {
 		while(input.hasNext()) {
-			T next = input.next();
-			write(next);
+			input.next();
+			writeBytes(input.getLastBytes());
 		}
 	}
 

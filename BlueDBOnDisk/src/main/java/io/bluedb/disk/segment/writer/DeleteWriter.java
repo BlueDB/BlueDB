@@ -20,7 +20,7 @@ public class DeleteWriter<T extends Serializable> implements StreamingWriter<T> 
 		while (input.hasNext()) {
 			BlueEntity<T> entry = input.next();
 			if (!entry.getKey().equals(key)) {
-				output.write(entry);
+				output.writeBytes(input.getLastBytes());
 			}
 		}
 	}

@@ -116,6 +116,39 @@ public class BlueObjectOutputTest extends TestCase {
 	}
 
 	@Test
+	public void test_writeBytes() throws Exception {
+		TestValue value = new TestValue("Jobodo Monobodo");
+		byte[] valueBytes = serializer.serializeObjectToByteArray(value);
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.writeBytes(valueBytes);
+			outStream.close();
+		}
+
+		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertEquals(value, inStream.next());
+				inStream.close();
+			}
+		}
+
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			try (BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock)) {
+				outStream.writeBytes(null);
+				fail();
+			}
+		} catch (BlueDbException e) {
+		}
+
+		try {
+			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null);
+			invalidOut.writeBytes(valueBytes);
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
 	public void test_copyObjects() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		Path srcPath = targetFilePath;
