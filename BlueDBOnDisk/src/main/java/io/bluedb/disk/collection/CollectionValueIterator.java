@@ -35,12 +35,18 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 
 	@Override
 	public boolean hasNext() {
+		if (entityIterator == null) {
+			throw new RuntimeException("CollectionValueIterator has already been closed");
+		}
 		timeoutCloser.snooze();
 		return entityIterator.hasNext();
 	}
 
 	@Override
 	public T next() {
+		if (entityIterator == null) {
+			throw new RuntimeException("CollectionValueIterator has already been closed");
+		}
 		timeoutCloser.snooze();
 		return entityIterator.next().getValue();
 	}

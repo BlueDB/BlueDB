@@ -135,7 +135,13 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 			assertFalse(lockManager.isLocked(firstFilePath));  // make sure the lock is released
 			
 			try {
-				iteratorContents = toList(iterator);  // make sure the iterator throws an error
+				// make sure the iterator throws an error
+				iterator.next(); iterator.next(); iterator.next(); iterator.next();
+				fail();
+			} catch (Exception e) {}
+
+			try {
+				iterator.hasNext();  // make sure the iterator throws an error
 				fail();
 			} catch (Exception e) {}
 		}
