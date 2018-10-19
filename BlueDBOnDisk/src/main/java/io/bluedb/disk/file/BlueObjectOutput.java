@@ -71,9 +71,11 @@ public class BlueObjectOutput<T> implements Closeable {
 	}
 
 	public void writeAll(BlueObjectInput<T> input) throws BlueDbException {
+		// TODO better protection against hitting overlapping ranges.
+		//      There's some protection against this in rollup recovery and 
+		//      from single-threaded writes.
 		while(input.hasNext()) {
-			input.next();
-			writeBytes(input.getLastBytes());
+			writeBytes(input.nextWithoutDeserializing());
 		}
 	}
 

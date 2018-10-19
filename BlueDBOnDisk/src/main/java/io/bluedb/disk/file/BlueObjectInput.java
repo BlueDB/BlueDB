@@ -80,6 +80,18 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		T response = next;
 		lastBytes = nextBytes;
 		next = null;
+		nextBytes = null;
+		return response;
+	}
+
+	public byte[] nextWithoutDeserializing() {
+		if (next == null) {
+			nextBytes = nextBytesFromFile();
+		}  // otherwise you've already peeked ahead
+		lastBytes = nextBytes;
+		byte[] response = nextBytes;
+		next = null;
+		nextBytes = null;
 		return response;
 	}
 
@@ -88,18 +100,25 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	}
 
 	protected T nextFromFile() {
+		nextBytes = nextBytesFromFile();
+		if (nextBytes == null) {
+			return null;
+		}
+		Object object = serializer.deserializeObjectFromByteArray(nextBytes);
+		@SuppressWarnings("unchecked")
+		T t = (T) object;
+		return t;
+	}
+
+	protected byte[] nextBytesFromFile() {
 		if (dataInputStream == null) {
 			return null;
 		}
-		int objectLength;
 		try {
-			objectLength = dataInputStream.readInt();
-			nextBytes = new byte[objectLength];
+			int objectLength = dataInputStream.readInt();
+			byte[] nextBytes = new byte[objectLength];
 			dataInputStream.readFully(nextBytes, 0, objectLength);
-			Object object = serializer.deserializeObjectFromByteArray(nextBytes);
-			@SuppressWarnings("unchecked")
-			T t = (T) object;
-			return t;
+			return nextBytes;
 		} catch (EOFException e) {
 			return null;
 		} catch (IOException e) {

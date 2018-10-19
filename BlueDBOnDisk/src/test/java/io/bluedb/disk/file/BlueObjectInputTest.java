@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.Blutils;
@@ -145,6 +146,25 @@ public class BlueObjectInputTest extends TestCase {
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(value, inStream.next());
+				assertNull(inStream.next());
+				inStream.close();
+			}
+		}
+	}
+
+	@Test
+	public void test_nextWithoutDeserializing() throws Exception {
+		TestValue value = new TestValue("Jobodo Monobodo");
+		byte[] valueBytes = serializer.serializeObjectToByteArray(value);
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.write(value);
+			outStream.close();
+		}
+
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertArrayEquals(valueBytes, inStream.nextWithoutDeserializing());
 				assertNull(inStream.next());
 				inStream.close();
 			}
