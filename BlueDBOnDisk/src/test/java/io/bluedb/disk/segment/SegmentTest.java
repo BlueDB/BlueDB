@@ -20,67 +20,6 @@ import io.bluedb.disk.segment.rollup.RollupTarget;
 public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_getRangeFileName() {
-		assertEquals("0_1", Segment.getRangeFileName(0, 2));  // test zero
-		assertEquals("2_3", Segment.getRangeFileName(2, 2));  // test next doesn't overlap
-		assertEquals("4_5", Segment.getRangeFileName(5, 2));  // test greater than a multiple
-		assertEquals("0_41", Segment.getRangeFileName(41, 42));  // test equal to a multiple
-		assertEquals("42_83", Segment.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("42_83", Segment.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("-2_-1", Segment.getRangeFileName(-1, 2));  // test zero
-		
-		String maxLongFileName = Segment.getRangeFileName(Long.MAX_VALUE, 100);
-		Range maxLongRange = Range.fromUnderscoreDelmimitedString(maxLongFileName);
-		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
-		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
-
-		String minLongFileName = Segment.getRangeFileName(Long.MIN_VALUE, 100);
-		Range minLongRange = Range.fromUnderscoreDelmimitedString(minLongFileName);
-		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
-		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
-	}
-
-	@Test
-	public void test_doesfileNameRangeOverlap() {
-		File _x_to_1 = Paths.get("1_x").toFile();
-		File _1_to_x = Paths.get("1_x").toFile();
-		File _1_to_3 = Paths.get("1_3").toFile();
-		File _1 = Paths.get("1_").toFile();
-		File _1_to_3_in_subfolder = Paths.get("whatever", "1_3").toFile();
-		assertFalse(Segment.doesfileNameRangeOverlap(_1, 0, 10));
-		assertFalse(Segment.doesfileNameRangeOverlap(_x_to_1, 0, 10));
-		assertFalse(Segment.doesfileNameRangeOverlap(_1_to_x, 0, 10));
-		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 10));
-		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3_in_subfolder, 0, 10));
-		assertFalse(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 0));  // above range
-		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 1));  // top of range
-		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 2, 2));  // point
-		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 0, 5));  // middle of range
-		assertTrue(Segment.doesfileNameRangeOverlap(_1_to_3, 3, 4));  // bottom of range
-		assertFalse(Segment.doesfileNameRangeOverlap(_1_to_3, 4, 5));  // below range
-	}
-
-	@Test
-	public void test_isFileNameRangeEnclosed() {
-		File _x_to_1 = Paths.get("1_x").toFile();
-		File _1_to_x = Paths.get("1_x").toFile();
-		File _1_to_3 = Paths.get("1_3").toFile();
-		File _1 = Paths.get("1_").toFile();
-		File _1_to_3_in_subfolder = Paths.get("whatever", "1_3").toFile();
-		assertFalse(Segment.isFileNameRangeEnclosed(_1, 0, 10));
-		assertFalse(Segment.isFileNameRangeEnclosed(_x_to_1, 0, 10));
-		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_x, 0, 10));
-		assertTrue(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 10));
-		assertTrue(Segment.isFileNameRangeEnclosed(_1_to_3_in_subfolder, 0, 10));
-		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 0));  // above range
-		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 1));  // top of range
-		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 2, 2));  // point
-		assertTrue(Segment.isFileNameRangeEnclosed(_1_to_3, 0, 5));  // middle of range
-		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 3, 4));  // bottom of range
-		assertFalse(Segment.isFileNameRangeEnclosed(_1_to_3, 4, 5));  // below range
-	}
-
-	@Test
 	public void test_contains() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
@@ -331,34 +270,6 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(directoryContentsAfterTopRollup[0].getName(), directoryContentsAfterLaterMidRollup[0].getName());
 	}
 
-	@Test
-	public void test_getOrderedFilesInRange() throws Exception {
-		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
-		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();
-		File _2_3 = Paths.get(getPath().toString(), "2_3").toFile();
-		File _100_101 = Paths.get(getPath().toString(), "100_101").toFile();
-		List<File> expected = Arrays.asList(_2_3, _12_13, _12_15);
-
-		FileManager.ensureFileExists(_12_13.toPath());
-		FileManager.ensureFileExists(_12_15.toPath());
-		FileManager.ensureFileExists(_2_3.toPath());
-		FileManager.ensureFileExists(_100_101.toPath());
-		Range timeRange = new Range(0, 20);
-		assertEquals(expected, Segment.getOrderedFilesInRange(getPath(), timeRange));
-	}
-
-	@Test
-	public void test_sortByRange() {
-		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
-		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();
-		File _2_3 = Paths.get(getPath().toString(), "2_3").toFile();
-		List<File> unsorted = Arrays.asList(_12_15, _2_3, _12_13);
-		List<File> sorted = Arrays.asList(_2_3, _12_13, _12_15);
-
-		assertFalse(unsorted.equals(sorted));
-		Segment.sortByRange(unsorted);
-		assertTrue(unsorted.equals(sorted));
-	}
 
 	@Test
 	public void testToString() {
