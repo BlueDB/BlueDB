@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.segment.Range;
 import junit.framework.TestCase;
 
@@ -101,10 +101,10 @@ public class RangeNamedFilesTest extends TestCase {
 		File _100_101 = Paths.get(getPath().toString(), "100_101").toFile();
 		List<File> expected = Arrays.asList(_2_3, _12_13, _12_15);
 
-		FileManager.ensureFileExists(_12_13.toPath());
-		FileManager.ensureFileExists(_12_15.toPath());
-		FileManager.ensureFileExists(_2_3.toPath());
-		FileManager.ensureFileExists(_100_101.toPath());
+		FileUtils.ensureFileExists(_12_13.toPath());
+		FileUtils.ensureFileExists(_12_15.toPath());
+		FileUtils.ensureFileExists(_2_3.toPath());
+		FileUtils.ensureFileExists(_100_101.toPath());
 		Range timeRange = new Range(0, 20);
 		assertEquals(expected, RangeNamedFiles.getOrderedFilesInRange(getPath(), timeRange));
 	}

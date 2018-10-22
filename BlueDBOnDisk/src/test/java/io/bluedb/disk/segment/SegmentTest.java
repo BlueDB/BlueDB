@@ -12,7 +12,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
-import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.lock.BlueWriteLock;
 import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.segment.rollup.RollupTarget;
@@ -349,7 +349,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
-		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+		Path tmpPath = FileUtils.createTempFilePath(rolledUpPath);
 		segment.copy(tmpPath, filesToRollup);
 
 
@@ -383,7 +383,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
-		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+		Path tmpPath = FileUtils.createTempFilePath(rolledUpPath);
 		segment.copy(tmpPath, filesToRollup);
 
 
@@ -391,11 +391,11 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(3, filesExistingAfterCopy.length);
 
 		try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
-			FileManager.moveFile(tmpPath, targetFileLock);
+			FileUtils.moveFile(tmpPath, targetFileLock);
 		}
 		File file = filesToRollup.get(0);
 		try (BlueWriteLock<Path> writeLock = getLockManager().acquireWriteLock(file.toPath())) {
-			FileManager.deleteFile(writeLock);
+			FileUtils.deleteFile(writeLock);
 		}
 
 		getRecoveryManager().recover();
@@ -425,7 +425,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
-		Path tmpPath = FileManager.createTempFilePath(rolledUpPath);
+		Path tmpPath = FileUtils.createTempFilePath(rolledUpPath);
 		segment.copy(tmpPath, filesToRollup);
 
 
@@ -433,11 +433,11 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(3, filesExistingAfterCopy.length);
 
 		try (BlueWriteLock<Path> targetFileLock = getLockManager().acquireWriteLock(rolledUpPath)) {
-			FileManager.moveFile(tmpPath, targetFileLock);
+			FileUtils.moveFile(tmpPath, targetFileLock);
 		}
 		for (File file: filesToRollup) {
 			try (BlueWriteLock<Path> writeLock = getLockManager().acquireWriteLock(file.toPath())) {
-				FileManager.deleteFile(writeLock);
+				FileUtils.deleteFile(writeLock);
 			}
 		}
 

@@ -14,6 +14,7 @@ import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.file.RangeNamedFiles;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
@@ -75,14 +76,14 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		Path targetPath, tmpPath;
 		try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(groupingNumber)) {
 			targetPath = input.getPath();
-			tmpPath = FileManager.createTempFilePath(targetPath);
+			tmpPath = FileUtils.createTempFilePath(targetPath);
 			try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(tmpPath)) {
 				processor.process(input, output);
 			}
 		}
 
 		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(targetPath)) {
-			FileManager.moveFile(tmpPath, targetFileLock);
+			FileUtils.moveFile(tmpPath, targetFileLock);
 		}
 		reportWrite(targetPath);
 	}
@@ -119,7 +120,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			return;  // no benefit to rolling up a single file
 		}
 		Path path = Paths.get(segmentPath.toString(), timeRange.toUnderscoreDelimitedString());
-		Path tmpPath = FileManager.createTempFilePath(path);
+		Path tmpPath = FileUtils.createTempFilePath(path);
 
 		if (path.toFile().exists()) { // we're recovering after a rollup failed while deleting the removed files
 			filesToRollup = Blutils.filter(filesToRollup, (f) -> !f.equals(path.toFile()));  // don't delete the rolled up file
@@ -150,7 +151,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	private void cleanupFiles(List<File> filesToRollup) throws BlueDbException {
 		for (File file: filesToRollup) {
 			try (BlueWriteLock<Path> writeLock = acquireWriteLock(file.toPath())){
-				FileManager.deleteFile(writeLock);
+				FileUtils.deleteFile(writeLock);
 			}
 		}
 	}
@@ -162,9 +163,9 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 				sourceFileWriteLocks.add(acquireWriteLock(file.toPath()));
 			}
 
-			FileManager.moveFile(tempRolledupPath, targetFileLock);
+			FileUtils.moveFile(tempRolledupPath, targetFileLock);
 			for (BlueWriteLock<Path> writeLock: sourceFileWriteLocks) {
-				FileManager.deleteFile(writeLock);
+				FileUtils.deleteFile(writeLock);
 			}
 		} finally {
 			for (BlueWriteLock<Path> lock: sourceFileWriteLocks) {

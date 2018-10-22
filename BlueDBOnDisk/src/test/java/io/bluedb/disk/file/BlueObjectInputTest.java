@@ -35,7 +35,7 @@ public class BlueObjectInputTest extends TestCase {
 	protected void setUp() throws Exception {
 		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
-		tempFilePath = FileManager.createTempFilePath(targetFilePath);
+		tempFilePath = FileUtils.createTempFilePath(targetFilePath);
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
 		fileManager = new FileManager(serializer);
 		lockManager = fileManager.getLockManager();

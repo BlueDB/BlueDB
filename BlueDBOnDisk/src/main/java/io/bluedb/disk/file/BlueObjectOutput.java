@@ -25,7 +25,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		path = lock.getKey();
 		this.serializer = serializer;
 		File file = path.toFile();
-		FileManager.ensureDirectoryExists(file);
+		FileUtils.ensureDirectoryExists(file);
 		dataOutputStream = openDataOutputStream(file);
 	}
 
