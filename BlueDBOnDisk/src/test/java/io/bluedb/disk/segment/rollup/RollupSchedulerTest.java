@@ -24,27 +24,45 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_reportWrite() {
 		Range timeRange = new Range(2, 5);
+		Range timeRangeCopy = new Range(2, 5);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		RollupTarget rollupTargetCopy = new RollupTarget(0, timeRangeCopy);
 		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(0, getRollupScheduler().getRollupTimes().size());
 		long insertTime = System.currentTimeMillis();
 		getRollupScheduler().reportWrite(rollupTarget, insertTime);
 		assertEquals(insertTime + rollupTarget.getWriteRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(1, getRollupScheduler().getRollupTimes().size());
 
 		getRollupScheduler().reportWrite(rollupTarget, insertTime - 1); // report earlier time
 		assertEquals(insertTime + rollupTarget.getWriteRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(1, getRollupScheduler().getRollupTimes().size());
+
+		// avoid duplicate scheduling
+		getRollupScheduler().reportWrite(rollupTargetCopy, insertTime);
+		assertEquals(1, getRollupScheduler().getRollupTimes().size());
 	}
 
 	@Test
 	public void test_reportRead() {
 		Range timeRange = new Range(2, 5);
+		Range timeRangeCopy = new Range(2, 5);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
+		RollupTarget rollupTargetCopy = new RollupTarget(0, timeRangeCopy);
+		assertEquals(0, getRollupScheduler().getRollupTimes().size());
 		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long readTime = System.currentTimeMillis();
 		getRollupScheduler().reportRead(rollupTarget, readTime);
 		assertEquals(readTime + rollupTarget.getReadRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(1, getRollupScheduler().getRollupTimes().size());
 
 		getRollupScheduler().reportRead(rollupTarget, readTime - 1); // report earlier time
 		assertEquals(readTime + rollupTarget.getReadRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
+		assertEquals(1, getRollupScheduler().getRollupTimes().size());
+
+		// avoid duplicate scheduling
+		getRollupScheduler().reportRead(rollupTarget, readTime);
+		assertEquals(1, getRollupScheduler().getRollupTimes().size());
 	}
 
 	@Test
