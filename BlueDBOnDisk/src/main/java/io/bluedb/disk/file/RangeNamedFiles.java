@@ -9,9 +9,9 @@ import java.util.List;
 
 import io.bluedb.disk.segment.Range;
 
-public class FileUtils {
+public class RangeNamedFiles {
 	
-	protected FileUtils() {}  // just to get test coverage to 100%
+	protected RangeNamedFiles() {}  // just to get test coverage to 100%
 
 	public static List<File> getOrderedFilesEnclosedInRange(Path segmentPath, Range range) {
 		long min = range.getStart();

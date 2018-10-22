@@ -13,7 +13,7 @@ import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.segment.Range;
 import junit.framework.TestCase;
 
-public class FileUtilsTest extends TestCase {
+public class RangeNamedFilesTest extends TestCase {
 
 	private Path testPath;
 
@@ -29,25 +29,25 @@ public class FileUtilsTest extends TestCase {
 
 	@Test
 	public void test_constructor() {
-		new FileUtils();  // just to get test coverage to 100%
+		new RangeNamedFiles();  // just to get test coverage to 100%
 	}
 
 	@Test
 	public void test_getRangeFileName() {
-		assertEquals("0_1", FileUtils.getRangeFileName(0, 2));  // test zero
-		assertEquals("2_3", FileUtils.getRangeFileName(2, 2));  // test next doesn't overlap
-		assertEquals("4_5", FileUtils.getRangeFileName(5, 2));  // test greater than a multiple
-		assertEquals("0_41", FileUtils.getRangeFileName(41, 42));  // test equal to a multiple
-		assertEquals("42_83", FileUtils.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("42_83", FileUtils.getRangeFileName(42, 42));  // test equal to a multiple
-		assertEquals("-2_-1", FileUtils.getRangeFileName(-1, 2));  // test zero
+		assertEquals("0_1", RangeNamedFiles.getRangeFileName(0, 2));  // test zero
+		assertEquals("2_3", RangeNamedFiles.getRangeFileName(2, 2));  // test next doesn't overlap
+		assertEquals("4_5", RangeNamedFiles.getRangeFileName(5, 2));  // test greater than a multiple
+		assertEquals("0_41", RangeNamedFiles.getRangeFileName(41, 42));  // test equal to a multiple
+		assertEquals("42_83", RangeNamedFiles.getRangeFileName(42, 42));  // test equal to a multiple
+		assertEquals("42_83", RangeNamedFiles.getRangeFileName(42, 42));  // test equal to a multiple
+		assertEquals("-2_-1", RangeNamedFiles.getRangeFileName(-1, 2));  // test zero
 		
-		String maxLongFileName = FileUtils.getRangeFileName(Long.MAX_VALUE, 100);
+		String maxLongFileName = RangeNamedFiles.getRangeFileName(Long.MAX_VALUE, 100);
 		Range maxLongRange = Range.fromUnderscoreDelmimitedString(maxLongFileName);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		String minLongFileName = FileUtils.getRangeFileName(Long.MIN_VALUE, 100);
+		String minLongFileName = RangeNamedFiles.getRangeFileName(Long.MIN_VALUE, 100);
 		Range minLongRange = Range.fromUnderscoreDelmimitedString(minLongFileName);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
@@ -60,17 +60,17 @@ public class FileUtilsTest extends TestCase {
 		File _1_to_3 = Paths.get("1_3").toFile();
 		File _1 = Paths.get("1_").toFile();
 		File _1_to_3_in_subfolder = Paths.get("whatever", "1_3").toFile();
-		assertFalse(FileUtils.doesfileNameRangeOverlap(_1, 0, 10));
-		assertFalse(FileUtils.doesfileNameRangeOverlap(_x_to_1, 0, 10));
-		assertFalse(FileUtils.doesfileNameRangeOverlap(_1_to_x, 0, 10));
-		assertTrue(FileUtils.doesfileNameRangeOverlap(_1_to_3, 0, 10));
-		assertTrue(FileUtils.doesfileNameRangeOverlap(_1_to_3_in_subfolder, 0, 10));
-		assertFalse(FileUtils.doesfileNameRangeOverlap(_1_to_3, 0, 0));  // above range
-		assertTrue(FileUtils.doesfileNameRangeOverlap(_1_to_3, 0, 1));  // top of range
-		assertTrue(FileUtils.doesfileNameRangeOverlap(_1_to_3, 2, 2));  // point
-		assertTrue(FileUtils.doesfileNameRangeOverlap(_1_to_3, 0, 5));  // middle of range
-		assertTrue(FileUtils.doesfileNameRangeOverlap(_1_to_3, 3, 4));  // bottom of range
-		assertFalse(FileUtils.doesfileNameRangeOverlap(_1_to_3, 4, 5));  // below range
+		assertFalse(RangeNamedFiles.doesfileNameRangeOverlap(_1, 0, 10));
+		assertFalse(RangeNamedFiles.doesfileNameRangeOverlap(_x_to_1, 0, 10));
+		assertFalse(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_x, 0, 10));
+		assertTrue(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3, 0, 10));
+		assertTrue(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3_in_subfolder, 0, 10));
+		assertFalse(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3, 0, 0));  // above range
+		assertTrue(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3, 0, 1));  // top of range
+		assertTrue(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3, 2, 2));  // point
+		assertTrue(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3, 0, 5));  // middle of range
+		assertTrue(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3, 3, 4));  // bottom of range
+		assertFalse(RangeNamedFiles.doesfileNameRangeOverlap(_1_to_3, 4, 5));  // below range
 	}
 
 	@Test
@@ -80,17 +80,17 @@ public class FileUtilsTest extends TestCase {
 		File _1_to_3 = Paths.get("1_3").toFile();
 		File _1 = Paths.get("1_").toFile();
 		File _1_to_3_in_subfolder = Paths.get("whatever", "1_3").toFile();
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_1, 0, 10));
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_x_to_1, 0, 10));
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_1_to_x, 0, 10));
-		assertTrue(FileUtils.isFileNameRangeEnclosed(_1_to_3, 0, 10));
-		assertTrue(FileUtils.isFileNameRangeEnclosed(_1_to_3_in_subfolder, 0, 10));
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_1_to_3, 0, 0));  // above range
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_1_to_3, 0, 1));  // top of range
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_1_to_3, 2, 2));  // point
-		assertTrue(FileUtils.isFileNameRangeEnclosed(_1_to_3, 0, 5));  // middle of range
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_1_to_3, 3, 4));  // bottom of range
-		assertFalse(FileUtils.isFileNameRangeEnclosed(_1_to_3, 4, 5));  // below range
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_1, 0, 10));
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_x_to_1, 0, 10));
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_x, 0, 10));
+		assertTrue(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3, 0, 10));
+		assertTrue(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3_in_subfolder, 0, 10));
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3, 0, 0));  // above range
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3, 0, 1));  // top of range
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3, 2, 2));  // point
+		assertTrue(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3, 0, 5));  // middle of range
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3, 3, 4));  // bottom of range
+		assertFalse(RangeNamedFiles.isFileNameRangeEnclosed(_1_to_3, 4, 5));  // below range
 	}
 
 	@Test
@@ -106,7 +106,7 @@ public class FileUtilsTest extends TestCase {
 		FileManager.ensureFileExists(_2_3.toPath());
 		FileManager.ensureFileExists(_100_101.toPath());
 		Range timeRange = new Range(0, 20);
-		assertEquals(expected, FileUtils.getOrderedFilesInRange(getPath(), timeRange));
+		assertEquals(expected, RangeNamedFiles.getOrderedFilesInRange(getPath(), timeRange));
 	}
 
 	@Test
@@ -118,7 +118,7 @@ public class FileUtilsTest extends TestCase {
 		List<File> sorted = Arrays.asList(_2_3, _12_13, _12_15);
 
 		assertFalse(unsorted.equals(sorted));
-		FileUtils.sortByRange(unsorted);
+		RangeNamedFiles.sortByRange(unsorted);
 		assertTrue(unsorted.equals(sorted));
 	}
 

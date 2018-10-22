@@ -14,7 +14,7 @@ import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
-import io.bluedb.disk.file.FileUtils;
+import io.bluedb.disk.file.RangeNamedFiles;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
 import io.bluedb.disk.segment.rollup.RollupTarget;
@@ -174,11 +174,11 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	public List<File> getOrderedFilesEnclosedInRange(Range range) {
-		return FileUtils.getOrderedFilesEnclosedInRange(segmentPath, range);
+		return RangeNamedFiles.getOrderedFilesEnclosedInRange(segmentPath, range);
 	}
 
 	public List<File> getOrderedFilesInRange(Range range) {
-		return FileUtils.getOrderedFilesInRange(segmentPath, range);
+		return RangeNamedFiles.getOrderedFilesInRange(segmentPath, range);
 	}
 
 	protected BlueObjectOutput<BlueEntity<T>> getObjectOutputFor(Path path) throws BlueDbException {
@@ -244,7 +244,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	private Path getPathFor(long groupingNumber, long rollupLevel) {
-		String fileName = FileUtils.getRangeFileName(groupingNumber, rollupLevel);
+		String fileName = RangeNamedFiles.getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 
