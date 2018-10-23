@@ -5,15 +5,13 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import io.bluedb.api.Updater;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
-import io.bluedb.disk.collection.CollectionMetaData;
-import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
@@ -116,10 +114,10 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(1, changes.size());
 		
 		File changeFile = changes.get(0);
-		File tempFile = FileManager.createTempFilePath(changeFile.toPath()).toFile();
+		File tempFile = FileUtils.createTempFilePath(changeFile.toPath()).toFile();
 		tempFile.createNewFile();
 		Path historyFolderPath = changeFile.getParentFile().toPath();
-		List<File> allPendingFilesInChangeFolder = FileManager.getFolderContents(historyFolderPath, RecoveryManager.SUFFIX_PENDING);
+		List<File> allPendingFilesInChangeFolder = FileUtils.getFolderContents(historyFolderPath, RecoveryManager.SUFFIX_PENDING);
 		assertEquals(2, allPendingFilesInChangeFolder.size());
 		changes = getRecoveryManager().getPendingChangeFiles();
 		assertEquals(1, changes.size());
@@ -132,9 +130,9 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(1, completedChanges.size());
 
 		File completedChangeFile = completedChanges.get(0);
-		File tempCompletedFile = FileManager.createTempFilePath(completedChangeFile.toPath()).toFile();
+		File tempCompletedFile = FileUtils.createTempFilePath(completedChangeFile.toPath()).toFile();
 		tempCompletedFile.createNewFile();
-		List<File> allCompletedFilesInChangeFolder = FileManager.getFolderContents(historyFolderPath, RecoveryManager.SUFFIX_COMPLETE);
+		List<File> allCompletedFilesInChangeFolder = FileUtils.getFolderContents(historyFolderPath, RecoveryManager.SUFFIX_COMPLETE);
 		assertEquals(2, allCompletedFilesInChangeFolder.size());
 		completedChanges = getRecoveryManager().getCompletedChangeFiles();
 		assertEquals(1, completedChanges.size());

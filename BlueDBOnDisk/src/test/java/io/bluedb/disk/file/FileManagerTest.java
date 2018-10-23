@@ -178,110 +178,13 @@ public class FileManagerTest extends TestCase {
 	}
 
 	@Test
-	public void test_getFolderContents_suffix() throws Exception {
-		String suffix = ".foo";
-		File nonExistant = new File("forever_or_never_whatever");
-		filesToDelete.add(nonExistant);
-		List<File> emptyFileList = new ArrayList<>();
-		assertEquals(emptyFileList, FileManager.getFolderContents(nonExistant.toPath(), suffix));
-
-		File emptyFolder = new File("bah_bah_black_sheep");
-		filesToDelete.add(emptyFolder);
-		emptyFolder.mkdirs();
-		assertEquals(emptyFileList, FileManager.getFolderContents(emptyFolder.toPath(), suffix));
-
-		File nonEmptyFolder = new File("owa_tana_siam");
-		filesToDelete.add(nonEmptyFolder);
-		nonEmptyFolder.mkdirs();
-		File fileWithSuffix = createFile(nonEmptyFolder, "legit" + suffix);
-		File fileWithSuffix2 = createFile(nonEmptyFolder, "legit.stuff" + suffix);
-		File fileWithSuffixInMiddle = createFile(nonEmptyFolder, "not" + suffix + ".this");
-		createFile(nonEmptyFolder, "junk");
-		List<File> filesWithSuffix = FileManager.getFolderContents(nonEmptyFolder.toPath(), suffix);
-		assertEquals(2, filesWithSuffix.size());
-		assertTrue(filesWithSuffix.contains(fileWithSuffix));
-		assertTrue(filesWithSuffix.contains(fileWithSuffix2));
-	}
-
-	@Test
-	public void test_ensureFileExists() throws Exception {
-		Path targetFilePath = Paths.get(testPath.toString(), "test_ensureFileExists");
-		filesToDelete.add(targetFilePath.toFile());
-		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(targetFilePath)) {
-			FileManager.ensureFileExists(targetFilePath);
-			assertTrue(targetFilePath.toFile().exists());
-			FileManager.deleteFile(lock);
-		}
-	}
-
-	@Test
-	public void test_ensureFileExists_already_existing() throws Exception {
-		Path targetFilePath = Paths.get(testPath.toString(), "test_ensureFileExists");
-		filesToDelete.add(targetFilePath.toFile());
-		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(targetFilePath)) {
-			FileManager.ensureFileExists(targetFilePath);
-			assertTrue(targetFilePath.toFile().exists());
-			FileManager.ensureFileExists(targetFilePath);  // make sure we can do it after it already exists
-			assertTrue(targetFilePath.toFile().exists());
-			FileManager.deleteFile(lock);
-		}
-	}
-
-	@Test
-	public void test_createEmptyFile() throws Exception {
-		Path targetFilePath = Paths.get(testPath.toString(), "test_ensureFileExists");
-		filesToDelete.add(targetFilePath.toFile());
-		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(targetFilePath)) {
-			FileManager.ensureDirectoryExists(targetFilePath.toFile());
-			assertFalse(targetFilePath.toFile().exists());
-			FileManager.createEmptyFile(targetFilePath);
-			assertTrue(targetFilePath.toFile().exists());
-			FileManager.createEmptyFile(targetFilePath);  // make sure a second call doesn't error out
-			FileManager.deleteFile(lock);
-		}
-
-		Path fileInNonExistingFolder = Paths.get(testPath.toString(), "non_existing_folder", "test_ensureFileExists");
-		try {
-			assertFalse(fileInNonExistingFolder.toFile().exists());
-			FileManager.createEmptyFile(fileInNonExistingFolder);
-			fail();
-		} catch (BlueDbException e) {
-		}
-	}
-
-	@Test
-	public void test_ensureDirectoryExists() {
-		Path targetFilePath = Paths.get(testPath.toString(), "test_ensureDirectoryExists",
-				"test_ensureDirectoryExists");
-		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(targetFilePath)) {
-			assertFalse(targetFilePath.getParent().toFile().exists());
-			FileManager.ensureDirectoryExists(targetFilePath.toFile());
-			assertTrue(targetFilePath.getParent().toFile().exists());
-			FileManager.ensureDirectoryExists(targetFilePath.toFile()); // make sure a second one doesn't error out
-		}
-	}
-
-	@Test
-	public void test_createTempFilePath() {
-		Path withParent = Paths.get("grandparent", "parent", "target");
-		Path tempWithParent = FileManager.createTempFilePath(withParent);
-		Path expectedTempWithParent = Paths.get("grandparent", "parent", "_tmp_target");
-		assertEquals(expectedTempWithParent, tempWithParent);
-
-		Path withoutParent = Paths.get("target");
-		Path tempWithoutParent = FileManager.createTempFilePath(withoutParent);
-		Path expectedTempWithoutParent = Paths.get("_tmp_target");
-		assertEquals(expectedTempWithoutParent, tempWithoutParent);
-	}
-
-	@Test
 	public void test_moveFile() throws Exception {
 		Path targetFilePath = Paths.get(testPath.toString(), "test_move");
-		Path tempFilePath = FileManager.createTempFilePath(targetFilePath);
+		Path tempFilePath = FileUtils.createTempFilePath(targetFilePath);
 		filesToDelete.add(targetFilePath.toFile());
 		filesToDelete.add(tempFilePath.toFile());
 
-		FileManager.ensureDirectoryExists(tempFilePath.toFile());
+		FileUtils.ensureDirectoryExists(tempFilePath.toFile());
 		tempFilePath.toFile().createNewFile();
 		assertTrue(tempFilePath.toFile().exists());
 		assertFalse(targetFilePath.toFile().exists());
@@ -290,13 +193,12 @@ public class FileManagerTest extends TestCase {
 		assertTrue(targetFilePath.toFile().exists());
 
 		Path nonExistingFile = Paths.get(testPath.toString(), "test_move_non_existing");
-		Path nonExistingFileTemp = FileManager.createTempFilePath(targetFilePath);
+		Path nonExistingFileTemp = FileUtils.createTempFilePath(targetFilePath);
 		try {
 			fileManager.lockMoveFileUnlock(nonExistingFileTemp, nonExistingFile);
 			fail();
 		} catch ( BlueDbException e) {
 		}
-	
 	}
 
 	@Test
@@ -304,9 +206,9 @@ public class FileManagerTest extends TestCase {
 		Path targetFilePath = Paths.get(testPath.toString(), "test_deleteFile");
 		filesToDelete.add(targetFilePath.toFile());
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(targetFilePath)) {
-			FileManager.ensureFileExists(targetFilePath);
+			FileUtils.ensureFileExists(targetFilePath);
 			assertTrue(targetFilePath.toFile().exists());
-			FileManager.deleteFile(lock);
+			FileUtils.deleteFile(lock);
 			assertFalse(targetFilePath.toFile().exists());
 		}
 	}
@@ -340,133 +242,6 @@ public class FileManagerTest extends TestCase {
 		}
 	}
 
-	@Test
-	public void test_moveWithoutLock() throws Exception {
-		File srcFolder = createTempFolder("test_moveWithoutLock_src");
-		File dstFolder = createTempFolder("test_moveWithoutLock_dst");
-		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
-		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
-		File srcFile = srcFilePath.toFile();
-		File dstFile = dstFilePath.toFile();
-
-		assertFalse(srcFile.exists());
-		srcFilePath.toFile().createNewFile();
-		assertTrue(srcFile.exists());
-		assertFalse(dstFile.exists());
-		FileManager.moveWithoutLock(srcFilePath, dstFilePath);
-		assertFalse(srcFile.exists());
-		assertTrue(dstFile.exists());
-	}
-
-	@Test
-	public void test_moveWithoutLock_exception() throws Exception {
-		File srcFolder = createTempFolder("test_moveWithoutLock_exception_src");
-		File dstFolder = createTempFolder("test_moveWithoutLock_exception_dst");
-		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
-		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
-		File srcFile = srcFilePath.toFile();
-		File dstFile = dstFilePath.toFile();
-
-		try {
-			assertFalse(srcFile.exists());
-			assertFalse(dstFile.exists());
-			FileManager.moveWithoutLock(srcFilePath, dstFilePath);
-			fail();
-		} catch (BlueDbException e) {
-		}
-	}
-
-	@Test
-	public void test_copyFileWithoutLock() throws Exception {
-		File srcFolder = createTempFolder("test_copyFileWithoutLock_src");
-		File dstFolder = createTempFolder("test_copyFileWithoutLock_dst");
-		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
-		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
-		File srcFile = srcFilePath.toFile();
-		File dstFile = dstFilePath.toFile();
-
-		assertFalse(srcFile.exists());
-		srcFilePath.toFile().createNewFile();
-		assertTrue(srcFile.exists());
-		assertFalse(dstFile.exists());
-		FileManager.copyFileWithoutLock(srcFilePath, dstFilePath);
-		assertTrue(srcFile.exists());
-		assertTrue(dstFile.exists());
-	}
-
-	@Test
-	public void test_copyFileWithoutLock_exception() throws Exception {
-		File srcFolder = createTempFolder("test_copyFileWithoutLock_exception_src");
-		File dstFolder = createTempFolder("test_copyFileWithoutLock_exception_dst");
-		Path srcFilePath = Paths.get(srcFolder.toPath().toString(), "test_file");
-		Path dstFilePath = Paths.get(dstFolder.toPath().toString(), "test_file");
-		File srcFile = srcFilePath.toFile();
-		File dstFile = dstFilePath.toFile();
-
-		try {
-			assertFalse(srcFile.exists());
-			assertFalse(dstFile.exists());
-			FileManager.copyFileWithoutLock(srcFilePath, dstFilePath);
-			fail();
-		} catch (BlueDbException e) {
-		}
-	}
-
-	@Test
-	public void test_copyDirectoryWithoutLock() throws Exception {
-		File testFolder = createTempFolder("test_copyDirectoryWithoutLock");
-		Path srcPath = Paths.get(testFolder.toPath().toString(), "src");
-		Path srcFilePath = Paths.get(srcPath.toString(), "file");
-		Path srcSubfolderPath = Paths.get(srcPath.toString(), "subfolder");
-		Path srcSubfolderFilePath = Paths.get(srcSubfolderPath.toString(), "subfolder_file");
-
-		Path dstPath = Paths.get(testFolder.toPath().toString(), "dst");
-		Path dstFilePath = Paths.get(dstPath.toString(), "file");
-		Path dstSubfolderPath = Paths.get(dstPath.toString(), "subfolder");
-		Path dstSubfolderFilePath = Paths.get(dstSubfolderPath.toString(), "subfolder_file");
-
-		srcPath.toFile().mkdirs();
-		srcFilePath.toFile().createNewFile();
-		srcSubfolderPath.toFile().mkdirs();
-		srcSubfolderFilePath.toFile().createNewFile();
-		assertTrue(srcPath.toFile().exists());
-		assertTrue(srcFilePath.toFile().exists());
-		assertTrue(srcSubfolderPath.toFile().exists());
-		assertTrue(srcSubfolderFilePath.toFile().exists());
-
-		assertFalse(dstPath.toFile().exists());
-		assertFalse(dstFilePath.toFile().exists());
-		assertFalse(dstSubfolderPath.toFile().exists());
-		assertFalse(dstSubfolderFilePath.toFile().exists());
-		FileManager.copyDirectoryWithoutLock(srcPath, dstPath);
-		assertTrue(dstPath.toFile().exists());
-		assertTrue(dstFilePath.toFile().exists());
-		assertTrue(dstSubfolderPath.toFile().exists());
-		assertTrue(dstSubfolderFilePath.toFile().exists());
-	}
-
-	@Test
-	public void test_copyDirectoryWithoutLock_not_a_directory() throws Exception {
-		Path tempFile = null;
-		tempFile = Files.createTempFile(this.getClass().getSimpleName() + "_test_copyDirectoryWithoutLock_not_a_directory", ".tmp");
-		tempFile.toFile().deleteOnExit();
-
-		Path destination = Paths.get("never_going_to_happen");
-		try {
-			FileManager.copyDirectoryWithoutLock(tempFile, destination);
-			fail();
-		} catch (BlueDbException e) {
-		}
-	}
-
-	@Test
-	public void test_isTempFile() throws Exception {
-		File file = Paths.get(".", "whatever").toFile();
-		File tempFile = FileManager.createTempFilePath(file.toPath()).toFile();
-		assertFalse(FileManager.isTempFile(file));
-		assertTrue(FileManager.isTempFile(tempFile));
-		assertFalse(FileManager.isTempFile(null));
-	}
 
 
 	private File createFile(String fileName) throws Exception {
@@ -482,12 +257,6 @@ public class FileManagerTest extends TestCase {
 			fos.write(junk);
 			fos.close();
 		}
-		return file;
-	}
-
-	private File createFile(File parentFolder, String fileName) throws IOException {
-		File file = Paths.get(parentFolder.toPath().toString(), fileName).toFile();
-		file.createNewFile();
 		return file;
 	}
 

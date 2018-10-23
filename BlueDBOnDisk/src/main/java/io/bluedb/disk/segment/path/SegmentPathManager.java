@@ -10,7 +10,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.segment.Range;
 
 
@@ -60,7 +60,7 @@ public interface SegmentPathManager {
 	}
 
 	public static List<File> getSubfoldersInRange(File folder, long minValue, long maxValue) {
-		return FileManager.getFolderContents(folder)
+		return FileUtils.getFolderContents(folder)
             .stream()
 			.filter((f) -> f.isDirectory())
 			.filter((f) -> folderNameIsLongInRange(f, minValue, maxValue))

@@ -10,7 +10,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.recovery.RecoveryManager;
 import io.bluedb.disk.segment.Range;
@@ -54,7 +54,7 @@ public class BackupManager {
 	private void copyMetaData(BlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
 		Path srcPath = collection.getMetaData().getPath();
 		Path dstPath = translatePath(dbPath, tempFolder, srcPath);
-		FileManager.copyDirectoryWithoutLock(srcPath, dstPath);
+		FileUtils.copyDirectoryWithoutLock(srcPath, dstPath);
 	}
 
 	private void copyDataFolders(BlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
@@ -72,7 +72,7 @@ public class BackupManager {
 			try (BlueReadLock<Path> lock = segment.getReadLockFor(groupingNumber)) {
 				Path src = lock.getKey();
 				Path dst = translatePath(dbPath, tempFolder, src);
-				FileManager.copyFileWithoutLock(src, dst);  // already have read lock on src, shouldn't need write lock on dst
+				FileUtils.copyFileWithoutLock(src, dst);  // already have read lock on src, shouldn't need write lock on dst
 			}
 		}
 	}
@@ -85,7 +85,7 @@ public class BackupManager {
 		destinationFolderPath.toFile().mkdirs();
 		for (File file: changesToCopy) {
 			Path destinationPath = Paths.get(destinationFolderPath.toString(), file.getName());
-			FileManager.copyFileWithoutLock(file.toPath(), destinationPath);
+			FileUtils.copyFileWithoutLock(file.toPath(), destinationPath);
 			recoveryManager.markChangePending(destinationPath);
 		}
 	}

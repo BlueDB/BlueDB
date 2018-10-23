@@ -3,7 +3,6 @@ package io.bluedb.disk.recovery;
 import org.junit.Test;
 
 import io.bluedb.api.Updater;
-import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;

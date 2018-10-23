@@ -13,6 +13,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.serialization.BlueSerializer;
 
 public class RecoveryManager<T extends Serializable> {
@@ -55,18 +56,18 @@ public class RecoveryManager<T extends Serializable> {
 		String completedFileName = getCompletedFileName(change);
 		Path pendingPath = Paths.get(historyFolderPath.toString(), pendingFileName);
 		Path completedPath = Paths.get(historyFolderPath.toString(), completedFileName);
-		FileManager.moveWithoutLock(pendingPath, completedPath);
+		FileUtils.moveWithoutLock(pendingPath, completedPath);
 	}
 
 	public void markChangePending(Path completedPath) throws BlueDbException {
 		String completedPathString = completedPath.toString();
 		String pendingPathString = completedPathString.replaceAll(SUFFIX_COMPLETE, SUFFIX_PENDING);
 		Path pendingPath = Paths.get(pendingPathString);
-		FileManager.moveWithoutLock(completedPath, pendingPath);
+		FileUtils.moveWithoutLock(completedPath, pendingPath);
 	}
 
 	public List<File> getChangeHistory(long backupStartTime, long backupEndTime) throws BlueDbException {
-		List<File> files = FileManager.getFolderContents(historyFolderPath, SUFFIX);
+		List<File> files = FileUtils.getFolderContents(historyFolderPath, SUFFIX);
 		if (files.isEmpty()) {
 			return files;
 		}
@@ -92,14 +93,14 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<File> getCompletedChangeFiles() {
-		List<File> completedChangeFilesIncludingTemps = FileManager.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
-		List<File> completedChangeFiles = Blutils.filter(completedChangeFilesIncludingTemps, (f) -> !FileManager.isTempFile(f));
+		List<File> completedChangeFilesIncludingTemps = FileUtils.getFolderContents(historyFolderPath, SUFFIX_COMPLETE);
+		List<File> completedChangeFiles = Blutils.filter(completedChangeFilesIncludingTemps, (f) -> !FileUtils.isTempFile(f));
 		return completedChangeFiles;
 	}
 
 	public List<File> getPendingChangeFiles() {
-		List<File> pendingChangeFilesIncludingTemps = FileManager.getFolderContents(historyFolderPath, SUFFIX_PENDING);
-		List<File> pendingChangeFiles = Blutils.filter(pendingChangeFilesIncludingTemps, (f) -> !FileManager.isTempFile(f));
+		List<File> pendingChangeFilesIncludingTemps = FileUtils.getFolderContents(historyFolderPath, SUFFIX_PENDING);
+		List<File> pendingChangeFiles = Blutils.filter(pendingChangeFilesIncludingTemps, (f) -> !FileUtils.isTempFile(f));
 		return pendingChangeFiles;
 	}
 

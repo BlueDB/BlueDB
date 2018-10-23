@@ -13,7 +13,7 @@ import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 
 public class IndexManager<T extends Serializable> {
 
@@ -65,7 +65,7 @@ public class IndexManager<T extends Serializable> {
 	private Map<String, BlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		Map<String, BlueIndexOnDisk<ValueKey, T>> map = new HashMap<>();
 		Path indexesPath = Paths.get(collectionPath.toString(), INDEXES_SUBFOLDER);
-		List<File> subfolders = FileManager.getFolderContents(indexesPath.toFile(), (f) -> f.isDirectory());
+		List<File> subfolders = FileUtils.getFolderContents(indexesPath.toFile(), (f) -> f.isDirectory());
 		for (File folder: subfolders) {
 			BlueIndexOnDisk<ValueKey, T> index = BlueIndexOnDisk.fromExisting(collection, folder.toPath());
 			String indexName = folder.getName();

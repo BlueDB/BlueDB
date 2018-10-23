@@ -13,7 +13,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.backup.BackupManager;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
 
 public class BlueDbOnDisk implements BlueDb {
 
@@ -89,7 +89,7 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
-		List<File> subfolders = FileManager.getFolderContents(path.toFile(), (f) -> f.isDirectory());
+		List<File> subfolders = FileUtils.getFolderContents(path.toFile(), (f) -> f.isDirectory());
 		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getUntypedCollectionForBackup(folder.getName()));
 		return collections;
 	}

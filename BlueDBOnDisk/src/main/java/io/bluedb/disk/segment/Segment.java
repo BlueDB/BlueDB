@@ -1,13 +1,10 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
@@ -17,6 +14,8 @@ import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.file.BlueObjectInput;
 import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.file.FileUtils;
+import io.bluedb.disk.file.RangeNamedFiles;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
 import io.bluedb.disk.segment.rollup.RollupTarget;
@@ -77,14 +76,14 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		Path targetPath, tmpPath;
 		try (BlueObjectInput<BlueEntity<T>> input = getObjectInputFor(groupingNumber)) {
 			targetPath = input.getPath();
-			tmpPath = FileManager.createTempFilePath(targetPath);
+			tmpPath = FileUtils.createTempFilePath(targetPath);
 			try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(tmpPath)) {
 				processor.process(input, output);
 			}
 		}
 
 		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(targetPath)) {
-			FileManager.moveFile(tmpPath, targetFileLock);
+			FileUtils.moveFile(tmpPath, targetFileLock);
 		}
 		reportWrite(targetPath);
 	}
@@ -121,7 +120,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			return;  // no benefit to rolling up a single file
 		}
 		Path path = Paths.get(segmentPath.toString(), timeRange.toUnderscoreDelimitedString());
-		Path tmpPath = FileManager.createTempFilePath(path);
+		Path tmpPath = FileUtils.createTempFilePath(path);
 
 		if (path.toFile().exists()) { // we're recovering after a rollup failed while deleting the removed files
 			filesToRollup = Blutils.filter(filesToRollup, (f) -> !f.equals(path.toFile()));  // don't delete the rolled up file
@@ -152,7 +151,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	private void cleanupFiles(List<File> filesToRollup) throws BlueDbException {
 		for (File file: filesToRollup) {
 			try (BlueWriteLock<Path> writeLock = acquireWriteLock(file.toPath())){
-				FileManager.deleteFile(writeLock);
+				FileUtils.deleteFile(writeLock);
 			}
 		}
 	}
@@ -164,9 +163,9 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 				sourceFileWriteLocks.add(acquireWriteLock(file.toPath()));
 			}
 
-			FileManager.moveFile(tempRolledupPath, targetFileLock);
+			FileUtils.moveFile(tempRolledupPath, targetFileLock);
 			for (BlueWriteLock<Path> writeLock: sourceFileWriteLocks) {
-				FileManager.deleteFile(writeLock);
+				FileUtils.deleteFile(writeLock);
 			}
 		} finally {
 			for (BlueWriteLock<Path> lock: sourceFileWriteLocks) {
@@ -176,71 +175,11 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	public List<File> getOrderedFilesEnclosedInRange(Range range) {
-		return getOrderedFilesEnclosedInRange(segmentPath, range);
-	}
-
-	protected static List<File> getOrderedFilesEnclosedInRange(Path segmentPath, Range range) {
-		long min = range.getStart();
-		long max = range.getEnd();
-		File segmentFolder = segmentPath.toFile();
-		FileFilter filter = (f) -> isFileNameRangeEnclosed(f, min, max);
-		List<File> filesInFolder = FileManager.getFolderContents(segmentFolder, filter);
-		sortByRange(filesInFolder);
-		return filesInFolder;
+		return RangeNamedFiles.getOrderedFilesEnclosedInRange(segmentPath, range);
 	}
 
 	public List<File> getOrderedFilesInRange(Range range) {
-		return getOrderedFilesInRange(segmentPath, range);
-	}
-
-	protected static List<File> getOrderedFilesInRange(Path segmentPath, Range range) {
-		long min = range.getStart();
-		long max = range.getEnd();
-		File segmentFolder = segmentPath.toFile();
-		FileFilter filter = (f) -> doesfileNameRangeOverlap(f, min, max);
-		List<File> filesInFolder = FileManager.getFolderContents(segmentFolder, filter);
-		sortByRange(filesInFolder);
-		return filesInFolder;
-	}
-
-	protected static void sortByRange(List<File> files) {
-		Comparator<File> comparator = new Comparator<File>() {
-			@Override
-			public int compare(File o1, File o2) {
-				Range r1 = Range.fromUnderscoreDelmimitedString(o1.getName());
-				Range r2 = Range.fromUnderscoreDelmimitedString(o2.getName());
-				return r1.compareTo(r2);
-			}
-		};
-		Collections.sort(files, comparator);
-	}
-
-	protected static boolean isFileNameRangeEnclosed(File file, long min, long max ) {
-		try {
-			String[] splits = file.getName().split("_");
-			if (splits.length < 2) {
-				return false;
-			}
-			long start = Long.valueOf(splits[0]);
-			long end = Long.valueOf(splits[1]);
-			return (end <= max) && (start >= min);
-		} catch (Throwable t) {
-			return false;
-		}
-	}
-
-	protected static boolean doesfileNameRangeOverlap(File file, long min, long max ) {
-		try {
-			String[] splits = file.getName().split("_");
-			if (splits.length < 2) {
-				return false;
-			}
-			long start = Long.valueOf(splits[0]);
-			long end = Long.valueOf(splits[1]);
-			return (start <= max) && (end >= min);
-		} catch (Throwable t) {
-			return false;
-		}
+		return RangeNamedFiles.getOrderedFilesInRange(segmentPath, range);
 	}
 
 	protected BlueObjectOutput<BlueEntity<T>> getObjectOutputFor(Path path) throws BlueDbException {
@@ -305,13 +244,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		return rollupRangesEnclosingChunk;
 	}
 
-	protected static String getRangeFileName(long groupingValue, long multiple) {
-		Range timeRange = Range.forValueAndRangeSize(groupingValue, multiple);
-		return timeRange.toUnderscoreDelimitedString();
-	}
-
 	private Path getPathFor(long groupingNumber, long rollupLevel) {
-		String fileName = getRangeFileName(groupingNumber, rollupLevel);
+		String fileName = RangeNamedFiles.getRangeFileName(groupingNumber, rollupLevel);
 		return Paths.get(segmentPath.toString(), fileName);
 	}
 
