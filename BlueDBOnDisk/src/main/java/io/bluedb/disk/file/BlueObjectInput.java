@@ -22,6 +22,8 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	private final DataInputStream dataInputStream;
 			
 	private T next = null;
+	private byte[] nextBytes = null;
+	private byte[] lastBytes = null;
 
 	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
 		this.readLock = readLock;
@@ -76,23 +78,47 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			next = nextFromFile();
 		}
 		T response = next;
+		lastBytes = nextBytes;
 		next = null;
+		nextBytes = null;
 		return response;
 	}
 
+	public byte[] nextWithoutDeserializing() {
+		if (next == null) {
+			nextBytes = nextBytesFromFile();
+		}  // otherwise you've already peeked ahead
+		lastBytes = nextBytes;
+		byte[] response = nextBytes;
+		next = null;
+		nextBytes = null;
+		return response;
+	}
+
+	public byte[] getLastBytes() {
+		return lastBytes;
+	}
+
 	protected T nextFromFile() {
+		nextBytes = nextBytesFromFile();
+		if (nextBytes == null) {
+			return null;
+		}
+		Object object = serializer.deserializeObjectFromByteArray(nextBytes);
+		@SuppressWarnings("unchecked")
+		T t = (T) object;
+		return t;
+	}
+
+	protected byte[] nextBytesFromFile() {
 		if (dataInputStream == null) {
 			return null;
 		}
-		int objectLength;
 		try {
-			objectLength = dataInputStream.readInt();
-			byte[] buffer = new byte[objectLength];
-			dataInputStream.readFully(buffer,0, objectLength);
-			Object object = serializer.deserializeObjectFromByteArray(buffer);
-			@SuppressWarnings("unchecked")
-			T t = (T) object;
-			return t;
+			int objectLength = dataInputStream.readInt();
+			byte[] nextBytes = new byte[objectLength];
+			dataInputStream.readFully(nextBytes, 0, objectLength);
+			return nextBytes;
 		} catch (EOFException e) {
 			return null;
 		} catch (IOException e) {

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.Blutils;
@@ -94,6 +95,46 @@ public class BlueObjectInputTest extends TestCase {
 	}
 
 	@Test
+	public void test_readLastBytes() throws Exception {
+		TestValue firstValue = new TestValue("Jobodo Monobodo");
+		TestValue secondValue = new TestValue("la la la");
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.write(firstValue);
+			outStream.write(secondValue);
+			outStream.close();
+		}
+
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertNull(inStream.getLastBytes());
+
+				assertTrue(inStream.hasNext());
+				assertNull(inStream.getLastBytes());  // hasNext should not populate lastBytes
+
+				assertEquals(firstValue, inStream.next());
+				byte[] firstValueBytes = inStream.getLastBytes();
+				TestValue restoredFirstValue = (TestValue) serializer.deserializeObjectFromByteArray(firstValueBytes);
+				assertEquals(firstValue, restoredFirstValue);
+				assertEquals(firstValue, restoredFirstValue);
+
+				assertTrue(inStream.hasNext());
+				assertEquals(firstValueBytes, inStream.getLastBytes());  // hasNext should not re-populate out lastBytes
+
+				assertEquals(secondValue, inStream.next());
+				byte[] secondValueBytes = inStream.getLastBytes();
+				TestValue restoredSecondValue = (TestValue) serializer.deserializeObjectFromByteArray(secondValueBytes);
+				assertEquals(secondValue, restoredSecondValue);
+
+				assertFalse(inStream.hasNext());
+				assertEquals(secondValueBytes, inStream.getLastBytes());  // hasNext should not clear out lastBytes
+
+				inStream.close();
+			}
+		}
+	}
+
+	@Test
 	public void test_next() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
@@ -105,6 +146,25 @@ public class BlueObjectInputTest extends TestCase {
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(value, inStream.next());
+				assertNull(inStream.next());
+				inStream.close();
+			}
+		}
+	}
+
+	@Test
+	public void test_nextWithoutDeserializing() throws Exception {
+		TestValue value = new TestValue("Jobodo Monobodo");
+		byte[] valueBytes = serializer.serializeObjectToByteArray(value);
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.write(value);
+			outStream.close();
+		}
+
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertArrayEquals(valueBytes, inStream.nextWithoutDeserializing());
 				assertNull(inStream.next());
 				inStream.close();
 			}
