@@ -3,6 +3,7 @@ package io.bluedb.disk.backup;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -148,6 +149,15 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	}
 
 	private Path getbackedUpZipPath() throws URISyntaxException {
-		return Paths.get(this.getClass().getResource("/backup.zip").toURI());
+		URL url = this.getClass().getResource("/backup.zip");
+		if (url != null) {
+			return Paths.get(url.toURI());
+		}
+		else {
+			String absoluteBinPath = Paths.get(this.getClass().getResource("./").toURI()).toAbsolutePath().toString();
+			String absoluteTestPath = absoluteBinPath.replaceFirst("bin.*", "test");
+			String filename = "backup.zip";
+			return Paths.get(absoluteTestPath, "resources", filename);			
+		}
 	}
 }
