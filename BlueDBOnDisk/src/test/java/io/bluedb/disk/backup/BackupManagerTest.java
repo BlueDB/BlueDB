@@ -155,7 +155,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		}
 		else {
 			String absoluteBinPath = Paths.get(this.getClass().getResource("./").toURI()).toAbsolutePath().toString();
-			String absoluteTestPath = absoluteBinPath.replaceFirst("bin.*", "test");
+			String absoluteTestPath = absoluteBinPath.replaceFirst("bin.*", "src/test");
 			String filename = "backup.zip";
 			return Paths.get(absoluteTestPath, "resources", filename);			
 		}
