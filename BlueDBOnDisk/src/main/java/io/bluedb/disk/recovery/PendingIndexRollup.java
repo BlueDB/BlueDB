@@ -50,4 +50,10 @@ public class PendingIndexRollup<T extends Serializable> implements Serializable,
 	public void setRecoverableId(long recoverableId) {
 		this.recoverableId = recoverableId;
 	}
+
+
+	@Override
+	public String toString() {
+		return "<PendingIndexRollup for '" + indexName + "' index segment @ " + segmentGroupingNumber + ", " + min + " - " + max + ">";
+	}
 }
