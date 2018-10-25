@@ -62,6 +62,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 		// avoid duplicate scheduling
 		getRollupScheduler().reportRead(rollupTarget, readTime);
+        assertEquals(readTime + rollupTarget.getReadRollupDelay(), getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		assertEquals(1, getRollupScheduler().getRollupTimes().size());
 	}
 
