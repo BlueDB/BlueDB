@@ -119,6 +119,7 @@ public class RollupScheduler implements Runnable {
 			rollupRunnable = new RollupTask<>(collection, target);
 		}
 		collection.submitTask(rollupRunnable);
+		rollupTimes.remove(target);
 	}
 
 	public Map<RollupTarget, Long> getRollupTimes() {
