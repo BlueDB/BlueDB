@@ -50,4 +50,9 @@ public class PendingRollup<T extends Serializable> implements Serializable, Reco
 	public void setRecoverableId(long recoverableId) {
 		this.recoverableId = recoverableId;
 	}
+
+	@Override
+	public String toString() {
+		return "<PendingRollup in segment @ " + segmentGroupingNumber + " for " + min + " - " + max + ">";
+	}
 }

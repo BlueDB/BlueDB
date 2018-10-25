@@ -231,7 +231,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	@Override
 	public void reportWrites(List<RollupTarget> rollupTargets) {
-		rollupScheduler.reportReads(rollupTargets);
+		rollupScheduler.reportWrites(rollupTargets);
 	}
 
 	public RollupScheduler getRollupScheduler() {
