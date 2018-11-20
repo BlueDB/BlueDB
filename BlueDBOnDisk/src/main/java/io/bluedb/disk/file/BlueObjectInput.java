@@ -13,6 +13,7 @@ import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.LockManager;
 import io.bluedb.disk.serialization.BlueSerializer;
+import io.bluedb.disk.serialization.validation.SerializationException;
 
 public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 
@@ -65,7 +66,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	@Override
 	public boolean hasNext() {
 		if (next == null) {
-			next = nextFromFile();
+			next = nextValidObjectFromFile();
 		}
 		return next != null;
 	}
@@ -73,14 +74,24 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	@Override
 	public T next() {
 		if (next == null) {
-			next = nextFromFile();
+			next = nextValidObjectFromFile();
 		}
 		T response = next;
 		next = null;
 		return response;
 	}
+	
+	private T nextValidObjectFromFile() {
+		while(true) {
+			try {
+				return nextFromFile();
+			} catch(SerializationException t) {
+				t.printStackTrace(); // Object was corrupted. Print stack trace but try loading the next one
+			}
+		}
+	}
 
-	protected T nextFromFile() {
+	private T nextFromFile() throws SerializationException {
 		if (dataInputStream == null) {
 			return null;
 		}
