@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.HashGroupedKey;
+import io.bluedb.api.keys.IntegerKey;
 import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.segment.path.LongSegmentPathManager;
+import io.bluedb.disk.segment.path.HashSegmentPathManager;
 import io.bluedb.disk.segment.path.IntegerSegmentPathManager;
 import io.bluedb.disk.segment.path.SegmentPathManager;
 import io.bluedb.disk.segment.path.TimeSegmentPathManager;
@@ -85,8 +87,10 @@ public class SegmentManager<T extends Serializable> {
 			return new TimeSegmentPathManager(collectionPath);
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
 			return new LongSegmentPathManager(collectionPath);
-		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
+		} else if (IntegerKey.class.isAssignableFrom(keyType)) {
 			return new IntegerSegmentPathManager(collectionPath);
+		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
+			return new HashSegmentPathManager(collectionPath);
 		} else {
 			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
 		}

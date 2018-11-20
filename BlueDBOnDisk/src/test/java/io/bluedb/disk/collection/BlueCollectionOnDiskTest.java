@@ -379,7 +379,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_query_HashGroupedKey() throws Exception {
 		TestValue value = new TestValue("Joe");
-		insertAtInteger(1, value);
+		insertAtId(UUID.randomUUID(), value);
 		List<TestValue> values = getHashGroupedCollection().query().getList();
 		assertEquals(1, values.size());
 		assertTrue(values.contains(value));
@@ -388,7 +388,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_contains_HashGroupedKey() throws Exception {
 		TestValue value = new TestValue("Joe");
-		HashGroupedKey key = insertAtInteger(1, value);
+		HashGroupedKey key = insertAtId(UUID.randomUUID(), value);
 		List<TestValue> values = getHashGroupedCollection().query().getList();
 		assertEquals(1, values.size());
 		assertTrue(getHashGroupedCollection().contains(key));
@@ -451,12 +451,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		values = getTimeCollection().query().getList();
 		assertEquals(0, values.size());
 
-		getHashGroupedCollection().insert(key0, value1);
-		getHashGroupedCollection().insert(key3, value3);
-		values = getHashGroupedCollection().query().getList();
+		getIntCollection().insert(key0, value1);
+		getIntCollection().insert(key3, value3);
+		values = getIntCollection().query().getList();
 		assertEquals(2, values.size());
 
-		SegmentManager<TestValue> segmentManager = getHashGroupedCollection().getSegmentManager();
+		SegmentManager<TestValue> segmentManager = getIntCollection().getSegmentManager();
 		Segment<TestValue> segmentFor1 = segmentManager.getSegment(key0.getGroupingNumber());
 		Segment<TestValue> segmentFor3 = segmentManager.getSegment(key3.getGroupingNumber());
 		assertEquals(segmentFor1, segmentFor3);  // make sure they're in the same segment
@@ -464,18 +464,18 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		File[] segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();
 		assertEquals(2, segmentDirectoryContents.length);
 
-		long segmentSize = getHashGroupedCollection().getSegmentManager().getSegmentSize();
+		long segmentSize = getIntCollection().getSegmentManager().getSegmentSize();
 		long segmentStart = Blutils.roundDownToMultiple(key0.getGroupingNumber(), segmentSize);
 		Range entireFirstSegmentTimeRange = new Range(segmentStart, segmentStart + segmentSize -1);
 		Range offByOneSegmentTimeRange = new Range(segmentStart, segmentStart + segmentSize);
 		try {
-			getHashGroupedCollection().rollup(offByOneSegmentTimeRange);
+			getIntCollection().rollup(offByOneSegmentTimeRange);
 			fail();
 		} catch (BlueDbException e) {}
 
-		getHashGroupedCollection().rollup(entireFirstSegmentTimeRange);
+		getIntCollection().rollup(entireFirstSegmentTimeRange);
 
-		values = getHashGroupedCollection().query().getList();
+		values = getIntCollection().query().getList();
 		assertEquals(2, values.size());
 		segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();
 		assertEquals(1, segmentDirectoryContents.length);

@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.HashGroupedKey;
@@ -19,6 +21,7 @@ import io.bluedb.api.keys.LongKey;
 import io.bluedb.api.keys.StringKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
+import io.bluedb.api.keys.UUIDKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.TestValue;
@@ -40,9 +43,11 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	private static String TIME_COLLECTION_NAME = "testing_time";
 	private static String HASH_GROUPED_COLLECTION_NAME = "testing_value";
 	private static String LONG_COLLECTION_NAME = "long_value";
+	private static String INT_COLLECTION_NAME = "int_value";
 	BlueDbOnDisk db;
 	BlueCollectionOnDisk<TestValue> timeCollection;
 	BlueCollectionOnDisk<TestValue> hashGroupedCollection;
+	BlueCollectionOnDisk<TestValue> intCollection;
 	BlueCollectionOnDisk<TestValue> longCollection;
 	Path dbPath;
 	LockManager<Path> lockManager;
@@ -59,6 +64,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		timeCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class);
 		hashGroupedCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class);
 		longCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(LONG_COLLECTION_NAME, LongKey.class, TestValue.class);
+		intCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class);
 		dbPath = db.getPath();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
@@ -90,6 +96,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public BlueCollectionOnDisk<TestValue> getLongCollection() {
 		return longCollection;
+	}
+	
+	public BlueCollectionOnDisk<TestValue> getIntCollection() {
+		return intCollection;
 	}
 
 	public LockManager<Path> getLockManager() {
@@ -151,8 +161,14 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return key;
 	}
 
-	public HashGroupedKey insertAtInteger(int id, TestValue value) {
-		HashGroupedKey key = new IntegerKey(id);
+	public IntegerKey insertAtInteger(int id, TestValue value) {
+		IntegerKey key = new IntegerKey(id);
+		insertToIntCollection(key, value);
+		return key;
+	}
+
+	public HashGroupedKey insertAtId(UUID id, TestValue value) {
+		HashGroupedKey key = new UUIDKey(id);
 		insertToHashGroupedCollection(key, value);
 		return key;
 	}
@@ -161,6 +177,15 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		LongKey key = new LongKey(id);
 		insertToLongCollection(key, value);
 		return key;
+	}
+
+	public void insertToIntCollection(IntegerKey key, TestValue value) {
+		try {
+			getIntCollection().insert(key, value);
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
 
 	public void insertToHashGroupedCollection(HashGroupedKey key, TestValue value) {

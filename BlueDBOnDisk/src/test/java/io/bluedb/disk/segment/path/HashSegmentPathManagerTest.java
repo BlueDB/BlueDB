@@ -14,11 +14,11 @@ import io.bluedb.api.keys.LongKey;
 import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.segment.Range;
 
-public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
+public class HashSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_validate_rollup_levels() {
-		List<Long> rollupLevels = IntegerSegmentPathManager.ROLLUP_LEVELS;
+		List<Long> rollupLevels = HashSegmentPathManager.ROLLUP_LEVELS;
 		for (int i = 0; i < rollupLevels.size() - 1; i++) {
 			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
 		}
@@ -26,15 +26,15 @@ public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSegmentRange() {
-		Range segmentRangeStartingAtZero = getIntCollection().getSegmentManager().getSegmentRange(0);
+		Range segmentRangeStartingAtZero = getHashGroupedCollection().getSegmentManager().getSegmentRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());
-		assertEquals(getIntCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
+		assertEquals(getHashGroupedCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
 
-		Range maxLongRange = getIntCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
+		Range maxLongRange = getHashGroupedCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		Range minLongRange = getIntCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
+		Range minLongRange = getHashGroupedCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
@@ -64,11 +64,11 @@ public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getExistingSegmentFiles_key() {
-		File folder = getIntCollection().getPath().toFile();
+		File folder = getHashGroupedCollection().getPath().toFile();
 		emptyAndDelete(folder);
 		folder.mkdir();
 		LongKey longKey = new LongKey(randomValue());
-		List<Path> singlePathToAdd = getIntCollection().getSegmentManager().getPathManager().getAllPossibleSegmentPaths(longKey);
+		List<Path> singlePathToAdd = getHashGroupedCollection().getSegmentManager().getPathManager().getAllPossibleSegmentPaths(longKey);
 		assertEquals(1, singlePathToAdd.size());
 		assertEquals(0, getPathManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
 		for (Path path: singlePathToAdd) {
@@ -112,7 +112,7 @@ public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 	}
 
 	private SegmentPathManager getPathManager() {
-		return getIntCollection().getSegmentManager().getPathManager();
+		return getHashGroupedCollection().getSegmentManager().getPathManager();
 	}
 
 	public File createSegment(File parentFolder, long low, long high) {
