@@ -33,7 +33,7 @@ public class ObjectValidation {
 		}
 	}
 
-	private static void validateFieldValueType(Field field, Object value) throws SerializationException {
+	protected static void validateFieldValueType(Field field, Object value) throws SerializationException {
 		Class<?> fieldType = field.getType();
 		Class<? extends Object> valueType = value.getClass();
 		

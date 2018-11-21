@@ -3,6 +3,7 @@ package io.bluedb.disk.serialization.validation;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -96,6 +97,39 @@ public class ObjectValidationTest {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
 		
 		testCorruptCall("corruptCall-1.bin", serializer);
+	}
+
+	@Test
+	public void testValidateFieldValueType() throws Exception {
+		Field booleanField = (new Object() {boolean  i;}).getClass().getDeclaredFields()[0];
+		Field intField = (new Object() {int i;}).getClass().getDeclaredFields()[0];
+		Field longField = (new Object() {long i;}).getClass().getDeclaredFields()[0];
+		Field floatField = (new Object() {float i;}).getClass().getDeclaredFields()[0];
+		Field doubleField = (new Object() {double i;}).getClass().getDeclaredFields()[0];
+		Field byteField = (new Object() {byte i;}).getClass().getDeclaredFields()[0];
+		Field charField = (new Object() {char i;}).getClass().getDeclaredFields()[0];
+		Field shortField = (new Object() {short i;}).getClass().getDeclaredFields()[0];
+		Field stringField = (new Object() {String i;}).getClass().getDeclaredFields()[0];
+
+		ObjectValidation.validateFieldValueType(booleanField, true);
+		ObjectValidation.validateFieldValueType(intField, (int) 1);
+		ObjectValidation.validateFieldValueType(longField, (long) 1);
+		ObjectValidation.validateFieldValueType(floatField, (float) 1);
+		ObjectValidation.validateFieldValueType(doubleField, (double) 1);
+		ObjectValidation.validateFieldValueType(byteField, (byte) 1);
+		ObjectValidation.validateFieldValueType(charField, (char) 1);
+		ObjectValidation.validateFieldValueType(shortField, (short) 1);
+		ObjectValidation.validateFieldValueType(stringField, "");
+		
+		try {ObjectValidation.validateFieldValueType(booleanField, (int) 1); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(intField, (long) 1); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(longField, (float) 1); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(floatField, (double) 1); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(doubleField, (byte) 1); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(byteField, (char) 1); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(charField, (short) 1); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(shortField, ""); fail();} catch(SerializationException s) {}
+		try {ObjectValidation.validateFieldValueType(stringField, true); fail();} catch(SerializationException s) {}
 	}
 
 	private void testCorruptCall(String filename, ThreadLocalFstSerializer serializer) throws IOException, URISyntaxException, SerializationException, IllegalArgumentException, IllegalAccessException {
