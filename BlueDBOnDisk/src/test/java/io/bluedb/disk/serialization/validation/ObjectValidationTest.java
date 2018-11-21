@@ -132,6 +132,18 @@ public class ObjectValidationTest {
 		try {ObjectValidation.validateFieldValueType(stringField, true); fail();} catch(SerializationException s) {}
 	}
 
+	@Test
+	public void testIsNullOrEmpty() {
+		assertTrue(ObjectValidation.isNullOrEmpty(null));
+		assertTrue(ObjectValidation.isNullOrEmpty(new Object[] {}));
+		assertFalse(ObjectValidation.isNullOrEmpty(new String[] {"not null or empty"}));
+	}
+
+	@Test
+	public void testConstructor() {
+		new ObjectValidation(); // this test is stupid but needed to get 100% coverage
+	}
+
 	private void testCorruptCall(String filename, ThreadLocalFstSerializer serializer) throws IOException, URISyntaxException, SerializationException, IllegalArgumentException, IllegalAccessException {
 		byte[] bytes = Files.readAllBytes(Paths.get(this.getClass().getResource("/" + filename).toURI()));
 		try {
