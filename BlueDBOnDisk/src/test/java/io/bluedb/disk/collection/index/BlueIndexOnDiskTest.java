@@ -2,10 +2,8 @@ package io.bluedb.disk.collection.index;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.Test;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
