@@ -96,11 +96,9 @@ public class HashSegmentPathManagerTest extends BlueDbDiskTestBase {
 		String fname = String.valueOf( (groupingNumber / folderSizes.get(0)) );
 		String parentName = String.valueOf( (groupingNumber / folderSizes.get(1)) );
 		String grandparentName = String.valueOf( (groupingNumber / folderSizes.get(2)) );
-		String greatGrandparentName = String.valueOf( (groupingNumber / folderSizes.get(3)) );
 		assertEquals(fname, path.getFileName().toString());
 		assertEquals(parentName, parent.getFileName().toString());
 		assertEquals(grandparentName, grandparent.getFileName().toString());
-		assertEquals(greatGrandparentName, greatGrandparent.getFileName().toString());
 	}
 
 	@Test
