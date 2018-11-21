@@ -8,14 +8,13 @@ import io.bluedb.api.keys.BlueKey;
 
 public class HashSegmentPathManager implements SegmentPathManager {
 
-	private static final long SIZE_SEGMENT = 256;
-	private static final long SIZE_FOLDER_BOTTOM = SIZE_SEGMENT * 64;
-	private static final long SIZE_FOLDER_MIDDLE = SIZE_FOLDER_BOTTOM * 64;
-	private static final long SIZE_FOLDER_TOP = SIZE_FOLDER_MIDDLE * 64;
+	private static final long SIZE_SEGMENT = 524288;
+	private static final long SIZE_FOLDER_BOTTOM = SIZE_SEGMENT * 128;
+	private static final long SIZE_FOLDER_TOP = SIZE_FOLDER_BOTTOM * 64;
 	public final static List<Long> ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
 
 	private final Path collectionPath;
-	private final List<Long> folderSizes = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
+	private final List<Long> folderSizes = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
 
 	public HashSegmentPathManager(Path collectionPath) {
 		this.collectionPath = collectionPath;
