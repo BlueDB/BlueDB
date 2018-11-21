@@ -18,6 +18,7 @@ import io.bluedb.disk.TestValue;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
 import io.bluedb.disk.lock.LockManager;
+import io.bluedb.disk.models.calls.Call;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import junit.framework.TestCase;
@@ -154,6 +155,22 @@ public class BlueObjectInputTest extends TestCase {
 		}
 	}
 	
+
+	@Test
+	public void test_nextValidObjectFromFile_invalid() throws Exception {
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		String filename = "stream_with_corrupted_object.bytes";
+		Path garbagePath = Paths.get(this.getClass().getResource("/" + filename).toURI());
+		BlueReadLock<Path> readLock = lockManager.acquireReadLock(garbagePath);
+		BlueObjectInput<Call> inStream = new BlueObjectInput<>(readLock, serializer);
+		int count = 0;
+		while (inStream.hasNext()) {
+			count += 1;
+			inStream.next();
+		}
+		assertEquals(2, count);
+		inStream.close();
+	}
 
 	private File createEmptyFile(String filename) throws IOException {
 		File file = Paths.get(testingFolderPath.toString(), filename).toFile();
