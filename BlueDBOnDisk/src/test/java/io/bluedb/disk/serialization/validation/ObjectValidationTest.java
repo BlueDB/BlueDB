@@ -90,8 +90,21 @@ public class ObjectValidationTest {
 			e.printStackTrace();
 			fail();
 		}
+
+		TypeValidationTestObject selfReferencingObject = new TypeValidationTestObject(validInt, validIntBoxedNull, validLong, validLongBoxedNull, 
+				validFloat, validFloatBoxedNull, validDouble, validDoubleBoxedNull, validByte, validByteBoxedNull, validBoolean, validBooleanBoxedNull, 
+				validStringNull, validIntArrayNull, validTestValuesListNull, validTestValuesArrayNull, validTestValuesMapNull, null);
+		//Add reference to self
+		selfReferencingObject.setAnotherInstanceOfTheSameClass(selfReferencingObject);
+
+		try {
+			ObjectValidation.validateFieldValueTypesForObject(selfReferencingObject);
+		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+			e.printStackTrace();
+			fail();
+		}
 	}
-	
+
 	@Test
 	public void testInvalidObjects() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
