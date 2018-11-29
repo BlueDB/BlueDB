@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ObjectValidation {
+	
+	protected ObjectValidation() {} // just to get 100% test coverage
+
 	public static void validateFieldValueTypesForObject(Object obj) throws IllegalArgumentException, IllegalAccessException, SerializationException {
 		validateFieldValueTypesForObject(obj, new HashSet<>());
 	}
@@ -18,7 +21,7 @@ public class ObjectValidation {
 		Class<?> currentClass = obj.getClass();
 		while(currentClass != Object.class && currentClass != null) {
 			Field[] fields = currentClass.getDeclaredFields();
-			if(fields != null) {
+			if(!(isNullOrEmpty(fields))) {
 				for(Field field : fields) {
 					if(!Modifier.isStatic(field.getModifiers())) {
 						field.setAccessible(true);
@@ -37,7 +40,11 @@ public class ObjectValidation {
 		}
 	}
 
-	private static void validateFieldValueType(Field field, Object value) throws SerializationException {
+	protected static boolean isNullOrEmpty(Object[] objects) {
+		return objects == null || objects.length <= 0;
+	}
+
+	protected static void validateFieldValueType(Field field, Object value) throws SerializationException {
 		Class<?> fieldType = field.getType();
 		Class<? extends Object> valueType = value.getClass();
 		
