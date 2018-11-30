@@ -17,6 +17,7 @@ import io.bluedb.disk.TestValue2;
 import io.bluedb.disk.models.calls.Call;
 import io.bluedb.disk.models.calls.CallEvent;
 import io.bluedb.disk.models.calls.CallRecording;
+import io.bluedb.disk.models.calls.CallV2;
 import io.bluedb.disk.models.calls.Note;
 import io.bluedb.disk.models.calls.RecordingStatus;
 import io.bluedb.disk.models.calls.Timeframe;
@@ -98,7 +99,7 @@ public class ThreadLocalFstSerializerTest {
 	private List<byte[]> generateTestCallsAsBytes(int callCountPerTest, ThreadLocalFstSerializer serializer) {
 		List<byte[]> testCallsAsBytes = new LinkedList<>();
 		for(int i = 0; i < callCountPerTest; i++) {
-			Call call = Call.generateBasicTestCall();
+			Call call = CallV2.generateBasicTestCall();
 			BlueEntity<Call> entity = new BlueEntity<Call>(new TimeFrameKey(call.getId(), call.getStart(), call.getEnd()), call);
 			testCallsAsBytes.add(serializer.serializeObjectToByteArray(entity));
 		}

@@ -18,21 +18,25 @@ public class ObjectValidation {
 			return;
 		}
 		
-		Field[] fields = obj.getClass().getDeclaredFields();
-		if(!(isNullOrEmpty(fields))) {
-			for(Field field : fields) {
-				if(!Modifier.isStatic(field.getModifiers())) {
-					field.setAccessible(true);
-					Object fieldValue = field.get(obj);
-					if(fieldValue != null) {
-						validateFieldValueType(field, fieldValue);
-						if(!field.getType().isPrimitive() && !previouslyValidatedObjects.contains(fieldValue)) {
-							previouslyValidatedObjects.add(fieldValue);
-							validateFieldValueTypesForObject(fieldValue, previouslyValidatedObjects);
+		Class<?> currentClass = obj.getClass();
+		while(currentClass != Object.class && currentClass != null) {
+			Field[] fields = currentClass.getDeclaredFields();
+			if(!(isNullOrEmpty(fields))) {
+				for(Field field : fields) {
+					if(!Modifier.isStatic(field.getModifiers())) {
+						field.setAccessible(true);
+						Object fieldValue = field.get(obj);
+						if(fieldValue != null) {
+							validateFieldValueType(field, fieldValue);
+							if(!field.getType().isPrimitive() && !previouslyValidatedObjects.contains(fieldValue)) {
+								previouslyValidatedObjects.add(fieldValue);
+								validateFieldValueTypesForObject(fieldValue, previouslyValidatedObjects);
+							}
 						}
 					}
 				}
 			}
+			currentClass = currentClass.getSuperclass();
 		}
 	}
 
