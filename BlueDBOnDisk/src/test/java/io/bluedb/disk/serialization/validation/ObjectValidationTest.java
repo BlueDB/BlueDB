@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.models.calls.Call;
+import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class ObjectValidationTest {
@@ -106,10 +107,29 @@ public class ObjectValidationTest {
 	}
 
 	@Test
-	public void testInvalidObjects() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
+	public void testCorruptCall() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
-		
-		testCorruptCall("corruptCall-1.bin", serializer);
+		testCorruptObject(serializer, "/corruptCall-1.bin");
+	}
+
+	@Test
+	public void testCorruptCallInArray() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		testCorruptObject(serializer, "/corruptCallArrayList-1.bin");
+	}
+
+	private void testCorruptObject(BlueSerializer serializer, String relativeFilepathForCorruptObjectBytes) throws IOException, URISyntaxException {
+		byte[] bytes = getResourceBytes(relativeFilepathForCorruptObjectBytes);
+		try {
+			serializer.deserializeObjectFromByteArray(bytes);
+			Assert.fail();
+		} catch(SerializationException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private byte[] getResourceBytes(String filepath) throws IOException, URISyntaxException {
+		return Files.readAllBytes(Paths.get(this.getClass().getResource(filepath).toURI()));
 	}
 
 	@Test
@@ -146,24 +166,7 @@ public class ObjectValidationTest {
 	}
 
 	@Test
-	public void testIsNullOrEmpty() {
-		assertTrue(ObjectValidation.isNullOrEmpty(null));
-		assertTrue(ObjectValidation.isNullOrEmpty(new Object[] {}));
-		assertFalse(ObjectValidation.isNullOrEmpty(new String[] {"not null or empty"}));
-	}
-
-	@Test
 	public void testConstructor() {
 		new ObjectValidation(); // this test is stupid but needed to get 100% coverage
-	}
-
-	private void testCorruptCall(String filename, ThreadLocalFstSerializer serializer) throws IOException, URISyntaxException, SerializationException, IllegalArgumentException, IllegalAccessException {
-		byte[] bytes = Files.readAllBytes(Paths.get(this.getClass().getResource("/" + filename).toURI()));
-		try {
-			serializer.deserializeObjectFromByteArray(bytes);
-			Assert.fail();
-		} catch(SerializationException e) {
-			e.printStackTrace();
-		}
 	}
 }

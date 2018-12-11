@@ -57,9 +57,9 @@ public class ThreadLocalFstSerializerTest {
 	
 	@Test
 	public void testDeserializationIssue() {
-		int testCount = 15;
-		int mutationCountPerTest = 30;
-		int callCountPerTest = 1000;
+		int testCount = 200;
+		int mutationCountPerTest = 15;
+		int callCountPerTest = 100;
 		Random random = new Random();
 		
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
