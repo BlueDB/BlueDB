@@ -1,7 +1,9 @@
 package io.bluedb.disk.serialization.validation;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,17 +20,36 @@ public class ObjectValidation {
 			return;
 		}
 		
+		if(obj.getClass().isArray()) {
+			handleArray(obj, previouslyValidatedObjects);
+		} else {
+			handleObject(obj, previouslyValidatedObjects);
+		}
+	}
+
+	private static void handleArray(Object objArray, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
+		for(int i = 0; i < Array.getLength(objArray); i++) {
+			Object obj = Array.get(objArray, i);
+			if(!previouslyValidatedObjects.contains(obj)) {
+				previouslyValidatedObjects.add(obj);
+				validateFieldValueTypesForObject(obj, previouslyValidatedObjects);
+			}
+		}
+	}
+
+	private static void handleObject(Object obj, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
 		Class<?> currentClass = obj.getClass();
 		while(currentClass != Object.class && currentClass != null) {
 			Field[] fields = currentClass.getDeclaredFields();
-			if(!(isNullOrEmpty(fields))) {
+			if(fields != null) {
 				for(Field field : fields) {
 					if(!Modifier.isStatic(field.getModifiers())) {
 						field.setAccessible(true);
 						Object fieldValue = field.get(obj);
 						if(fieldValue != null) {
 							validateFieldValueType(field, fieldValue);
-							if(!field.getType().isPrimitive() && !previouslyValidatedObjects.contains(fieldValue)) {
+							
+							if(shouldDelveIntoObject(field, fieldValue, previouslyValidatedObjects)) {
 								previouslyValidatedObjects.add(fieldValue);
 								validateFieldValueTypesForObject(fieldValue, previouslyValidatedObjects);
 							}
@@ -38,10 +59,6 @@ public class ObjectValidation {
 			}
 			currentClass = currentClass.getSuperclass();
 		}
-	}
-
-	protected static boolean isNullOrEmpty(Object[] objects) {
-		return objects == null || objects.length <= 0;
 	}
 
 	protected static void validateFieldValueType(Field field, Object value) throws SerializationException {
@@ -75,5 +92,21 @@ public class ObjectValidation {
 		if(!fieldType.isAssignableFrom(valueType)) {
 			throw new SerializationException("Field " + field + " cannot hold a value of type " + valueType);
 		}
+	}
+
+	private static boolean shouldDelveIntoObject(Field field, Object fieldValue, Set<Object> previouslyValidatedObjects) {
+		return 	
+			!field.getType().isPrimitive() && 
+			field.getType() != String.class && 
+			!field.getType().isEnum() &&
+			isNotEmptyCollection(fieldValue) &&
+			!previouslyValidatedObjects.contains(fieldValue);
+	}
+
+	private static boolean isNotEmptyCollection(Object obj) {
+		if(obj instanceof Collection<?>) {
+			return !((Collection<?>)obj).isEmpty();
+		}
+		return true;
 	}
 }
