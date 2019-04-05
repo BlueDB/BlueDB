@@ -95,6 +95,26 @@ public class BlueObjectInputTest extends TestCase {
 	}
 
 	@Test
+	public void test_peek() throws Exception {
+		TestValue value = new TestValue("Jobodo Monobodo");
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
+			outStream.write(value);
+			outStream.close();
+		}
+
+		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertNotNull(inStream.peek());
+				assertNotNull(inStream.peek());  // just to make sure it works multiple times
+				assertEquals(value, inStream.next());
+				assertNull(inStream.peek());
+				inStream.close();
+			}
+		}
+	}
+
+	@Test
 	public void test_next() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
