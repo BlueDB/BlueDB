@@ -348,6 +348,27 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_getAllFileRangesInOrder() throws Exception {
+		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
+		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();
+		File _2_3 = Paths.get(getPath().toString(), "2_3").toFile();
+		File _100_101 = Paths.get(getPath().toString(), "100_101").toFile();
+
+		FileManager.ensureFileExists(_12_13.toPath());
+		FileManager.ensureFileExists(_12_15.toPath());
+		FileManager.ensureFileExists(_2_3.toPath());
+		FileManager.ensureFileExists(_100_101.toPath());
+
+		Range range_2_3 = Range.fromUnderscoreDelmimitedString(_2_3.getName());
+		Range range_12_13 = Range.fromUnderscoreDelmimitedString(_12_13.getName());
+		Range range_12_15 = Range.fromUnderscoreDelmimitedString(_12_15.getName());
+		Range range_100_101 = Range.fromUnderscoreDelmimitedString(_100_101.getName());
+		List<Range> expected = Arrays.asList(range_2_3, range_12_13, range_12_15, range_100_101);
+		
+		assertEquals(expected, Segment.getAllFileRangesInOrder(getPath()));
+	}
+
+	@Test
 	public void test_sortByRange() {
 		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
 		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();

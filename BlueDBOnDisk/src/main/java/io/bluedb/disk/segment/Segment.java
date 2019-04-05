@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
@@ -173,6 +174,17 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 				lock.release();
 			}
 		}
+	}
+
+	public static List<Range> getAllFileRangesInOrder(Path segmentPath) {
+		File segmentFolder = segmentPath.toFile();
+		List<File> allFilesInSegment = FileManager.getFolderContents(segmentFolder);
+		List<Range> allFileRanges = allFilesInSegment.stream()
+				.map( (File fl) -> Range.fromUnderscoreDelmimitedString(fl.getName()) )
+				.filter((r) -> r != null)
+				.collect(Collectors.toList());
+		Collections.sort(allFileRanges);
+		return allFileRanges;
 	}
 
 	public List<File> getOrderedFilesEnclosedInRange(Range range) {
