@@ -38,6 +38,54 @@ public class RangeTest {
 	}
 
 	@Test
+	public void test_containsInclusive() {
+		Range _12_24 = new Range(12, 24);
+		assertFalse(_12_24.containsInclusive(11));
+		assertTrue(_12_24.containsInclusive(12));
+		assertTrue(_12_24.containsInclusive(18));
+		assertTrue(_12_24.containsInclusive(24));
+		assertFalse(_12_24.containsInclusive(25));
+		assertFalse(_12_24.containsInclusive(Long.MIN_VALUE));
+		assertFalse(_12_24.containsInclusive(Long.MAX_VALUE));
+	}
+
+	@Test
+	public void test_overlaps() {
+		Range _10_11 = new Range(10, 11);
+		Range _10_13 = new Range(10, 13);
+		Range _12_12 = new Range(12, 12);
+		Range _12_24 = new Range(12, 24);
+		Range _16_20 = new Range(16, 20);
+		Range _23_26 = new Range(23, 26);
+		Range _24_24 = new Range(24, 24);
+		Range _25_26 = new Range(25, 26);
+		
+		assertFalse(_12_24.overlaps(_10_11));
+		assertFalse(_12_24.overlaps(_25_26));
+		assertTrue(_12_24.overlaps(_10_13));
+		assertTrue(_12_24.overlaps(_23_26));
+		assertTrue(_12_24.overlaps(_12_12));
+		assertTrue(_12_24.overlaps(_24_24));
+		assertTrue(_12_24.overlaps(_10_13));
+		assertTrue(_12_24.overlaps(_16_20));
+		assertTrue(_16_20.overlaps(_12_24));
+	}
+
+	@Test
+	public void test_overlapsAny() {
+		Range _10_11 = new Range(10, 11);
+		Range _12_12 = new Range(12, 12);
+		Range _12_24 = new Range(12, 24);
+		Range _16_20 = new Range(16, 20);
+		Range _25_26 = new Range(25, 26);
+		
+		assertFalse(_12_24.overlapsAny(Arrays.asList(_10_11, _25_26)));
+		assertFalse(_12_24.overlapsAny(Arrays.asList()));
+		assertTrue(_12_24.overlapsAny(Arrays.asList(_10_11, _25_26, _16_20)));
+		assertTrue(_12_24.overlapsAny(Arrays.asList(_12_12, _16_20)));
+	}
+
+	@Test
 	public void test_encloses() {
 		Range _1_2 = new Range(1, 2);
 		Range _2_3 = new Range(2, 3);
