@@ -22,7 +22,7 @@ public class SegmentBatch<T extends Serializable> {
 		LinkedList<IndividualChange<T>> sortedQueue = new LinkedList<>(changeQueue);
 		List<ChunkBatch<T>> results = new ArrayList<>();
 		while (!sortedQueue.isEmpty()) {
-			Range nextChunkRange = getNextRangeToUse(changeQueue, existingChunkRanges, rollupLevels);
+			Range nextChunkRange = getNextRangeToUse(sortedQueue, existingChunkRanges, rollupLevels);
 			LinkedList<IndividualChange<T>> changesInExistingRange = pollItemsInRange(sortedQueue, nextChunkRange);
 			ChunkBatch<T> existingChunkUpdate = new ChunkBatch<T>(changesInExistingRange, nextChunkRange);
 			results.add(existingChunkUpdate);
@@ -30,16 +30,21 @@ public class SegmentBatch<T extends Serializable> {
 		return results;
 	}
 
-	public static Range findMatchingRange(long groupingNumber, List<Range> ranges) {
-		for (Range range: ranges) {
-			if (range.containsInclusive(groupingNumber)) {
-				return range;
-			}
+	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, List<Range> existingChunkRanges, List<Long> rollupLevels) {
+		changeQueue = new LinkedList<>(changeQueue);
+		BlueKey firstKey = changeQueue.peekFirst().getKey();
+		long firstChangeGroupingNumber = firstKey.getGroupingNumber();
+		Range existingRange = findMatchingRange(firstChangeGroupingNumber, existingChunkRanges);
+		if (existingRange != null) {
+			return existingRange;
 		}
-		return null;
+		Range largestEmptyRange = getLargestEmptyRangeContaining(firstChangeGroupingNumber, existingChunkRanges, rollupLevels);
+		LinkedList<IndividualChange<T>> itemsForChunk = pollItemsInRange(changeQueue, largestEmptyRange);
+		Range smallestRangeContainingSameChanges = getSmallestRangeContaining(itemsForChunk, rollupLevels);
+		return smallestRangeContainingSameChanges;
 	}
 
-	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollItemsInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
+	protected static <T extends Serializable> LinkedList<IndividualChange<T>> pollItemsInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
 		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
 		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
 			itemsInRange.add(inputs.poll());
@@ -47,7 +52,7 @@ public class SegmentBatch<T extends Serializable> {
 		return itemsInRange;
 	}
 
-	public static Range getLargestEmptyRangeContaining(long groupingNumber, List<Range> existingChunkRanges, List<Long> rollupLevels) {
+	protected static Range getLargestEmptyRangeContaining(long groupingNumber, List<Range> existingChunkRanges, List<Long> rollupLevels) {
 		Range largestKnownEmptyRange = null;
 		for (long rollupLevel: rollupLevels) {
 			Range nextLargerRange = Range.forValueAndRangeSize(groupingNumber, rollupLevel);
@@ -59,7 +64,7 @@ public class SegmentBatch<T extends Serializable> {
 		return largestKnownEmptyRange;
 	}
 
-	public static <T extends Serializable> Range getSmallestRangeContaining(List<IndividualChange<T>> nonEmptyChangeList, List<Long> rollupLevels) {
+	protected static <T extends Serializable> Range getSmallestRangeContaining(List<IndividualChange<T>> nonEmptyChangeList, List<Long> rollupLevels) {
 		long firstGroupingNumber = nonEmptyChangeList.get(0).getKey().getGroupingNumber();
 		Range smallestAcceptableRange = null;
 		for (Long rollupLevel: Blutils.reversed(rollupLevels)) {
@@ -72,21 +77,7 @@ public class SegmentBatch<T extends Serializable> {
 		return smallestAcceptableRange;
 	}
 
-	public static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueueForSegment, List<Range> existingChunkRanges, List<Long> rollupLevels) {
-		changeQueueForSegment = new LinkedList<>(changeQueueForSegment);
-		BlueKey firstKey = changeQueueForSegment.peekFirst().getKey();
-		long firstChangeGroupingNumber = firstKey.getGroupingNumber();
-		Range existingRange = findMatchingRange(firstChangeGroupingNumber, existingChunkRanges);
-		if (existingRange != null) {
-			return existingRange;
-		}
-		Range largestEmptyRange = getLargestEmptyRangeContaining(firstChangeGroupingNumber, existingChunkRanges, rollupLevels);
-		LinkedList<IndividualChange<T>> itemsForChunk = pollItemsInRange(changeQueueForSegment, largestEmptyRange);
-		Range smallestRangeContainingSameChanges = getSmallestRangeContaining(itemsForChunk, rollupLevels);
-		return smallestRangeContainingSameChanges;
-	}
-
-	public static <T extends Serializable> boolean rangeContainsAll(Range range, List<IndividualChange<T>> changes) {
+	protected static <T extends Serializable> boolean rangeContainsAll(Range range, List<IndividualChange<T>> changes) {
 		for (IndividualChange<?> change: changes) {
 			long changeGroupingNumber = change.getKey().getGroupingNumber();
 			if (!range.containsInclusive(changeGroupingNumber)) {
@@ -94,5 +85,14 @@ public class SegmentBatch<T extends Serializable> {
 			}
 		}
 		return true;
+	}
+
+	protected static Range findMatchingRange(long groupingNumber, List<Range> ranges) {
+		for (Range range: ranges) {
+			if (range.containsInclusive(groupingNumber)) {
+				return range;
+			}
+		}
+		return null;
 	}
 }
