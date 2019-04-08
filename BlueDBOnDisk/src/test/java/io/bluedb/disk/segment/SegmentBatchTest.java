@@ -31,6 +31,7 @@ public class SegmentBatchTest {
 	private static IndividualChange<TestValue> insert4At4 = IndividualChange.insert(key4At4, value4);
 	private static Range range0to0 = new Range(0, 0);
 	private static Range range0to1 = new Range(0, 1);
+	private static Range range0to7 = new Range(0, 7);
 	private static Range range1to1 = new Range(1, 1);
 	private static Range range4to4 = new Range(4, 4);
 	private static Range range7to7 = new Range(7, 7);
@@ -74,6 +75,18 @@ public class SegmentBatchTest {
 		assertEquals(inserts0, chunkBatches.get(0).getChangesInOrder());
 		assertEquals(inserts1, chunkBatches.get(1).getChangesInOrder());
 		assertEquals(inserts4, chunkBatches.get(2).getChangesInOrder());
+	}
+
+	@Test
+	public void test_breakIntoChunks_noExistingChunks() {
+		//            0 1 2 3 4 5 6 7
+		// existing: |-|-|-|-|-|-|-|-|
+		// proposed: |x|x|-|-|x|-|-|-|
+		// expected:  ---------------
+		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(Arrays.asList(), ROLLUP_LEVELS);
+		assertEquals(1, chunkBatches.size());
+		assertEquals(range0to7, chunkBatches.get(0).getRange());
+		assertEquals(inserts0and1and4, chunkBatches.get(0).getChangesInOrder());
 	}
 
 	public static BlueKey createKey(long keyId, long time){
