@@ -185,7 +185,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	public Range getSmallestRangeContaining(List<IndividualChange<T>> nonEmptyChangeList) {
 		long firstGroupingNumber = nonEmptyChangeList.get(0).getKey().getGroupingNumber();
 		Range smallestAcceptableRange = null;
-		for (Long rollupLevel: reverse(rollupLevels)) {
+		for (Long rollupLevel: Blutils.reversed(rollupLevels)) {
 			Range nextRangeDown = Range.forValueAndRangeSize(firstGroupingNumber, rollupLevel);
 			if (!rangeContainsAll(nextRangeDown, nonEmptyChangeList)) {
 				return smallestAcceptableRange;
@@ -203,14 +203,6 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			}
 		}
 		return true;
-	}
-
-	public static List<Long> reverse(List<Long> original) {
-		List<Long> backwards = new LinkedList<>();
-		for (int i = original.size() - 1; i >= 0; i--) {  // Collections.reverse throws UnsupportedOperation
-			backwards.add(original.get(i));
-		}
-		return backwards;
 	}
 
 	public void rollup(Range timeRange) throws BlueDbException {

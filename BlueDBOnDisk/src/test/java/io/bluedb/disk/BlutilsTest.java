@@ -151,4 +151,11 @@ public class BlutilsTest {
 			fail();
 		}
 	}
+
+	@Test
+	public void test_reverse() {
+		List<Long> original = Arrays.asList(3L, 7L, 7L, 4L);
+		List<Long> reversed = Blutils.reversed(original);
+		assertEquals(Arrays.asList(3L, 4L, 7L, 7L), reversed);
+	}
 }
