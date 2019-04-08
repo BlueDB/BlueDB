@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,8 +21,10 @@ import io.bluedb.disk.file.BlueObjectOutput;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.recovery.IndividualChange;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.rollup.Rollupable;
+import io.bluedb.disk.segment.writer.BatchWriter;
 import io.bluedb.disk.segment.writer.DeleteWriter;
 import io.bluedb.disk.segment.writer.InsertWriter;
 import io.bluedb.disk.segment.writer.StreamingWriter;
@@ -111,6 +114,103 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	public SegmentEntityIterator<T> getIterator(long min, long max) {
 		return new SegmentEntityIterator<>(this, min, max);
+	}
+
+	public void applyChanges(LinkedList<IndividualChange<T>> changeQueueForSegment) throws BlueDbException {
+		// TODO rollup ranges to some acceptable level first?
+		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
+		while (!changeQueueForSegment.isEmpty()) {
+			// recalculate existingChunkRanges? 
+			//   the last chunk failed at the larger size, which includes the next chunk so the next chunk should fail too
+			Range nextRangeToUpdate = getNextRangeToUse(changeQueueForSegment, existingChunkRanges);
+			LinkedList<IndividualChange<T>> itemsForChunk = pollItemsInRange(changeQueueForSegment, nextRangeToUpdate);
+			String fileName = nextRangeToUpdate.toUnderscoreDelimitedString();
+			Path path = Paths.get(segmentPath.toString(), fileName);
+			modifyChunk(path, new BatchWriter<T>(itemsForChunk));
+		}
+	}
+
+	public void modifyChunk(Path targetPath, StreamingWriter<T> processor) throws BlueDbException {
+		Path tmpPath = FileManager.createTempFilePath(targetPath);
+		BlueReadLock<Path> lock = acquireReadLock(targetPath);
+		try (BlueObjectInput<BlueEntity<T>> input = fileManager.getBlueInputStream(lock)) {
+			try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(tmpPath)) {
+				processor.process(input, output);
+			}
+		}
+		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(targetPath)) {
+			FileManager.moveFile(tmpPath, targetFileLock);
+		}
+		reportWrite(targetPath);
+	}
+
+	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollItemsInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
+		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
+		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
+			itemsInRange.add(inputs.poll());
+		}
+		return itemsInRange;
+	}
+
+	public Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueueForSegment, List<Range> existingChunkRanges) {
+		changeQueueForSegment = new LinkedList<>(changeQueueForSegment);
+		BlueKey firstKey = changeQueueForSegment.peekFirst().getKey();
+		long firstChangeGroupingNumber = firstKey.getGroupingNumber();
+		if (fileExistsForSingleGroupingNumber(firstChangeGroupingNumber)) {
+			return Range.forValueAndRangeSize(firstChangeGroupingNumber, 1);
+		}
+		Range largestEmptyRange = getLargestEmptyRangeContaining(firstChangeGroupingNumber, existingChunkRanges);
+		LinkedList<IndividualChange<T>> itemsForChunk = pollItemsInRange(changeQueueForSegment, largestEmptyRange);
+		Range smallestRangeContainingSameChanges = getSmallestRangeContaining(itemsForChunk);
+		return smallestRangeContainingSameChanges;
+	}
+
+	public boolean fileExistsForSingleGroupingNumber(long groupingNumber) {
+		Path path = getPathFor(groupingNumber, 1);
+		return path.toFile().exists();
+	}
+
+	public Range getLargestEmptyRangeContaining(long groupingNumber, List<Range> existingChunkRanges) {
+		Range largestKnownEmptyRange = null;
+		for (long rollupLevel: rollupLevels) {
+			Range nextLargerRange = Range.forValueAndRangeSize(groupingNumber, rollupLevel);
+			if (nextLargerRange.overlapsAny(existingChunkRanges)) {
+				return largestKnownEmptyRange;
+			}
+			largestKnownEmptyRange = nextLargerRange;
+		}
+		return largestKnownEmptyRange;
+	}
+
+	public Range getSmallestRangeContaining(List<IndividualChange<T>> nonEmptyChangeList) {
+		long firstGroupingNumber = nonEmptyChangeList.get(0).getKey().getGroupingNumber();
+		Range smallestAcceptableRange = null;
+		for (Long rollupLevel: reverse(rollupLevels)) {
+			Range nextRangeDown = Range.forValueAndRangeSize(firstGroupingNumber, rollupLevel);
+			if (!rangeContainsAll(nextRangeDown, nonEmptyChangeList)) {
+				return smallestAcceptableRange;
+			}
+			smallestAcceptableRange = nextRangeDown;
+		}
+		return smallestAcceptableRange;
+	}
+
+	public static <T extends Serializable> boolean rangeContainsAll(Range range, List<IndividualChange<T>> changes) {
+		for (IndividualChange<?> change: changes) {
+			long changeGroupingNumber = change.getKey().getGroupingNumber();
+			if (!range.containsInclusive(changeGroupingNumber)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static List<Long> reverse(List<Long> original) {
+		List<Long> backwards = new LinkedList<>();
+		for (int i = original.size() - 1; i >= 0; i--) {  // Collections.reverse throws UnsupportedOperation
+			backwards.add(original.get(i));
+		}
+		return backwards;
 	}
 
 	public void rollup(Range timeRange) throws BlueDbException {

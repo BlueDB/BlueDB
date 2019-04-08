@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.junit.Test;
@@ -14,6 +15,7 @@ import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.recovery.IndividualChange;
 import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 
@@ -197,6 +199,39 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(null, segment.get(key1At1));
 		assertEquals(null, segment.get(key2At1));
 		assertEquals(null, segment.get(key3At3));
+	}
+
+
+	@Test
+	public void test_applyChanges() throws Exception {
+		Segment<TestValue> segment = getSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key2At1 = createKey(2, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		TestValue value3 = createValue("Chuck");
+
+		assertFalse(segment.contains(key1At1));
+		assertFalse(segment.contains(key2At1));
+		assertFalse(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(null, segment.get(key3At3));
+
+		IndividualChange<TestValue> insert1At1 = IndividualChange.insert(key1At1, value1);
+		IndividualChange<TestValue> insert2At1 = IndividualChange.insert(key2At1, value2);
+		IndividualChange<TestValue> insert3At3 = IndividualChange.insert(key3At3, value3);
+		List<IndividualChange<TestValue>> changes = Arrays.asList(insert1At1, insert2At1, insert3At3);
+		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
+		segment.applyChanges(changesLinkedList);
+
+		assertTrue(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(value1, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
 	}
 
 	@Test
