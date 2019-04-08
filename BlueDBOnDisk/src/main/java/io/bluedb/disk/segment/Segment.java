@@ -118,15 +118,13 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	public void applyChanges(LinkedList<IndividualChange<T>> changeQueueForSegment) throws BlueDbException {
 		// TODO rollup ranges to some acceptable level first?
+		SegmentBatch<T> segmentBatch = new SegmentBatch<>(changeQueueForSegment);
 		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
-		while (!changeQueueForSegment.isEmpty()) {
-			// recalculate existingChunkRanges? 
-			//   the last chunk failed at the larger size, which includes the next chunk so the next chunk should fail too
-			Range nextRangeToUpdate = getNextRangeToUse(changeQueueForSegment, existingChunkRanges);
-			LinkedList<IndividualChange<T>> itemsForChunk = pollItemsInRange(changeQueueForSegment, nextRangeToUpdate);
-			String fileName = nextRangeToUpdate.toUnderscoreDelimitedString();
+		List<ChunkBatch<T>> chunkBatches = segmentBatch.breakIntoChunks(existingChunkRanges, rollupLevels);
+		for (ChunkBatch<T> chunkBatch: chunkBatches) {
+			String fileName = chunkBatch.getRange().toUnderscoreDelimitedString();
 			Path path = Paths.get(segmentPath.toString(), fileName);
-			modifyChunk(path, new BatchWriter<T>(itemsForChunk));
+			modifyChunk(path, new BatchWriter<T>(chunkBatch.getChangesInOrder()));
 		}
 	}
 
@@ -142,67 +140,6 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			FileManager.moveFile(tmpPath, targetFileLock);
 		}
 		reportWrite(targetPath);
-	}
-
-	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollItemsInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
-		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
-		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
-			itemsInRange.add(inputs.poll());
-		}
-		return itemsInRange;
-	}
-
-	public Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueueForSegment, List<Range> existingChunkRanges) {
-		changeQueueForSegment = new LinkedList<>(changeQueueForSegment);
-		BlueKey firstKey = changeQueueForSegment.peekFirst().getKey();
-		long firstChangeGroupingNumber = firstKey.getGroupingNumber();
-		if (fileExistsForSingleGroupingNumber(firstChangeGroupingNumber)) {
-			return Range.forValueAndRangeSize(firstChangeGroupingNumber, 1);
-		}
-		Range largestEmptyRange = getLargestEmptyRangeContaining(firstChangeGroupingNumber, existingChunkRanges);
-		LinkedList<IndividualChange<T>> itemsForChunk = pollItemsInRange(changeQueueForSegment, largestEmptyRange);
-		Range smallestRangeContainingSameChanges = getSmallestRangeContaining(itemsForChunk);
-		return smallestRangeContainingSameChanges;
-	}
-
-	public boolean fileExistsForSingleGroupingNumber(long groupingNumber) {
-		Path path = getPathFor(groupingNumber, 1);
-		return path.toFile().exists();
-	}
-
-	public Range getLargestEmptyRangeContaining(long groupingNumber, List<Range> existingChunkRanges) {
-		Range largestKnownEmptyRange = null;
-		for (long rollupLevel: rollupLevels) {
-			Range nextLargerRange = Range.forValueAndRangeSize(groupingNumber, rollupLevel);
-			if (nextLargerRange.overlapsAny(existingChunkRanges)) {
-				return largestKnownEmptyRange;
-			}
-			largestKnownEmptyRange = nextLargerRange;
-		}
-		return largestKnownEmptyRange;
-	}
-
-	public Range getSmallestRangeContaining(List<IndividualChange<T>> nonEmptyChangeList) {
-		long firstGroupingNumber = nonEmptyChangeList.get(0).getKey().getGroupingNumber();
-		Range smallestAcceptableRange = null;
-		for (Long rollupLevel: Blutils.reversed(rollupLevels)) {
-			Range nextRangeDown = Range.forValueAndRangeSize(firstGroupingNumber, rollupLevel);
-			if (!rangeContainsAll(nextRangeDown, nonEmptyChangeList)) {
-				return smallestAcceptableRange;
-			}
-			smallestAcceptableRange = nextRangeDown;
-		}
-		return smallestAcceptableRange;
-	}
-
-	public static <T extends Serializable> boolean rangeContainsAll(Range range, List<IndividualChange<T>> changes) {
-		for (IndividualChange<?> change: changes) {
-			long changeGroupingNumber = change.getKey().getGroupingNumber();
-			if (!range.containsInclusive(changeGroupingNumber)) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	public void rollup(Range timeRange) throws BlueDbException {
