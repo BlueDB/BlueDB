@@ -89,10 +89,10 @@ public class SegmentBatch<T extends Serializable> {
 	}
 
 
-	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesBeforeOrAt(LinkedList<IndividualChange<T>> inputs, long groupingNumber) {
+	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesBeforeOrAt(LinkedList<IndividualChange<T>> sortedChanges, long maxGroupingNumber) {
 		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
-		while (!inputs.isEmpty() && inputs.peek().getKey().getGroupingNumber() <= groupingNumber) {
-			itemsInRange.add(inputs.poll());
+		while (!sortedChanges.isEmpty() && sortedChanges.peek().getGroupingNumber() <= maxGroupingNumber) {
+			itemsInRange.add(sortedChanges.poll());
 		}
 		return itemsInRange;
 	}

@@ -32,37 +32,37 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
 		LinkedList<IndividualChange<T>> remainingChangesInOrder = new LinkedList<>(sortedChanges);
 		while (!remainingChangesInOrder.isEmpty()) {
-			IndividualChange<T> firstChange = remainingChangesInOrder.peek();
+			IndividualChange<T> firstChange = remainingChangesInOrder.peek(); //
 			Segment<T> nextSegment = collection.getSegmentManager().getFirstSegment(firstChange.getKey());
 			Range segmentRange = nextSegment.getRange();
-			LinkedList<IndividualChange<T>> changesForSegment = getChangesOverlappingRange(remainingChangesInOrder, segmentRange);
+			LinkedList<IndividualChange<T>> changesForSegment = getChangesBeforeOrAt(remainingChangesInOrder, segmentRange.getEnd());
 			nextSegment.applyChanges(changesForSegment);
-			removeChangesBeforeRange(remainingChangesInOrder, segmentRange);
+			removeChangesEndingBeforeOrAt(remainingChangesInOrder, segmentRange.getEnd());
 		}
 	}
 
-	protected static <T extends Serializable> void removeChangesBeforeRange(List<IndividualChange<T>> sortedChanges, Range range) {
+	protected static <T extends Serializable> void removeChangesEndingBeforeOrAt(List<IndividualChange<T>> sortedChanges, long maxEndPoint) {
 		Iterator<IndividualChange<T>> iterator = sortedChanges.iterator();
 		while (iterator.hasNext()) {
 			BlueKey nextChangeKey = iterator.next().getKey();
-			boolean pastTheEndOfTheRange = nextChangeKey.getGroupingNumber() > range.getEnd();
+			boolean pastTheEndOfTheRange = nextChangeKey.getGroupingNumber() > maxEndPoint;
 			if (pastTheEndOfTheRange) {
 				break;
 			}
-			boolean overlapsRange = nextChangeKey.isInRange(range.getStart(), range.getEnd());
-			if (!overlapsRange) {
+			boolean stretchesPastEndPoint = nextChangeKey.isInRange(maxEndPoint + 1, Long.MAX_VALUE);
+			if (!stretchesPastEndPoint) {
 				iterator.remove();
 			}
 		}
 	}
 
-	protected static <T extends Serializable> LinkedList<IndividualChange<T>> getChangesOverlappingRange( List<IndividualChange<T>> sortedChanges, Range range) {
+	protected static <T extends Serializable> LinkedList<IndividualChange<T>> getChangesBeforeOrAt( List<IndividualChange<T>> sortedChanges, long rangeEnd) {
 		LinkedList<IndividualChange<T>> results = new LinkedList<>();
 		Iterator<IndividualChange<T>> iterator = sortedChanges.iterator();
 		while (iterator.hasNext()) {
 			IndividualChange<T> nextChange = iterator.next();
 			long groupingNumber = nextChange.getKey().getGroupingNumber();
-			boolean pastTheEndOfTheRange = groupingNumber > range.getEnd();
+			boolean pastTheEndOfTheRange = groupingNumber > rangeEnd;
 			if (pastTheEndOfTheRange) {
 				break;
 			}

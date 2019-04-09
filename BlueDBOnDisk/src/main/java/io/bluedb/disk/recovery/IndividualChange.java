@@ -43,6 +43,10 @@ public class IndividualChange <T extends Serializable> implements Serializable, 
 		}
 	}
 
+	public long getGroupingNumber() {
+		return getKey().getGroupingNumber();
+	}
+
 	@Override
 	public int compareTo(IndividualChange<T> otherChange) {
 		return getKey().compareTo(otherChange.getKey());
