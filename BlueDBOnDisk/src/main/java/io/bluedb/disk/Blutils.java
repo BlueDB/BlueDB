@@ -163,12 +163,4 @@ public class Blutils {
 		}
 		return backwards;
 	}
-
-	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
-		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
-		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
-			itemsInRange.add(inputs.poll());
-		}
-		return itemsInRange;
-	}
 }
