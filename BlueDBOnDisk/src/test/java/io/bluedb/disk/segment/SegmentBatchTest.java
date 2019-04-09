@@ -34,8 +34,10 @@ public class SegmentBatchTest {
 	private static Range range0to0 = new Range(0, 0);
 	private static Range range0to1 = new Range(0, 1);
 	private static Range range0to3 = new Range(0, 3);
+	private static Range range0to4 = new Range(0, 4);
 	private static Range range0to7 = new Range(0, 7);
 	private static Range range1to1 = new Range(1, 1);
+	private static Range range1to7 = new Range(1, 7);
 	private static Range range4to4 = new Range(4, 4);
 	private static Range range7to7 = new Range(7, 7);
 	List<Range> ranges0to0 = Arrays.asList(range0to0);
@@ -152,6 +154,14 @@ public class SegmentBatchTest {
 		extracted = SegmentBatch.pollChangesBeforeOrAt(inputs, 4);
 		assertEquals(inserts0and1and4, extracted);
 		assertEquals(empty, inputs);
+	}
+
+	@Test
+	public void test_rangeContainsAll() {
+		assertFalse(SegmentBatch.rangeContainsAll(range0to0, inserts0and1and4));
+		assertTrue(SegmentBatch.rangeContainsAll(range0to4, inserts0and1and4));
+		assertTrue(SegmentBatch.rangeContainsAll(range0to7, inserts0and1and4));
+		assertFalse(SegmentBatch.rangeContainsAll(range1to7, inserts0and1and4));
 	}
 
 	public static BlueKey createKey(long keyId, long time){
