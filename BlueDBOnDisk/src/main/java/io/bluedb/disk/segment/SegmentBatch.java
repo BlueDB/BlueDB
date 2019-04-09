@@ -23,7 +23,7 @@ public class SegmentBatch<T extends Serializable> {
 		List<ChunkBatch<T>> results = new ArrayList<>();
 		while (!sortedQueue.isEmpty()) {
 			Range nextChunkRange = getNextRangeToUse(sortedQueue, existingChunkRanges, rollupLevels);
-			LinkedList<IndividualChange<T>> changesInExistingRange = pollChangesInRange(sortedQueue, nextChunkRange);
+			LinkedList<IndividualChange<T>> changesInExistingRange = pollChangesBeforeOrAt(sortedQueue, nextChunkRange.getEnd());
 			ChunkBatch<T> existingChunkUpdate = new ChunkBatch<T>(changesInExistingRange, nextChunkRange);
 			results.add(existingChunkUpdate);
 		}
@@ -39,7 +39,7 @@ public class SegmentBatch<T extends Serializable> {
 			return existingRange;
 		}
 		Range largestEmptyRange = getLargestEmptyRangeContaining(firstChangeGroupingNumber, existingChunkRanges, rollupLevels);
-		LinkedList<IndividualChange<T>> itemsForChunk = pollChangesInRange(changeQueue, largestEmptyRange);
+		LinkedList<IndividualChange<T>> itemsForChunk = pollChangesBeforeOrAt(changeQueue, largestEmptyRange.getEnd());
 		Range smallestRangeContainingSameChanges = getSmallestRangeContaining(itemsForChunk, rollupLevels);
 		return smallestRangeContainingSameChanges;
 	}
@@ -89,9 +89,9 @@ public class SegmentBatch<T extends Serializable> {
 	}
 
 
-	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
+	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesBeforeOrAt(LinkedList<IndividualChange<T>> inputs, long groupingNumber) {
 		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
-		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
+		while (!inputs.isEmpty() && inputs.peek().getKey().getGroupingNumber() <= groupingNumber) {
 			itemsInRange.add(inputs.poll());
 		}
 		return itemsInRange;

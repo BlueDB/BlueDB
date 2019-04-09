@@ -3,6 +3,7 @@ package io.bluedb.disk.segment;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.junit.Test;
@@ -48,6 +49,7 @@ public class SegmentBatchTest {
 	List<IndividualChange<TestValue>> inserts0and1and3 = Arrays.asList(insert0At0, insert1At1, insert3At3);
 	List<IndividualChange<TestValue>> inserts0and1and4 = Arrays.asList(insert0At0, insert1At1, insert4At4);
 	List<IndividualChange<TestValue>> inserts0and1 = Arrays.asList(insert0At0, insert1At1);
+	List<IndividualChange<TestValue>> inserts0and4 = Arrays.asList(insert0At0, insert4At4);
 	List<IndividualChange<TestValue>> inserts4 = Arrays.asList(insert4At4);
 	SegmentBatch<TestValue> batchInsert1and2at1 = new SegmentBatch<>(inserts1And2At1);
 	SegmentBatch<TestValue> batchInsert0and1and3 = new SegmentBatch<>(inserts0and1and3);
@@ -129,6 +131,27 @@ public class SegmentBatchTest {
 		assertEquals(1, chunkBatches.size());
 		assertEquals(range1to1, chunkBatches.get(0).getRange());
 		assertEquals(inserts1And2At1, chunkBatches.get(0).getChangesInOrder());
+	}
+
+	@Test
+	public void test_pollChangesBeforeOrAt() {
+		LinkedList<IndividualChange<TestValue>> inputs;
+		LinkedList<IndividualChange<TestValue>> extracted;
+
+		inputs = new LinkedList<>(inserts0and1and4); 
+		extracted = SegmentBatch.pollChangesBeforeOrAt(inputs, -1);
+		assertEquals(empty, extracted);
+		assertEquals(inserts0and1and4, inputs);
+
+		inputs = new LinkedList<>(inserts0and1and4); 
+		extracted = SegmentBatch.pollChangesBeforeOrAt(inputs, 1);
+		assertEquals(inserts0and1, extracted);
+		assertEquals(inserts4, inputs);
+
+		inputs = new LinkedList<>(inserts0and1and4); 
+		extracted = SegmentBatch.pollChangesBeforeOrAt(inputs, 4);
+		assertEquals(inserts0and1and4, extracted);
+		assertEquals(empty, inputs);
 	}
 
 	public static BlueKey createKey(long keyId, long time){
