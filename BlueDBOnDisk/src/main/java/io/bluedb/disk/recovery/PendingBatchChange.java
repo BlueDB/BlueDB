@@ -7,7 +7,6 @@ import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
@@ -38,7 +37,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 			Range segmentRange = nextSegment.getRange();
 			LinkedList<IndividualChange<T>> changesForSegment = getChangesOverlappingRange(remainingChangesInOrder, segmentRange);
 			nextSegment.applyChanges(changesForSegment);
-			Blutils.pollChangesInRange(remainingChangesInOrder, segmentRange);
+			removeChangesBeforeRange(remainingChangesInOrder, segmentRange);
 		}
 	}
 
