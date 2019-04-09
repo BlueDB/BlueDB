@@ -12,6 +12,8 @@ import java.util.function.Predicate;
 
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.disk.recovery.IndividualChange;
+import io.bluedb.disk.segment.Range;
 
 public class Blutils {
 	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
@@ -160,5 +162,13 @@ public class Blutils {
 			backwards.add(original.get(i));
 		}
 		return backwards;
+	}
+
+	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
+		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
+		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
+			itemsInRange.add(inputs.poll());
+		}
+		return itemsInRange;
 	}
 }

@@ -23,7 +23,7 @@ public class SegmentBatch<T extends Serializable> {
 		List<ChunkBatch<T>> results = new ArrayList<>();
 		while (!sortedQueue.isEmpty()) {
 			Range nextChunkRange = getNextRangeToUse(sortedQueue, existingChunkRanges, rollupLevels);
-			LinkedList<IndividualChange<T>> changesInExistingRange = pollItemsInRange(sortedQueue, nextChunkRange);
+			LinkedList<IndividualChange<T>> changesInExistingRange = Blutils.pollChangesInRange(sortedQueue, nextChunkRange);
 			ChunkBatch<T> existingChunkUpdate = new ChunkBatch<T>(changesInExistingRange, nextChunkRange);
 			results.add(existingChunkUpdate);
 		}
@@ -39,17 +39,9 @@ public class SegmentBatch<T extends Serializable> {
 			return existingRange;
 		}
 		Range largestEmptyRange = getLargestEmptyRangeContaining(firstChangeGroupingNumber, existingChunkRanges, rollupLevels);
-		LinkedList<IndividualChange<T>> itemsForChunk = pollItemsInRange(changeQueue, largestEmptyRange);
+		LinkedList<IndividualChange<T>> itemsForChunk = Blutils.pollChangesInRange(changeQueue, largestEmptyRange);
 		Range smallestRangeContainingSameChanges = getSmallestRangeContaining(itemsForChunk, rollupLevels);
 		return smallestRangeContainingSameChanges;
-	}
-
-	protected static <T extends Serializable> LinkedList<IndividualChange<T>> pollItemsInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
-		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
-		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
-			itemsInRange.add(inputs.poll());
-		}
-		return itemsInRange;
 	}
 
 	protected static Range getLargestEmptyRangeContaining(long groupingNumber, List<Range> existingChunkRanges, List<Long> rollupLevels) {
