@@ -7,6 +7,7 @@ import java.util.List;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.Blutils;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
@@ -37,7 +38,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 			Range segmentRange = nextSegment.getRange();
 			LinkedList<IndividualChange<T>> changesForSegment = getChangesOverlappingRange(remainingChangesInOrder, segmentRange);
 			nextSegment.applyChanges(changesForSegment);
-			pollChangesInRange(remainingChangesInOrder, segmentRange);
+			Blutils.pollChangesInRange(remainingChangesInOrder, segmentRange);
 		}
 	}
 
@@ -54,14 +55,6 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 				iterator.remove();
 			}
 		}
-	}
-
-	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesInRange(LinkedList<IndividualChange<T>> inputs, Range range) {
-		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
-		while (!inputs.isEmpty() && inputs.peek().getKey().isInRange(range.getStart(), range.getEnd())) {
-			itemsInRange.add(inputs.poll());
-		}
-		return itemsInRange;
 	}
 
 	protected static <T extends Serializable> LinkedList<IndividualChange<T>> getChangesOverlappingRange( List<IndividualChange<T>> sortedChanges, Range range) {
