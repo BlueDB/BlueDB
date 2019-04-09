@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,20 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			fail();
 		} catch (BlueDbException e) {
 		}
+	}
+
+	@Test
+	public void test_batchInsert() throws Exception {
+		TestValue value1 = new TestValue("Joe");
+		TestValue value2 = new TestValue("Bob");
+		BlueKey key1 = createTimeKey(10, value1);
+		BlueKey key2 = createTimeKey(20, value2);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key1, value1);
+		batchInserts.put(key2, value2);
+		getTimeCollection().batchUpsert(batchInserts);
+		assertValueAtKey(key1, value1);
+		assertValueAtKey(key2, value2);
 	}
 
 	@Test
