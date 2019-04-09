@@ -5,7 +5,7 @@ import java.io.Serializable;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.serialization.BlueEntity;
 
-public class IndividualChange <T extends Serializable> implements Serializable {
+public class IndividualChange <T extends Serializable> implements Serializable, Comparable<IndividualChange<T>> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -41,5 +41,10 @@ public class IndividualChange <T extends Serializable> implements Serializable {
 		} else {
 			return new BlueEntity<T>(key, newValue);
 		}
+	}
+
+	@Override
+	public int compareTo(IndividualChange<T> otherChange) {
+		return getKey().compareTo(otherChange.getKey());
 	}
 }
