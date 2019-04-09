@@ -36,6 +36,6 @@ public class BatchChangeTask<T extends Serializable> extends QueryTask {
 
 	@Override
 	public String toString() {
-		return "<BulkInsertTask for " + sortedChanges.size() + ">";
+		return "<" + getClass().getSimpleName() + " for " + sortedChanges.size() + ">";
 	}
 }
