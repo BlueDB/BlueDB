@@ -12,8 +12,6 @@ import java.util.function.Predicate;
 
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
-import io.bluedb.disk.recovery.IndividualChange;
-import io.bluedb.disk.segment.Range;
 
 public class Blutils {
 	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
