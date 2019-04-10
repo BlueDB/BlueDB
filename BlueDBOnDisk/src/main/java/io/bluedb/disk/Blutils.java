@@ -154,8 +154,8 @@ public class Blutils {
 	}
 
 
-	public static List<Long> reversed(List<Long> original) {
-		List<Long> backwards = new LinkedList<>();
+	public static <T> List<T> reversed(List<T> original) {
+		List<T> backwards = new LinkedList<>();
 		for (int i = original.size() - 1; i >= 0; i--) {  // Collections.reverse throws UnsupportedOperation
 			backwards.add(original.get(i));
 		}
