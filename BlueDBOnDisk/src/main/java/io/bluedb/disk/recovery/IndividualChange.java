@@ -3,6 +3,7 @@ package io.bluedb.disk.recovery;
 import java.io.Serializable;
 
 import io.bluedb.api.keys.BlueKey;
+import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 
 public class IndividualChange <T extends Serializable> implements Serializable, Comparable<IndividualChange<T>> {
@@ -45,6 +46,10 @@ public class IndividualChange <T extends Serializable> implements Serializable, 
 
 	public long getGroupingNumber() {
 		return getKey().getGroupingNumber();
+	}
+
+	public boolean overlaps(Range range) {
+		return getKey().isInRange(range.getStart(), range.getEnd());
 	}
 
 	@Override

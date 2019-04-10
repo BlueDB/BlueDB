@@ -13,6 +13,8 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.TimeFrameKey;
 import io.bluedb.api.keys.TimeKey;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.segment.Range;
+import io.bluedb.disk.segment.Segment;
 
 public class PendingBatchChangeTest {
 	private static BlueKey key0At0 = new TimeKey(0, 0);
@@ -32,44 +34,48 @@ public class PendingBatchChangeTest {
 	private static List<IndividualChange<TestValue>> inserts1to5 = Arrays.asList(insert1At1To5);
 
 	@Test
-	public void test_removeChangesEndingBefore() {
+	public void test_removeChangesThatEndInOrBeforeSegment() {
 		LinkedList<IndividualChange<TestValue>> list;
 
 		list = new LinkedList<>(inserts0and1to5and4); 
-		PendingBatchChange.removeChangesEndingBeforeOrAt(list, -1);
+		PendingBatchChange.removeChangesThatEndInOrBeforeSegment(list, segmentEnding(-1));
 		assertEquals(inserts0and1to5and4, list);
 
 		list = new LinkedList<>(inserts0and1to5and4); 
-		PendingBatchChange.removeChangesEndingBeforeOrAt(list, 0);
+		PendingBatchChange.removeChangesThatEndInOrBeforeSegment(list, segmentEnding(0));
 		assertEquals(inserts1to5and4, list);
 
 		list = new LinkedList<>(inserts0and1to5and4); 
-		PendingBatchChange.removeChangesEndingBeforeOrAt(list, 1);
+		PendingBatchChange.removeChangesThatEndInOrBeforeSegment(list, segmentEnding(1));
 		assertEquals(inserts1to5and4, list);
 
 		list = new LinkedList<>(inserts0and1to5and4); 
-		PendingBatchChange.removeChangesEndingBeforeOrAt(list, 4);
+		PendingBatchChange.removeChangesThatEndInOrBeforeSegment(list, segmentEnding(4));
 		assertEquals(inserts1to5, list);
 
 		list = new LinkedList<>(inserts0and1to5and4); 
-		PendingBatchChange.removeChangesEndingBeforeOrAt(list, 5);
+		PendingBatchChange.removeChangesThatEndInOrBeforeSegment(list, segmentEnding(5));
 		assertEquals(empty, list);
 	}
 
+	private static Segment<TestValue> segmentEnding(long end) {
+		Range range = new Range(end, end);
+		return new Segment<TestValue>(null, range, null, null, null);
+	}
 	@Test
-	public void test_getChangesBeforeOrAt() {
+	public void test_getChangesOverlappingSegment() {
 		LinkedList<IndividualChange<TestValue>> result;
 
-		result = PendingBatchChange.getChangesBeforeOrAt(inserts0and1to5and4, -1);
+		result = PendingBatchChange.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(-1));
 		assertEquals(empty, result);
 
-		result = PendingBatchChange.getChangesBeforeOrAt(inserts0and1to5and4, 0);
+		result = PendingBatchChange.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(0));
 		assertEquals(inserts0, result);
 
-		result = PendingBatchChange.getChangesBeforeOrAt(inserts0and1to5and4, 1);
+		result = PendingBatchChange.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(1));
 		assertEquals(inserts0and1to5, result);
 
-		result = PendingBatchChange.getChangesBeforeOrAt(inserts0and1to5and4, 4);
+		result = PendingBatchChange.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(4));
 		assertEquals(inserts0and1to5and4, result);
 	}
 
