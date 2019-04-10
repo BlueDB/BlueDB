@@ -19,23 +19,27 @@ public class BatchChangeTask<T extends Serializable> extends QueryTask {
 
 	public BatchChangeTask(BlueCollectionOnDisk<T> collection, Map<BlueKey, T> values) {
 		this.collection = collection;
-		sortedChanges = values.entrySet().stream()
-				.map( (e) -> IndividualChange.insert(e.getKey(), e.getValue()) )
-				.sorted()
-				.collect(Collectors.toList());
+		sortedChanges = toSortedChangeList(values);
 	}
 
 	@Override
 	public void execute() throws BlueDbException {
-		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();	
-		PendingBatchChange<T> change = PendingBatchChange.createBatchUpsert(sortedChanges);
-		recoveryManager.saveChange(change);
-		change.apply(collection);
-		recoveryManager.markComplete(change);	
+		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
+		PendingBatchChange<T> batchChange = PendingBatchChange.createBatchUpsert(sortedChanges);
+		recoveryManager.saveChange(batchChange);
+		batchChange.apply(collection);
+		recoveryManager.markComplete(batchChange);	
 	}	
 
 	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + " for " + sortedChanges.size() + ">";
+	}
+
+	private static <T extends Serializable> List<IndividualChange<T>> toSortedChangeList(Map<BlueKey, T> values) {
+		return values.entrySet().stream()
+				.map( (e) -> IndividualChange.insert(e.getKey(), e.getValue()) )
+				.sorted()
+				.collect(Collectors.toList());
 	}
 }

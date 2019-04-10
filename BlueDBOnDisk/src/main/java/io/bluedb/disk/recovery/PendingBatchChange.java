@@ -8,7 +8,6 @@ import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
-import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 
 public class PendingBatchChange<T extends Serializable> implements Serializable, Recoverable<T> {
@@ -32,13 +31,22 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
 		LinkedList<IndividualChange<T>> remainingChangesInOrder = new LinkedList<>(sortedChanges);
 		while (!remainingChangesInOrder.isEmpty()) {
-			IndividualChange<T> firstChange = remainingChangesInOrder.peek(); //
-			Segment<T> nextSegment = collection.getSegmentManager().getFirstSegment(firstChange.getKey());
-			Range segmentRange = nextSegment.getRange();
-			LinkedList<IndividualChange<T>> changesForSegment = getChangesBeforeOrAt(remainingChangesInOrder, segmentRange.getEnd());
+			Segment<T> nextSegment = getNextSegment(collection, remainingChangesInOrder);
+			LinkedList<IndividualChange<T>> changesForSegment = getChangesOverlappingSegment(remainingChangesInOrder, nextSegment);
 			nextSegment.applyChanges(changesForSegment);
-			removeChangesEndingBeforeOrAt(remainingChangesInOrder, segmentRange.getEnd());
+			removeChangesThatEndInOrBeforeSegment(remainingChangesInOrder, nextSegment);
 		}
+	}
+
+	protected static <T extends Serializable> Segment<T> getNextSegment(BlueCollectionOnDisk<T> collection, LinkedList<IndividualChange<T>> sortedChanges) {
+		BlueKey firstChangeKey = sortedChanges.peek().getKey();
+		Segment<T> nextSegment = collection.getSegmentManager().getFirstSegment(firstChangeKey);
+		return nextSegment;
+	}
+
+	protected static <T extends Serializable> void removeChangesThatEndInOrBeforeSegment(List<IndividualChange<T>> sortedChanges, Segment<T> segment) {
+		long segmentEnd = segment.getRange().getEnd();
+		removeChangesEndingBeforeOrAt(sortedChanges, segmentEnd);
 	}
 
 	protected static <T extends Serializable> void removeChangesEndingBeforeOrAt(List<IndividualChange<T>> sortedChanges, long maxEndPoint) {
@@ -56,17 +64,18 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 		}
 	}
 
+	protected static <T extends Serializable> LinkedList<IndividualChange<T>> getChangesOverlappingSegment( List<IndividualChange<T>> sortedChanges, Segment<T> segment) {
+		long segmentEnd = segment.getRange().getEnd();
+		return getChangesBeforeOrAt(sortedChanges, segmentEnd);
+	}
+
 	protected static <T extends Serializable> LinkedList<IndividualChange<T>> getChangesBeforeOrAt( List<IndividualChange<T>> sortedChanges, long rangeEnd) {
 		LinkedList<IndividualChange<T>> results = new LinkedList<>();
-		Iterator<IndividualChange<T>> iterator = sortedChanges.iterator();
-		while (iterator.hasNext()) {
-			IndividualChange<T> nextChange = iterator.next();
-			long groupingNumber = nextChange.getKey().getGroupingNumber();
-			boolean pastTheEndOfTheRange = groupingNumber > rangeEnd;
-			if (pastTheEndOfTheRange) {
+		for (IndividualChange<T> change: sortedChanges) {
+			if (change.getGroupingNumber() > rangeEnd) {
 				break;
 			}
-			results.add(nextChange);
+			results.add(change);
 		}
 		return results;
 	}
