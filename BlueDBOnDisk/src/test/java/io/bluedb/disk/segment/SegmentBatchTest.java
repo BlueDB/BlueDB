@@ -78,7 +78,7 @@ public class SegmentBatchTest {
 		//            0 1 2 3 4 5 6 7
 		// existing: |o|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|-|x|-|-|-|
-		// expected:  ---     -      
+		// expected:  - -     -      
 		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(ranges0to0, ROLLUP_LEVELS);
 		assertEquals(3, chunkBatches.size());
 		assertEquals(range0to0, chunkBatches.get(0).getRange());
