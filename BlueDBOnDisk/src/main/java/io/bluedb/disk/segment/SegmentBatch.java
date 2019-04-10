@@ -4,10 +4,12 @@ package io.bluedb.disk.segment;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.recovery.IndividualChange;
 
@@ -19,10 +21,11 @@ public class SegmentBatch<T extends Serializable> {
 	}
 
 	public List<ChunkBatch<T>> breakIntoChunks(List<Range> existingChunkRanges, List<Long> rollupLevels) {
+		Set<Range> existingChunkRangesSet = new HashSet<>(existingChunkRanges);
 		LinkedList<IndividualChange<T>> sortedQueue = new LinkedList<>(changeQueue);
 		List<ChunkBatch<T>> results = new ArrayList<>();
 		while (!sortedQueue.isEmpty()) {
-			Range nextChunkRange = getNextRangeToUse(sortedQueue, existingChunkRanges, rollupLevels);
+			Range nextChunkRange = getNextRangeToUse(sortedQueue, existingChunkRangesSet, rollupLevels);
 			LinkedList<IndividualChange<T>> changesInExistingRange = pollChangesBeforeOrAt(sortedQueue, nextChunkRange.getEnd());
 			ChunkBatch<T> existingChunkUpdate = new ChunkBatch<T>(changesInExistingRange, nextChunkRange);
 			results.add(existingChunkUpdate);
@@ -30,64 +33,55 @@ public class SegmentBatch<T extends Serializable> {
 		return results;
 	}
 
-	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, List<Range> existingChunkRanges, List<Long> rollupLevels) {
-		changeQueue = new LinkedList<>(changeQueue);
-		BlueKey firstKey = changeQueue.peekFirst().getKey();
-		long firstChangeGroupingNumber = firstKey.getGroupingNumber();
-		Range existingRange = findMatchingRange(firstChangeGroupingNumber, existingChunkRanges);
+	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, Set<Range> existingChunkRanges, List<Long> rollupLevels) {
+		changeQueue = new LinkedList<>(changeQueue);  // to avoid mutation later
+		long firstChangeGroupingNumber = changeQueue.peekFirst().getKey().getGroupingNumber();
+		List<Range> possibleNextRanges = calculatePossibleChunkRanges(firstChangeGroupingNumber, rollupLevels);
+		Range existingRange = findMatchingRange(possibleNextRanges, existingChunkRanges);
 		if (existingRange != null) {
 			return existingRange;
 		}
-		Range largestEmptyRange = getLargestEmptyRangeContaining(firstChangeGroupingNumber, existingChunkRanges, rollupLevels);
-		LinkedList<IndividualChange<T>> itemsForChunk = pollChangesBeforeOrAt(changeQueue, largestEmptyRange.getEnd());
-		Range smallestRangeContainingSameChanges = getSmallestRangeContaining(itemsForChunk, rollupLevels);
+		Range largestEmptyRange = getLargestEmptyRange(possibleNextRanges, existingChunkRanges);
+		LinkedList<IndividualChange<T>> changesForRange = pollChangesBeforeOrAt(changeQueue, largestEmptyRange.getEnd());
+		Range smallestRangeContainingSameChanges = chooseSmallestRangeContainingChanges(possibleNextRanges, changesForRange);
 		return smallestRangeContainingSameChanges;
 	}
 
-	protected static Range getLargestEmptyRangeContaining(long groupingNumber, List<Range> existingChunkRanges, List<Long> rollupLevels) {
-		Range largestKnownEmptyRange = null;
-		for (long rollupLevel: rollupLevels) {
-			Range nextLargerRange = Range.forValueAndRangeSize(groupingNumber, rollupLevel);
-			if (nextLargerRange.overlapsAny(existingChunkRanges)) {
-				return largestKnownEmptyRange;
-			}
-			largestKnownEmptyRange = nextLargerRange;
-		}
-		return largestKnownEmptyRange;
+	protected static List<Range> calculatePossibleChunkRanges(long groupingNumber, List<Long> rollupLevels) {
+		return rollupLevels.stream()
+				.sorted()
+				.map( (rangeSize) -> Range.forValueAndRangeSize(groupingNumber, rangeSize))
+				.collect(Collectors.toList())
+				;
 	}
 
-	protected static <T extends Serializable> Range getSmallestRangeContaining(List<IndividualChange<T>> nonEmptyChangeList, List<Long> rollupLevels) {
-		long firstGroupingNumber = nonEmptyChangeList.get(0).getKey().getGroupingNumber();
-		Range smallestAcceptableRange = null;
-		for (Long rollupLevel: Blutils.reversed(rollupLevels)) {
-			Range nextRangeDown = Range.forValueAndRangeSize(firstGroupingNumber, rollupLevel);
-			if (!rangeContainsAll(nextRangeDown, nonEmptyChangeList)) {
-				return smallestAcceptableRange;
-			}
-			smallestAcceptableRange = nextRangeDown;
-		}
-		return smallestAcceptableRange;
+	protected static Range getLargestEmptyRange(List<Range> optionsSmallToBig, Set<Range> existingChunkRanges) {
+		List<Range> optionsBigToSmall = Blutils.reversed(optionsSmallToBig);
+		return optionsBigToSmall.stream()
+				.filter( (candidateRange) -> !candidateRange.overlapsAny(existingChunkRanges) )
+				.findFirst()
+				.orElse(null);
+	}
+
+	protected static <T extends Serializable> Range chooseSmallestRangeContainingChanges(List<Range> rangeOptionsSmallToBig, List<IndividualChange<T>> nonEmptyChangeList) {
+		return rangeOptionsSmallToBig.stream()
+				.filter( (candidateRange) -> rangeContainsAll(candidateRange, nonEmptyChangeList) )
+				.findFirst()
+				.get();  // this will throw an exception if there is none, should never happen because we chose changes based on the range
 	}
 
 	protected static <T extends Serializable> boolean rangeContainsAll(Range range, List<IndividualChange<T>> changes) {
-		for (IndividualChange<?> change: changes) {
-			long changeGroupingNumber = change.getKey().getGroupingNumber();
-			if (!range.containsInclusive(changeGroupingNumber)) {
-				return false;
-			}
-		}
-		return true;
+		return changes.stream()
+				.map( (chg) -> chg.getGroupingNumber() )
+				.allMatch( (groupingNumber) -> range.containsInclusive(groupingNumber) );
 	}
 
-	protected static Range findMatchingRange(long groupingNumber, List<Range> ranges) {
-		for (Range range: ranges) {
-			if (range.containsInclusive(groupingNumber)) {
-				return range;
-			}
-		}
-		return null;
+	protected static Range findMatchingRange(List<Range> options, Set<Range> ranges) {
+		return options.stream()
+				.filter( (candidateRange) -> ranges.contains(candidateRange) )
+				.findFirst()
+				.orElse(null);
 	}
-
 
 	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesBeforeOrAt(LinkedList<IndividualChange<T>> sortedChanges, long maxGroupingNumber) {
 		LinkedList<IndividualChange<T>> itemsInRange = new LinkedList<>();
