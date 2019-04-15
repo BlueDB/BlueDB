@@ -10,6 +10,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
+import io.bluedb.disk.segment.SegmentBatch;
 
 public class PendingBatchChange<T extends Serializable> implements Serializable, Recoverable<T> {
 
@@ -30,19 +31,28 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 
 	@Override
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
-		LinkedList<IndividualChange<T>> remainingChangesInOrder = new LinkedList<>(sortedChanges);
-		while (!remainingChangesInOrder.isEmpty()) {
-			Segment<T> nextSegment = getNextSegment(collection, remainingChangesInOrder);
-			LinkedList<IndividualChange<T>> changesForSegment = getChangesOverlappingSegment(remainingChangesInOrder, nextSegment);
-			nextSegment.applyChanges(changesForSegment);
-			removeChangesThatEndInOrBeforeSegment(remainingChangesInOrder, nextSegment);
+		LinkedList<IndividualChange<T>> unqueuedChanges = new LinkedList<>(sortedChanges);
+		while (!unqueuedChanges.isEmpty()) {
+			Segment<T> nextSegment = getFirstSegmentAffected(collection, unqueuedChanges);
+			LinkedList<IndividualChange<T>> queuedChanges = pollChangesInSegment(unqueuedChanges, nextSegment);
+			while (!queuedChanges.isEmpty()) {
+				nextSegment.applyChanges(queuedChanges);
+				removeChangesThatEndInOrBeforeSegment(queuedChanges, nextSegment);
+				nextSegment = collection.getSegmentManager().getSegmentAfter(nextSegment);
+				queuedChanges.addAll( pollChangesInSegment(unqueuedChanges, nextSegment) );
+			}
 		}
 	}
 
-	protected static <T extends Serializable> Segment<T> getNextSegment(BlueCollectionOnDisk<T> collection, LinkedList<IndividualChange<T>> sortedChanges) {
+	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesInSegment(LinkedList<IndividualChange<T>> sortedChanges, Segment<T> segment) {
+		long maxGroupingNumber = segment.getRange().getEnd();
+		return SegmentBatch.pollChangesBeforeOrAt(sortedChanges, maxGroupingNumber);
+	}
+
+	protected static <T extends Serializable> Segment<T> getFirstSegmentAffected(BlueCollectionOnDisk<T> collection, LinkedList<IndividualChange<T>> sortedChanges) {
 		BlueKey firstChangeKey = sortedChanges.peek().getKey();
-		Segment<T> nextSegment = collection.getSegmentManager().getFirstSegment(firstChangeKey);
-		return nextSegment;
+		Segment<T> firstSegment = collection.getSegmentManager().getFirstSegment(firstChangeKey);
+		return firstSegment;
 	}
 
 	protected static <T extends Serializable> void removeChangesThatEndInOrBeforeSegment(List<IndividualChange<T>> sortedChanges, Segment<T> segment) {

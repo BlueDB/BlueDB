@@ -101,7 +101,19 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_batchInsert_spanningSegments() throws Exception {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		TestValue value = new TestValue("Joe");
+		BlueKey key = createTimeFrameKey(segmentSize - 1, segmentSize + 1, value);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key, value);
+		getTimeCollection().batchUpsert(batchInserts);
+		assertValueAtKey(key, value);
+	}
+
+	@Test
 	public void test_insert_times() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", TimeKey.class, String.class);
 		String value = "string";
 		int n = 100;
@@ -115,6 +127,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
 		String value = "string";
 		int n = 100;
@@ -129,6 +142,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", StringKey.class, String.class);
 		String value = "string";
 		int n = 100;
@@ -188,6 +202,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(key1, getTimeCollection().getLastKey());
 		BlueKey key3 = insertAtTime(3, new TestValue("Bob"));
 		assertEquals(key3, getTimeCollection().getLastKey());
+		@SuppressWarnings("unused")
 		BlueKey key2 = insertAtTime(2, new TestValue("Fred"));
 		assertEquals(key3, getTimeCollection().getLastKey());
 	}
@@ -328,7 +343,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		RollupTarget target_3600000 = new RollupTarget(0, new Range(0, 3599999));
 		Set<RollupTarget> targets_none = new HashSet<>();
 		Set<RollupTarget> targets_mid_and_top = new HashSet<>(Arrays.asList(target_6000, target_3600000));
-		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
+//		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
 		
 		rollupTimes = scheduler.getRollupTimes();
 		assertEquals(targets_none, rollupTimes.keySet());
@@ -359,7 +374,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
+		@SuppressWarnings("unchecked")
 		BlueCollection<?> collectionWithTimeKeys =db().initializeCollection("test_collection_TimeKey", TimeKey.class, Serializable.class);
+		@SuppressWarnings("unchecked")
 		BlueCollection<?> collectionWithLongKeys = db().initializeCollection("test_collection_LongKey", LongKey.class, Serializable.class);
 		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
 		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
@@ -375,6 +392,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void test_determineKeyType() throws BlueDbException {
 		db().initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);  // regular instantiation approach
