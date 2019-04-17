@@ -11,6 +11,7 @@ import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentBatch;
+import io.bluedb.disk.segment.SegmentManager;
 
 public class PendingBatchChange<T extends Serializable> implements Serializable, Recoverable<T> {
 
@@ -31,14 +32,20 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 
 	@Override
 	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
+		SegmentManager<T> segmentManager = collection.getSegmentManager();
+		apply(segmentManager, sortedChanges);
+		collection.getIndexManager().addToAllIndexes(sortedChanges);
+	}
+
+	public static <T extends Serializable> void apply(SegmentManager<T> segmentManager, List<IndividualChange<T>> sortedChanges) throws BlueDbException {
 		LinkedList<IndividualChange<T>> unqueuedChanges = new LinkedList<>(sortedChanges);
 		while (!unqueuedChanges.isEmpty()) {
-			Segment<T> nextSegment = getFirstSegmentAffected(collection, unqueuedChanges);
+			Segment<T> nextSegment = getFirstSegmentAffected(segmentManager, unqueuedChanges);
 			LinkedList<IndividualChange<T>> queuedChanges = pollChangesInSegment(unqueuedChanges, nextSegment);
 			while (!queuedChanges.isEmpty()) {
 				nextSegment.applyChanges(queuedChanges);
 				removeChangesThatEndInOrBeforeSegment(queuedChanges, nextSegment);
-				nextSegment = collection.getSegmentManager().getSegmentAfter(nextSegment);
+				nextSegment = segmentManager.getSegmentAfter(nextSegment);
 				queuedChanges.addAll( pollChangesInSegment(unqueuedChanges, nextSegment) );
 			}
 		}
@@ -49,9 +56,9 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 		return SegmentBatch.pollChangesBeforeOrAt(sortedChanges, maxGroupingNumber);
 	}
 
-	protected static <T extends Serializable> Segment<T> getFirstSegmentAffected(BlueCollectionOnDisk<T> collection, LinkedList<IndividualChange<T>> sortedChanges) {
+	protected static <T extends Serializable> Segment<T> getFirstSegmentAffected(SegmentManager<T> segmentManager, LinkedList<IndividualChange<T>> sortedChanges) {
 		BlueKey firstChangeKey = sortedChanges.peek().getKey();
-		Segment<T> firstSegment = collection.getSegmentManager().getFirstSegment(firstChangeKey);
+		Segment<T> firstSegment = segmentManager.getFirstSegment(firstChangeKey);
 		return firstSegment;
 	}
 

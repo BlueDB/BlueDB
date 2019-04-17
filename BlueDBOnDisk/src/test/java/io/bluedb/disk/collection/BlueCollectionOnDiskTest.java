@@ -19,6 +19,8 @@ import org.junit.Test;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
+import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.HashGroupedKey;
 import io.bluedb.api.keys.IntegerKey;
@@ -31,6 +33,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.rollup.RollupScheduler;
@@ -109,6 +112,33 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		batchInserts.put(key, value);
 		getTimeCollection().batchUpsert(batchInserts);
 		assertValueAtKey(key, value);
+	}
+
+	@Test
+	public void test_batchInsert_index() throws Exception {
+		KeyExtractor<IntegerKey, TestValue> keyExtractor = new TestRetrievalKeyExtractor();
+		BlueIndex<IntegerKey, TestValue> index = getTimeCollection().createIndex("test_index", IntegerKey.class, keyExtractor);
+		TestValue value1 = new TestValue("Joe");
+		TestValue value2 = new TestValue("Bob");
+		TestValue value3 = new TestValue("Charlie");
+		value1.setCupcakes(42);
+		value2.setCupcakes(777);
+		value3.setCupcakes(42);
+		IntegerKey indexKeyFor1and3 = new IntegerKey(42);
+		BlueKey key1 = createTimeKey(10, value1);
+		BlueKey key2 = createTimeKey(20, value2);
+		BlueKey key3 = createTimeKey(30, value3);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key1, value1);
+		batchInserts.put(key2, value2);
+		batchInserts.put(key3, value3);
+
+		List<TestValue> listEmpty = Arrays.asList();
+		List<TestValue> list1and3 = Arrays.asList(value1, value3);
+
+		assertEquals(listEmpty, index.get(indexKeyFor1and3));
+		getTimeCollection().batchUpsert(batchInserts);
+		assertEquals(list1and3, index.get(indexKeyFor1and3));
 	}
 
 	@Test

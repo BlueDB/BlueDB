@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
@@ -16,6 +18,8 @@ import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.collection.LastEntityFinder;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.recovery.IndividualChange;
+import io.bluedb.disk.recovery.PendingBatchChange;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
@@ -72,6 +76,12 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		}
 	}
 
+	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
+		List<IndividualChange<BlueKey>> indexChanges = toIndexChanges(changes);
+		Collections.sort(indexChanges);
+		PendingBatchChange.apply(segmentManager, indexChanges);
+	}
+
 	public void remove(BlueKey key, T oldItem) throws BlueDbException {
 		if (oldItem == null) {
 			return;
@@ -110,6 +120,25 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 
 	public SegmentManager<BlueKey> getSegmentManager() {
 		return segmentManager;
+	}
+
+	private List<IndividualChange<BlueKey>> toIndexChanges(Collection<IndividualChange<T>> changes) throws BlueDbException {
+		List<IndividualChange<BlueKey>> results = new ArrayList<>();
+		for (IndividualChange<T> change: changes) {
+			BlueKey underlyingKey = change.getKey();
+			List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(change);
+			for (IndexCompositeKey<I> compositeKey: compositeKeys) {
+				IndividualChange<BlueKey> indexChange = IndividualChange.insert(compositeKey, underlyingKey);
+				results.add(indexChange);
+			}
+		}
+		return results;
+	}
+
+	private List<IndexCompositeKey<I>> toCompositeKeys(IndividualChange<T> change) throws BlueDbException {
+		BlueKey destinationKey = change.getKey();
+		T newValue = change.getNewValue();
+		return toCompositeKeys(destinationKey, newValue);
 	}
 
 	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {

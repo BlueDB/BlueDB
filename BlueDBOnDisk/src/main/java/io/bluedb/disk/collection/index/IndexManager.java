@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.recovery.IndividualChange;
 
 public class IndexManager<T extends Serializable> {
 
@@ -59,6 +61,12 @@ public class IndexManager<T extends Serializable> {
 	public void addToAllIndexes(BlueKey key, T value) throws BlueDbException {
 		for (BlueIndexOnDisk<ValueKey, T> index: indexesByName.values()) {
 			index.add(key,  value);
+		}
+	}
+
+	public void addToAllIndexes(Collection<IndividualChange<T>> changes) throws BlueDbException {
+		for (BlueIndexOnDisk<ValueKey, T> index: indexesByName.values()) {
+			index.add(changes);
 		}
 	}
 
