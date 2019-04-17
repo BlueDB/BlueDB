@@ -117,7 +117,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	public void applyChanges(LinkedList<IndividualChange<T>> changeQueueForSegment) throws BlueDbException {
-		// TODO rollup ranges to some acceptable level first?
+		performPreBatchRollups();
 		SegmentBatch<T> segmentBatch = new SegmentBatch<>(changeQueueForSegment);
 		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
 		List<ChunkBatch<T>> chunkBatches = segmentBatch.breakIntoChunks(existingChunkRanges, rollupLevels);
@@ -126,6 +126,26 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			Path path = Paths.get(segmentPath.toString(), fileName);
 			modifyChunk(path, new BatchWriter<T>(chunkBatch.getChangesInOrder()));
 		}
+	}
+
+	private void performPreBatchRollups() throws BlueDbException {
+		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
+		List<Range> rangesToRollup = determineRangesRequiringRollup(existingChunkRanges, getMinimumRollupSizeBeforeBatch());
+		for (Range rangeToRollup: rangesToRollup) {
+			rollup(rangeToRollup, false);
+		}
+	}
+
+	public long getMinimumRollupSizeBeforeBatch() {
+		return rollupLevels.get(1);
+	}
+
+	public static List<Range> determineRangesRequiringRollup(List<Range> existingChunkRanges, long minimumChunkSize) {
+		return existingChunkRanges.stream()
+			.filter( (range) -> range.length() < minimumChunkSize )
+			.map( (range) -> Range.forValueAndRangeSize(range.getStart(), minimumChunkSize) )
+			.distinct()
+			.collect(Collectors.toList());
 	}
 
 	public void modifyChunk(Path targetPath, StreamingWriter<T> processor) throws BlueDbException {
@@ -143,11 +163,15 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	public void rollup(Range timeRange) throws BlueDbException {
+		rollup(timeRange, true);
+	}
+
+	private void rollup(Range timeRange, boolean abortIfOnlyOneFile) throws BlueDbException {
 		if (!isValidRollupRange(timeRange)) {
 			throw new BlueDbException("Not a valid rollup size: " + timeRange);
 		}
 		List<File> filesToRollup = getOrderedFilesEnclosedInRange(timeRange);
-		if (filesToRollup.size() < 2) {
+		if (abortIfOnlyOneFile && filesToRollup.size() < 2) {
 			return;  // no benefit to rolling up a single file
 		}
 		Path path = Paths.get(segmentPath.toString(), timeRange.toUnderscoreDelimitedString());
@@ -338,7 +362,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	protected List<Range> getRollupRanges(Range currentChunkRange) {
-		long currentChunkSize = currentChunkRange.length() + 1;
+		long currentChunkSize = currentChunkRange.length();
 		List<Long> rollupLevelsLargerThanChunk = Blutils.filter(rollupLevels, (l) -> l > currentChunkSize);
 		CheckedFunction<Long, Range> toRange = (l) -> Range.forValueAndRangeSize(currentChunkRange.getStart(), l);
 		List<Range> possibleRollupRanges = Blutils.mapIgnoringExceptions(rollupLevelsLargerThanChunk, toRange);

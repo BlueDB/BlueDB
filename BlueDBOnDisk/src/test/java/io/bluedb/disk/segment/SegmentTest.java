@@ -1,8 +1,10 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
+import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -232,6 +234,51 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(value1, segment.get(key1At1));
 		assertEquals(value2, segment.get(key2At1));
 		assertEquals(value3, segment.get(key3At3));
+	}
+
+	@Test
+	public void test_applyChanges_preBatchRollup() throws Exception {
+		Segment<TestValue> segment = getSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key2At2 = createKey(2, 2);
+		BlueKey keySegmentEnd = createKey(3, segment.getRange().getEnd());
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		TestValue value3 = createValue("Charlie");
+
+		List<TestValue> listEmpty = Arrays.asList();
+		List<TestValue> list1 = Arrays.asList(value1);
+		List<TestValue> list1and2 = Arrays.asList(value1, value2);
+		List<TestValue> list1and2and3 = Arrays.asList(value1, value2, value3);
+
+		assertEquals(listEmpty, getSegmentContents(segment));
+		assertEquals(0, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+
+		segment.insert(key1At1, value1);
+		assertEquals(list1, getSegmentContents(segment));
+		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+
+		IndividualChange<TestValue> insert2At1 = IndividualChange.insert(key2At2, value2);
+		List<IndividualChange<TestValue>> changes = Arrays.asList(insert2At1);
+		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
+		segment.applyChanges(changesLinkedList);
+		assertEquals(list1and2, getSegmentContents(segment));
+		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+
+		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.insert(keySegmentEnd, value3);
+		changes = Arrays.asList(inserinset3AtSegmentEnd);
+		changesLinkedList = new LinkedList<>(changes);
+		segment.applyChanges(changesLinkedList);
+		assertEquals(list1and2and3, getSegmentContents(segment));
+		assertEquals(2, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+	}
+
+	public static <T extends Serializable> List<T> getSegmentContents(Segment<T> segment) {
+		List<T> results = new ArrayList<>();
+		segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE).forEachRemaining((entity) -> {
+			results.add(entity.getValue());
+		});
+		return results;
 	}
 
 	@Test
