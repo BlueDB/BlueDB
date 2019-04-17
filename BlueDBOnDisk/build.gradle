@@ -8,5 +8,5 @@ repositories {
 
 dependencies{
     compile group: 'de.ruedigermoeller', name: 'fst', version: '2.57'
-    testImplementation group: 'org.mockito', name: 'mockito-all', version: mockitoVersion // Should be testImplementation
+    testImplementation group: 'org.mockito', name: 'mockito-all', version: mockitoVersion
 }
