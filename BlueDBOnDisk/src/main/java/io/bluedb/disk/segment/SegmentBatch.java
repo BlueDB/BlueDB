@@ -4,13 +4,13 @@ package io.bluedb.disk.segment;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.bluedb.disk.Blutils;
 import io.bluedb.disk.recovery.IndividualChange;
 
 public class SegmentBatch<T extends Serializable> {
@@ -56,8 +56,8 @@ public class SegmentBatch<T extends Serializable> {
 	}
 
 	protected static Range getLargestEmptyRange(List<Range> optionsSmallToBig, Set<Range> existingChunkRanges) {
-		List<Range> optionsBigToSmall = Blutils.reversed(optionsSmallToBig);
-		return optionsBigToSmall.stream()
+		return optionsSmallToBig.stream()
+				.sorted(Comparator.reverseOrder())
 				.filter( (candidateRange) -> !candidateRange.overlapsAny(existingChunkRanges) )
 				.findFirst()
 				.orElse(null);

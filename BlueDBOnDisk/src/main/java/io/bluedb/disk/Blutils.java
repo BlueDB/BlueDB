@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -151,14 +150,5 @@ public class Blutils {
 	        hexChars[i * 3 + 2] = ' ';
 	    }
 	    return new String(hexChars);
-	}
-
-
-	public static <T> LinkedList<T> reversed(List<T> original) {
-		LinkedList<T> backwards = new LinkedList<>();
-		for (int i = original.size() - 1; i >= 0; i--) {  // Collections.reverse throws UnsupportedOperation
-			backwards.add(original.get(i));
-		}
-		return backwards;
 	}
 }
