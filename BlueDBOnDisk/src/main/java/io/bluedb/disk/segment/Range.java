@@ -23,7 +23,7 @@ public final class Range implements Comparable<Range> {
 	}
 
 	public long length() {
-		return getEnd() - getStart();
+		return getEnd() - getStart() + 1;
 	}
 
 	public boolean containsInclusive(long point) {

@@ -33,8 +33,8 @@ public class RangeTest {
 	public void test_length() {
 		Range _12_12 = new Range(12, 12);
 		Range _12_24 = new Range(12, 24);
-		assertEquals(0, _12_12.length());
-		assertEquals(12, _12_24.length());
+		assertEquals(1, _12_12.length());
+		assertEquals(13, _12_24.length());
 	}
 
 	@Test
