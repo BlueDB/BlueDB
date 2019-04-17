@@ -131,7 +131,7 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 			assertEquals(value1, first);
 
 			assertTrue(lockManager.isLocked(firstFilePath));
-			Blutils.trySleep(30); // let the iterator auto-close
+			Blutils.trySleep(60); // let the iterator auto-close
 			assertFalse(lockManager.isLocked(firstFilePath));  // make sure the lock is released
 			
 			try {
