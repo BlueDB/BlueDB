@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.index.KeyExtractor;
@@ -122,29 +124,37 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return segmentManager;
 	}
 
-	private List<IndividualChange<BlueKey>> toIndexChanges(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		List<IndividualChange<BlueKey>> results = new ArrayList<>();
-		for (IndividualChange<T> change: changes) {
-			BlueKey underlyingKey = change.getKey();
-			List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(change);
-			for (IndexCompositeKey<I> compositeKey: compositeKeys) {
-				IndividualChange<BlueKey> indexChange = IndividualChange.insert(compositeKey, underlyingKey);
-				results.add(indexChange);
-			}
-		}
-		return results;
+	private List<IndividualChange<BlueKey>> toIndexChanges(Collection<IndividualChange<T>> changes) {
+		return changes.stream()
+				.map( (IndividualChange<T> change) -> toIndexChanges(change) )
+				.flatMap(List::stream).collect(Collectors.toList());
 	}
 
-	private List<IndexCompositeKey<I>> toCompositeKeys(IndividualChange<T> change) throws BlueDbException {
+	private List<IndividualChange<BlueKey>> toIndexChanges(IndividualChange<T> change) {
+		List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(change);
+		BlueKey underlyingKey = change.getKey();
+		return toIndexChanges(compositeKeys, underlyingKey);
+	}
+
+	private static <I extends ValueKey> List<IndividualChange<BlueKey>> toIndexChanges(List<IndexCompositeKey<I>> compositeKeys, BlueKey destinationKey) {
+		List<IndividualChange<BlueKey>> indexChanges = new ArrayList<>();
+		for (IndexCompositeKey<I> compositeKey: compositeKeys) {
+			IndividualChange<BlueKey> indexChange = IndividualChange.insert(compositeKey, destinationKey);
+			indexChanges.add(indexChange);
+		}
+		return indexChanges;
+	}
+
+	private List<IndexCompositeKey<I>> toCompositeKeys(IndividualChange<T> change) {
 		BlueKey destinationKey = change.getKey();
 		T newValue = change.getNewValue();
 		return toCompositeKeys(destinationKey, newValue);
 	}
 
-	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
+	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) {
 		List<I> indexKeys = keyExtractor.extractKeys(newItem);
 		CheckedFunction<I, IndexCompositeKey<I>> indexToComposite = (indexKey) -> new IndexCompositeKey<I>(indexKey, destination);
-		List<IndexCompositeKey<I>> compositeKeys = Blutils.map(indexKeys, indexToComposite);
+		List<IndexCompositeKey<I>> compositeKeys = Blutils.mapIgnoringExceptions(indexKeys, indexToComposite);
 		return compositeKeys;
 	}
 
