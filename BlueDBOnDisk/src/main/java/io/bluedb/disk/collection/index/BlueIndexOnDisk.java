@@ -14,6 +14,7 @@ import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
+import io.bluedb.disk.BatchUtils;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
@@ -21,7 +22,6 @@ import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.collection.LastEntityFinder;
 import io.bluedb.disk.file.FileManager;
 import io.bluedb.disk.recovery.IndividualChange;
-import io.bluedb.disk.recovery.PendingBatchChange;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
@@ -81,7 +81,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
 		List<IndividualChange<BlueKey>> indexChanges = toIndexChanges(changes);
 		Collections.sort(indexChanges);
-		PendingBatchChange.apply(segmentManager, indexChanges);
+		BatchUtils.apply(segmentManager, indexChanges);
 	}
 
 	public void remove(BlueKey key, T oldItem) throws BlueDbException {
