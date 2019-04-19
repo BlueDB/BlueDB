@@ -1,5 +1,6 @@
 package io.bluedb.disk.segment;
 
+import java.io.File;
 import java.util.Collection;
 
 import io.bluedb.disk.Blutils;
@@ -49,6 +50,11 @@ public final class Range implements Comparable<Range> {
 
 	public String toUnderscoreDelimitedString() {
 		return start + "_" + end;
+	}
+
+	public static Range fromFileWithUnderscoreDelmimitedName(File file) {
+		String fileName = file.getName();
+		return fromUnderscoreDelmimitedString(fileName);
 	}
 
 	public static Range fromUnderscoreDelmimitedString(String string) {
