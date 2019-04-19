@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,8 @@ import org.junit.Test;
 import io.bluedb.api.BlueCollection;
 import io.bluedb.api.Condition;
 import io.bluedb.api.exceptions.BlueDbException;
+import io.bluedb.api.index.BlueIndex;
+import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.HashGroupedKey;
 import io.bluedb.api.keys.IntegerKey;
@@ -30,6 +33,7 @@ import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.BlueDbOnDiskBuilder;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.TestValue;
+import io.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
 import io.bluedb.disk.segment.rollup.RollupScheduler;
@@ -86,7 +90,60 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_batchInsert() throws Exception {
+		TestValue value1 = new TestValue("Joe");
+		TestValue value2 = new TestValue("Bob");
+		BlueKey key1 = createTimeKey(10, value1);
+		BlueKey key2 = createTimeKey(20, value2);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key1, value1);
+		batchInserts.put(key2, value2);
+		getTimeCollection().batchUpsert(batchInserts);
+		assertValueAtKey(key1, value1);
+		assertValueAtKey(key2, value2);
+	}
+
+	@Test
+	public void test_batchInsert_spanningSegments() throws Exception {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		TestValue value = new TestValue("Joe");
+		BlueKey key = createTimeFrameKey(segmentSize - 1, segmentSize + 1, value);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key, value);
+		getTimeCollection().batchUpsert(batchInserts);
+		assertValueAtKey(key, value);
+	}
+
+	@Test
+	public void test_batchInsert_index() throws Exception {
+		KeyExtractor<IntegerKey, TestValue> keyExtractor = new TestRetrievalKeyExtractor();
+		BlueIndex<IntegerKey, TestValue> index = getTimeCollection().createIndex("test_index", IntegerKey.class, keyExtractor);
+		TestValue value1 = new TestValue("Joe");
+		TestValue value2 = new TestValue("Bob");
+		TestValue value3 = new TestValue("Charlie");
+		value1.setCupcakes(42);
+		value2.setCupcakes(777);
+		value3.setCupcakes(42);
+		IntegerKey indexKeyFor1and3 = new IntegerKey(42);
+		BlueKey key1 = createTimeKey(10, value1);
+		BlueKey key2 = createTimeKey(20, value2);
+		BlueKey key3 = createTimeKey(30, value3);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key1, value1);
+		batchInserts.put(key2, value2);
+		batchInserts.put(key3, value3);
+
+		List<TestValue> listEmpty = Arrays.asList();
+		List<TestValue> list1and3 = Arrays.asList(value1, value3);
+
+		assertEquals(listEmpty, index.get(indexKeyFor1and3));
+		getTimeCollection().batchUpsert(batchInserts);
+		assertEquals(list1and3, index.get(indexKeyFor1and3));
+	}
+
+	@Test
 	public void test_insert_times() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", TimeKey.class, String.class);
 		String value = "string";
 		int n = 100;
@@ -100,6 +157,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
 		String value = "string";
 		int n = 100;
@@ -114,6 +172,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
+		@SuppressWarnings("unchecked")
 		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", StringKey.class, String.class);
 		String value = "string";
 		int n = 100;
@@ -173,6 +232,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(key1, getTimeCollection().getLastKey());
 		BlueKey key3 = insertAtTime(3, new TestValue("Bob"));
 		assertEquals(key3, getTimeCollection().getLastKey());
+		@SuppressWarnings("unused")
 		BlueKey key2 = insertAtTime(2, new TestValue("Fred"));
 		assertEquals(key3, getTimeCollection().getLastKey());
 	}
@@ -313,7 +373,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		RollupTarget target_3600000 = new RollupTarget(0, new Range(0, 3599999));
 		Set<RollupTarget> targets_none = new HashSet<>();
 		Set<RollupTarget> targets_mid_and_top = new HashSet<>(Arrays.asList(target_6000, target_3600000));
-		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
+//		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
 		
 		rollupTimes = scheduler.getRollupTimes();
 		assertEquals(targets_none, rollupTimes.keySet());
@@ -344,7 +404,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
+		@SuppressWarnings("unchecked")
 		BlueCollection<?> collectionWithTimeKeys =db().initializeCollection("test_collection_TimeKey", TimeKey.class, Serializable.class);
+		@SuppressWarnings("unchecked")
 		BlueCollection<?> collectionWithLongKeys = db().initializeCollection("test_collection_LongKey", LongKey.class, Serializable.class);
 		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
 		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
@@ -360,6 +422,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void test_determineKeyType() throws BlueDbException {
 		db().initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);  // regular instantiation approach

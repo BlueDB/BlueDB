@@ -4,18 +4,24 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.index.KeyExtractor;
 import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
+import io.bluedb.disk.BatchUtils;
 import io.bluedb.disk.Blutils;
 import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.collection.LastEntityFinder;
 import io.bluedb.disk.file.FileManager;
+import io.bluedb.disk.recovery.IndividualChange;
 import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.segment.Segment;
 import io.bluedb.disk.segment.SegmentManager;
@@ -72,6 +78,12 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		}
 	}
 
+	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
+		List<IndividualChange<BlueKey>> indexChanges = toIndexChanges(changes);
+		Collections.sort(indexChanges);
+		BatchUtils.apply(segmentManager, indexChanges);
+	}
+
 	public void remove(BlueKey key, T oldItem) throws BlueDbException {
 		if (oldItem == null) {
 			return;
@@ -112,24 +124,49 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return segmentManager;
 	}
 
-	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) throws BlueDbException {
+	private List<IndividualChange<BlueKey>> toIndexChanges(Collection<IndividualChange<T>> changes) {
+		return changes.stream()
+				.map( (IndividualChange<T> change) -> toIndexChanges(change) )
+				.flatMap(List::stream).collect(Collectors.toList());
+	}
+
+	private List<IndividualChange<BlueKey>> toIndexChanges(IndividualChange<T> change) {
+		List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(change);
+		BlueKey underlyingKey = change.getKey();
+		return toIndexChanges(compositeKeys, underlyingKey);
+	}
+
+	private static <I extends ValueKey> List<IndividualChange<BlueKey>> toIndexChanges(List<IndexCompositeKey<I>> compositeKeys, BlueKey destinationKey) {
+		List<IndividualChange<BlueKey>> indexChanges = new ArrayList<>();
+		for (IndexCompositeKey<I> compositeKey: compositeKeys) {
+			IndividualChange<BlueKey> indexChange = IndividualChange.createInsertChange(compositeKey, destinationKey);
+			indexChanges.add(indexChange);
+		}
+		return indexChanges;
+	}
+
+	private List<IndexCompositeKey<I>> toCompositeKeys(IndividualChange<T> change) {
+		BlueKey destinationKey = change.getKey();
+		T newValue = change.getNewValue();
+		return toCompositeKeys(destinationKey, newValue);
+	}
+
+	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) {
 		List<I> indexKeys = keyExtractor.extractKeys(newItem);
-		CheckedFunction<I, IndexCompositeKey<I>> indexToComposite = (indexKey) -> new IndexCompositeKey<I>(indexKey, destination);
-		List<IndexCompositeKey<I>> compositeKeys = Blutils.map(indexKeys, indexToComposite);
-		return compositeKeys;
+		return indexKeys.stream()
+				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
+				.collect( Collectors.toList() );
 	}
 
 	@Override
 	public void reportReads(List<RollupTarget> rollupTargets) {
-		CheckedFunction<RollupTarget, IndexRollupTarget> indexToComposite = (r) -> new IndexRollupTarget(indexName, r.getSegmentGroupingNumber(), r.getRange());
-		List<IndexRollupTarget> indexRollupTargets = Blutils.mapIgnoringExceptions(rollupTargets, indexToComposite);
+		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
 		collection.getRollupScheduler().reportReads(indexRollupTargets);
 	}
 
 	@Override
 	public void reportWrites(List<RollupTarget> rollupTargets) {
-		CheckedFunction<RollupTarget, IndexRollupTarget> indexToComposite = (r) -> new IndexRollupTarget(indexName, r.getSegmentGroupingNumber(), r.getRange());
-		List<IndexRollupTarget> indexRollupTargets = Blutils.mapIgnoringExceptions(rollupTargets, indexToComposite);
+		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
 		collection.getRollupScheduler().reportWrites(indexRollupTargets);
 	}
 
@@ -143,5 +180,15 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		@SuppressWarnings("unchecked")
 		IndexCompositeKey<I> lastCompositeKey = (IndexCompositeKey<I>) lastIndexEntity.getKey();
 		return lastCompositeKey.getIndexKey();
+	}
+
+	private List<IndexRollupTarget> toIndexRollupTargets(List<RollupTarget> rollupTargets) {
+		return rollupTargets.stream()
+				.map( this::toIndexRollupTarget )
+				.collect( Collectors.toList() );
+	}
+
+	private IndexRollupTarget toIndexRollupTarget(RollupTarget rollupTarget) {
+		return new IndexRollupTarget(indexName, rollupTarget.getSegmentGroupingNumber(), rollupTarget.getRange() );
 	}
 }

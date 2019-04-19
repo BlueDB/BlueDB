@@ -39,6 +39,11 @@ public class SegmentManager<T extends Serializable> {
 		return getSegment(groupingNumber);
 	}
 
+	public Segment<T> getSegmentAfter(Segment<T> segment) {
+		long groupingNumber = segment.getRange().getEnd() + 1;
+		return getSegment(groupingNumber);
+	}
+
 	public Segment<T> getSegment(long groupingNumber) {
 		Path segmentPath = pathManager.getSegmentPath(groupingNumber);
 		return toSegment(segmentPath);

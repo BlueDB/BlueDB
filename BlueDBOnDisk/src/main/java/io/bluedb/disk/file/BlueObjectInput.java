@@ -65,10 +65,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 
 	@Override
 	public boolean hasNext() {
-		if (next == null) {
-			next = nextValidObjectFromFile();
-		}
-		return next != null;
+		return peek() != null;
 	}
 
 	@Override
@@ -80,7 +77,14 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		next = null;
 		return response;
 	}
-	
+
+	public T peek() {
+		if (next == null) {
+			next = nextValidObjectFromFile();
+		}
+		return next;
+	}
+
 	private T nextValidObjectFromFile() {
 		while(true) {
 			try {
