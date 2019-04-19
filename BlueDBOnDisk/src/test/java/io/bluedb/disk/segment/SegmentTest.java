@@ -221,9 +221,9 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(null, segment.get(key2At1));
 		assertEquals(null, segment.get(key3At3));
 
-		IndividualChange<TestValue> insert1At1 = IndividualChange.insert(key1At1, value1);
-		IndividualChange<TestValue> insert2At1 = IndividualChange.insert(key2At1, value2);
-		IndividualChange<TestValue> insert3At3 = IndividualChange.insert(key3At3, value3);
+		IndividualChange<TestValue> insert1At1 = IndividualChange.createInsertChange(key1At1, value1);
+		IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At1, value2);
+		IndividualChange<TestValue> insert3At3 = IndividualChange.createInsertChange(key3At3, value3);
 		List<IndividualChange<TestValue>> changes = Arrays.asList(insert1At1, insert2At1, insert3At3);
 		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
 		segment.applyChanges(changesLinkedList);
@@ -258,14 +258,14 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(list1, getSegmentContents(segment));
 		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
 
-		IndividualChange<TestValue> insert2At1 = IndividualChange.insert(key2At2, value2);
+		IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At2, value2);
 		List<IndividualChange<TestValue>> changes = Arrays.asList(insert2At1);
 		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
 		segment.applyChanges(changesLinkedList);
 		assertEquals(list1and2, getSegmentContents(segment));
 		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
 
-		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.insert(keySegmentEnd, value3);
+		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.createInsertChange(keySegmentEnd, value3);
 		changes = Arrays.asList(inserinset3AtSegmentEnd);
 		changesLinkedList = new LinkedList<>(changes);
 		segment.applyChanges(changesLinkedList);

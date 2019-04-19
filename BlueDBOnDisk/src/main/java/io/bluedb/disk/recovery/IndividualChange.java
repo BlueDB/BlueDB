@@ -14,7 +14,7 @@ public class IndividualChange <T extends Serializable> implements Serializable, 
 	private final T oldValue;
 	private final T newValue;
 
-	public static <T extends Serializable> IndividualChange<T> insert(BlueKey key, T value) {
+	public static <T extends Serializable> IndividualChange<T> createInsertChange(BlueKey key, T value) {
 		return new IndividualChange<T>(key, null, value);
 	}
 

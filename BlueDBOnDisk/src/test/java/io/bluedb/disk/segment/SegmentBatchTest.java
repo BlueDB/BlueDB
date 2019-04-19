@@ -26,11 +26,11 @@ public class SegmentBatchTest {
 	private static TestValue value2 = createValue("2");
 	private static TestValue value3 = createValue("3");
 	private static TestValue value4 = createValue("4");
-	private static IndividualChange<TestValue> insert0At0 = IndividualChange.insert(key0At0, value0);
-	private static IndividualChange<TestValue> insert1At1 = IndividualChange.insert(key1At1, value1);
-	private static IndividualChange<TestValue> insert2At1 = IndividualChange.insert(key2At1, value2);
-	private static IndividualChange<TestValue> insert3At3 = IndividualChange.insert(key3At3, value3);
-	private static IndividualChange<TestValue> insert4At4 = IndividualChange.insert(key4At4, value4);
+	private static IndividualChange<TestValue> insert0At0 = IndividualChange.createInsertChange(key0At0, value0);
+	private static IndividualChange<TestValue> insert1At1 = IndividualChange.createInsertChange(key1At1, value1);
+	private static IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At1, value2);
+	private static IndividualChange<TestValue> insert3At3 = IndividualChange.createInsertChange(key3At3, value3);
+	private static IndividualChange<TestValue> insert4At4 = IndividualChange.createInsertChange(key4At4, value4);
 	private static Range range0to0 = new Range(0, 0);
 	private static Range range0to1 = new Range(0, 1);
 	private static Range range0to3 = new Range(0, 3);

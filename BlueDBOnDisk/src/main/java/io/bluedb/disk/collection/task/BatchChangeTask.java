@@ -38,7 +38,7 @@ public class BatchChangeTask<T extends Serializable> extends QueryTask {
 
 	private static <T extends Serializable> List<IndividualChange<T>> toSortedChangeList(Map<BlueKey, T> values) {
 		return values.entrySet().stream()
-				.map( (e) -> IndividualChange.insert(e.getKey(), e.getValue()) )
+				.map( (e) -> IndividualChange.createInsertChange(e.getKey(), e.getValue()) )
 				.sorted()
 				.collect(Collectors.toList());
 	}

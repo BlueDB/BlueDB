@@ -23,9 +23,9 @@ public class BatchUtilsTest {
 	private static TestValue value0 = new TestValue("0");
 	private static TestValue value1 = new TestValue("1");
 	private static TestValue value4 = new TestValue("4");
-	private static IndividualChange<TestValue> insert0At0 = IndividualChange.insert(key0At0, value0);
-	private static IndividualChange<TestValue> insert1At1To5 = IndividualChange.insert(key1At1To5, value1);
-	private static IndividualChange<TestValue> insert4At4 = IndividualChange.insert(key4At4, value4);
+	private static IndividualChange<TestValue> insert0At0 = IndividualChange.createInsertChange(key0At0, value0);
+	private static IndividualChange<TestValue> insert1At1To5 = IndividualChange.createInsertChange(key1At1To5, value1);
+	private static IndividualChange<TestValue> insert4At4 = IndividualChange.createInsertChange(key4At4, value4);
 	private static List<IndividualChange<TestValue>> empty = Arrays.asList();
 	private static List<IndividualChange<TestValue>> inserts0and1to5and4 = Arrays.asList(insert0At0, insert1At1To5, insert4At4);
 	private static List<IndividualChange<TestValue>> inserts1to5and4 = Arrays.asList(insert1At1To5, insert4At4);

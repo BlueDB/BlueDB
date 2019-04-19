@@ -195,8 +195,8 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Joe");
 		TestValue value2 = createValue("Bob");
 		List<IndividualChange<TestValue>> sortedChanges = Arrays.asList(
-				IndividualChange.insert(key1at2, value1),
-				IndividualChange.insert(key2at3, value2)
+				IndividualChange.createInsertChange(key1at2, value1),
+				IndividualChange.createInsertChange(key2at3, value2)
 		);
 		Recoverable<TestValue> change = PendingBatchChange.createBatchUpsert(sortedChanges);
 		getRecoveryManager().saveChange(change);

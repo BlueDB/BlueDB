@@ -139,7 +139,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 	private static <I extends ValueKey> List<IndividualChange<BlueKey>> toIndexChanges(List<IndexCompositeKey<I>> compositeKeys, BlueKey destinationKey) {
 		List<IndividualChange<BlueKey>> indexChanges = new ArrayList<>();
 		for (IndexCompositeKey<I> compositeKey: compositeKeys) {
-			IndividualChange<BlueKey> indexChange = IndividualChange.insert(compositeKey, destinationKey);
+			IndividualChange<BlueKey> indexChange = IndividualChange.createInsertChange(compositeKey, destinationKey);
 			indexChanges.add(indexChange);
 		}
 		return indexChanges;
