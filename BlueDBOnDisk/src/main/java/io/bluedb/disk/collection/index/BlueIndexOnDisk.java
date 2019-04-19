@@ -153,22 +153,20 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 
 	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) {
 		List<I> indexKeys = keyExtractor.extractKeys(newItem);
-		CheckedFunction<I, IndexCompositeKey<I>> indexToComposite = (indexKey) -> new IndexCompositeKey<I>(indexKey, destination);
-		List<IndexCompositeKey<I>> compositeKeys = Blutils.mapIgnoringExceptions(indexKeys, indexToComposite);
-		return compositeKeys;
+		return indexKeys.stream()
+				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
+				.collect( Collectors.toList() );
 	}
 
 	@Override
 	public void reportReads(List<RollupTarget> rollupTargets) {
-		CheckedFunction<RollupTarget, IndexRollupTarget> indexToComposite = (r) -> new IndexRollupTarget(indexName, r.getSegmentGroupingNumber(), r.getRange());
-		List<IndexRollupTarget> indexRollupTargets = Blutils.mapIgnoringExceptions(rollupTargets, indexToComposite);
+		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
 		collection.getRollupScheduler().reportReads(indexRollupTargets);
 	}
 
 	@Override
 	public void reportWrites(List<RollupTarget> rollupTargets) {
-		CheckedFunction<RollupTarget, IndexRollupTarget> indexToComposite = (r) -> new IndexRollupTarget(indexName, r.getSegmentGroupingNumber(), r.getRange());
-		List<IndexRollupTarget> indexRollupTargets = Blutils.mapIgnoringExceptions(rollupTargets, indexToComposite);
+		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
 		collection.getRollupScheduler().reportWrites(indexRollupTargets);
 	}
 
@@ -182,5 +180,15 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		@SuppressWarnings("unchecked")
 		IndexCompositeKey<I> lastCompositeKey = (IndexCompositeKey<I>) lastIndexEntity.getKey();
 		return lastCompositeKey.getIndexKey();
+	}
+
+	private List<IndexRollupTarget> toIndexRollupTargets(List<RollupTarget> rollupTargets) {
+		return rollupTargets.stream()
+				.map( this::toIndexRollupTarget )
+				.collect( Collectors.toList() );
+	}
+
+	private IndexRollupTarget toIndexRollupTarget(RollupTarget rollupTarget) {
+		return new IndexRollupTarget(indexName, rollupTarget.getSegmentGroupingNumber(), rollupTarget.getRange() );
 	}
 }
