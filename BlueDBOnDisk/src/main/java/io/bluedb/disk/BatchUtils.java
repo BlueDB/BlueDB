@@ -52,16 +52,4 @@ public class BatchUtils {
 			}
 		}
 	}
-
-	protected static <T extends Serializable> LinkedList<IndividualChange<T>> getChangesOverlappingSegment( List<IndividualChange<T>> sortedChanges, Segment<T> segment) {
-		long segmentEnd = segment.getRange().getEnd();
-		LinkedList<IndividualChange<T>> results = new LinkedList<>();
-		for (IndividualChange<T> change: sortedChanges) {
-			if (change.getGroupingNumber() > segmentEnd) {
-				break;
-			}
-			results.add(change);
-		}
-		return results;
-	}
 }

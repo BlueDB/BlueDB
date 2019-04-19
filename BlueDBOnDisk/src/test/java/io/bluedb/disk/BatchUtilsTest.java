@@ -27,8 +27,6 @@ public class BatchUtilsTest {
 	private static IndividualChange<TestValue> insert1At1To5 = IndividualChange.insert(key1At1To5, value1);
 	private static IndividualChange<TestValue> insert4At4 = IndividualChange.insert(key4At4, value4);
 	private static List<IndividualChange<TestValue>> empty = Arrays.asList();
-	private static List<IndividualChange<TestValue>> inserts0 = Arrays.asList(insert0At0);
-	private static List<IndividualChange<TestValue>> inserts0and1to5 = Arrays.asList(insert0At0, insert1At1To5);
 	private static List<IndividualChange<TestValue>> inserts0and1to5and4 = Arrays.asList(insert0At0, insert1At1To5, insert4At4);
 	private static List<IndividualChange<TestValue>> inserts1to5and4 = Arrays.asList(insert1At1To5, insert4At4);
 	private static List<IndividualChange<TestValue>> inserts1to5 = Arrays.asList(insert1At1To5);
@@ -66,21 +64,5 @@ public class BatchUtilsTest {
 	private static Segment<TestValue> segmentEnding(long end) {
 		Range range = new Range(end, end);
 		return new Segment<TestValue>(null, range, null, null, null);
-	}
-	@Test
-	public void test_getChangesOverlappingSegment() {
-		LinkedList<IndividualChange<TestValue>> result;
-
-		result = BatchUtils.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(-1));
-		assertEquals(empty, result);
-
-		result = BatchUtils.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(0));
-		assertEquals(inserts0, result);
-
-		result = BatchUtils.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(1));
-		assertEquals(inserts0and1to5, result);
-
-		result = BatchUtils.getChangesOverlappingSegment(inserts0and1to5and4, segmentEnding(4));
-		assertEquals(inserts0and1to5and4, result);
 	}
 }
