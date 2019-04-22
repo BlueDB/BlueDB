@@ -35,7 +35,7 @@ public class SegmentBatch<T extends Serializable> {
 
 	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, Set<Range> existingChunkRanges, List<Long> rollupLevels) {
 		changeQueue = new LinkedList<>(changeQueue);  // to avoid mutation later
-		long firstChangeGroupingNumber = changeQueue.peekFirst().getKey().getGroupingNumber();
+		long firstChangeGroupingNumber = changeQueue.peekFirst().getGroupingNumber();
 		List<Range> possibleNextRanges = calculatePossibleChunkRanges(firstChangeGroupingNumber, rollupLevels);
 		Range existingRange = findMatchingRange(possibleNextRanges, existingChunkRanges);
 		if (existingRange != null) {
