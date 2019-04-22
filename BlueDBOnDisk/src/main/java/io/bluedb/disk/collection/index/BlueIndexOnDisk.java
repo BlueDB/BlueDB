@@ -79,9 +79,8 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 	}
 
 	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		List<IndividualChange<BlueKey>> indexChanges = toIndexChanges(changes);
-		Collections.sort(indexChanges);
-		BatchUtils.apply(segmentManager, indexChanges);
+		List<IndividualChange<BlueKey>> sortedIndexChanges = toSortedIndexChanges(changes);
+		BatchUtils.apply(segmentManager, sortedIndexChanges);
 	}
 
 	public void remove(BlueKey key, T oldItem) throws BlueDbException {
@@ -124,10 +123,12 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return segmentManager;
 	}
 
-	private List<IndividualChange<BlueKey>> toIndexChanges(Collection<IndividualChange<T>> changes) {
+	private List<IndividualChange<BlueKey>> toSortedIndexChanges(Collection<IndividualChange<T>> changes) {
 		return changes.stream()
-				.map( (IndividualChange<T> change) -> toIndexChanges(change) )
-				.flatMap(List::stream).collect(Collectors.toList());
+				.map( this::toIndexChanges )
+				.flatMap(List::stream)
+				.sorted()
+				.collect(Collectors.toList());
 	}
 
 	private List<IndividualChange<BlueKey>> toIndexChanges(IndividualChange<T> change) {
