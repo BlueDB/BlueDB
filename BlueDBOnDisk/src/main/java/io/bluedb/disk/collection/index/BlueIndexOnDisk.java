@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,7 +15,6 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BatchUtils;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.collection.LastEntityFinder;
