@@ -24,13 +24,13 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 		if(other == null) {
 			return -1;
 		}
-		int groupingNumberComparison = Long.compare(getGroupingNumber(), other.getGroupingNumber());
-		if (groupingNumberComparison != 0) {
-			return groupingNumberComparison;
-		}
 		int classComparison = getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 		if (classComparison != 0) {
 			return classComparison;
+		}
+		int groupingNumberComparison = Long.compare(getGroupingNumber(), other.getGroupingNumber());
+		if (groupingNumberComparison != 0) {
+			return groupingNumberComparison;
 		}
 		@SuppressWarnings("unchecked")
 		HashGroupedKey<T> otherClassed = (HashGroupedKey<T>) other;
