@@ -25,4 +25,12 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	default boolean isInRange(long min, long max) {
 		return getGroupingNumber() >= min && getGroupingNumber() <= max;
 	}
+
+	default int compareClasses(BlueKey other) {
+		if (other == null) {
+			return -1;
+		} else {
+			return getClass().getCanonicalName().compareTo(other.getClass().getCanonicalName());
+		}
+	}
 }

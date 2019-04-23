@@ -94,7 +94,7 @@ public class TimeKey implements BlueKey {
 			}
 		}
 		// grouping number is not comparable between most subclasses
-		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		return compareClasses(other);
 	}
 
 

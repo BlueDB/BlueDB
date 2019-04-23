@@ -156,6 +156,15 @@ public class TimeFrameKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_compareClass() {
+		TimeFrameKey one = new TimeFrameKey(4, 1, 1);
+		StringKey stringKey = new StringKey("1");
+		assertTrue(one.compareClasses(stringKey) != 0);
+		assertTrue(one.compareClasses(null) == -1);
+		assertEquals(one.compareClasses(stringKey), -stringKey.compareClasses(one));
+	}
+
+	@Test
 	public void test_isInRange() {
 		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
 		assertFalse(_2_to_4.isInRange(0, 1));

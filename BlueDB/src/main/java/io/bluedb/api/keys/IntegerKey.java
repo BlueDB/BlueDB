@@ -57,7 +57,7 @@ public final class IntegerKey extends ValueKey {
 			return Integer.compare(id, ((IntegerKey)other).id);
 		} else {
 			// grouping number is not comparable between most subclasses
-			return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+			return compareClasses(other);
 		}		
 	}
 
