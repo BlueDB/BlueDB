@@ -24,6 +24,7 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 		if(other == null) {
 			return -1;
 		}
+		// we compare classes before grouping number because grouping number is not comparable between classes
 		int classComparison = getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 		if (classComparison != 0) {
 			return classComparison;
