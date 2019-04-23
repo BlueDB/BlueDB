@@ -78,7 +78,7 @@ public class TimeKey implements BlueKey {
 	}
 
 	@Override
-	public int compareTo(BlueKey other) {
+	public final int compareTo(BlueKey other) {
 		if(other == null) {
 			return -1;
 		}
