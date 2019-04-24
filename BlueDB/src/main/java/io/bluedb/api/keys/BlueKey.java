@@ -43,4 +43,17 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 		String secondClassName = second.getClass().getCanonicalName();
 		return firstClassName.compareTo(secondClassName);
 	}
+	
+	public static <T extends Comparable<T>> int compareWithNullsLast(T item1, T item2) {
+		if(item1 != null && item2 != null) {
+			return item1.compareTo(item2);
+		}
+		if(item1 == null && item2 != null) {
+			return 1;
+		}
+		if(item1 != null && item2 == null) {
+			return -1;
+		}
+		return 0;
+	}
 }

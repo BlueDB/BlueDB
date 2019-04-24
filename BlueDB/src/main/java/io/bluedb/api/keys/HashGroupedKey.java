@@ -19,31 +19,35 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 		return getClass().getSimpleName() + " [key=" + getId() + "]";
 	}
 
+	
+	@SuppressWarnings("unchecked")
 	@Override
 	public final int compareTo(BlueKey other) {
 		if(other == null) {
 			return -1;
 		}
-		// we compare classes before grouping number because grouping number is not comparable between classes
-		int classComparison = compareClasses(other);
-		if (classComparison != 0) {
-			return classComparison;
-		}
-		HashGroupedKey<?> otherAsHashGroupedKey = (HashGroupedKey<?>) other;
-		Object otherId = otherAsHashGroupedKey.getId();
-		int idClassCompare = BlueKey.compareCanonicalClassNames(getId(), otherId);
-		if (idClassCompare != 0) {
-			return idClassCompare;
-		}
-		int groupingNumberComparison = Long.compare(getGroupingNumber(), other.getGroupingNumber());
-		if (groupingNumberComparison != 0) {
-			return groupingNumberComparison;
-		}
-		@SuppressWarnings("unchecked")
-		T otherIdAsT = (T) otherId;
-		return getId().compareTo(otherIdAsT);
-	}
+		
+		if(getClass() == other.getClass()) {
+			//First by grouping number
+			int groupingNumberComparison = Long.compare(getGroupingNumber(), other.getGroupingNumber());
+			if (groupingNumberComparison != 0) {
+				return groupingNumberComparison;
+			}
 
+			//Second by id
+			Object otherId = ((HashGroupedKey<?>) other).getId();
+			try {
+				return BlueKey.compareWithNullsLast(getId(), (T) otherId);
+			} catch(Throwable t) {
+				//If ids are of different types then just compare the class names
+				return BlueKey.compareCanonicalClassNames(getId(), otherId);
+			}
+		} else {
+			// Grouping numbers and ids are not comparable between different classes so just compare the classname
+			return compareClasses(other);
+		}
+	}
+	
 	@Override
 	public final long getGroupingNumber() {
 		long hashCodeAsLong = hashCode();
