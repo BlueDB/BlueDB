@@ -29,13 +29,19 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 		if (classComparison != 0) {
 			return classComparison;
 		}
+		HashGroupedKey<?> otherAsHashGroupedKey = (HashGroupedKey<?>) other;
+		Object otherId = otherAsHashGroupedKey.getId();
+		int idClassCompare = BlueKey.compareCanonicalClassNames(getId(), otherId);
+		if (idClassCompare != 0) {
+			return idClassCompare;
+		}
 		int groupingNumberComparison = Long.compare(getGroupingNumber(), other.getGroupingNumber());
 		if (groupingNumberComparison != 0) {
 			return groupingNumberComparison;
 		}
 		@SuppressWarnings("unchecked")
-		HashGroupedKey<T> otherClassed = (HashGroupedKey<T>) other;
-		return getId().compareTo(otherClassed.getId());
+		T otherIdAsT = (T) otherId;
+		return getId().compareTo(otherIdAsT);
 	}
 
 	@Override

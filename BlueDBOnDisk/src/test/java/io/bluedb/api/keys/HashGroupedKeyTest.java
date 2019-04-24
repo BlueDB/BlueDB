@@ -39,6 +39,11 @@ public class HashGroupedKeyTest {
 		assertTrue(key3Hash2.compareTo(key1Hash3) < 0); // smaller hash
 		assertTrue(key3Hash2.compareTo(key2Hash2) > 0);
 		assertTrue(key3Hash2.compareTo(key3Hash2) == 0);
+
+		TestKeyType<String> genericTypeKeyInstance1 = new TestKeyType<>("1");
+		TestKeyType<Integer> genericTypeKeyInstance2 = new TestKeyType<>(1);
+		assertTrue( genericTypeKeyInstance1.compareTo(genericTypeKeyInstance2) != 0);
+		assertEquals(genericTypeKeyInstance1.compareTo(genericTypeKeyInstance2), -genericTypeKeyInstance2.compareTo(genericTypeKeyInstance1));
 	}
 
 	@Test
@@ -66,6 +71,19 @@ public class HashGroupedKeyTest {
 		@Override
 		public TestHashable getId() {
 			return value;
+		}
+		
+	}
+
+	private class TestKeyType<T extends Comparable<T>> extends HashGroupedKey<T> {
+		private static final long serialVersionUID = 1L;
+		private T id;
+		TestKeyType(T id) {
+			this.id = id;
+		}
+		@Override
+		public T getId() {
+			return id;
 		}
 		
 	}
