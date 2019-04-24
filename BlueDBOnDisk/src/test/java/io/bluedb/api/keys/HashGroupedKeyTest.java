@@ -42,8 +42,13 @@ public class HashGroupedKeyTest {
 
 		TestKeyType<String> genericTypeKeyInstance1 = new TestKeyType<>("1");
 		TestKeyType<Integer> genericTypeKeyInstance2 = new TestKeyType<>(1);
+		TestKeyType<Integer> genericTypeKeyInstanceNull = new TestKeyType<>(null);
 		assertTrue( genericTypeKeyInstance1.compareTo(genericTypeKeyInstance2) != 0);
+		assertTrue( genericTypeKeyInstance1.compareTo(genericTypeKeyInstanceNull) != 0);
+		assertTrue( genericTypeKeyInstanceNull.compareTo(genericTypeKeyInstance1) != 0);
+		assertTrue( genericTypeKeyInstance1.compareTo(null) != 0);
 		assertEquals(genericTypeKeyInstance1.compareTo(genericTypeKeyInstance2), -genericTypeKeyInstance2.compareTo(genericTypeKeyInstance1));
+		assertTrue( genericTypeKeyInstance1.compareTo(null) != 0);
 	}
 
 	@Test
