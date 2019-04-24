@@ -1,6 +1,7 @@
 package io.bluedb.api.keys;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,7 +58,26 @@ public class HashGroupedKeyTest {
 		TestHashedKeySubClass subKey2Hash2 = new TestHashedKeySubClass(value2Hash2);
 		assertTrue(key2Hash2.compareTo(subKey2Hash2) != 0);
 		assertTrue(key2Hash2.compareTo(subKey1Hash3) < 0);
-
+	}
+	
+	@Test
+	public void test_compareTo_nullIds() {
+		TestKeyType<Integer> nullKey1 = new TestKeyType<>(null);
+		TestKeyType<Integer> nullKey2 = new TestKeyType<>(null);
+		TestKeyType<Integer> validKey1 = new TestKeyType<>(0); //Number has to be 0 in order to have the same grouping number as null so that the compare has to check the ids
+		
+		assertEquals(-1, validKey1.compareTo(nullKey1));
+		assertEquals(1, nullKey1.compareTo(validKey1));
+		assertEquals(0, nullKey1.compareTo(nullKey2));
+	}
+	
+	@Test
+	public void test_compareTo_differentIdTypes() {
+		TestKeyType<Integer> key1 = new TestKeyType<>(10);
+		TestKeyType<Long> key2 = new TestKeyType<>(10l);
+		
+		assertTrue(key1.compareTo(key2) < 0);
+		assertTrue(key2.compareTo(key1) > 0);
 	}
 
 	@SuppressWarnings("serial")

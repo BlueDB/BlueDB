@@ -20,7 +20,6 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 	}
 
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public final int compareTo(BlueKey other) {
 		if(other == null) {
@@ -37,14 +36,16 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 			//Second by id
 			Object otherId = ((HashGroupedKey<?>) other).getId();
 			try {
-				return BlueKey.compareWithNullsLast(getId(), (T) otherId);
+				@SuppressWarnings("unchecked")
+				T otherIdAsT = (T) otherId;
+				return BlueKey.compareWithNullsLast(getId(), otherIdAsT);
 			} catch(Throwable t) {
 				//If ids are of different types then just compare the class names
 				return BlueKey.compareCanonicalClassNames(getId(), otherId);
 			}
 		} else {
 			// Grouping numbers and ids are not comparable between different classes so just compare the classname
-			return compareClasses(other);
+			return compareCanonicalClassNames(other);
 		}
 	}
 	

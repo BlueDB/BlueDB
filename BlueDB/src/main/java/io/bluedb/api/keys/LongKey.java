@@ -62,7 +62,7 @@ public final class LongKey extends ValueKey {
 			}
 		}
 		// grouping number is not comparable between most subclasses
-		return compareClasses(other);
+		return compareCanonicalClassNames(other);
 	}
 
 	@Override

@@ -30,7 +30,7 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 		return getGroupingNumber() >= min && getGroupingNumber() <= max;
 	}
 
-	default int compareClasses(BlueKey other) {
+	default int compareCanonicalClassNames(BlueKey other) {
 		return nullSafeClassComparator.compare(this, other);
 	}
 
@@ -48,10 +48,10 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 		if(item1 != null && item2 != null) {
 			return item1.compareTo(item2);
 		}
-		if(item1 == null && item2 != null) {
+		else if(item1 == null && item2 != null) {
 			return 1;
 		}
-		if(item1 != null && item2 == null) {
+		else if(item1 != null && item2 == null) {
 			return -1;
 		}
 		return 0;

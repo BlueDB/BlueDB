@@ -159,9 +159,9 @@ public class TimeFrameKeyTest extends TestCase {
 	public void test_compareClass() {
 		TimeFrameKey one = new TimeFrameKey(4, 1, 1);
 		StringKey stringKey = new StringKey("1");
-		assertTrue(one.compareClasses(stringKey) != 0);
-		assertTrue(one.compareClasses(null) == -1);
-		assertEquals(one.compareClasses(stringKey), -stringKey.compareClasses(one));
+		assertTrue(one.compareCanonicalClassNames(stringKey) != 0);
+		assertTrue(one.compareCanonicalClassNames(null) == -1);
+		assertEquals(one.compareCanonicalClassNames(stringKey), -stringKey.compareCanonicalClassNames(one));
 	}
 
 	@Test
