@@ -57,8 +57,7 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		@SuppressWarnings("unchecked")
-		HashGroupedKey<T> other = (HashGroupedKey<T>) obj;
+		HashGroupedKey<?> other = (HashGroupedKey<?>) obj;
 		if (getId() == null) {
 			return other.getId() == null;
 		}
