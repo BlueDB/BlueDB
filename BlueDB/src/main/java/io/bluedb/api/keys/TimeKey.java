@@ -78,7 +78,7 @@ public class TimeKey implements BlueKey {
 	}
 
 	@Override
-	public int compareTo(BlueKey other) {
+	public final int compareTo(BlueKey other) {
 		if(other == null) {
 			return -1;
 		}
@@ -93,8 +93,8 @@ public class TimeKey implements BlueKey {
 				return -1;
 			}
 		}
-		
-		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		// grouping number is not comparable between most subclasses
+		return compareCanonicalClassNames(other);
 	}
 
 

@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,7 +15,6 @@ import io.bluedb.api.keys.BlueKey;
 import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BatchUtils;
 import io.bluedb.disk.Blutils;
-import io.bluedb.disk.Blutils.CheckedFunction;
 import io.bluedb.disk.collection.BlueCollectionOnDisk;
 import io.bluedb.disk.collection.CollectionEntityIterator;
 import io.bluedb.disk.collection.LastEntityFinder;
@@ -79,9 +77,8 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 	}
 
 	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		List<IndividualChange<BlueKey>> indexChanges = toIndexChanges(changes);
-		Collections.sort(indexChanges);
-		BatchUtils.apply(segmentManager, indexChanges);
+		List<IndividualChange<BlueKey>> sortedIndexChanges = toSortedIndexChanges(changes);
+		BatchUtils.apply(segmentManager, sortedIndexChanges);
 	}
 
 	public void remove(BlueKey key, T oldItem) throws BlueDbException {
@@ -124,10 +121,12 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return segmentManager;
 	}
 
-	private List<IndividualChange<BlueKey>> toIndexChanges(Collection<IndividualChange<T>> changes) {
+	private List<IndividualChange<BlueKey>> toSortedIndexChanges(Collection<IndividualChange<T>> changes) {
 		return changes.stream()
-				.map( (IndividualChange<T> change) -> toIndexChanges(change) )
-				.flatMap(List::stream).collect(Collectors.toList());
+				.map( this::toIndexChanges )
+				.flatMap(List::stream)
+				.sorted()
+				.collect(Collectors.toList());
 	}
 
 	private List<IndividualChange<BlueKey>> toIndexChanges(IndividualChange<T> change) {

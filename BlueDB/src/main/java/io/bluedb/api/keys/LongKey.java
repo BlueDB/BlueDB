@@ -61,8 +61,8 @@ public final class LongKey extends ValueKey {
 				return 1;
 			}
 		}
-		
-		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		// grouping number is not comparable between most subclasses
+		return compareCanonicalClassNames(other);
 	}
 
 	@Override
