@@ -1,6 +1,6 @@
 package io.bluedb.api.keys;
 
-public final class IntegerKey extends HashGroupedKey {
+public final class IntegerKey extends ValueKey {
 	private static final long serialVersionUID = 1L;
 
 	private final int id;
@@ -11,6 +11,14 @@ public final class IntegerKey extends HashGroupedKey {
 
 	public int getId() {
 		return id;
+	}
+	
+	@Override
+	public long getGroupingNumber() {
+		// make them all positive for better file paths
+		long hashCodeAsLong = hashCode();
+		long integerMinAsLong = Integer.MIN_VALUE;
+		return hashCodeAsLong + Math.abs(integerMinAsLong);  
 	}
 	
 	@Override
@@ -48,7 +56,8 @@ public final class IntegerKey extends HashGroupedKey {
 		} else if(other instanceof IntegerKey) {
 			return Integer.compare(id, ((IntegerKey)other).id);
 		} else {
-			return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+			// grouping number is not comparable between most subclasses
+			return compareCanonicalClassNames(other);
 		}		
 	}
 

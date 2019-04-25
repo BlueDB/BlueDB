@@ -14,10 +14,10 @@ public class RollupTargetTest {
 		RollupTarget targetA2 = new RollupTarget(2, rangeA);
 		RollupTarget targetB1 = new RollupTarget(1, rangeB);
 		RollupTarget targetB2 = new RollupTarget(2, rangeB);
-		assertEquals(1, targetA1.getWriteRollupDelay());
-		assertEquals(1, targetA2.getWriteRollupDelay());
-		assertEquals(2, targetB1.getWriteRollupDelay());
-		assertEquals(2, targetB2.getWriteRollupDelay());
+		assertEquals(2, targetA1.getWriteRollupDelay());
+		assertEquals(2, targetA2.getWriteRollupDelay());
+		assertEquals(3, targetB1.getWriteRollupDelay());
+		assertEquals(3, targetB2.getWriteRollupDelay());
 	}
 
 	@Test
@@ -28,10 +28,10 @@ public class RollupTargetTest {
 		RollupTarget targetA2 = new RollupTarget(2, rangeA);
 		RollupTarget targetB1 = new RollupTarget(1, rangeB);
 		RollupTarget targetB2 = new RollupTarget(2, rangeB);
-		assertEquals(1, targetA1.getReadRollupDelay());
-		assertEquals(1, targetA2.getReadRollupDelay());
-		assertEquals(2, targetB1.getReadRollupDelay());
-		assertEquals(2, targetB2.getReadRollupDelay());
+		assertEquals(2, targetA1.getReadRollupDelay());
+		assertEquals(2, targetA2.getReadRollupDelay());
+		assertEquals(3, targetB1.getReadRollupDelay());
+		assertEquals(3, targetB2.getReadRollupDelay());
 	}
 
 	@Test

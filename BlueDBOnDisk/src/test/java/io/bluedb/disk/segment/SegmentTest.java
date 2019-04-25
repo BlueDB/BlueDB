@@ -1,9 +1,12 @@
 package io.bluedb.disk.segment;
 
 import java.io.File;
+import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.junit.Test;
@@ -14,6 +17,7 @@ import io.bluedb.disk.BlueDbDiskTestBase;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.recovery.IndividualChange;
 import io.bluedb.disk.recovery.PendingRollup;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 
@@ -136,6 +140,84 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(null, segment.get(key1At1));
 		assertEquals(null, segment.get(key2At1));
 		assertEquals(null, segment.get(key3At3));
+	}
+
+
+	@Test
+	public void test_applyChanges() throws Exception {
+		Segment<TestValue> segment = getSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key2At1 = createKey(2, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		TestValue value3 = createValue("Chuck");
+
+		assertFalse(segment.contains(key1At1));
+		assertFalse(segment.contains(key2At1));
+		assertFalse(segment.contains(key3At3));
+		assertEquals(null, segment.get(key1At1));
+		assertEquals(null, segment.get(key2At1));
+		assertEquals(null, segment.get(key3At3));
+
+		IndividualChange<TestValue> insert1At1 = IndividualChange.createInsertChange(key1At1, value1);
+		IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At1, value2);
+		IndividualChange<TestValue> insert3At3 = IndividualChange.createInsertChange(key3At3, value3);
+		List<IndividualChange<TestValue>> changes = Arrays.asList(insert1At1, insert2At1, insert3At3);
+		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
+		segment.applyChanges(changesLinkedList);
+
+		assertTrue(segment.contains(key1At1));
+		assertTrue(segment.contains(key2At1));
+		assertTrue(segment.contains(key3At3));
+		assertEquals(value1, segment.get(key1At1));
+		assertEquals(value2, segment.get(key2At1));
+		assertEquals(value3, segment.get(key3At3));
+	}
+
+	@Test
+	public void test_applyChanges_preBatchRollup() throws Exception {
+		Segment<TestValue> segment = getSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key2At2 = createKey(2, 2);
+		BlueKey keySegmentEnd = createKey(3, segment.getRange().getEnd());
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+		TestValue value3 = createValue("Charlie");
+
+		List<TestValue> listEmpty = Arrays.asList();
+		List<TestValue> list1 = Arrays.asList(value1);
+		List<TestValue> list1and2 = Arrays.asList(value1, value2);
+		List<TestValue> list1and2and3 = Arrays.asList(value1, value2, value3);
+
+		assertEquals(listEmpty, getSegmentContents(segment));
+		assertEquals(0, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+
+		segment.insert(key1At1, value1);
+		assertEquals(list1, getSegmentContents(segment));
+		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+
+		IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At2, value2);
+		List<IndividualChange<TestValue>> changes = Arrays.asList(insert2At1);
+		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
+		segment.applyChanges(changesLinkedList);
+		assertEquals(list1and2, getSegmentContents(segment));
+		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+
+		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.createInsertChange(keySegmentEnd, value3);
+		changes = Arrays.asList(inserinset3AtSegmentEnd);
+		changesLinkedList = new LinkedList<>(changes);
+		segment.applyChanges(changesLinkedList);
+		assertEquals(list1and2and3, getSegmentContents(segment));
+		assertEquals(2, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+	}
+
+	public static <T extends Serializable> List<T> getSegmentContents(Segment<T> segment) {
+		List<T> results = new ArrayList<>();
+		segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE).forEachRemaining((entity) -> {
+			results.add(entity.getValue());
+		});
+		return results;
 	}
 
 	@Test
@@ -270,6 +352,26 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(directoryContentsAfterTopRollup[0].getName(), directoryContentsAfterLaterMidRollup[0].getName());
 	}
 
+	@Test
+	public void test_getAllFileRangesInOrder() throws Exception {
+		File _12_13 = Paths.get(getPath().toString(), "12_13").toFile();
+		File _12_15 = Paths.get(getPath().toString(), "12_15").toFile();
+		File _2_3 = Paths.get(getPath().toString(), "2_3").toFile();
+		File _100_101 = Paths.get(getPath().toString(), "100_101").toFile();
+
+		FileUtils.ensureFileExists(_12_13.toPath());
+		FileUtils.ensureFileExists(_12_15.toPath());
+		FileUtils.ensureFileExists(_2_3.toPath());
+		FileUtils.ensureFileExists(_100_101.toPath());
+
+		Range range_2_3 = Range.fromUnderscoreDelmimitedString(_2_3.getName());
+		Range range_12_13 = Range.fromUnderscoreDelmimitedString(_12_13.getName());
+		Range range_12_15 = Range.fromUnderscoreDelmimitedString(_12_15.getName());
+		Range range_100_101 = Range.fromUnderscoreDelmimitedString(_100_101.getName());
+		List<Range> expected = Arrays.asList(range_2_3, range_12_13, range_12_15, range_100_101);
+		
+		assertEquals(expected, Segment.getAllFileRangesInOrder(getPath()));
+	}
 
 	@Test
 	public void testToString() {

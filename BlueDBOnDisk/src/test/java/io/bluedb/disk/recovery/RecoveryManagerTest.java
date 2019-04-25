@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 
@@ -183,6 +184,28 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		allValues = getTimeCollection().query().getList();
 		assertEquals(1, allValues.size());
 		assertEquals(value, allValues.get(0));
+	}
+
+	@Test
+	public void test_recover_pendingBatchUpdate() throws Exception {
+		BlueKey key1at2 = createKey(1, 2);
+		BlueKey key2at3 = createKey(2, 3);
+		TestValue value1 = createValue("Joe");
+		TestValue value2 = createValue("Bob");
+		List<IndividualChange<TestValue>> sortedChanges = Arrays.asList(
+				IndividualChange.createInsertChange(key1at2, value1),
+				IndividualChange.createInsertChange(key2at3, value2)
+		);
+		Recoverable<TestValue> change = PendingBatchChange.createBatchUpsert(sortedChanges);
+		getRecoveryManager().saveChange(change);
+		List<TestValue> allValues = getTimeCollection().query().getList();
+		assertEquals(0, allValues.size());
+
+		getRecoveryManager().recover();
+		allValues = getTimeCollection().query().getList();
+		assertEquals(2, allValues.size());
+		assertEquals(value1, allValues.get(0));
+		assertEquals(value2, allValues.get(1));
 	}
 
 	@Test

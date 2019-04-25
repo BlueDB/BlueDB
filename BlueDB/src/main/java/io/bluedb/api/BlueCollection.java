@@ -1,6 +1,8 @@
 package io.bluedb.api;
 
 import java.io.Serializable;
+import java.util.Map;
+
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.index.BlueIndex;
 import io.bluedb.api.index.KeyExtractor;
@@ -15,7 +17,9 @@ public interface BlueCollection<T extends Serializable> {
 
 	public boolean contains(BlueKey key) throws BlueDbException;
 
-	public void insert(BlueKey key, T object) throws BlueDbException;
+	public void insert(BlueKey key, T value) throws BlueDbException;
+
+	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException;
 
 	public T get(BlueKey key) throws BlueDbException;
 

@@ -4,7 +4,9 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,6 +24,7 @@ import io.bluedb.api.keys.ValueKey;
 import io.bluedb.disk.BlueDbOnDisk;
 import io.bluedb.disk.collection.index.BlueIndexOnDisk;
 import io.bluedb.disk.collection.index.IndexManager;
+import io.bluedb.disk.collection.task.BatchChangeTask;
 import io.bluedb.disk.collection.task.DeleteTask;
 import io.bluedb.disk.collection.task.InsertTask;
 import io.bluedb.disk.collection.task.UpdateTask;
@@ -92,6 +95,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		ensureCorrectKeyType(key);
 		Runnable insertTask = new InsertTask<T>(this, key, value);
+		executeTask(insertTask);
+	}
+
+	@Override
+	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException {
+		ensureCorrectKeyTypes(values.keySet());
+		Runnable insertTask = new BatchChangeTask<T>(this, values);
 		executeTask(insertTask);
 	}
 
@@ -188,6 +198,12 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
 		if (!keyType.isAssignableFrom(key.getClass())) {
 			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);
+		}
+	}
+
+	protected void ensureCorrectKeyTypes(Collection<BlueKey> keys) throws BlueDbException {
+		for (BlueKey key: keys) {
+			ensureCorrectKeyType(key);
 		}
 	}
 

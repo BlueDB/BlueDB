@@ -24,6 +24,7 @@ import java.util.stream.IntStream;
 import io.bluedb.disk.TestValue;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import io.bluedb.disk.serialization.validation.SerializationException;
 
 public class PerformanceTests {
 
@@ -62,7 +63,7 @@ public class PerformanceTests {
 		.forEach(File::delete);
 	}
 	
-	public void testOneObjectAtATime() throws IOException, ClassNotFoundException {
+	public void testOneObjectAtATime() throws IOException, ClassNotFoundException, SerializationException {
 		results.writeStart = Instant.now();
 		serializeListToFileOneObjectAtATime();
 		results.writeEnd = Instant.now();
@@ -92,7 +93,7 @@ public class PerformanceTests {
 //		results.print("testOneObjectAtATimeUsingObjectStream");
 //	}
 
-	public void testAsList() throws IOException, ClassNotFoundException {
+	public void testAsList() throws IOException, ClassNotFoundException, SerializationException {
 		results.writeStart = Instant.now();
 		serializeObject(values);
 		results.writeEnd = Instant.now();
@@ -108,7 +109,7 @@ public class PerformanceTests {
 		results.print("testAsList");
 	}
 
-	public void testAsArray() throws IOException, ClassNotFoundException {
+	public void testAsArray() throws IOException, ClassNotFoundException, SerializationException {
 		TestValue[] valuesArray = new TestValue[values.size()];
 		values.toArray(valuesArray);
 		
@@ -161,7 +162,7 @@ public class PerformanceTests {
 		}
 	}
 
-	private List<TestValue> deserializeListFromFileOneObjectAtATime() throws FileNotFoundException, IOException {
+	private List<TestValue> deserializeListFromFileOneObjectAtATime() throws FileNotFoundException, IOException, SerializationException {
 		List<TestValue> values = new LinkedList<>();
 		
 		try(DataInputStream dis = new DataInputStream(new FileInputStream(file.toFile()))) {
@@ -218,7 +219,7 @@ public class PerformanceTests {
 		}
 	}
 
-	private Object deserializeObject() throws FileNotFoundException, IOException {
+	private Object deserializeObject() throws FileNotFoundException, IOException, SerializationException {
 		byte[] bytes = Files.readAllBytes(file);
 		return serializer.deserializeObjectFromByteArray(bytes);
 	}

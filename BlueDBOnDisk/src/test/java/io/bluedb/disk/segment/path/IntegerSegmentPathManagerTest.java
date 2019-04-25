@@ -26,15 +26,15 @@ public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSegmentRange() {
-		Range segmentRangeStartingAtZero = getHashGroupedCollection().getSegmentManager().getSegmentRange(0);
+		Range segmentRangeStartingAtZero = getIntCollection().getSegmentManager().getSegmentRange(0);
 		assertEquals(0, segmentRangeStartingAtZero.getStart());
-		assertEquals(getHashGroupedCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
+		assertEquals(getIntCollection().getSegmentManager().getSegmentSize() - 1, segmentRangeStartingAtZero.getEnd());
 
-		Range maxLongRange = getHashGroupedCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
+		Range maxLongRange = getIntCollection().getSegmentManager().getSegmentRange(Long.MAX_VALUE);
 		assertTrue(maxLongRange.getEnd() > maxLongRange.getStart());
 		assertEquals(Long.MAX_VALUE, maxLongRange.getEnd());
 
-		Range minLongRange = getHashGroupedCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
+		Range minLongRange = getIntCollection().getSegmentManager().getSegmentRange(Long.MIN_VALUE);
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
@@ -64,11 +64,11 @@ public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getExistingSegmentFiles_key() {
-		File folder = getHashGroupedCollection().getPath().toFile();
+		File folder = getIntCollection().getPath().toFile();
 		emptyAndDelete(folder);
 		folder.mkdir();
 		LongKey longKey = new LongKey(randomValue());
-		List<Path> singlePathToAdd = getHashGroupedCollection().getSegmentManager().getPathManager().getAllPossibleSegmentPaths(longKey);
+		List<Path> singlePathToAdd = getIntCollection().getSegmentManager().getPathManager().getAllPossibleSegmentPaths(longKey);
 		assertEquals(1, singlePathToAdd.size());
 		assertEquals(0, getPathManager().getExistingSegmentFiles(Long.MIN_VALUE, Long.MAX_VALUE).size());
 		for (Path path: singlePathToAdd) {
@@ -112,7 +112,7 @@ public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 	}
 
 	private SegmentPathManager getPathManager() {
-		return getHashGroupedCollection().getSegmentManager().getPathManager();
+		return getIntCollection().getSegmentManager().getPathManager();
 	}
 
 	public File createSegment(File parentFolder, long low, long high) {

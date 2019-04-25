@@ -134,4 +134,21 @@ public class Blutils {
 		}
 		throw lastThrowable;
 	}
+	
+	
+	public static String toHex(byte[] bytes) {
+		return toHex(bytes, 0, bytes.length);
+	}
+	
+	private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	public static String toHex(byte[] bytes, int offset, int length) {
+	    char[] hexChars = new char[length * 3];
+	    for (int i=0; i<length; i++) {
+	    	int v = bytes[i+offset] & 0xFF;
+	        hexChars[i * 3] = hexArray[v >>> 4];
+	        hexChars[i * 3 + 1] = hexArray[v & 0x0F];
+	        hexChars[i * 3 + 2] = ' ';
+	    }
+	    return new String(hexChars);
+	}
 }

@@ -1,2 +1,3 @@
 include ':BlueDB'
 include ':BlueDBOnDisk'
+include ':BlueDBSample'

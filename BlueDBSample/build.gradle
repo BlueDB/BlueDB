@@ -1,0 +1,4 @@
+dependencies{
+	compile project(":BlueDB")
+    compile project(":BlueDBOnDisk")
+}

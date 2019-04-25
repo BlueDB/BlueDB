@@ -1,5 +1,8 @@
 package io.bluedb.disk.segment;
 
+import java.io.File;
+import java.util.Collection;
+
 import io.bluedb.disk.Blutils;
 
 public final class Range implements Comparable<Range> {
@@ -21,15 +24,37 @@ public final class Range implements Comparable<Range> {
 	}
 
 	public long length() {
-		return getEnd() - getStart();
+		return getEnd() - getStart() + 1;
+	}
+
+	public boolean containsInclusive(long point) {
+		return point >= start && point <= end;
 	}
 
 	public boolean encloses(Range other) {
 		return getStart() <= other.getStart() && getEnd() >= other.getEnd();
 	}
 
+	public boolean overlaps(Range otherRange) {
+		return start <= otherRange.end && end >= otherRange.start;
+	}
+
+	public boolean overlapsAny(Collection<Range> otherRanges) {
+		for (Range otherRange: otherRanges) {
+			if (overlaps(otherRange)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public String toUnderscoreDelimitedString() {
 		return start + "_" + end;
+	}
+
+	public static Range fromFileWithUnderscoreDelmimitedName(File file) {
+		String fileName = file.getName();
+		return fromUnderscoreDelmimitedString(fileName);
 	}
 
 	public static Range fromUnderscoreDelmimitedString(String string) {

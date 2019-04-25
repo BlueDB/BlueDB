@@ -5,7 +5,10 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import io.bluedb.api.exceptions.BlueDbException;
 import io.bluedb.api.keys.BlueKey;
@@ -18,8 +21,10 @@ import io.bluedb.disk.file.FileUtils;
 import io.bluedb.disk.file.RangeNamedFiles;
 import io.bluedb.disk.lock.BlueReadLock;
 import io.bluedb.disk.lock.BlueWriteLock;
+import io.bluedb.disk.recovery.IndividualChange;
 import io.bluedb.disk.segment.rollup.RollupTarget;
 import io.bluedb.disk.segment.rollup.Rollupable;
+import io.bluedb.disk.segment.writer.BatchWriter;
 import io.bluedb.disk.segment.writer.DeleteWriter;
 import io.bluedb.disk.segment.writer.InsertWriter;
 import io.bluedb.disk.segment.writer.StreamingWriter;
@@ -111,12 +116,62 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		return new SegmentEntityIterator<>(this, min, max);
 	}
 
+	public void applyChanges(LinkedList<IndividualChange<T>> changeQueueForSegment) throws BlueDbException {
+		performPreBatchRollups();
+		SegmentBatch<T> segmentBatch = new SegmentBatch<>(changeQueueForSegment);
+		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
+		List<ChunkBatch<T>> chunkBatches = segmentBatch.breakIntoChunks(existingChunkRanges, rollupLevels);
+		for (ChunkBatch<T> chunkBatch: chunkBatches) {
+			String fileName = chunkBatch.getRange().toUnderscoreDelimitedString();
+			Path path = Paths.get(segmentPath.toString(), fileName);
+			modifyChunk(path, new BatchWriter<T>(chunkBatch.getChangesInOrder()));
+		}
+	}
+
+	private void performPreBatchRollups() throws BlueDbException {
+		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
+		List<Range> rangesToRollup = determineRangesRequiringRollup(existingChunkRanges, getMinimumRollupSizeBeforeBatch());
+		for (Range rangeToRollup: rangesToRollup) {
+			rollup(rangeToRollup, false);
+		}
+	}
+
+	public long getMinimumRollupSizeBeforeBatch() {
+		return rollupLevels.get(1);
+	}
+
+	public static List<Range> determineRangesRequiringRollup(List<Range> existingChunkRanges, long minimumChunkSize) {
+		return existingChunkRanges.stream()
+			.filter( (range) -> range.length() < minimumChunkSize )
+			.map( (range) -> Range.forValueAndRangeSize(range.getStart(), minimumChunkSize) )
+			.distinct()
+			.collect(Collectors.toList());
+	}
+
+	public void modifyChunk(Path targetPath, StreamingWriter<T> processor) throws BlueDbException {
+		Path tmpPath = FileUtils.createTempFilePath(targetPath);
+		BlueReadLock<Path> lock = acquireReadLock(targetPath);
+		try (BlueObjectInput<BlueEntity<T>> input = fileManager.getBlueInputStream(lock)) {
+			try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(tmpPath)) {
+				processor.process(input, output);
+			}
+		}
+		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(targetPath)) {
+			FileUtils.moveFile(tmpPath, targetFileLock);
+		}
+		reportWrite(targetPath);
+	}
+
 	public void rollup(Range timeRange) throws BlueDbException {
+		rollup(timeRange, true);
+	}
+
+	private void rollup(Range timeRange, boolean abortIfOnlyOneFile) throws BlueDbException {
 		if (!isValidRollupRange(timeRange)) {
 			throw new BlueDbException("Not a valid rollup size: " + timeRange);
 		}
 		List<File> filesToRollup = getOrderedFilesEnclosedInRange(timeRange);
-		if (filesToRollup.size() < 2) {
+		if (abortIfOnlyOneFile && filesToRollup.size() < 2) {
 			return;  // no benefit to rolling up a single file
 		}
 		Path path = Paths.get(segmentPath.toString(), timeRange.toUnderscoreDelimitedString());
@@ -172,6 +227,16 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 				lock.release();
 			}
 		}
+	}
+
+	public static List<Range> getAllFileRangesInOrder(Path segmentPath) {
+		File segmentFolder = segmentPath.toFile();
+		List<File> allFilesInSegment = FileUtils.getFolderContents(segmentFolder);
+		return allFilesInSegment.stream()
+				.map( Range::fromFileWithUnderscoreDelmimitedName )
+				.filter( Objects::nonNull )
+				.sorted()
+				.collect(Collectors.toList());
 	}
 
 	public List<File> getOrderedFilesEnclosedInRange(Range range) {
@@ -236,7 +301,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	protected List<Range> getRollupRanges(Range currentChunkRange) {
-		long currentChunkSize = currentChunkRange.length() + 1;
+		long currentChunkSize = currentChunkRange.length();
 		List<Long> rollupLevelsLargerThanChunk = Blutils.filter(rollupLevels, (l) -> l > currentChunkSize);
 		CheckedFunction<Long, Range> toRange = (l) -> Range.forValueAndRangeSize(currentChunkRange.getStart(), l);
 		List<Range> possibleRollupRanges = Blutils.mapIgnoringExceptions(rollupLevelsLargerThanChunk, toRange);
