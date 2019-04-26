@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.bluedb.api.BlueCollection;
+import org.bluedb.api.BlueDbVersion;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Condition;
 import org.bluedb.api.Updater;
@@ -65,6 +66,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
 		this.keyType = determineKeyType(metaData, requestedKeyType);
+		determineVersion(metaData);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
 		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, this.keyType);
@@ -195,6 +197,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return keyType;
 	}
 
+	public BlueDbVersion getBlueDbVersion() throws BlueDbException {
+		return metaData.getVersion();
+	}
+
 	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
 		if (!keyType.isAssignableFrom(key.getClass())) {
 			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);
@@ -219,6 +225,15 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		} else {
 			return providedKeyType;
 		}
+	}
+
+	protected static BlueDbVersion determineVersion(CollectionMetaData metaData) throws BlueDbException {
+		BlueDbVersion version = metaData.getVersion();
+		if (version == null) {
+			metaData.saveVersion(BlueDbVersion.CURRENT);
+			return BlueDbVersion.CURRENT;
+		}
+		return version;
 	}
 
 	@Override

@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.bluedb.api.BlueDbVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.FileManager;
@@ -15,11 +17,13 @@ public class CollectionMetaData {
 	
 	private static final String FILENAME_SERIALIZED_CLASSES = "serialized_classes";
 	private static final String FILENAME_KEY_TYPE = "key_type";
+	private static final String FILENAME_VERSION = "bluedb_version";
 	private static final String META_DATA_FOLDER = ".meta";
 	
 	final Path folderPath;
 	final FileManager fileManager;
 	final Path serializedClassesPath;
+	final Path versionPath;
 	final Path keyTypePath;
 
 	public CollectionMetaData(Path collectionPath) {
@@ -29,6 +33,7 @@ public class CollectionMetaData {
 		fileManager = new FileManager(serializer);  
 		folderPath = Paths.get(collectionPath.toString(), META_DATA_FOLDER);
 		serializedClassesPath = Paths.get(folderPath.toString(), FILENAME_SERIALIZED_CLASSES);
+		versionPath = Paths.get(folderPath.toString(), FILENAME_VERSION);
 		keyTypePath = Paths.get(folderPath.toString(), FILENAME_KEY_TYPE);
 	}
 
@@ -36,6 +41,11 @@ public class CollectionMetaData {
 	public Class<? extends BlueKey> getKeyType() throws BlueDbException {
 		Object savedValue = fileManager.loadObject(keyTypePath);
 		return (Class<? extends BlueKey>) savedValue;
+	}
+
+	public BlueDbVersion getVersion() throws BlueDbException {
+		Object savedValue = fileManager.loadObject(versionPath);
+		return (BlueDbVersion) savedValue;
 	}
 
 	public List<Class<? extends Serializable>> getSerializedClassList() throws BlueDbException {
@@ -56,6 +66,10 @@ public class CollectionMetaData {
 
 	public void saveKeyType(Class<? extends BlueKey> keyType) throws BlueDbException {
 		fileManager.saveObject(keyTypePath, keyType);
+	}
+
+	public void saveVersion(BlueDbVersion version) throws BlueDbException {
+		fileManager.saveObject(versionPath, version);
 	}
 
 	public Path getPath() {
