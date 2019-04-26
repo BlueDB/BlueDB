@@ -47,7 +47,7 @@ public class ByteUtils {
 		
 		int matchIndex;
 		while((matchIndex = indexOf(source, target, matchIndexOffset)) != -1) {
-			int bytesUsedForSize = determineNumberOfBytesUsedForSize(source, matchIndex);
+			int bytesUsedForSize = determineNumberOfBytesUsedForFstClassSize(source, matchIndex);
 			
 			int bytesBeforeMatch = matchIndex - sourceIndex;
 			byteBuffer.write(source, sourceIndex, bytesBeforeMatch - bytesUsedForSize); //write bytes up to the size byte which is the byte preceding the match
@@ -74,7 +74,7 @@ public class ByteUtils {
 
 	public static int indexOf(byte[] array, byte[] target, int offset) {
 	    if (target.length == 0) {
-	      return 0;
+	      return -1;
 	    }
 
 	    outer:
@@ -93,7 +93,7 @@ public class ByteUtils {
 		return bytes == null || bytes.length == 0;
 	}
 	
-	private static int determineNumberOfBytesUsedForSize(byte[] source, int matchIndex) {
+	public static int determineNumberOfBytesUsedForFstClassSize(byte[] source, int matchIndex) {
 		/*
 		 * Return
 		 * 1 if [0 (FSTObjectOutput.OBJECT), something < FSTClazzNameRegistry.LOWEST_CLZ_ID, byte1]
@@ -110,17 +110,15 @@ public class ByteUtils {
 				source[matchIndex-4] < FSTClazzNameRegistry.LOWEST_CLZ_ID &&
 				source[matchIndex-3] == -128) {
 			return 3;
-		} else if(matchIndex-2 >= 0 && 
+		} else { //if(matchIndex-2 >= 0 && 
 //				source[matchIndex-2] == FSTObjectOutput.OBJECT && 
-				source[matchIndex-2] < FSTClazzNameRegistry.LOWEST_CLZ_ID &&
-				source[matchIndex-1] > -127 && source[matchIndex-1] <= 127) {
+//				source[matchIndex-2] < FSTClazzNameRegistry.LOWEST_CLZ_ID &&
+//				source[matchIndex-1] > -127 && source[matchIndex-1] <= 127) {
 			return 1;
 		}
-		
-		return 1;
 	}
 
-    private static int readFstClassSize(byte[] source, int index) {
+	public static int readFstClassSize(byte[] source, int index) {
         final byte head = source[index];
         // -128 = short byte, -127 == 4 byte
         if (head > -127 && head <= 127) {
@@ -140,7 +138,7 @@ public class ByteUtils {
         }
     }
 
-    private static void writeFstClassSize(ByteArrayOutputStream buffer, int size) {
+	public static void writeFstClassSize(ByteArrayOutputStream buffer, int size) {
         // -128 = short byte, -127 == 4 byte
         if (size > -127 && size <= 127) {
         	buffer.write(size);
