@@ -170,7 +170,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		return newDb;
 	}
 
-	private Path getbackedUpZipPath() throws URISyntaxException {
+	private Path getbackedUpZipPath() throws URISyntaxException, IOException {
 		return TestUtils.getResourcePath("backup.zip");
 	}
 }
