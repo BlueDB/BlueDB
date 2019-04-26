@@ -240,7 +240,8 @@ public class BlueObjectInputTest extends TestCase {
 	@Test
 	public void test_nextValidObjectFromFile_invalid() throws Exception {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
-		Path garbagePath = TestUtils.getResourcePath("stream_with_corrupted_object.bytes");
+		
+		Path garbagePath = TestUtils.getResourcePath("good-bad-good-stream.bin");
 		BlueReadLock<Path> readLock = lockManager.acquireReadLock(garbagePath);
 		BlueObjectInput<Call> inStream = new BlueObjectInput<>(readLock, serializer);
 		int count = 0;
