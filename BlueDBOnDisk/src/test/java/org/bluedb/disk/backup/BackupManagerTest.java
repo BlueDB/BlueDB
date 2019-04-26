@@ -119,6 +119,29 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
 	}
 
+	@Test
+	public void test_restoreOfOldDomainBackup() throws Exception {
+		String collectionName = "time_collection";
+		BlueDbOnDisk newDb = createTestRestoreDatabase();
+
+		Path zipPath = TestUtils.getResourcePath("oldDomainBackup.zip");
+		if (!zipPath.toFile().exists()) {
+			zipPath.getParent().toFile().mkdirs();
+			newDb.backup(zipPath);
+			fail();
+		}
+
+		BlueCollection<TestValue> newCollection =  newDb.getCollection(collectionName, TestValue.class);
+		List<TestValue> valuesInNewCollection = newCollection.query().getList();
+		
+		BlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
+		@SuppressWarnings("unchecked")
+		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(collectionName, TimeKey.class, TestValue.class);
+		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
+		
+		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
+	}
+
 	private BlueDbOnDisk getRestoredDatabase(Path zipPath) throws BlueDbException, URISyntaxException, IOException {
 		Path restoredDirectory = createTempFolder().toPath();
 		ZipUtils.extractFiles(zipPath, restoredDirectory);
