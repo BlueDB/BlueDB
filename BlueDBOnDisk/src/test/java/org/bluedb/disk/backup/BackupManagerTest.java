@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-
+import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
@@ -148,6 +148,6 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	}
 
 	private Path getbackedUpZipPath() throws URISyntaxException {
-		return Paths.get(this.getClass().getResource("/backup.zip").toURI());
+		return TestUtils.getResourcePath("backup.zip");
 	}
 }
