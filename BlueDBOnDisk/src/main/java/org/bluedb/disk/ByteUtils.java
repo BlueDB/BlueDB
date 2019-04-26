@@ -73,21 +73,21 @@ public class ByteUtils {
 	}
 
 	public static int indexOf(byte[] array, byte[] target, int offset) {
-	    if (target.length == 0) {
-	      return -1;
-	    }
+		if (target.length == 0) {
+			return -1;
+		}
 
-	    outer:
-	    for (int i = offset; i < array.length - target.length + 1; i++) {
-	      for (int j = 0; j < target.length; j++) {
-	        if (array[i + j] != target[j]) {
-	          continue outer;
-	        }
-	      }
-	      return i;
-	    }
-	    return -1;
-	  }
+		outer:
+			for (int i = offset; i < array.length - target.length + 1; i++) {
+				for (int j = 0; j < target.length; j++) {
+					if (array[i + j] != target[j]) {
+						continue outer;
+					}
+				}
+				return i;
+			}
+		return -1;
+	}
 	
 	public static boolean isByteArrayEmpty(byte[] bytes) {
 		return bytes == null || bytes.length == 0;
@@ -119,39 +119,39 @@ public class ByteUtils {
 	}
 
 	public static int readFstClassSize(byte[] source, int index) {
-        final byte head = source[index];
-        // -128 = short byte, -127 == 4 byte
-        if (head > -127 && head <= 127) {
-            return head;
-        }
-        if (head == -128) {
-            int ch1 = (source[index+1] + 256) & 0xff;
-            int ch2 = (source[index+2] + 256) & 0xff;
-            return (short) ((ch2 << 8) + (ch1 << 0));
-        } else {
-            int ch1 = (source[index+1] + 256) & 0xff;
-            int ch2 = (source[index+2] + 256) & 0xff;
-            int ch3 = (source[index+3] + 256) & 0xff;
-            int ch4 = (source[index+4] + 256) & 0xff;
-            int res = (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1 << 0);
-            return res;
-        }
-    }
+		final byte head = source[index];
+		// -128 = short byte, -127 == 4 byte
+		if (head > -127 && head <= 127) {
+			return head;
+		}
+		if (head == -128) {
+			int ch1 = (source[index+1] + 256) & 0xff;
+			int ch2 = (source[index+2] + 256) & 0xff;
+			return (short) ((ch2 << 8) + (ch1 << 0));
+		} else {
+			int ch1 = (source[index+1] + 256) & 0xff;
+			int ch2 = (source[index+2] + 256) & 0xff;
+			int ch3 = (source[index+3] + 256) & 0xff;
+			int ch4 = (source[index+4] + 256) & 0xff;
+			int res = (ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1 << 0);
+			return res;
+		}
+	}
 
 	public static void writeFstClassSize(ByteArrayOutputStream buffer, int size) {
-        // -128 = short byte, -127 == 4 byte
-        if (size > -127 && size <= 127) {
-        	buffer.write(size);
-        } else if (size >= Short.MIN_VALUE && size <= Short.MAX_VALUE) {
-        	buffer.write(-128);
-        	buffer.write(size >>> 0);
-        	buffer.write(size >>> 8);
-        } else {
-        	buffer.write(-127);
-        	buffer.write((size >>> 0) & 0xFF);
-        	buffer.write((size >>>  8) & 0xFF);
-        	buffer.write((size >>> 16) & 0xFF);
-        	buffer.write((size >>> 24) & 0xFF);
-        }
-    }
+		// -128 = short byte, -127 == 4 byte
+		if (size > -127 && size <= 127) {
+			buffer.write(size);
+		} else if (size >= Short.MIN_VALUE && size <= Short.MAX_VALUE) {
+			buffer.write(-128);
+			buffer.write(size >>> 0);
+			buffer.write(size >>> 8);
+		} else {
+			buffer.write(-127);
+			buffer.write((size >>> 0) & 0xFF);
+			buffer.write((size >>>  8) & 0xFF);
+			buffer.write((size >>> 16) & 0xFF);
+			buffer.write((size >>> 24) & 0xFF);
+		}
+	}
 }
