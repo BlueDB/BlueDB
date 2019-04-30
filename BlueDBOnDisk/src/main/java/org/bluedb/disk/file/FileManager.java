@@ -58,6 +58,13 @@ public class FileManager {
 		}
 	}
 
+	public void lockDeleteUnlock(File file) {
+		Path path = file.toPath();
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(path)) {
+			FileUtils.deleteFile(writeLock);
+		}
+	}
+
 	public <T> BlueObjectOutput<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
 		return new BlueObjectOutput<T>(writeLock, serializer);
 	}
