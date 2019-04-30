@@ -16,7 +16,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 public class SegmentBatch<T extends Serializable> {
 	LinkedList<IndividualChange<T>> changeQueue;
 	
-	private final static Comparator<Range> reverseOrderBySize = (r1, r2) -> Long.compare(r2.length(), r1.length());
+	private final static Comparator<Range> orderBySize = (r1, r2) -> Long.compare(r1.length(), r2.length());
 
 	SegmentBatch(Collection<IndividualChange<T>> changes) {
 		changeQueue = new LinkedList<IndividualChange<T>>(changes);
@@ -51,24 +51,22 @@ public class SegmentBatch<T extends Serializable> {
 
 	protected static List<Range> calculatePossibleChunkRanges(long groupingNumber, List<Long> rollupLevels) {
 		return rollupLevels.stream()
-				.sorted()
 				.map( (rangeSize) -> Range.forValueAndRangeSize(groupingNumber, rangeSize))
 				.collect(Collectors.toList())
 				;
 	}
 
-	protected static Range getLargestEmptyRange(List<Range> optionsSmallToBig, Set<Range> existingChunkRanges) {
-		return optionsSmallToBig.stream()
-				.sorted(reverseOrderBySize)
+	protected static Range getLargestEmptyRange(List<Range> rangeOptions, Set<Range> existingChunkRanges) {
+		return rangeOptions.stream()
 				.filter( (candidateRange) -> !candidateRange.overlapsAny(existingChunkRanges) )
-				.findFirst()
+				.max(orderBySize)
 				.orElse(null);
 	}
 
-	protected static <T extends Serializable> Range chooseSmallestRangeContainingChanges(List<Range> rangeOptionsSmallToBig, List<IndividualChange<T>> nonEmptyChangeList) {
-		return rangeOptionsSmallToBig.stream()
+	protected static <T extends Serializable> Range chooseSmallestRangeContainingChanges(List<Range> rangeOptions, List<IndividualChange<T>> nonEmptyChangeList) {
+		return rangeOptions.stream()
 				.filter( (candidateRange) -> rangeContainsAll(candidateRange, nonEmptyChangeList) )
-				.findFirst()
+				.min(orderBySize)
 				.get();  // this will throw an exception if there is none, should never happen because we chose changes based on the range
 	}
 
