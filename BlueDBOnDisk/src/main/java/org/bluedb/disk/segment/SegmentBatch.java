@@ -16,6 +16,8 @@ import org.bluedb.disk.recovery.IndividualChange;
 public class SegmentBatch<T extends Serializable> {
 	LinkedList<IndividualChange<T>> changeQueue;
 	
+	private final static Comparator<Range> reverseOrderBySize = (r1, r2) -> Long.compare(r2.length(), r1.length());
+
 	SegmentBatch(Collection<IndividualChange<T>> changes) {
 		changeQueue = new LinkedList<IndividualChange<T>>(changes);
 	}
@@ -57,7 +59,7 @@ public class SegmentBatch<T extends Serializable> {
 
 	protected static Range getLargestEmptyRange(List<Range> optionsSmallToBig, Set<Range> existingChunkRanges) {
 		return optionsSmallToBig.stream()
-				.sorted(Comparator.reverseOrder())
+				.sorted(reverseOrderBySize)
 				.filter( (candidateRange) -> !candidateRange.overlapsAny(existingChunkRanges) )
 				.findFirst()
 				.orElse(null);
