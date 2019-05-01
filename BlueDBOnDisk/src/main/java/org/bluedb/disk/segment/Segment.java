@@ -171,6 +171,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			throw new BlueDbException("Not a valid rollup size: " + timeRange);
 		}
 		List<File> filesToRollup = getOrderedFilesEnclosedInRange(timeRange);
+		filesToRollup = filterAndDeleteEmptyFiles(filesToRollup);
 		if (abortIfOnlyOneFile && filesToRollup.size() < 2) {
 			return;  // no benefit to rolling up a single file
 		}
@@ -184,6 +185,18 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			copy(tmpPath, filesToRollup);
 			moveRolledUpFileAndDeleteSourceFiles(path, tmpPath, filesToRollup);
 		}
+	}
+
+	protected List<File> filterAndDeleteEmptyFiles(List<File> orderedFiles) {
+		List<File> results = new ArrayList<>();
+		for (File file: orderedFiles) {
+			if (file.length() == 0) {
+				fileManager.lockDeleteUnlock(file);
+			} else {
+				results.add(file);
+			}
+		}
+		return results;
 	}
 
 	public boolean isValidRollupRange(Range timeRange) {
