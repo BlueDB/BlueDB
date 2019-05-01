@@ -131,6 +131,19 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return values;
 	}
 	
+	public int countItems(Segment<TestValue> segment) {
+		return getAll(segment).size();
+	}
+
+	public int countFiles(Segment<TestValue> segment) {
+		File[] files = segment.getPath().toFile().listFiles();
+		if (files == null) {
+			return 0;
+		} else {
+			return files.length;
+		}
+	}
+
 	public List<TestValue> getAll(Segment<TestValue> segment) {
 		List<TestValue> results = new ArrayList<>();
 		try (SegmentEntityIterator<TestValue> iterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {

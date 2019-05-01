@@ -38,6 +38,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	private final Path segmentPath;
 	private final Range segmentRange;
 	private final List<Long> rollupLevels;
+	private final Range preSegmentRange;
 
 	public Segment(Path segmentPath, Range segmentRange, Rollupable rollupable, FileManager fileManager, final List<Long> rollupLevels) {
 		this.segmentPath = segmentPath;
@@ -45,13 +46,14 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		this.fileManager = fileManager;
 		this.rollupLevels = rollupLevels;
 		this.rollupable = rollupable;
+		this.preSegmentRange = (segmentRange==null) ? null : new Range(0, segmentRange.getStart() - 1);
 	}
 
 	protected static <T extends Serializable> Segment<T> getTestSegment () {
 		return new Segment<T>();
 	}
 
-	protected Segment() {segmentPath = null;segmentRange = null;fileManager = null;rollupLevels = null;rollupable = null;}
+	protected Segment() {segmentPath = null;segmentRange = null;fileManager = null;rollupLevels = null;rollupable = null;preSegmentRange = null;}
 
 	@Override
 	public String toString() {
@@ -200,6 +202,9 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	public boolean isValidRollupRange(Range timeRange) {
+		if (preSegmentRange.equals(timeRange)) {
+			return true;
+		}
 		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
 		boolean isValidSize = rollupLevels.contains(rollupSize);
 		boolean isValidStartPoint = timeRange.getStart() % rollupSize == 0;
@@ -284,6 +289,13 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 				return lock;
 			}
 		}
+		if (groupingNumber < segmentRange.getStart()) {
+			Path path = Paths.get(segmentPath.toString(), preSegmentRange.toUnderscoreDelimitedString());
+			BlueReadLock<Path> lock = fileManager.getReadLockIfFileExists(path);
+			if (lock != null) {
+				return lock;
+			}
+		}
 		Path path = getPathFor(groupingNumber, 1);
 		return acquireReadLock(path);
 	}
@@ -319,6 +331,9 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		CheckedFunction<Long, Range> toRange = (l) -> Range.forValueAndRangeSize(currentChunkRange.getStart(), l);
 		List<Range> possibleRollupRanges = Blutils.mapIgnoringExceptions(rollupLevelsLargerThanChunk, toRange);
 		List<Range> rollupRangesEnclosingChunk = Blutils.filter(possibleRollupRanges, (r) -> r.encloses(currentChunkRange));
+		if (currentChunkRange.getEnd() < segmentRange.getStart()) {
+			rollupRangesEnclosingChunk.add(preSegmentRange);
+		}
 		return rollupRangesEnclosingChunk;
 	}
 
