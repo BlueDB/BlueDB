@@ -294,6 +294,30 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_rollup_previousData() throws Exception {
+		long timeSegmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Segment<TestValue> segment10 = getSegment(timeSegmentSize * 10);
+
+		BlueKey key1 = createKey(1, 1*timeSegmentSize);
+		BlueKey key2 = createKey(2, 2*timeSegmentSize);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+
+		assertEquals(0, countItems(segment10));
+		assertEquals(0, countFiles(segment10));
+
+		segment10.insert(key1, value1);
+		segment10.insert(key2, value2);
+		assertEquals(2, countItems(segment10));
+		assertEquals(2, countFiles(segment10));
+
+		Range preSegmentRange = new Range(0, segment10.getRange().getStart() - 1);
+		segment10.rollup(preSegmentRange);
+		assertEquals(2, countItems(segment10));
+		assertEquals(1, countFiles(segment10));
+	}
+
+	@Test
 	public void test_rollup() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
@@ -307,10 +331,8 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 		segment.insert(key1At1, value1);
 		segment.insert(key3At3, value3);
-		values = getAll(segment);
-		assertEquals(2, values.size());
-		File[] directoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(2, directoryContents.length);
+		assertEquals(2, countFiles(segment));
+		assertEquals(2, countFiles(segment));
 
 		Range invalidRollupTimeRange = new Range(0, 3);
 		try {
@@ -320,10 +342,8 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 		Range validRollupTimeRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 		segment.rollup(validRollupTimeRange);
-		values = getAll(segment);
-		assertEquals(2, values.size());
-		directoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(1, directoryContents.length);
+		assertEquals(2, countItems(segment));
+		assertEquals(1, countFiles(segment));
 	}
 
 	@Test
