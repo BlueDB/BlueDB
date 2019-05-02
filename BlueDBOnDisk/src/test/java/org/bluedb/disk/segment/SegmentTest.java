@@ -647,6 +647,34 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_isValidRollupRange_preSegment() {
+		SegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
+		SegmentManager<TestValue> valueSegmentManager = getHashGroupedCollection().getSegmentManager();
+		long timeSegmentSize = timeSegmentManager.getSegmentSize();
+		long valueSegmentSize = valueSegmentManager.getSegmentSize();
+		Segment<TestValue> timeSegment = timeSegmentManager.getSegment(timeSegmentSize * 10);
+		Segment<TestValue> valueSegment = valueSegmentManager.getSegment(valueSegmentSize * 10);
+		long timeSegmentStart = timeSegment.getRange().getStart();
+		long valueSegmentStart = timeSegment.getRange().getStart();
+		Range validTimeSegmentRange = new Range(0, timeSegmentStart - 1);
+		Range invalidTimeSegmentRange1 = new Range(1, timeSegmentStart - 1);
+		Range invalidTimeSegmentRange2 = new Range(0, timeSegmentStart);
+		Range invalidTimeSegmentRange3 = new Range(0, timeSegmentStart - timeSegmentSize - 1);
+		Range validValueSegmentRange = new Range(0, valueSegmentSize - 1);
+		Range invalidValueSegmentRange1 = new Range(1, valueSegmentStart - 1);
+		Range invalidValueSegmentRange2 = new Range(0, valueSegmentStart);
+
+		assertTrue(timeSegment.isValidRollupRange(validTimeSegmentRange));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange1));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange2));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange3));
+
+		assertTrue(valueSegment.isValidRollupRange(validValueSegmentRange));
+		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange1));
+		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange2));
+	}
+
+	@Test
 	public void test_getRollupRanges() {
 		Range segmentRange = new Range(0, 99);
 		Segment<?> segment = new Segment<>(null, segmentRange, null, null, Arrays.asList(1L, 10L, 100L));
