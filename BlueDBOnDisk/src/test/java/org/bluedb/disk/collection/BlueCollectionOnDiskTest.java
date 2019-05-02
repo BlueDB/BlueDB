@@ -392,6 +392,28 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_rollup_scheduling_presegment() throws Exception {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		long segmentStart = segmentSize * 2;
+		BlueKey key = new TimeFrameKey(1, 1, segmentStart + 1);
+		Range rollupRange = new Range(0, segmentStart - 1);
+		long rollupDelay = segmentSize * 2;
+		RollupTarget rollupTarget = new RollupTarget(segmentStart, rollupRange, rollupDelay);
+
+		TestValue value = createValue("Anna");
+		getTimeCollection().insert(key, value);
+		long now = System.currentTimeMillis();
+
+		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
+		Map<RollupTarget, Long> rollupTimes = scheduler.getRollupTimes();
+		long rollupTime = rollupTimes.get(rollupTarget);
+		assertTrue(rollupTime > now + rollupDelay - 10_000);
+		assertTrue(rollupTime < now + rollupDelay + 10_000);
+
+		assertEquals(Arrays.asList(value), getTimeCollection().query().getList());
+	}
+
+	@Test
 	public void test_updateAll_invalid() {
 		TestValue value = new TestValue("Joe", 0);
 		insertAtTime(1, value);
