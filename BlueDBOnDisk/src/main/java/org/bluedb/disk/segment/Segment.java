@@ -320,9 +320,15 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	protected List<RollupTarget> getRollupTargets(Range currentChunkRange) {
 		List<Range> rollupRangesEnclosingChunk = getRollupRanges(currentChunkRange);
-		CheckedFunction<Range, RollupTarget> rangeToTarget = (r) ->  new RollupTarget(segmentRange.getStart(), r);
-		List<RollupTarget> targets = Blutils.mapIgnoringExceptions(rollupRangesEnclosingChunk, rangeToTarget);
+		List<RollupTarget> targets = Blutils.mapIgnoringExceptions(rollupRangesEnclosingChunk, this::toRollupTarget);
 		return targets;
+	}
+
+	protected RollupTarget toRollupTarget(Range range) {
+		long segmentGroupingNumber = segmentRange.getStart();
+		long maxRollupDelay = segmentRange.length() * 24;
+		long rollupDelay = Math.min(maxRollupDelay, range.length());
+		return new RollupTarget(segmentGroupingNumber, range, rollupDelay);
 	}
 
 	protected List<Range> getRollupRanges(Range currentChunkRange) {
