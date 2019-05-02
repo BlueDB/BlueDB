@@ -290,7 +290,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			}
 		}
 		if (groupingNumber < segmentRange.getStart()) {
-			Path path = Paths.get(segmentPath.toString(), preSegmentRange.toUnderscoreDelimitedString());
+			Path path = getPathFor(preSegmentRange);
 			BlueReadLock<Path> lock = fileManager.getReadLockIfFileExists(path);
 			if (lock != null) {
 				return lock;
@@ -335,6 +335,10 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			rollupRangesEnclosingChunk.add(preSegmentRange);
 		}
 		return rollupRangesEnclosingChunk;
+	}
+
+	private Path getPathFor(Range range) {
+		return Paths.get(segmentPath.toString(), range.toUnderscoreDelimitedString());
 	}
 
 	private Path getPathFor(long groupingNumber, long rollupLevel) {
