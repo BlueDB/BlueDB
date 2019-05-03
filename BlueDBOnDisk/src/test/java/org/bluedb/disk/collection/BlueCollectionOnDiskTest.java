@@ -452,7 +452,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		CollectionMetaData metadata = new CollectionMetaData(timeCollectionPath);
 		assertEquals(BlueDbVersion.CURRENT, metadata.getVersion());
 
-		BlueDbVersion differentVersion = BlueDbVersion.v_1_0_1;
+		BlueDbVersion differentVersion = new BlueDbVersion(1, 1, 1, "");
 		metadata.saveVersion(differentVersion);
 		
 		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();
