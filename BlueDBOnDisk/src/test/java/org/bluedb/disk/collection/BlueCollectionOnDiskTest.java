@@ -459,6 +459,13 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		BlueCollectionOnDisk<TestValue> reopenedCollection = (BlueCollectionOnDisk<TestValue>) reopenedDatbase.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
 		assertEquals(differentVersion, reopenedCollection.getBlueDbVersion());
+
+		Path metadataVersionPath = Paths.get(timeCollectionPath.toString(), ".meta", "bluedb_version");
+		metadataVersionPath.toFile().delete();
+		BlueDbOnDisk reopenedDatbase2 = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();
+		BlueCollectionOnDisk<TestValue> reopenedCollection2 = (BlueCollectionOnDisk<TestValue>) reopenedDatbase2.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		BlueDbVersion versionIfMissing = new BlueDbVersion(1, 0, 0, "");
+		assertEquals(versionIfMissing, reopenedCollection2.getBlueDbVersion());
 	}
 
 	@Test

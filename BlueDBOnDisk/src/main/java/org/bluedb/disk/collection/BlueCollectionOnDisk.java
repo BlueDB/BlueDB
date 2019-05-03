@@ -60,13 +60,14 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalRegisteredClasses) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
+		boolean isNewCollection = !collectionPath.toFile().exists();
 		collectionPath.toFile().mkdirs();
 		metaData = new CollectionMetaData(collectionPath);
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
 		this.keyType = determineKeyType(metaData, requestedKeyType);
-		determineVersion(metaData);
+		determineVersion(metaData, isNewCollection);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
 		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, this.keyType);
@@ -227,11 +228,11 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		}
 	}
 
-	protected static BlueDbVersion determineVersion(CollectionMetaData metaData) throws BlueDbException {
+	protected static BlueDbVersion determineVersion(CollectionMetaData metaData, boolean isNewCollection) throws BlueDbException {
 		BlueDbVersion version = metaData.getVersion();
 		if (version == null) {
-			metaData.saveVersion(BlueDbVersion.CURRENT);
-			return BlueDbVersion.CURRENT;
+			version = isNewCollection ? BlueDbVersion.CURRENT : new BlueDbVersion(1, 0, 0, "");
+			metaData.saveVersion(version);
 		}
 		return version;
 	}
