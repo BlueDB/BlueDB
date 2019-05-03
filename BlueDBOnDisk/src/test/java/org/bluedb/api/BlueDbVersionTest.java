@@ -35,7 +35,6 @@ public class BlueDbVersionTest {
 		assertFalse(_2_0_0.equals(null));
 	}
 
-
 	@Test
 	public void test_hashCode() {
 		assertEquals(_1_0_0.hashCode(), _1_0_0.hashCode());
@@ -44,5 +43,10 @@ public class BlueDbVersionTest {
 		assertNotSame(_1_0_0.hashCode(), _1_0_1.hashCode());
 		assertNotSame(_1_0_0.hashCode(), _1_1_0.hashCode());
 		assertNotSame(_1_0_0.hashCode(), _2_0_0.hashCode());
+	}
+
+	@Test
+	public void test_toString() {
+		assertTrue(_1_0_0_a.toString().contains("1.0.0-a"));
 	}
 }

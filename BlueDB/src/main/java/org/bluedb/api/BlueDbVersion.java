@@ -64,4 +64,9 @@ public class BlueDbVersion implements Comparable<BlueDbVersion>, Serializable {
 	public int hashCode() {
 		return Objects.hash(major, minor, patch, label);
 	}
+
+	@Override
+	public String toString() {
+		return "BlueDbVersion " + major + "." + minor + "." + patch + "-" + label;
+	}
 }
