@@ -35,7 +35,7 @@ public class RollupScheduler implements Runnable {
 	@Override
 	public void run() {
 		while (!isStopped) {
-			scheduleReadyRollups();
+			scheduleLimitedReadyRollups();
 			isStopped |= !Blutils.trySleep(waitBetweenReviews);
 		}
 	}
@@ -82,6 +82,17 @@ public class RollupScheduler implements Runnable {
 		return !isStopped;
 	}
 
+	protected void scheduleLimitedReadyRollups() {
+		int rollupsToSchedule = 30 - collection.getQueuedTaskCount();
+		scheduleReadyRollups(rollupsToSchedule);
+	}
+
+	protected void scheduleReadyRollups(int maxRollupsToSchedule) {
+		for (RollupTarget target: rollupTargetsReadyForRollup(maxRollupsToSchedule)) {
+			scheduleRollup(target);
+		}
+	}
+
 	protected void scheduleReadyRollups() {
 		for (RollupTarget target: rollupTargetsReadyForRollup()) {
 			scheduleRollup(target);
@@ -97,6 +108,12 @@ public class RollupScheduler implements Runnable {
 
 	public void setWaitBetweenReviews(long newWaitTimeMillis) {
 		waitBetweenReviews = newWaitTimeMillis;
+	}
+
+	protected List<RollupTarget> rollupTargetsReadyForRollup(int maxCount) {
+		List<RollupTarget> readyRollups = rollupTargetsReadyForRollup();
+		int toIndex = Math.min(maxCount, readyRollups.size());
+		return readyRollups.subList(0, toIndex);  // TODO sort in some reasonable way
 	}
 
 	protected List<RollupTarget> rollupTargetsReadyForRollup() {

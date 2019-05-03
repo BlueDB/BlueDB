@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
@@ -107,6 +108,27 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 		assertEquals(1, rollupsRequested.size());
 		assertTrue(rollupsRequested.contains(rollupTarget));
+	}
+
+	@Test
+	public void test_reportRead_limit() {
+		BlueCollectionOnDisk<?> busyCollection = Mockito.mock(BlueCollectionOnDisk.class);
+		RollupScheduler rollupScheduler = new RollupScheduler(busyCollection);
+		Mockito.doReturn(30).when(busyCollection).getQueuedTaskCount();
+		for (int i=0; i<30; i++) {
+			rollupScheduler.reportRead(new RollupTarget(i, new Range(i, i)), 0);
+		}
+		rollupScheduler.scheduleLimitedReadyRollups();
+
+		BlueCollectionOnDisk<?> nonBusyCollection = Mockito.mock(BlueCollectionOnDisk.class);
+		Mockito.doReturn(0).when(nonBusyCollection).getQueuedTaskCount();
+		RollupScheduler nonBusyRollupScheduler = new RollupScheduler(nonBusyCollection);
+		for (int i=0; i<30; i++) {
+			nonBusyRollupScheduler.reportRead(new RollupTarget(i, new Range(i, i)), 0);
+		}
+		nonBusyRollupScheduler.scheduleLimitedReadyRollups();
+		Mockito.verify(busyCollection, Mockito.atMost(0)).submitTask(Mockito.any());
+		Mockito.verify(nonBusyCollection, Mockito.atLeast(20)).submitTask(Mockito.any());
 	}
 
 	@Test
