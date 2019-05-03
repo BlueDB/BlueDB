@@ -1,12 +1,11 @@
 package org.bluedb.disk.serialization.validation;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -14,13 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.junit.Assert;
-import org.junit.Test;
-
+import org.bluedb.TestUtils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ObjectValidationTest {
 
@@ -109,13 +108,13 @@ public class ObjectValidationTest {
 	@Test
 	public void testCorruptCall() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
-		testCorruptObject(serializer, "/corruptCall-1.bin");
+		testCorruptObject(serializer, "corruptCall-1.bin");
 	}
 
 	@Test
 	public void testCorruptCallInArray() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
-		testCorruptObject(serializer, "/corruptCallArrayList-1.bin");
+		testCorruptObject(serializer, "corruptCallArrayList-1.bin");
 	}
 
 	private void testCorruptObject(BlueSerializer serializer, String relativeFilepathForCorruptObjectBytes) throws IOException, URISyntaxException {
@@ -129,7 +128,7 @@ public class ObjectValidationTest {
 	}
 	
 	private byte[] getResourceBytes(String filepath) throws IOException, URISyntaxException {
-		return Files.readAllBytes(Paths.get(this.getClass().getResource(filepath).toURI()));
+		return Files.readAllBytes(TestUtils.getResourcePath(filepath));
 	}
 
 	@Test

@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 
-import org.nustaq.serialization.simpleapi.DefaultCoder;
-
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -14,10 +12,12 @@ import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.ByteUtils;
 import org.bluedb.disk.collection.index.IndexCompositeKey;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.serialization.validation.ObjectValidation;
 import org.bluedb.disk.serialization.validation.SerializationException;
+import org.nustaq.serialization.simpleapi.DefaultCoder;
 
 public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
 	
@@ -60,9 +60,8 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		
 		int retryCount = 0;
 		while(retryCount < MAX_DESERIALIZE_ATTEMPTS) {
-			Object obj = get().toObject(bytes);
-			
 			try {
+				Object obj = toObject(bytes);
 				ObjectValidation.validateFieldValueTypesForObject(obj);
 				return obj;
 			} catch(Throwable t) {
@@ -72,6 +71,15 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		}
 		
 		throw new SerializationException("Failed to deserialize object from bytes: " + Blutils.toHex(bytes), failureCause);
+	}
+
+	private Object toObject(byte[] bytes) {
+		try {
+			return get().toObject(bytes);
+		} catch(Throwable t) {
+			byte[] bytesToTry = ByteUtils.replaceClassPathBytes(bytes, "io.bluedb", "org.bluedb");
+			return get().toObject(bytesToTry);
+		}
 	}
 
 	@SuppressWarnings("unchecked")

@@ -326,6 +326,50 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(1, directoryContents.length);
 	}
 
+	@Test
+	public void test_rollup_removeEmptyFiles() throws Exception {
+		Segment<TestValue> segment = getSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		TestValue value1 = createValue("Anna");
+
+		segment.insert(key1At1, value1);
+		assertEquals(1, segment.getPath().toFile().listFiles().length);
+
+		segment.delete(key1At1);
+		assertEquals(1, segment.getPath().toFile().listFiles().length);  // empty file still exists until rollup
+
+		Range rollupRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
+		segment.rollup(rollupRange);
+		assertEquals(0, segment.getPath().toFile().listFiles().length);
+	}
+
+	@Test
+	public void test_rollup_removeEmptyFilesButLeaveNonEmpty() throws Exception {
+		Segment<TestValue> segment = getSegment();
+		BlueKey key1At1 = createKey(1, 1);
+		BlueKey key3At3 = createKey(3, 3);
+		TestValue value1 = createValue("Anna");
+		TestValue value3 = createValue("Chuck");
+		List<TestValue> listEmpty = Arrays.asList();
+		List<TestValue> list1and3 = Arrays.asList(value1, value3);
+		List<TestValue> list3 = Arrays.asList(value3);
+
+		assertEquals(listEmpty, getAll(segment));
+
+		segment.insert(key1At1, value1);
+		segment.insert(key3At3, value3);
+		assertEquals(2, segment.getPath().toFile().listFiles().length);
+		assertEquals(list1and3, getAll(segment));
+
+		segment.delete(key1At1);
+		assertEquals(2, segment.getPath().toFile().listFiles().length);  // empty file still exists until rollup
+		assertEquals(list3, getAll(segment));
+
+		Range rollupRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
+		segment.rollup(rollupRange);
+		assertEquals(1, segment.getPath().toFile().listFiles().length);
+		assertEquals(list3, getAll(segment));
+	}
 
 	@Test
 	public void test_rollup_out_of_order() throws Exception {

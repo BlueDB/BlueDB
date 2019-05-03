@@ -3,6 +3,7 @@ package org.bluedb.disk.segment;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -162,6 +163,19 @@ public class SegmentBatchTest {
 		assertTrue(SegmentBatch.rangeContainsAll(range0to4, inserts0and1and4));
 		assertTrue(SegmentBatch.rangeContainsAll(range0to7, inserts0and1and4));
 		assertFalse(SegmentBatch.rangeContainsAll(range1to7, inserts0and1and4));
+	}
+
+	@Test
+	public void test_getLargestEmptyRange() {
+		List<Range> optionsSmallToBig = Arrays.asList(
+					new Range(1552271577603L, 1552271577603L),
+					new Range(1552271574000L, 1552271579999L),
+					new Range(1552269600000L, 1552273199999L),
+					new Range(1552262400000L, 1552348799999L)
+				);
+		HashSet<Range> existingChunkRanges = new HashSet<>(Arrays.asList());
+		Range selected = SegmentBatch.getLargestEmptyRange(optionsSmallToBig, existingChunkRanges);
+		assertEquals(new Range(1552262400000L, 1552348799999L), selected);
 	}
 
 	public static BlueKey createKey(long keyId, long time){

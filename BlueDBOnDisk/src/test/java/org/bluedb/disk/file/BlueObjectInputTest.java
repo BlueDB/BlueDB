@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
+import org.bluedb.TestUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
@@ -239,8 +240,8 @@ public class BlueObjectInputTest extends TestCase {
 	@Test
 	public void test_nextValidObjectFromFile_invalid() throws Exception {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
-		String filename = "stream_with_corrupted_object.bytes";
-		Path garbagePath = Paths.get(this.getClass().getResource("/" + filename).toURI());
+		
+		Path garbagePath = TestUtils.getResourcePath("good-bad-good-stream.bin");
 		BlueReadLock<Path> readLock = lockManager.acquireReadLock(garbagePath);
 		BlueObjectInput<Call> inStream = new BlueObjectInput<>(readLock, serializer);
 		int count = 0;
