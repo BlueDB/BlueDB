@@ -8,9 +8,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
@@ -43,7 +44,7 @@ import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
-	ExecutorService executor = Executors.newFixedThreadPool(1);
+	ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
@@ -71,6 +72,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		indexManager = new IndexManager<>(this, collectionPath);
 		rollupScheduler.start();
 		recoveryManager.recover();  // everything else has to be in place before running this
+	}
+
+	public int getQueuedTaskCount() {
+		return executor.getQueue().size();
 	}
 
 	@Override
