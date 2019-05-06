@@ -10,6 +10,11 @@ import org.junit.Test;
 public class ByteUtilsTest {
 
 	@Test
+	public void test_coverage() {
+		new ByteUtils(); // just to get to 100% coverage
+	}
+
+	@Test
 	public void test_testReplaceBytes() {
 		String testString = "This is my super elaborate byte array to test with";
 		testReplaceBytes(testString, "is", "was");
