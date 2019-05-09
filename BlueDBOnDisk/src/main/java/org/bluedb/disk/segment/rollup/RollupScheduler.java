@@ -84,17 +84,13 @@ public class RollupScheduler implements Runnable {
 
 	protected void scheduleLimitedReadyRollups() {
 		int rollupsToSchedule = 30 - collection.getQueuedTaskCount();
-		scheduleReadyRollups(rollupsToSchedule);
+		if (rollupsToSchedule > 0) {
+			scheduleReadyRollups(rollupsToSchedule);
+		}
 	}
 
 	protected void scheduleReadyRollups(int maxRollupsToSchedule) {
 		for (RollupTarget target: rollupTargetsReadyForRollup(maxRollupsToSchedule)) {
-			scheduleRollup(target);
-		}
-	}
-
-	protected void scheduleReadyRollups() {
-		for (RollupTarget target: rollupTargetsReadyForRollup()) {
 			scheduleRollup(target);
 		}
 	}
