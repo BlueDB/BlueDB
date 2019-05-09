@@ -8,7 +8,7 @@ public class BlueDbVersion implements Comparable<BlueDbVersion>, Serializable {
 	
 	private static final long serialVersionUID = 1L;
 
-	public static BlueDbVersion CURRENT = new BlueDbVersion(2, 0, 0, "");
+	public static BlueDbVersion CURRENT = new BlueDbVersion(2, 0, 1, "");
 
 	private final int major;
 	private final int minor;
