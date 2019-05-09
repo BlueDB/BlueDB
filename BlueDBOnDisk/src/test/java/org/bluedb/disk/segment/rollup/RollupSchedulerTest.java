@@ -103,7 +103,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		mockRollupScheduler.reportWrite(rollupTarget, 0);
 		assertEquals(1, mockRollupScheduler.rollupTargetsReadyForRollup().size());
 		assertEquals(0 + rollupTarget.getWriteRollupDelay(), mockRollupScheduler.getScheduledRollupTime(rollupTarget));
-		mockRollupScheduler.scheduleReadyRollups();
+		mockRollupScheduler.scheduleReadyRollups(Integer.MAX_VALUE);
 		assertEquals(0, mockRollupScheduler.rollupTargetsReadyForRollup().size());
 
 		assertEquals(1, rollupsRequested.size());
@@ -214,7 +214,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		mockRollupScheduler.reportWrite(rollupTarget, now);
 		assertEquals(now + rollupTarget.getWriteRollupDelay(), mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
-		mockRollupScheduler.scheduleReadyRollups();
+		mockRollupScheduler.scheduleReadyRollups(Integer.MAX_VALUE);
 		assertEquals(0, rollupsRequested.size());
 
 		mockRollupScheduler.forceScheduleRollups();
