@@ -1,5 +1,6 @@
 package org.bluedb.disk.file;
 
+import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -91,7 +92,7 @@ public class BlueObjectOutput<T> implements Closeable {
 
 	protected static DataOutputStream openDataOutputStream(File file) throws BlueDbException {
 		try {
-			return new DataOutputStream(new FileOutputStream(file));
+			return new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			throw new BlueDbException("cannot open write to file " + file.toPath(), e);
