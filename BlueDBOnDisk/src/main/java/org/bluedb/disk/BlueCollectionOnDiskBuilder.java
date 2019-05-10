@@ -28,8 +28,9 @@ public class BlueCollectionOnDiskBuilder<T extends Serializable> implements Blue
 		return this;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public BlueCollectionOnDiskBuilder<T> registerClasses(Class<? extends Serializable>[] additionalRegisteredClasses) {
+	public BlueCollectionOnDiskBuilder<T> withRegisteredClasses(Class<? extends Serializable>... additionalRegisteredClasses) {
 		this.additionalRegisteredClasses = additionalRegisteredClasses;
 		return this;
 	}
