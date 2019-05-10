@@ -3,7 +3,6 @@ package org.bluedb.disk.collection;
 import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,8 +14,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
-import org.bluedb.api.BlueCollection;
 import org.bluedb.api.Condition;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -34,12 +31,13 @@ import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
-import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
+import org.junit.Test;
 
 public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
@@ -418,7 +416,6 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void test_determineKeyType() throws BlueDbException {
 		db().collectionBuilder(TimeKey.class, TestValue.class).withName(getTimeCollectionName()).build();  // regular instantiation approach
@@ -447,7 +444,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_contains_HashGroupedKey() throws Exception {
 		TestValue value = new TestValue("Joe");
-		HashGroupedKey key = insertAtId(UUID.randomUUID(), value);
+		HashGroupedKey<?> key = insertAtId(UUID.randomUUID(), value);
 		List<TestValue> values = getHashGroupedCollection().query().getList();
 		assertEquals(1, values.size());
 		assertTrue(getHashGroupedCollection().contains(key));

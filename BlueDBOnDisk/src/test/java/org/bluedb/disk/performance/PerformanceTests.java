@@ -127,7 +127,7 @@ public class PerformanceTests {
 		results.print("testAsArray");
 	}
 
-	@SuppressWarnings("unchecked")
+//	@SuppressWarnings("unchecked")
 //	public void testAsListUsingObjectStream() throws IOException, ClassNotFoundException {
 //		results.writeStart = Instant.now();
 //		serializeObjectUsingObjectStream(values);

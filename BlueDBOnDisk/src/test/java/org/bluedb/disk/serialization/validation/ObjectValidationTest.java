@@ -131,6 +131,7 @@ public class ObjectValidationTest {
 		return Files.readAllBytes(TestUtils.getResourcePath(filepath));
 	}
 
+	@SuppressWarnings("unused")
 	@Test
 	public void testValidateFieldValueType() throws Exception {
 		Field booleanField = (new Object() {boolean  i;}).getClass().getDeclaredFields()[0];

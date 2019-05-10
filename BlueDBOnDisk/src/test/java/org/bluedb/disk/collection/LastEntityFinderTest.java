@@ -1,11 +1,10 @@
 package org.bluedb.disk.collection;
 
-import org.junit.Test;
-import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.serialization.BlueEntity;
+import org.junit.Test;
 
 public class LastEntityFinderTest extends BlueDbDiskTestBase {
 
@@ -18,8 +17,6 @@ public class LastEntityFinderTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_singleSegment() {
-		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		
 		TestValue value1 = new TestValue("value1");
 		TestValue value2 = new TestValue("value2");
 		insertAtTimeFrame(0, 1, value1);
@@ -37,7 +34,7 @@ public class LastEntityFinderTest extends BlueDbDiskTestBase {
 		
 		TestValue valueInFirstSegment = new TestValue("first");
 		TestValue valueInSecondSegment = new TestValue("second");
-		BlueKey key1 = insertAtTimeFrame(0, 1, valueInFirstSegment);
+		insertAtTimeFrame(0, 1, valueInFirstSegment);
 		BlueKey key2 = insertAtTimeFrame(segmentSize, segmentSize + 1, valueInSecondSegment);
 
 		LastEntityFinder lastFinder = new LastEntityFinder(getTimeCollection());

@@ -167,8 +167,8 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return key;
 	}
 
-	public HashGroupedKey insertAtId(UUID id, TestValue value) {
-		HashGroupedKey key = new UUIDKey(id);
+	public HashGroupedKey<?> insertAtId(UUID id, TestValue value) {
+		HashGroupedKey<?> key = new UUIDKey(id);
 		insertToHashGroupedCollection(key, value);
 		return key;
 	}
@@ -188,7 +188,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public void insertToHashGroupedCollection(HashGroupedKey key, TestValue value) {
+	public void insertToHashGroupedCollection(HashGroupedKey<?> key, TestValue value) {
 		try {
 			getHashGroupedCollection().insert(key, value);
 		} catch (BlueDbException e) {

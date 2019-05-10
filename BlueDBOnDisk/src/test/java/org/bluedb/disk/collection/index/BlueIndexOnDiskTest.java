@@ -224,10 +224,10 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getLastKey() throws Exception {
 		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
-		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+//		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
 
 		IntegerKey integerKey1 = new IntegerKey(1);
-		IntegerKey integerKey2 = new IntegerKey(2);
+//		IntegerKey integerKey2 = new IntegerKey(2);
 		IntegerKey integerKey3 = new IntegerKey(3);
 
 		TestValue value1 = new TestValue("Fred", 1);

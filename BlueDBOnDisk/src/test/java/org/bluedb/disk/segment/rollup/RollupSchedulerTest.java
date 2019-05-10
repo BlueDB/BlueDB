@@ -47,9 +47,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_reportRead() {
 		Range timeRange = new Range(2, 5);
-		Range timeRangeCopy = new Range(2, 5);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		RollupTarget rollupTargetCopy = new RollupTarget(0, timeRangeCopy);
 		assertEquals(0, getRollupScheduler().getRollupTimes().size());
 		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long readTime = System.currentTimeMillis();
@@ -222,6 +220,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		assertTrue(rollupsRequested.contains(rollupTarget));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void test_run() throws Exception {
 		List<RollupTarget> rollupsRequested = new ArrayList<>();
@@ -268,12 +267,14 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	private BlueCollectionOnDisk<TestValue> createMockCollection(List<RollupTarget> rollupsRequested) throws Exception {
-        return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class) {
+		@SuppressWarnings("unchecked")
+		BlueCollectionOnDisk<TestValue> collection = new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class) {
             @Override
             public void submitTask(Runnable r) {
-            	RollupTask rollupTask = (RollupTask) r;
+            	RollupTask<TestValue> rollupTask = (RollupTask<TestValue>) r;
                 rollupsRequested.add(rollupTask.getTarget());
             }
         };
+        return collection;
 	}
 }

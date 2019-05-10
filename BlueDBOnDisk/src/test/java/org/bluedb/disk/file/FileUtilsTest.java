@@ -65,7 +65,7 @@ public class FileUtilsTest extends TestCase {
 		nonEmptyFolder.mkdirs();
 		File fileWithSuffix = createFile(nonEmptyFolder, "legit" + suffix);
 		File fileWithSuffix2 = createFile(nonEmptyFolder, "legit.stuff" + suffix);
-		File fileWithSuffixInMiddle = createFile(nonEmptyFolder, "not" + suffix + ".this");
+		createFile(nonEmptyFolder, "not" + suffix + ".this");
 		createFile(nonEmptyFolder, "junk");
 		List<File> filesWithSuffix = FileUtils.getFolderContents(nonEmptyFolder.toPath(), suffix);
 		assertEquals(2, filesWithSuffix.size());

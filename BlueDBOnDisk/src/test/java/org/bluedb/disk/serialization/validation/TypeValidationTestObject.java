@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.bluedb.disk.TestValue;
 
+@SuppressWarnings("unused")
 public class TypeValidationTestObject {
 	private int intField;
 	private Integer intFieldBoxed;

@@ -10,7 +10,6 @@ import java.util.List;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
@@ -24,7 +23,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_shutdown() throws Exception{
-		BlueIndex<IntegerKey, TestValue> index = getTimeCollection().createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		getTimeCollection().createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 		db.shutdown();
 	}
 
@@ -472,7 +471,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         insertAtTimeFrame(1, 2, valueJoe);
         insertAtTimeFrame(2, 3, valueBob);
         List<TestValue> both = Arrays.asList(valueJoe, valueBob);
-        List<TestValue> justJoe = Arrays.asList(valueJoe);
+//        List<TestValue> justJoe = Arrays.asList(valueJoe);
         List<TestValue> justBob = Arrays.asList(valueBob);
         List<TestValue> neither = Arrays.asList();
 

@@ -170,7 +170,7 @@ public class FileManagerTest extends TestCase {
 			}
 		};
 		try {
-			BlueReadLock<Path> failedLockOnExistingFile = mockFileManager.getReadLockIfFileExists(existing);
+			mockFileManager.getReadLockIfFileExists(existing);
 			fail();
 		} catch(BlueDbException expectedException) {
 		}
