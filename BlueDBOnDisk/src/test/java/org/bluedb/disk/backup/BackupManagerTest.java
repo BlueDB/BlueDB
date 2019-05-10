@@ -43,7 +43,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
-		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		BlueCollectionOnDisk<TestValue> restoredCollection = restoredDb.collectionBuilder(TimeKey.class, TestValue.class).withName(getTimeCollectionName()).build();
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
 	}
@@ -64,7 +64,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
 		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
-        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		BlueCollectionOnDisk<TestValue> restoredCollection = restoredDb.collectionBuilder(TimeKey.class, TestValue.class).withName(getTimeCollectionName()).build();
 		assertTrue(restoredCollection.contains(key1At1));
 		assertTrue(restoredCollection.contains(key2At2));
 		assertEquals(value1, restoredCollection.get(key1At1));
@@ -87,7 +87,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
         BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(backedUpPath).build();
-        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		BlueCollectionOnDisk<TestValue> restoredCollection = restoredDb.collectionBuilder(TimeKey.class, TestValue.class).withName(getTimeCollectionName()).build();
 		Path segmentPath = restoredCollection.getSegmentManager().getSegment(1).getPath();
 		File[] filesInSegment = segmentPath.toFile().listFiles();
 		assertEquals(1, filesInSegment.length);
@@ -112,8 +112,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		List<TestValue> valuesInNewCollection = newCollection.query().getList();
 		
 		BlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(collectionName, TimeKey.class, TestValue.class);
+		BlueCollectionOnDisk<TestValue> restoredCollection = restoredDb.collectionBuilder(TimeKey.class, TestValue.class).withName(collectionName).build();
 		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
 		
 		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
@@ -135,8 +134,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		List<TestValue> valuesInNewCollection = newCollection.query().getList();
 		
 		BlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(collectionName, TimeKey.class, TestValue.class);
+		BlueCollectionOnDisk<TestValue> restoredCollection = restoredDb.collectionBuilder(TimeKey.class, TestValue.class).withName(collectionName).build();
 		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
 		
 		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
@@ -153,8 +151,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	private BlueDbOnDisk createTestRestoreDatabase() throws BlueDbException {
 		Path newDbPath = createTempFolder().toPath();
 		BlueDbOnDisk newDb = new BlueDbOnDiskBuilder().setPath(newDbPath).build();
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<TestValue> newCollection = (BlueCollectionOnDisk<TestValue>) newDb.initializeCollection("time_collection", TimeKey.class, TestValue.class, TestValue2.class, TestValueSub.class);
+		BlueCollectionOnDisk<TestValue> newCollection = newDb.collectionBuilder(TimeKey.class, TestValue.class).withName("time_collection").withRegisteredClasses(TestValue2.class, TestValueSub.class).build();
 
 		TestValue value1 = new TestValue("Anna");
 		TestValue value2 = new TestValueSub("Bob");

@@ -8,13 +8,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import org.junit.Test;
+
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
+import org.junit.Test;
 
 public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
 
@@ -25,7 +26,7 @@ public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		longCollection = (BlueCollectionOnDisk<TestValue>) db().initializeCollection(LONG_COLLECTION_NAME, LongKey.class, TestValue.class);
+		longCollection = db().collectionBuilder(LongKey.class, TestValue.class).withName(LONG_COLLECTION_NAME).build();
 	}
 
 
