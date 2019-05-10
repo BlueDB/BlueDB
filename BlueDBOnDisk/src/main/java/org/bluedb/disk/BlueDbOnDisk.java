@@ -7,10 +7,11 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueDb;
-import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
@@ -42,6 +43,11 @@ public class BlueDbOnDisk implements BlueDb {
 				throw new BlueDbException("Cannot cast BlueCollection<" + untypedCollection.getType() + "> to BlueCollection<" + valueType + ">");
 			}
 		}
+	}
+
+	@Override
+	public <T extends Serializable, K extends BlueKey> BlueCollectionOnDiskBuilder<T> collectionBuilder(Class <K> keyType, Class<T> valueType) {
+		return new BlueCollectionOnDiskBuilder<T>(this, keyType, valueType);
 	}
 
 	@Override
