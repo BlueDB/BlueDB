@@ -151,8 +151,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	private BlueDbOnDisk createTestRestoreDatabase() throws BlueDbException {
 		Path newDbPath = createTempFolder().toPath();
 		BlueDbOnDisk newDb = new BlueDbOnDiskBuilder().setPath(newDbPath).build();
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<TestValue> newCollection = newDb.collectionBuilder(TimeKey.class, TestValue.class).withName("time_collection").withRegisteredClasses(TestValue2.class, TestValueSub.class).build();
+		BlueCollectionOnDisk<TestValue> newCollection = newDb.collectionBuilder(TimeKey.class, TestValue.class)
+			.withName("time_collection").usingClasses(Arrays.asList(TestValue2.class, TestValueSub.class)).build();
 
 		TestValue value1 = new TestValue("Anna");
 		TestValue value2 = new TestValueSub("Bob");

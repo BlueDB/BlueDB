@@ -1,6 +1,8 @@
 package org.bluedb.disk;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.bluedb.api.BlueCollectionBuilder;
 import org.bluedb.api.exceptions.BlueDbException;
@@ -13,8 +15,7 @@ public class BlueCollectionOnDiskBuilder<T extends Serializable> implements Blue
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> requestedKeyType;
 	String name;
-	@SuppressWarnings("unchecked")
-	Class<? extends Serializable>[] additionalRegisteredClasses = (Class<? extends Serializable>[]) new Class[] {};
+	ArrayList<Class<? extends Serializable>> registeredClasses = new ArrayList<>();
 
 	protected BlueCollectionOnDiskBuilder(BlueDbOnDisk db, Class<? extends BlueKey> keyType, Class<T> valueType) {
 		this.db = db;
@@ -28,16 +29,18 @@ public class BlueCollectionOnDiskBuilder<T extends Serializable> implements Blue
 		return this;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public BlueCollectionOnDiskBuilder<T> withRegisteredClasses(Class<? extends Serializable>... additionalRegisteredClasses) {
-		this.additionalRegisteredClasses = additionalRegisteredClasses;
+	public BlueCollectionOnDiskBuilder<T> usingClasses(Collection<Class<? extends Serializable>> classesToRegister) {
+		registeredClasses.addAll(classesToRegister);
 		return this;
 	}
 
 	@Override
 	public BlueCollectionOnDisk<T> build() throws BlueDbException {
-		BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) db.initializeCollection(name, requestedKeyType, valueType, additionalRegisteredClasses);
+		@SuppressWarnings("unchecked")
+		Class<? extends Serializable>[] registeredClassesArray = (Class<? extends Serializable>[]) new Class[registeredClasses.size()];
+		registeredClasses.toArray(registeredClassesArray);
+		BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) db.initializeCollection(name, requestedKeyType, valueType, registeredClassesArray);
 		return collection;
 	}
 }
