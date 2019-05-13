@@ -217,6 +217,37 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_replace() throws Exception {
+		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
+        assertCupcakes(key, 0);
+        getTimeCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
+        assertCupcakes(key, 1);
+	}
+
+	@Test
+	public void test_replace_nonexisting() {
+		AtomicBoolean wasUpdaterCalled = new AtomicBoolean(false);
+		BlueKey key = new TimeKey(1, 1);
+		try {
+	        getTimeCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
+			fail();
+		} catch (BlueDbException e) {
+		}
+		assertFalse(wasUpdaterCalled.get());
+	}
+
+	@Test
+	public void test_replace_invalid() {
+		TestValue value = new TestValue("Joe", 0);
+		BlueKey key = insertAtTime(1, value);
+		try {
+			getTimeCollection().replace(key, (v) -> {throw new RuntimeException("no go");}) ;
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
 	public void test_delete() throws Exception {
 		TestValue value = new TestValue("Joe");
         BlueKey key = insertAtTime(10, value);
