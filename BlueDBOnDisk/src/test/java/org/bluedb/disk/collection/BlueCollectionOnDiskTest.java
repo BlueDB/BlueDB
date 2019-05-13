@@ -4,6 +4,8 @@ import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 import org.bluedb.api.BlueCollection;
+import org.bluedb.api.BlueDbVersion;
 import org.bluedb.api.Condition;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -437,6 +440,32 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		BlueCollectionOnDisk<?> collectionWithoutType = (BlueCollectionOnDisk<?>) reopenedDatbase.initializeCollection(getTimeCollectionName(), null, TestValue.class);  // open without specifying key type
 		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test_determineVersion() throws BlueDbException {
+		BlueCollectionOnDisk<TestValue> collection = (BlueCollectionOnDisk<TestValue>) db().initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);  // regular instantiation approach
+		assertEquals(BlueDbVersion.CURRENT, collection.getBlueDbVersion());
+
+		Path timeCollectionPath = Paths.get(getPath().toString(), getTimeCollectionName());
+		CollectionMetaData metadata = new CollectionMetaData(timeCollectionPath);
+		assertEquals(BlueDbVersion.CURRENT, metadata.getVersion());
+
+		BlueDbVersion differentVersion = new BlueDbVersion(1, 1, 1, "");
+		metadata.saveVersion(differentVersion);
+		
+		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();
+
+		BlueCollectionOnDisk<TestValue> reopenedCollection = (BlueCollectionOnDisk<TestValue>) reopenedDatbase.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		assertEquals(differentVersion, reopenedCollection.getBlueDbVersion());
+
+		Path metadataVersionPath = Paths.get(timeCollectionPath.toString(), ".meta", "bluedb_version");
+		metadataVersionPath.toFile().delete();
+		BlueDbOnDisk reopenedDatbase2 = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();
+		BlueCollectionOnDisk<TestValue> reopenedCollection2 = (BlueCollectionOnDisk<TestValue>) reopenedDatbase2.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
+		BlueDbVersion versionIfMissing = new BlueDbVersion(1, 0, 0, "");
+		assertEquals(versionIfMissing, reopenedCollection2.getBlueDbVersion());
 	}
 
 	@Test
