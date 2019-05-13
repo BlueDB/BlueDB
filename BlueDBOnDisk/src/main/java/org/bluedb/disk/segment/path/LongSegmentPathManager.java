@@ -15,17 +15,24 @@ public class LongSegmentPathManager implements SegmentPathManager {
 	private static final long SIZE_FOLDER_UPPER_BOTTOM = SIZE_FOLDER_LOWER_TOP * 512;
 	private static final long SIZE_FOLDER_UPPER_MIDDLE = SIZE_FOLDER_UPPER_BOTTOM * 256;
 	private static final long SIZE_FOLDER_UPPER_TOP = SIZE_FOLDER_UPPER_MIDDLE * 128;
-	public final static List<Long> ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
 
-	private final Path collectionPath;
-	private final List<Long> folderSizes = Collections.unmodifiableList(Arrays.asList(
+	protected static final List<Long> DEFAULT_ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
+	protected static final List<Long> DEFAULT_SIZE_FOLDERS = Collections.unmodifiableList(Arrays.asList(
 			SIZE_FOLDER_UPPER_TOP, SIZE_FOLDER_UPPER_MIDDLE, SIZE_FOLDER_UPPER_BOTTOM,
 			SIZE_FOLDER_LOWER_TOP, SIZE_FOLDER_LOWER_MIDDLE, SIZE_FOLDER_LOWER_BOTTOM,
 			SIZE_SEGMENT
 			));
 
+	private final Path collectionPath;
+	private final List<Long> folderSizes;
+	private final long segmentSize;
+	private final List<Long> rollupLevels;
+
 	public LongSegmentPathManager(Path collectionPath) {
 		this.collectionPath = collectionPath;
+		this.folderSizes = DEFAULT_SIZE_FOLDERS;
+		this.segmentSize = this.folderSizes.get(this.folderSizes.size() - 1);
+		this.rollupLevels = DEFAULT_ROLLUP_LEVELS;
 	}
 
 	@Override
@@ -36,12 +43,12 @@ public class LongSegmentPathManager implements SegmentPathManager {
 
 	@Override
 	public long getSegmentSize() {
-		return SIZE_SEGMENT;
+		return segmentSize;
 	}
 
 	@Override
 	public List<Long> getRollupLevels() {
-		return ROLLUP_LEVELS;
+		return rollupLevels;
 	}
 
 	@Override

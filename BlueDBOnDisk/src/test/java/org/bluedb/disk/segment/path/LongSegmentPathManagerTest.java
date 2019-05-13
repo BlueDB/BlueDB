@@ -32,7 +32,7 @@ public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_validate_rollup_levels() {
-		List<Long> rollupLevels = LongSegmentPathManager.ROLLUP_LEVELS;
+		List<Long> rollupLevels = LongSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
 		for (int i = 0; i < rollupLevels.size() - 1; i++) {
 			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
 		}

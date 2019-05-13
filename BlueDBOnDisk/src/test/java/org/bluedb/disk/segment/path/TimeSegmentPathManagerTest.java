@@ -19,7 +19,7 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_validate_rollup_levels() {
-		List<Long> rollupLevels = TimeSegmentPathManager.ROLLUP_LEVELS;
+		List<Long> rollupLevels = TimeSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
 		for (int i = 0; i < rollupLevels.size() - 1; i++) {
 			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
 		}

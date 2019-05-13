@@ -9,17 +9,24 @@ import org.bluedb.api.keys.BlueKey;
 
 public class TimeSegmentPathManager implements SegmentPathManager {
 
-	private static final long SIZE_SEGMENT = TimeUnit.HOURS.toMillis(1);
-	private static final long SIZE_FOLDER_BOTTOM = SIZE_SEGMENT * 24;
+	private static final long DEFAULT_SIZE_SEGMENT = TimeUnit.HOURS.toMillis(1);
+	private static final long SIZE_FOLDER_BOTTOM = DEFAULT_SIZE_SEGMENT * 24;
 	private static final long SIZE_FOLDER_MIDDLE = SIZE_FOLDER_BOTTOM * 30;
 	private static final long SIZE_FOLDER_TOP = SIZE_FOLDER_MIDDLE * 12;
-	public final static List<Long> ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, 6000L, SIZE_SEGMENT));
+
+	protected final static List<Long> DEFAULT_ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, 6000L, DEFAULT_SIZE_SEGMENT));
+	protected final static List<Long> DEFAULT_SIZE_FOLDERS = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, DEFAULT_SIZE_SEGMENT));
 
 	private final Path collectionPath;
-	private final List<Long> folderSizes = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
+	private final List<Long> folderSizes;
+	private final long segmentSize;
+	private final List<Long> rollupLevels;
 
 	public TimeSegmentPathManager(Path collectionPath) {
 		this.collectionPath = collectionPath;
+		this.folderSizes = DEFAULT_SIZE_FOLDERS;
+		this.segmentSize = this.folderSizes.get(this.folderSizes.size() - 1);
+		this.rollupLevels = DEFAULT_ROLLUP_LEVELS;
 	}
 
 	@Override
@@ -30,12 +37,12 @@ public class TimeSegmentPathManager implements SegmentPathManager {
 
 	@Override
 	public long getSegmentSize() {
-		return SIZE_SEGMENT;
+		return segmentSize;
 	}
 
 	@Override
 	public List<Long> getRollupLevels() {
-		return ROLLUP_LEVELS;
+		return rollupLevels;
 	}
 
 	@Override

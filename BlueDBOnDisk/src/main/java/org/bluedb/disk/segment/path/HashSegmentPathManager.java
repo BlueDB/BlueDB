@@ -11,13 +11,20 @@ public class HashSegmentPathManager implements SegmentPathManager {
 	private static final long SIZE_SEGMENT = 524288;
 	private static final long SIZE_FOLDER_BOTTOM = SIZE_SEGMENT * 128;
 	private static final long SIZE_FOLDER_TOP = SIZE_FOLDER_BOTTOM * 64;
-	public final static List<Long> ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
+	
+	protected final static List<Long> DEFAULT_ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
+	private final List<Long> DEFAULT_SIZE_FOLDERS = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
 
 	private final Path collectionPath;
-	private final List<Long> folderSizes = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
+	private final List<Long> folderSizes;
+	private final long segmentSize;
+	private final List<Long> rollupLevels;
 
 	public HashSegmentPathManager(Path collectionPath) {
 		this.collectionPath = collectionPath;
+		this.folderSizes = DEFAULT_SIZE_FOLDERS;
+		this.segmentSize = this.folderSizes.get(this.folderSizes.size() - 1);
+		this.rollupLevels = DEFAULT_ROLLUP_LEVELS;
 	}
 
 	@Override
@@ -28,12 +35,12 @@ public class HashSegmentPathManager implements SegmentPathManager {
 
 	@Override
 	public long getSegmentSize() {
-		return SIZE_SEGMENT;
+		return segmentSize;
 	}
 
 	@Override
 	public List<Long> getRollupLevels() {
-		return ROLLUP_LEVELS;
+		return rollupLevels;
 	}
 
 	@Override

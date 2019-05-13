@@ -12,13 +12,20 @@ public class IntegerSegmentPathManager implements SegmentPathManager {
 	private static final long SIZE_FOLDER_BOTTOM = SIZE_SEGMENT * 64;
 	private static final long SIZE_FOLDER_MIDDLE = SIZE_FOLDER_BOTTOM * 64;
 	private static final long SIZE_FOLDER_TOP = SIZE_FOLDER_MIDDLE * 64;
-	public final static List<Long> ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
+
+	protected static final List<Long> DEFAULT_ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
+	protected static final List<Long> DEFAULT_FOLDER_SIZES  = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
 
 	private final Path collectionPath;
-	private final List<Long> folderSizes = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
+	private final List<Long> folderSizes;
+	private final long segmentSize;
+	private final List<Long> rollupLevels;
 
 	public IntegerSegmentPathManager(Path collectionPath) {
 		this.collectionPath = collectionPath;
+		this.folderSizes = DEFAULT_FOLDER_SIZES;
+		this.segmentSize = this.folderSizes.get(this.folderSizes.size() - 1);
+		this.rollupLevels = DEFAULT_ROLLUP_LEVELS;
 	}
 
 	@Override
@@ -29,12 +36,12 @@ public class IntegerSegmentPathManager implements SegmentPathManager {
 
 	@Override
 	public long getSegmentSize() {
-		return SIZE_SEGMENT;
+		return segmentSize;
 	}
 
 	@Override
 	public List<Long> getRollupLevels() {
-		return ROLLUP_LEVELS;
+		return rollupLevels;
 	}
 
 	@Override
