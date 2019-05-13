@@ -43,6 +43,6 @@ public class UpdateTask<T extends Serializable> extends QueryTask {
 
 	@Override
 	public String toString() {
-		return "<UpdateTask for key " + key + ">";
+		return "<" + getClass().getSimpleName() + " for key " + key + ">";
 	}
 }
