@@ -37,9 +37,15 @@ public class BlueDbSample {
 				.setPath(Paths.get("", "sample-db"))
 				.build();
 		
-		db.collectionBuilder(UUIDKey.class, NonTimeObject.class).withName(NON_TIME_COLLECTION_NAME).usingClasses(getNonTimeObjectClassesToRegister()).build();
-		db.collectionBuilder(TimeKey.class, TimeObject.class).withName(TIME_COLLECTION_NAME).usingClasses(getTimeObjectClassesToRegister()).build();
-		db.collectionBuilder(TimeFrameKey.class, TimeFrameObject.class).withName(TIMEFRAME_COLLECTION_NAME).usingClasses(getTimeframeObjectClassesToRegister()).build();
+		db.collectionBuilder(NON_TIME_COLLECTION_NAME, UUIDKey.class, NonTimeObject.class)
+			.withOptimizedClasses(getNonTimeObjectClassesToRegister())
+			.build();
+		db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TimeObject.class)
+			.withOptimizedClasses(getTimeObjectClassesToRegister())
+			.build();
+		db.collectionBuilder(TIMEFRAME_COLLECTION_NAME, TimeFrameKey.class, TimeFrameObject.class)
+			.withOptimizedClasses(getTimeframeObjectClassesToRegister())
+			.build();
 		
 		getTimeCollection().createIndex(TIME_COLLECTION_INDEX_NAME, StringKey.class, new TimeObjectDataIndexExtractor());
 	}

@@ -46,8 +46,8 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable, K extends BlueKey> BlueCollectionOnDiskBuilder<T> collectionBuilder(Class <K> keyType, Class<T> valueType) {
-		return new BlueCollectionOnDiskBuilder<T>(this, keyType, valueType);
+	public <T extends Serializable, K extends BlueKey> BlueCollectionOnDiskBuilder<T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
+		return new BlueCollectionOnDiskBuilder<T>(this, name, keyType, valueType);
 	}
 
 	@Override

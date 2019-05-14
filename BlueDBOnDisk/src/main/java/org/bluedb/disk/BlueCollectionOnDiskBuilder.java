@@ -14,23 +14,18 @@ public class BlueCollectionOnDiskBuilder<T extends Serializable> implements Blue
 	private final BlueDbOnDisk db;
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> requestedKeyType;
-	String name;
+	private final String name;
 	ArrayList<Class<? extends Serializable>> registeredClasses = new ArrayList<>();
 
-	protected BlueCollectionOnDiskBuilder(BlueDbOnDisk db, Class<? extends BlueKey> keyType, Class<T> valueType) {
+	protected BlueCollectionOnDiskBuilder(BlueDbOnDisk db, String name, Class<? extends BlueKey> keyType, Class<T> valueType) {
 		this.db = db;
+		this.name = name;
 		this.requestedKeyType = keyType;
 		this.valueType = valueType;
 	}
 
 	@Override
-	public BlueCollectionOnDiskBuilder<T> withName(String name) {
-		this.name = name;
-		return this;
-	}
-
-	@Override
-	public BlueCollectionOnDiskBuilder<T> usingClasses(Collection<Class<? extends Serializable>> classesToRegister) {
+	public BlueCollectionOnDiskBuilder<T> withOptimizedClasses(Collection<Class<? extends Serializable>> classesToRegister) {
 		registeredClasses.addAll(classesToRegister);
 		return this;
 	}

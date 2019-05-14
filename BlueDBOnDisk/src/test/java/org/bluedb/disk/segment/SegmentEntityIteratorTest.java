@@ -262,7 +262,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder(LongKey.class, String.class).withName("test_strings").build();
+		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "longs";
 		int n = 100;
 		for (int i = 0; i < n; i++) {

@@ -61,10 +61,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		filesToDelete = new ArrayList<>();
 		dbPath = createTempFolder().toPath();
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		timeCollection = db.collectionBuilder(TimeKey.class, TestValue.class).withName(TIME_COLLECTION_NAME).build();
-		hashGroupedCollection = db.collectionBuilder(HashGroupedKey.class, TestValue.class).withName(HASH_GROUPED_COLLECTION_NAME).build();
-		longCollection = db.collectionBuilder(LongKey.class, TestValue.class).withName(LONG_COLLECTION_NAME).build();
-		intCollection = db.collectionBuilder(IntegerKey.class, TestValue.class).withName(INT_COLLECTION_NAME).build();
+		timeCollection = db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
+		hashGroupedCollection = db.collectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
+		longCollection = db.collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		intCollection = db.collectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
 		dbPath = db.getPath();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
