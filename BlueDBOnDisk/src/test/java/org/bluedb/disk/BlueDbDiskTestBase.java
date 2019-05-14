@@ -61,10 +61,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		filesToDelete = new ArrayList<>();
 		dbPath = createTempFolder().toPath();
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		timeCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class);
-		hashGroupedCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class);
-		longCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(LONG_COLLECTION_NAME, LongKey.class, TestValue.class);
-		intCollection = (BlueCollectionOnDisk<TestValue>) db.initializeCollection(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class);
+		timeCollection = db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
+		hashGroupedCollection = db.collectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
+		longCollection = db.collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		intCollection = db.collectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
 		dbPath = db.getPath();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
@@ -167,8 +167,8 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return key;
 	}
 
-	public HashGroupedKey insertAtId(UUID id, TestValue value) {
-		HashGroupedKey key = new UUIDKey(id);
+	public HashGroupedKey<?> insertAtId(UUID id, TestValue value) {
+		HashGroupedKey<?> key = new UUIDKey(id);
 		insertToHashGroupedCollection(key, value);
 		return key;
 	}
@@ -188,7 +188,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public void insertToHashGroupedCollection(HashGroupedKey key, TestValue value) {
+	public void insertToHashGroupedCollection(HashGroupedKey<?> key, TestValue value) {
 		try {
 			getHashGroupedCollection().insert(key, value);
 		} catch (BlueDbException e) {

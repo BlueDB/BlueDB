@@ -74,13 +74,13 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		Class<? extends Serializable>[] testValue1PlusDefaults = concatenate(defaultClasses, testValue1);
 		Class<? extends Serializable>[] testValueBothPlusDefaults =  concatenate(defaultClasses, testValueBoth);
 
-		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(TestValue.class);
+		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1);
 
-		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(TestValue.class);
+		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1Again);
 
-		Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(TestValue.class, TestValue2.class);
+		Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList(TestValue2.class));
 		assertArrayEquals(testValueBothPlusDefaults, afterAddingBoth);
 	}
 

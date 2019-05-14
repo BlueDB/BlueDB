@@ -37,39 +37,39 @@ public class BlueDbSample {
 				.setPath(Paths.get("", "sample-db"))
 				.build();
 		
-		db.initializeCollection(NON_TIME_COLLECTION_NAME, UUIDKey.class, NonTimeObject.class, getNonTimeObjectClassesToRegister());
-		db.initializeCollection(TIME_COLLECTION_NAME, TimeKey.class, TimeObject.class, getTimeObjectClassesToRegister());
-		db.initializeCollection(TIMEFRAME_COLLECTION_NAME, TimeFrameKey.class, TimeFrameObject.class, getTimeframeObjectClassesToRegister());
+		db.collectionBuilder(NON_TIME_COLLECTION_NAME, UUIDKey.class, NonTimeObject.class)
+			.withOptimizedClasses(getNonTimeObjectClassesToRegister())
+			.build();
+		db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TimeObject.class)
+			.withOptimizedClasses(getTimeObjectClassesToRegister())
+			.build();
+		db.collectionBuilder(TIMEFRAME_COLLECTION_NAME, TimeFrameKey.class, TimeFrameObject.class)
+			.withOptimizedClasses(getTimeframeObjectClassesToRegister())
+			.build();
 		
 		getTimeCollection().createIndex(TIME_COLLECTION_INDEX_NAME, StringKey.class, new TimeObjectDataIndexExtractor());
 	}
 
-	@SuppressWarnings("unchecked")
-	private Class<? extends Serializable>[] getNonTimeObjectClassesToRegister() {
-		List<Class<? extends Serializable>> classes = Arrays.asList(
+	private List<Class<? extends Serializable>> getNonTimeObjectClassesToRegister() {
+		return Arrays.asList(
 				NonTimeObjectV1.class,
 				NonTimeObjectV2.class,
 				UUID.class
 		);
-		return (Class<? extends Serializable>[]) classes.toArray();
 	}
 
-	@SuppressWarnings("unchecked")
-	private Class<? extends Serializable>[] getTimeObjectClassesToRegister() {
-		List<Class<? extends Serializable>> classes = Arrays.asList(
+	private List<Class<? extends Serializable>> getTimeObjectClassesToRegister() {
+		return Arrays.asList(
 				TimeObjectV1.class,
 				UUID.class
 		);
-		return (Class<? extends Serializable>[]) classes.toArray();
 	}
 
-	@SuppressWarnings("unchecked")
-	private Class<? extends Serializable>[] getTimeframeObjectClassesToRegister() {
-		List<Class<? extends Serializable>> classes = Arrays.asList(
+	private List<Class<? extends Serializable>> getTimeframeObjectClassesToRegister() {
+		return Arrays.asList(
 				TimeFrameObjectV1.class,
 				UUID.class
 		);
-		return (Class<? extends Serializable>[]) classes.toArray();
 	}
 
 	private BlueCollection<NonTimeObject> getNonTimeCollection() throws BlueDbException {

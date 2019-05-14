@@ -80,7 +80,6 @@ public class HashSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getAllPossibleSegmentPaths() {
-		SegmentPathManager pathManager = getPathManager();
 		LongKey longKey = new LongKey(randomValue());
 		List<Path> paths = getPathManager().getAllPossibleSegmentPaths(longKey);
 		assertEquals(1, paths.size());
@@ -89,7 +88,6 @@ public class HashSegmentPathManagerTest extends BlueDbDiskTestBase {
 		Path path = paths.get(0);
 		Path parent = path.getParent();
 		Path grandparent = parent.getParent();
-		Path greatGrandparent = grandparent.getParent();
 		
 		List<Long> folderSizes = new ArrayList<>(getPathManager().getFolderSizes());
 		Collections.reverse(folderSizes);

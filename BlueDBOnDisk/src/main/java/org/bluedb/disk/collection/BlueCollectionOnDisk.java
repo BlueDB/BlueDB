@@ -57,7 +57,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final CollectionMetaData metaData;
 	private final IndexManager<T> indexManager;
 
-	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalRegisteredClasses) throws BlueDbException {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
