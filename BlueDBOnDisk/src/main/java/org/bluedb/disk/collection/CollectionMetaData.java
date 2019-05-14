@@ -62,8 +62,7 @@ public class CollectionMetaData {
 		return folderPath;
 	}
 
-	@SafeVarargs
-	public final Class<? extends Serializable>[] getAndAddToSerializedClassList(Class<? extends Serializable> primaryClass, Class<? extends Serializable>... additionalClasses) throws BlueDbException {
+	public final Class<? extends Serializable>[] getAndAddToSerializedClassList(Class<? extends Serializable> primaryClass, List<Class<? extends Serializable>> additionalClasses) throws BlueDbException {
 		List<Class<? extends Serializable>> existingClassList = getSerializedClassList();
 		List<Class<? extends Serializable>> newClassList = (existingClassList == null) ? new ArrayList<>() : new ArrayList<>(existingClassList);
 		for (Class<? extends Serializable> clazz: ThreadLocalFstSerializer.getClassesToAlwaysRegister()) {

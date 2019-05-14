@@ -2,6 +2,7 @@ package org.bluedb.disk.segment.rollup;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -268,7 +269,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	private BlueCollectionOnDisk<TestValue> createMockCollection(List<RollupTarget> rollupsRequested) throws Exception {
 		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<TestValue> collection = new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class) {
+		BlueCollectionOnDisk<TestValue> collection = new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class, Arrays.asList()) {
             @Override
             public void submitTask(Runnable r) {
             	RollupTask<TestValue> rollupTask = (RollupTask<TestValue>) r;

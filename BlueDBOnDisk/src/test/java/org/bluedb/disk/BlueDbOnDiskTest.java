@@ -77,22 +77,31 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		assertNotNull(db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build());  // make sure it works the second time as well
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation" })
+	@Test
+	public void test_initializeCollection_old() {
+		insertAtTime(10, new TestValue("Bob"));
+		try {
+			db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class, TestValue2.class);
+		} catch(BlueDbException e) {
+			fail();
+		}
+	}
+
 	@Test
 	public void test_initializeCollection_invalid_type() {
 		insertAtTime(10, new TestValue("Bob"));
 		try {
-			db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue2.class);
+			db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue2.class, Arrays.asList());
 			fail();
 		} catch(BlueDbException e) {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void test_initializeCollection_invalid_key_type() {
 		try {
-			db.initializeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class);
+			db.initializeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class, Arrays.asList());
 			fail();
 		} catch(BlueDbException e) {
 		}

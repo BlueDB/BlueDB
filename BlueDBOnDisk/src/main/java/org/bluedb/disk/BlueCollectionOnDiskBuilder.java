@@ -32,10 +32,7 @@ public class BlueCollectionOnDiskBuilder<T extends Serializable> implements Blue
 
 	@Override
 	public BlueCollectionOnDisk<T> build() throws BlueDbException {
-		@SuppressWarnings("unchecked")
-		Class<? extends Serializable>[] registeredClassesArray = (Class<? extends Serializable>[]) new Class[registeredClasses.size()];
-		registeredClasses.toArray(registeredClassesArray);
-		BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) db.initializeCollection(name, requestedKeyType, valueType, registeredClassesArray);
+		BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) db.initializeCollection(name, requestedKeyType, valueType, registeredClasses);
 		return collection;
 	}
 }
