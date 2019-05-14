@@ -15,12 +15,14 @@ public class CollectionMetaData {
 	
 	private static final String FILENAME_SERIALIZED_CLASSES = "serialized_classes";
 	private static final String FILENAME_KEY_TYPE = "key_type";
+	private static final String FILENAME_SEGMENT_SIZE = "segment_size";
 	private static final String META_DATA_FOLDER = ".meta";
 	
 	final Path folderPath;
 	final FileManager fileManager;
 	final Path serializedClassesPath;
 	final Path keyTypePath;
+	final Path segmentSizePath;
 
 	public CollectionMetaData(Path collectionPath) {
 		// meta data needs its own serialized because collection doesn't know which classes to register until metadata deserializes them from disk
@@ -30,12 +32,23 @@ public class CollectionMetaData {
 		folderPath = Paths.get(collectionPath.toString(), META_DATA_FOLDER);
 		serializedClassesPath = Paths.get(folderPath.toString(), FILENAME_SERIALIZED_CLASSES);
 		keyTypePath = Paths.get(folderPath.toString(), FILENAME_KEY_TYPE);
+		segmentSizePath = Paths.get(folderPath.toString(), FILENAME_SEGMENT_SIZE);
 	}
 
 	@SuppressWarnings("unchecked")
 	public Class<? extends BlueKey> getKeyType() throws BlueDbException {
 		Object savedValue = fileManager.loadObject(keyTypePath);
 		return (Class<? extends BlueKey>) savedValue;
+	}
+
+	public Long getSegmentSize() throws BlueDbException {
+		Object savedValue = fileManager.loadObject(segmentSizePath);
+		Long longValue = (Long) savedValue;
+		return longValue;
+	}
+
+	public void saveSegmentSize(Long segmentSize) throws BlueDbException {
+		fileManager.saveObject(segmentSizePath, segmentSize);;
 	}
 
 	public List<Class<? extends Serializable>> getSerializedClassList() throws BlueDbException {

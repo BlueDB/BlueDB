@@ -25,6 +25,18 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_segmentSize() throws Exception {
+		Long size1 = 42L;
+		Long size2 = 84L;
+		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
+		assertNull(metaData.getSegmentSize());
+		metaData.saveSegmentSize(size1);
+		assertEquals(size1, metaData.getSegmentSize());
+		metaData.saveSegmentSize(size2);
+		assertEquals(size2, metaData.getSegmentSize());
+	}
+
+	@Test
 	public void test_getSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
 		assertNull(metaData.getSerializedClassList());
