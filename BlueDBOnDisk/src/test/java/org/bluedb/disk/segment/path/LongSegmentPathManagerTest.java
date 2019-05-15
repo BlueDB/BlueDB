@@ -15,6 +15,7 @@ import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
+import org.bluedb.disk.segment.SegmentManager;
 import org.junit.Test;
 
 public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
@@ -31,7 +32,7 @@ public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_validate_rollup_levels() {
-		List<Long> rollupLevels = LongSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
+		List<Long> rollupLevels = SegmentManager.DEFAULT_ROLLUP_LEVELS_LONG;
 		for (int i = 0; i < rollupLevels.size() - 1; i++) {
 			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
 		}
