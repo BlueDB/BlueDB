@@ -1,18 +1,22 @@
 package org.bluedb.disk.segment;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import org.junit.Test;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.HashGroupedKey;
+import org.bluedb.api.keys.IntegerKey;
+import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.segment.path.SegmentPathManager;
+import org.junit.Test;
 
 public class SegmentManagerTest extends BlueDbDiskTestBase {
 
@@ -104,6 +108,20 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 			SegmentManager.createSegmentPathManager(collectionPath, null);
 		} catch (UnsupportedOperationException | NullPointerException e) {
 		}
+	}
+
+	List<Long> foldersLong = Arrays.asList(72057594037927936L, 562949953421312L, 2199023255552L, 4294967296L, 8388608L, 16384L, 64L);
+	List<Long> foldersTime = Arrays.asList(31104000000L, 2592000000L, 86400000L, 3600000L);
+	List<Long> foldersInt = Arrays.asList(67108864L, 1048576L, 16384L, 256L);
+	List<Long> foldersHash = Arrays.asList(4294967296L, 67108864L, 524288L);
+
+	@Test
+	public void test_createSegmentPathManager_sizes() {
+		Path collectionPath = getTimeCollection().getPath();
+		assertEquals(foldersLong, SegmentManager.createSegmentPathManager(collectionPath, LongKey.class).getFolderSizes());
+		assertEquals(foldersTime, SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class).getFolderSizes());
+		assertEquals(foldersInt, SegmentManager.createSegmentPathManager(collectionPath, IntegerKey.class).getFolderSizes());
+		assertEquals(foldersHash, SegmentManager.createSegmentPathManager(collectionPath, HashGroupedKey.class).getFolderSizes());
 	}
 
 	private SegmentManager<TestValue> getSegmentManager() {
