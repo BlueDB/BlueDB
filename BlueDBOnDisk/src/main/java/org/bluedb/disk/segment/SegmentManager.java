@@ -89,13 +89,17 @@ public class SegmentManager<T extends Serializable> {
 
 	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
 		if (TimeKey.class.isAssignableFrom(keyType)) {
-			return new TimeSegmentPathManager(collectionPath);
+			long segmentSize = TimeSegmentPathManager.DEFAULT_SEGMENT_SIZE;
+			return new TimeSegmentPathManager(collectionPath, segmentSize);
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
-			return new LongSegmentPathManager(collectionPath);
+			long segmentSize = LongSegmentPathManager.DEFAULT_SEGMENT_SIZE;
+			return new LongSegmentPathManager(collectionPath, segmentSize);
 		} else if (IntegerKey.class.isAssignableFrom(keyType)) {
-			return new IntegerSegmentPathManager(collectionPath);
+			long segmentSize = IntegerSegmentPathManager.DEFAULT_SEGMENT_SIZE;
+			return new IntegerSegmentPathManager(collectionPath, segmentSize);
 		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
-			return new HashSegmentPathManager(collectionPath);
+			long segmentSize = HashSegmentPathManager.DEFAULT_SEGMENT_SIZE;
+			return new HashSegmentPathManager(collectionPath, segmentSize);
 		} else {
 			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
 		}

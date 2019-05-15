@@ -22,16 +22,17 @@ public class LongSegmentPathManager implements SegmentPathManager {
 			SIZE_FOLDER_LOWER_TOP, SIZE_FOLDER_LOWER_MIDDLE, SIZE_FOLDER_LOWER_BOTTOM,
 			SIZE_SEGMENT
 			));
+	public static final long DEFAULT_SEGMENT_SIZE = DEFAULT_SIZE_FOLDERS.get(DEFAULT_SIZE_FOLDERS.size() - 1);
 
 	private final Path collectionPath;
 	private final List<Long> folderSizes;
 	private final long segmentSize;
 	private final List<Long> rollupLevels;
 
-	public LongSegmentPathManager(Path collectionPath) {
+	public LongSegmentPathManager(Path collectionPath, long segmentSize) {
 		this.collectionPath = collectionPath;
 		this.folderSizes = DEFAULT_SIZE_FOLDERS;
-		this.segmentSize = this.folderSizes.get(this.folderSizes.size() - 1);
+		this.segmentSize = segmentSize;
 		this.rollupLevels = DEFAULT_ROLLUP_LEVELS;
 	}
 

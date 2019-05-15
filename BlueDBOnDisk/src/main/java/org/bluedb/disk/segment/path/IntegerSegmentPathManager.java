@@ -14,17 +14,18 @@ public class IntegerSegmentPathManager implements SegmentPathManager {
 	private static final long SIZE_FOLDER_TOP = SIZE_FOLDER_MIDDLE * 64;
 
 	protected static final List<Long> DEFAULT_ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, SIZE_SEGMENT));
-	protected static final List<Long> DEFAULT_FOLDER_SIZES  = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
+	protected static final List<Long> DEFAULT_SIZE_FOLDERS  = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, SIZE_SEGMENT));
+	public static final long DEFAULT_SEGMENT_SIZE = DEFAULT_SIZE_FOLDERS.get(DEFAULT_SIZE_FOLDERS.size() - 1);
 
 	private final Path collectionPath;
 	private final List<Long> folderSizes;
 	private final long segmentSize;
 	private final List<Long> rollupLevels;
 
-	public IntegerSegmentPathManager(Path collectionPath) {
+	public IntegerSegmentPathManager(Path collectionPath, long segmentSize) {
 		this.collectionPath = collectionPath;
-		this.folderSizes = DEFAULT_FOLDER_SIZES;
-		this.segmentSize = this.folderSizes.get(this.folderSizes.size() - 1);
+		this.folderSizes = DEFAULT_SIZE_FOLDERS;
+		this.segmentSize = segmentSize;
 		this.rollupLevels = DEFAULT_ROLLUP_LEVELS;
 	}
 

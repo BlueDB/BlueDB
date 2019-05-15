@@ -16,16 +16,17 @@ public class TimeSegmentPathManager implements SegmentPathManager {
 
 	protected final static List<Long> DEFAULT_ROLLUP_LEVELS = Collections.unmodifiableList(Arrays.asList(1L, 6000L, DEFAULT_SIZE_SEGMENT));
 	protected final static List<Long> DEFAULT_SIZE_FOLDERS = Collections.unmodifiableList(Arrays.asList(SIZE_FOLDER_TOP, SIZE_FOLDER_MIDDLE, SIZE_FOLDER_BOTTOM, DEFAULT_SIZE_SEGMENT));
+	public static final long DEFAULT_SEGMENT_SIZE = DEFAULT_SIZE_FOLDERS.get(DEFAULT_SIZE_FOLDERS.size() - 1);
 
 	private final Path collectionPath;
 	private final List<Long> folderSizes;
 	private final long segmentSize;
 	private final List<Long> rollupLevels;
 
-	public TimeSegmentPathManager(Path collectionPath) {
+	public TimeSegmentPathManager(Path collectionPath, long segmentSize) {
 		this.collectionPath = collectionPath;
 		this.folderSizes = DEFAULT_SIZE_FOLDERS;
-		this.segmentSize = this.folderSizes.get(this.folderSizes.size() - 1);
+		this.segmentSize = segmentSize;
 		this.rollupLevels = DEFAULT_ROLLUP_LEVELS;
 	}
 
