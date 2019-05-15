@@ -2,6 +2,7 @@ package org.bluedb.disk.segment;
 
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -88,43 +89,40 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	private static final long HOUR = TimeUnit.HOURS.toMillis(1);
-	private static final long DAY = HOUR * 24;
-	private static final long MONTHISH = DAY * 30;
-	private static final long YEARISH = MONTHISH * 12;
 
 	public final static List<Long> DEFAULT_ROLLUP_LEVELS_TIME = unmodifiableList(1L, 6000L, HOUR);
-	public final static List<Long> DEFAULT_SIZE_FOLDERS_TIME = unmodifiableList(YEARISH, MONTHISH, DAY, HOUR);
-	public static final long DEFAULT_SEGMENT_SIZE_TIME = DEFAULT_SIZE_FOLDERS_TIME.get(DEFAULT_SIZE_FOLDERS_TIME.size() - 1);
+	public final static List<Long> DEFAULT_SIZE_FOLDERS_TIME = createMultiples(HOUR, 24L, 30L, 12L);
 
 	private static final long SIZE_SEGMENT_HASH = 524288;
 	
 	public static final List<Long> DEFAULT_ROLLUP_LEVELS_HASH = unmodifiableList(1L, SIZE_SEGMENT_HASH);
-	public static final List<Long> DEFAULT_SIZE_FOLDERS_HASH = unmodifiableList(SIZE_SEGMENT_HASH * 128 * 64, SIZE_SEGMENT_HASH * 128, SIZE_SEGMENT_HASH);
+	public static final List<Long> DEFAULT_SIZE_FOLDERS_HASH = createMultiples(SIZE_SEGMENT_HASH, 128L, 64L);
 
-	private static final long INTEGER_SEGMENT_SIZE = 256;
+	private static final long SEGMENT_SIZE_INT = 256;
 
-	public static final List<Long> DEFAULT_ROLLUP_LEVELS_INTEGER = unmodifiableList(1L, INTEGER_SEGMENT_SIZE);
-	public static final List<Long> DEFAULT_SIZE_FOLDERS_INTEGER  = unmodifiableList(INTEGER_SEGMENT_SIZE * 64 * 64 * 64, INTEGER_SEGMENT_SIZE * 64 * 64, INTEGER_SEGMENT_SIZE * 64, INTEGER_SEGMENT_SIZE);
+	public static final List<Long> DEFAULT_ROLLUP_LEVELS_INTEGER = unmodifiableList(1L, SEGMENT_SIZE_INT);
+	public static final List<Long> DEFAULT_SIZE_FOLDERS_INTEGER  = createMultiples(SEGMENT_SIZE_INT, 64L, 64L, 64L);
 
 	
-	private static final long SIZE_SEGMENT = 64;
-	private static final long SIZE_FOLDER_LOWER_BOTTOM = SIZE_SEGMENT * 256;
-	private static final long SIZE_FOLDER_LOWER_MIDDLE = SIZE_FOLDER_LOWER_BOTTOM * 512;
-	private static final long SIZE_FOLDER_LOWER_TOP = SIZE_FOLDER_LOWER_MIDDLE * 512;
-	private static final long SIZE_FOLDER_UPPER_BOTTOM = SIZE_FOLDER_LOWER_TOP * 512;
-	private static final long SIZE_FOLDER_UPPER_MIDDLE = SIZE_FOLDER_UPPER_BOTTOM * 256;
-	private static final long SIZE_FOLDER_UPPER_TOP = SIZE_FOLDER_UPPER_MIDDLE * 128;
+	private static final long SIZE_SEGMENT_LONG = 64;
 
-	public static final List<Long> DEFAULT_ROLLUP_LEVELS_LONG = unmodifiableList(1L, SIZE_SEGMENT);
-	public static final List<Long> DEFAULT_SIZE_FOLDERS_LONG = unmodifiableList(
-			SIZE_FOLDER_UPPER_TOP, SIZE_FOLDER_UPPER_MIDDLE, SIZE_FOLDER_UPPER_BOTTOM,
-			SIZE_FOLDER_LOWER_TOP, SIZE_FOLDER_LOWER_MIDDLE, SIZE_FOLDER_LOWER_BOTTOM,
-			SIZE_SEGMENT
-			);
+	public static final List<Long> DEFAULT_ROLLUP_LEVELS_LONG = unmodifiableList(1L, SIZE_SEGMENT_LONG);
+	public static final List<Long> DEFAULT_SIZE_FOLDERS_LONG  = createMultiples(SIZE_SEGMENT_LONG, 256L, 512L, 512L, 512L, 256L, 128L);
 	
 	@SafeVarargs
 	public static <T> List<T> unmodifiableList(T ...values) {
 		return Collections.unmodifiableList(Arrays.asList(values));
+	}
+
+	public static List<Long> createMultiples(Long ...bottomToTopWidths) {
+		List<Long> result = new ArrayList<>();
+		long accumulator = 1;
+		for (long iterValue: bottomToTopWidths) {
+			accumulator *= iterValue;
+			result.add(accumulator);
+		}
+		Collections.reverse(result);
+		return result;
 	}
 
 	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
