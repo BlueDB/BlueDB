@@ -11,6 +11,7 @@ import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.segment.path.LongSegmentPathManager;
+import org.bluedb.disk.segment.path.GenericSegmentPathManager;
 import org.bluedb.disk.segment.path.HashSegmentPathManager;
 import org.bluedb.disk.segment.path.IntegerSegmentPathManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
@@ -90,16 +91,24 @@ public class SegmentManager<T extends Serializable> {
 	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
 		if (TimeKey.class.isAssignableFrom(keyType)) {
 			long segmentSize = TimeSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			return new TimeSegmentPathManager(collectionPath, segmentSize);
+			List<Long> folderSizes = TimeSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			List<Long> rollupSizes = TimeSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
+			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
 			long segmentSize = LongSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			return new LongSegmentPathManager(collectionPath, segmentSize);
+			List<Long> folderSizes = LongSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			List<Long> rollupSizes = LongSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
+			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
 		} else if (IntegerKey.class.isAssignableFrom(keyType)) {
 			long segmentSize = IntegerSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			return new IntegerSegmentPathManager(collectionPath, segmentSize);
+			List<Long> folderSizes = IntegerSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			List<Long> rollupSizes = IntegerSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
+			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
 		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
 			long segmentSize = HashSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			return new HashSegmentPathManager(collectionPath, segmentSize);
+			List<Long> folderSizes = HashSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			List<Long> rollupSizes = HashSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
+			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
 		} else {
 			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
 		}
