@@ -14,7 +14,6 @@ import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.file.FileManager;
-import org.bluedb.disk.segment.path.GenericSegmentPathManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
@@ -147,6 +146,6 @@ public class SegmentManager<T extends Serializable> {
 			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
 		}
 		long segmentSize = folderSizes.get(folderSizes.size() - 1);
-		return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
+		return new SegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
 	}
 }

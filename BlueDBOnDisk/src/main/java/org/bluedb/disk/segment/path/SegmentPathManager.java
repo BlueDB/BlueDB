@@ -14,25 +14,48 @@ import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.Range;
 
 
-public interface SegmentPathManager {
+public class SegmentPathManager {
 
-	public Path getSegmentPath(BlueKey key);
+	private final Path collectionPath;
+	private final List<Long> folderSizes;
+	private final long segmentSize;
+	private final List<Long> rollupLevels;
 
-	public Path getCollectionPath();
+	public SegmentPathManager(Path collectionPath, long segmentSize, List<Long> folderSizes, List<Long> rollupLevels) {
+		this.collectionPath = collectionPath;
+		this.folderSizes = folderSizes;
+		this.segmentSize = segmentSize;
+		this.rollupLevels = rollupLevels;
+	}
 
-	public long getSegmentSize();
+	public Path getSegmentPath(BlueKey key) {
+		long groupingNumber = key.getGroupingNumber();
+		return getSegmentPath(groupingNumber);
+	}
 
-	public List<Long> getFolderSizes();
+	public long getSegmentSize() {
+		return segmentSize;
+	}
 
-	public List<Long> getRollupLevels();
+	public List<Long> getRollupLevels() {
+		return rollupLevels;
+	}
 
-	public default Path getSegmentPath(long groupingNumber) {
+	public List<Long> getFolderSizes() {
+		return folderSizes;
+	}
+
+	public Path getCollectionPath() {
+		return collectionPath;
+	}
+
+	public Path getSegmentPath(long groupingNumber) {
 		Function<Long, String> calculateFolderName = (size) -> String.valueOf(groupingNumber / size);
 		String[] folderNames= getFolderSizes().stream().map(calculateFolderName).toArray(String[]::new);
 		return Paths.get(getCollectionPath().toString(), folderNames);
 	}
 
-	public default List<Path> getAllPossibleSegmentPaths(BlueKey key) {
+	public List<Path> getAllPossibleSegmentPaths(BlueKey key) {
 		long segmentSize = getSegmentSize();
 		List<Path> paths = new ArrayList<>();
 		long groupingNumber = key.getGroupingNumber();
@@ -46,11 +69,11 @@ public interface SegmentPathManager {
 		return paths;
 	}
 
-	public default List<File> getExistingSegmentFiles(Range range) {
+	public List<File> getExistingSegmentFiles(Range range) {
 		return getExistingSegmentFiles(range.getStart(), range.getEnd());
 	}
 
-	public default List<File> getExistingSegmentFiles(long minValue, long maxValue) {
+	public List<File> getExistingSegmentFiles(long minValue, long maxValue) {
 		File collectionFolder = getCollectionPath().toFile();
 		List<File> foldersAtCurrentLevel = Arrays.asList(collectionFolder);
 		for (Long folderSizeThisCurrentLevel: getFolderSizes()) {
