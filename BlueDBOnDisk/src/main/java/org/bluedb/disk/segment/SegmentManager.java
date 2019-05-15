@@ -89,28 +89,24 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
+		List<Long> folderSizes;
+		List<Long> rollupSizes;
 		if (TimeKey.class.isAssignableFrom(keyType)) {
-			long segmentSize = TimeSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			List<Long> folderSizes = TimeSegmentPathManager.DEFAULT_SIZE_FOLDERS;
-			List<Long> rollupSizes = TimeSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
-			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
+			folderSizes = TimeSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			rollupSizes = TimeSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
-			long segmentSize = LongSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			List<Long> folderSizes = LongSegmentPathManager.DEFAULT_SIZE_FOLDERS;
-			List<Long> rollupSizes = LongSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
-			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
+			folderSizes = LongSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			rollupSizes = LongSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
 		} else if (IntegerKey.class.isAssignableFrom(keyType)) {
-			long segmentSize = IntegerSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			List<Long> folderSizes = IntegerSegmentPathManager.DEFAULT_SIZE_FOLDERS;
-			List<Long> rollupSizes = IntegerSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
-			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
+			folderSizes = IntegerSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			rollupSizes = IntegerSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
 		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
-			long segmentSize = HashSegmentPathManager.DEFAULT_SEGMENT_SIZE;
-			List<Long> folderSizes = HashSegmentPathManager.DEFAULT_SIZE_FOLDERS;
-			List<Long> rollupSizes = HashSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
-			return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
+			folderSizes = HashSegmentPathManager.DEFAULT_SIZE_FOLDERS;
+			rollupSizes = HashSegmentPathManager.DEFAULT_ROLLUP_LEVELS;
 		} else {
 			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
 		}
+		long segmentSize = folderSizes.get(folderSizes.size() - 1);
+		return new GenericSegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
 	}
 }
