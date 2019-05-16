@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
@@ -17,10 +18,16 @@ public class SegmentManager<T extends Serializable> {
 	private final FileManager fileManager;
 	private final Rollupable rollupable;
 
-	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, Class<? extends BlueKey> keyType) {
+	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, Class<? extends BlueKey> keyType) throws BlueDbException {
 		this.fileManager = fileManager;
 		this.rollupable = rollupable;
 		this.pathManager = createSegmentPathManager(collectionPath, keyType);
+	}
+
+	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, SegmentSizeSettings settings) {
+		this.fileManager = fileManager;
+		this.rollupable = rollupable;
+		this.pathManager = createSegmentPathManager(settings, collectionPath);
 	}
 
 	public Range getSegmentRange(long groupingValue) {
@@ -80,12 +87,12 @@ public class SegmentManager<T extends Serializable> {
 		return pathManager.getSegmentSize();
 	}
 
-	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
-		SegmentSizeSettings segmentSettings = SegmentSizeSettings.getDefaultSettingsFor(keyType);
-		List<Long> folderSizes = segmentSettings.getFolderSizes();
-		List<Long> rollupSizes = segmentSettings.getRollupSizes();
+	protected static SegmentPathManager createSegmentPathManager(SegmentSizeSettings segmentSettings, Path collectionPath) {
+		return new SegmentPathManager(collectionPath, segmentSettings);
+	}
 
-		long segmentSize = segmentSettings.getSegmentSize();
-		return new SegmentPathManager(collectionPath, segmentSize, folderSizes, rollupSizes);
+	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) throws BlueDbException {
+		SegmentSizeSettings segmentSettings = SegmentSizeSettings.getDefaultSettingsFor(keyType);
+		return new SegmentPathManager(collectionPath, segmentSettings);
 	}
 }

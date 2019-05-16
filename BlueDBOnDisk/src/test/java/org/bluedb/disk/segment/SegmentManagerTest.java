@@ -94,7 +94,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_createSegmentPathManager() {
+	public void test_createSegmentPathManager() throws BlueDbException {
 		Path collectionPath = getTimeCollection().getPath();
 		SegmentPathManager timePathManager = SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class);
 		SegmentPathManager valuePathManager = SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class);
@@ -103,7 +103,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 
 		try {
 			SegmentManager.createSegmentPathManager(collectionPath, BlueKey.class);
-		} catch (UnsupportedOperationException e) {}
+		} catch (UnsupportedOperationException | BlueDbException e) {}
 		try {
 			SegmentManager.createSegmentPathManager(collectionPath, null);
 		} catch (UnsupportedOperationException | NullPointerException e) {
@@ -116,7 +116,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	List<Long> foldersHash = Arrays.asList(4294967296L, 67108864L, 524288L);
 
 	@Test
-	public void test_createSegmentPathManager_sizes() {
+	public void test_createSegmentPathManager_sizes() throws BlueDbException {
 		Path collectionPath = getTimeCollection().getPath();
 		assertEquals(foldersLong, SegmentManager.createSegmentPathManager(collectionPath, LongKey.class).getFolderSizes());
 		assertEquals(foldersTime, SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class).getFolderSizes());

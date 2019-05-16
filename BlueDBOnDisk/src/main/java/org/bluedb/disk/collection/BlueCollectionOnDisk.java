@@ -34,6 +34,7 @@ import org.bluedb.disk.query.BlueQueryOnDisk;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.SegmentSizeSettings;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
@@ -58,6 +59,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final IndexManager<T> indexManager;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
+	}
+
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, Long segmentSize) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
@@ -65,10 +70,12 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
-		this.keyType = determineKeyType(metaData, requestedKeyType);
+		segmentSize = determineSegmentSize(metaData, requestedKeyType, segmentSize);
+		keyType = determineKeyType(metaData, requestedKeyType);
+		SegmentSizeSettings segmentSizeSettings = SegmentSizeSettings.getSettings(keyType, segmentSize);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
-		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, this.keyType);
+		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, segmentSizeSettings);
 		indexManager = new IndexManager<>(this, collectionPath);
 		rollupScheduler.start();
 		recoveryManager.recover();  // everything else has to be in place before running this
@@ -210,6 +217,15 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		for (BlueKey key: keys) {
 			ensureCorrectKeyType(key);
 		}
+	}
+
+	protected static long determineSegmentSize(CollectionMetaData metaData, Class<? extends BlueKey> keyType, Long requestedSegmentSize) throws BlueDbException {
+		Long segmentSize = metaData.getSegmentSize();
+		if (segmentSize == null) {
+			segmentSize = SegmentSizeSettings.getDefaultSegmentSizeFor(keyType);
+			metaData.saveSegmentSize(segmentSize);
+		}
+		return segmentSize;
 	}
 
 	protected static Class<? extends BlueKey> determineKeyType(CollectionMetaData metaData, Class<? extends BlueKey> providedKeyType) throws BlueDbException {

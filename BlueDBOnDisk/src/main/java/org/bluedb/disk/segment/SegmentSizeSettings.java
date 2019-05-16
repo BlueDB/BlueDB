@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
@@ -44,7 +45,7 @@ public enum SegmentSizeSettings {
 		return segmentSize;
 	}
 
-	public static SegmentSizeSettings getDefaultSettingsFor(Class<? extends BlueKey> keyType) {
+	public static SegmentSizeSettings getDefaultSettingsFor(Class<? extends BlueKey> keyType) throws BlueDbException {
 		if (TimeKey.class.isAssignableFrom(keyType)) {
 			return TIME_1_HOUR;
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
@@ -54,21 +55,21 @@ public enum SegmentSizeSettings {
 		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
 			return HASH_DEFAULT;
 		} else {
-			throw new UnsupportedOperationException("No " + SegmentSizeSettings.class.getSimpleName() + " for " + keyType);
+			throw new BlueDbException("No " + SegmentSizeSettings.class.getSimpleName() + " for " + keyType);
 		}
 	}
 
-	public static long getDefaultSegmentSizeFor(Class<? extends BlueKey> keyType) {
+	public static long getDefaultSegmentSizeFor(Class<? extends BlueKey> keyType) throws BlueDbException {
 		return getDefaultSettingsFor(keyType).getSegmentSize();
 	}
 
-	public static SegmentSizeSettings getSettings(Class<? extends BlueKey> keyType, long segmentSize) {
+	public static SegmentSizeSettings getSettings(Class<? extends BlueKey> keyType, long segmentSize) throws BlueDbException {
 		for (SegmentSizeSettings option: values()) {
 			if (option.keyType.isAssignableFrom(keyType) && option.getSegmentSize() == segmentSize) {
 				return option;
 			}
 		}
-		throw new InvalidParameterException("No " + SegmentSizeSettings.class.getSimpleName() + " for " + keyType + " and size " + segmentSize + ".");
+		throw new BlueDbException("No " + SegmentSizeSettings.class.getSimpleName() + " for " + keyType + " and size " + segmentSize + ".");
 	}
 
 	public static List<Long> bottomUpFolderWidthsToTopDownFolderSizes(List<Long> bottomToTopWidths) {

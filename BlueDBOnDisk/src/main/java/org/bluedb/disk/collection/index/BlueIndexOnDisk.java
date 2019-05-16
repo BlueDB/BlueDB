@@ -58,7 +58,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return keyExtractor.getType();
 	}
 
-	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) {
+	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
 		this.fileManager = collection.getFileManager();
