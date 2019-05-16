@@ -81,7 +81,7 @@ public class SegmentManager<T extends Serializable> {
 	}
 
 	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
-		SegmentSizeSettings segmentSettings = SegmentSizeSettings.chooseSegmentSize(keyType);
+		SegmentSizeSettings segmentSettings = SegmentSizeSettings.getDefaultSettingsFor(keyType);
 		List<Long> folderSizes = segmentSettings.getFolderSizes();
 		List<Long> rollupSizes = segmentSettings.getRollupSizes();
 
