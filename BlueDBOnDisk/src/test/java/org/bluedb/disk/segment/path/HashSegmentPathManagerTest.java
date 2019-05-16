@@ -8,18 +8,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import org.junit.Test;
+
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.SegmentSizeSettings;
+import org.junit.Test;
 
 public class HashSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_validate_rollup_levels() {
-		List<Long> rollupLevels = SegmentManager.DEFAULT_ROLLUP_LEVELS_HASH;
+		List<Long> rollupLevels = SegmentSizeSettings.HASH_DEFAULT.getRollupSizes();
 		for (int i = 0; i < rollupLevels.size() - 1; i++) {
 			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
 		}
