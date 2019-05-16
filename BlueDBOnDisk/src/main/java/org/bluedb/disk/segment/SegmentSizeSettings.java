@@ -2,7 +2,6 @@ package org.bluedb.disk.segment;
 
 import static java.util.Arrays.asList;
 
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
