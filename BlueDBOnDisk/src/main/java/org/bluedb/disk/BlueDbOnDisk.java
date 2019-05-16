@@ -47,8 +47,8 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable, K extends BlueKey> BlueCollectionOnDiskBuilder<T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
-		return new BlueCollectionOnDiskBuilder<T>(this, name, keyType, valueType);
+	public <K extends BlueKey, T extends Serializable> BlueCollectionOnDiskBuilder<K, T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
+		return new BlueCollectionOnDiskBuilder<K, T>(this, name, keyType, valueType);
 	}
 
 	@Deprecated
@@ -58,11 +58,15 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister) throws BlueDbException {
+		return initializeCollection(name, keyType, valueType, additionalClassesToRegister, null);
+	}
+
+	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, Long segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new BlueCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister);
+				collection = new BlueCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
