@@ -3,6 +3,7 @@ package org.bluedb.disk.segment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -31,6 +32,21 @@ public class SegmentSizeSettingsTest {
 		assertEquals(SegmentSizeSettings.INT_DEFAULT.getSegmentSize(), SegmentSizeSettings.getDefaultSegmentSizeFor(IntegerKey.class));
 		assertEquals(SegmentSizeSettings.HASH_DEFAULT.getSegmentSize(), SegmentSizeSettings.getDefaultSegmentSizeFor(StringKey.class));
 		assertEquals(SegmentSizeSettings.HASH_DEFAULT.getSegmentSize(), SegmentSizeSettings.getDefaultSegmentSizeFor(UUIDKey.class));
+	}
+
+	@Test
+	public void testGetOriginalDefaultSettingsFor() throws Exception {
+		assertEquals(SegmentSizeSettings.TIME_1_HOUR, SegmentSizeSettings.getOriginalDefaultSettingsFor(TimeKey.class));
+		assertEquals(SegmentSizeSettings.TIME_1_HOUR, SegmentSizeSettings.getOriginalDefaultSettingsFor(TimeFrameKey.class));
+		assertEquals(SegmentSizeSettings.LONG_DEFAULT, SegmentSizeSettings.getOriginalDefaultSettingsFor(LongKey.class));
+		assertEquals(SegmentSizeSettings.INT_DEFAULT, SegmentSizeSettings.getOriginalDefaultSettingsFor(IntegerKey.class));
+		assertEquals(SegmentSizeSettings.HASH_DEFAULT, SegmentSizeSettings.getOriginalDefaultSettingsFor(StringKey.class));
+		assertEquals(SegmentSizeSettings.HASH_DEFAULT, SegmentSizeSettings.getOriginalDefaultSettingsFor(UUIDKey.class));
+
+		try {
+			SegmentSizeSettings.getOriginalDefaultSettingsFor(BlueKey.class);
+			fail();
+		} catch (Exception e) {}
 	}
 
 	@Test

@@ -65,12 +65,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, Long segmentSize) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
+		boolean isNewCollection = !collectionPath.toFile().exists();
 		collectionPath.toFile().mkdirs();
 		metaData = new CollectionMetaData(collectionPath);
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
-		segmentSize = determineSegmentSize(metaData, requestedKeyType, segmentSize);
+		segmentSize = determineSegmentSize(metaData, requestedKeyType, segmentSize, isNewCollection);
 		keyType = determineKeyType(metaData, requestedKeyType);
 		SegmentSizeSettings segmentSizeSettings = SegmentSizeSettings.getSettings(keyType, segmentSize);
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
@@ -219,9 +220,12 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		}
 	}
 
-	protected static long determineSegmentSize(CollectionMetaData metaData, Class<? extends BlueKey> keyType, Long requestedSegmentSize) throws BlueDbException {
+	protected static long determineSegmentSize(CollectionMetaData metaData, Class<? extends BlueKey> keyType, Long requestedSegmentSize, boolean isNewCollection) throws BlueDbException {
 		Long segmentSize = metaData.getSegmentSize();
 		if (segmentSize == null) {
+			if (!isNewCollection) {
+				return SegmentSizeSettings.getOriginalDefaultSettingsFor(keyType).getSegmentSize();
+			}
 			segmentSize = (requestedSegmentSize != null) ? requestedSegmentSize : SegmentSizeSettings.getDefaultSegmentSizeFor(keyType);
 			metaData.saveSegmentSize(segmentSize);
 		}

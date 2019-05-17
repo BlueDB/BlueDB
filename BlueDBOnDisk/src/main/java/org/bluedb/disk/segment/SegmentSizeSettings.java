@@ -59,6 +59,20 @@ public enum SegmentSizeSettings {
 		}
 	}
 
+	public static SegmentSizeSettings getOriginalDefaultSettingsFor(Class<? extends BlueKey> keyType) throws BlueDbException {
+		if (TimeKey.class.isAssignableFrom(keyType)) {
+			return TIME_1_HOUR;
+		} else if (LongKey.class.isAssignableFrom(keyType)) {
+			return LONG_DEFAULT;
+		} else if (IntegerKey.class.isAssignableFrom(keyType)) {
+			return INT_DEFAULT;
+		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
+			return HASH_DEFAULT;
+		} else {
+			throw new BlueDbException("No original " + SegmentSizeSettings.class.getSimpleName() + " for " + keyType);
+		}
+	}
+
 	public static long getDefaultSegmentSizeFor(Class<? extends BlueKey> keyType) throws BlueDbException {
 		return getDefaultSettingsFor(keyType).getSegmentSize();
 	}
