@@ -43,6 +43,29 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 		assertTrue(dataFoldersForHourly > dataFoldersForDaily);
     }
 
+    @Test
+    public void test_reopeningSegmentWithDifferentSizes() throws Exception {
+		BlueCollectionOnDisk<TestValue> hourCollection = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+				.withRequestedSegmentSize(SegmentSize.TIME_1_HOUR)
+				.build();
+		hourCollection.shutdown();
+		db.shutdown();
+		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();  // reopen
+		
+		BlueCollectionOnDisk<TestValue> hourCollectionReopenedAsDaily = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+				.withRequestedSegmentSize(SegmentSize.TIME_1_DAY)
+				.build();
+
+		TestValue value = new TestValue("Joe");
+		BlueKey key = createTimeKey(1558043675317L, value);
+
+		hourCollectionReopenedAsDaily.insert(key, value);
+		assertEquals(value, hourCollectionReopenedAsDaily.get(key));
+
+		int dataFoldersForHourly = getFiles(hourCollectionReopenedAsDaily).size();
+		int expectedDataFoldersForHourly = SegmentSizeSettings.TIME_1_HOUR.getFolderSizes().size();
+		assertEquals(expectedDataFoldersForHourly, dataFoldersForHourly);
+    }
     
     private static List<File> getFiles(BlueCollectionOnDisk<?> collection) {
     	Path collectionPath = collection.getPath();
@@ -61,5 +84,4 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
     	}
     	return results;
     }
-    // TODO try opening with the wrong segment size
 }
