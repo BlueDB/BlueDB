@@ -222,7 +222,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	protected static long determineSegmentSize(CollectionMetaData metaData, Class<? extends BlueKey> keyType, Long requestedSegmentSize) throws BlueDbException {
 		Long segmentSize = metaData.getSegmentSize();
 		if (segmentSize == null) {
-			segmentSize = SegmentSizeSettings.getDefaultSegmentSizeFor(keyType);
+			segmentSize = (requestedSegmentSize != null) ? requestedSegmentSize : SegmentSizeSettings.getDefaultSegmentSizeFor(keyType);
 			metaData.saveSegmentSize(segmentSize);
 		}
 		return segmentSize;
