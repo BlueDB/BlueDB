@@ -1,13 +1,14 @@
 package org.bluedb.disk.collection.task;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.query.BlueQueryOnDisk;
-import org.bluedb.disk.recovery.PendingChange;
+import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
@@ -24,23 +25,18 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 	public void execute() throws BlueDbException {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 		List<BlueEntity<T>> entities = query.getEntities();
-		List<PendingChange<T>> changes = createDeletePendingChanges(entities);
-		for (PendingChange<T> change: changes) {
-			recoveryManager.saveChange(change);
-			change.apply(collection);
-			recoveryManager.markComplete(change);
-		}
+		List<IndividualChange<T>> sortedChanges = createSortedChangeList(entities);
+		PendingBatchChange<T> change = PendingBatchChange.createBatchChange(sortedChanges);
+		recoveryManager.saveChange(change);
+		change.apply(collection);
+		recoveryManager.markComplete(change);
 	}
 
-	private List<PendingChange<T>> createDeletePendingChanges(List<BlueEntity<T>> entities) {
-		List<PendingChange<T>> changes = new ArrayList<>();
-		for (BlueEntity<T> entity: entities) {
-			BlueKey key = entity.getKey();
-			T value = entity.getValue();
-			PendingChange<T> delete = PendingChange.createDelete(key, value);
-			changes.add(delete);
-		}
-		return changes;
+	private List<IndividualChange<T>> createSortedChangeList(List<BlueEntity<T>> entities) {
+		return entities.stream()
+				.map((e) -> new IndividualChange<>(e.getKey(), e.getValue(), null))
+				.sorted()
+				.collect(Collectors.toList());
 	}
 
 	@Override

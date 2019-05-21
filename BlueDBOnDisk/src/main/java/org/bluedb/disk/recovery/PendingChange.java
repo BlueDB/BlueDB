@@ -8,9 +8,7 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.index.IndexManager;
-import org.bluedb.disk.recovery.Recoverable;
 import org.bluedb.disk.segment.Segment;
-import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class PendingChange<T extends Serializable> implements Serializable, Recoverable<T> {
@@ -37,12 +35,6 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 	public static <T extends Serializable> PendingChange<T> createInsert(BlueKey key, T value, BlueSerializer serializer){
 		T newValue = serializer.clone(value);
 		return new PendingChange<T>(key, null, newValue);
-	}
-
-	public static <T extends Serializable> PendingChange<T> createUpdate(BlueEntity<T> entity, Updater<T> updater, BlueSerializer serializer){
-		BlueKey key = entity.getKey();
-		T value = entity.getValue();
-		return createUpdate(key, value, updater, serializer);
 	}
 
 	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T value, Updater<T> updater, BlueSerializer serializer){
