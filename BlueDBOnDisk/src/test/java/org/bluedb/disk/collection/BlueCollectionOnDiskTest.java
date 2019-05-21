@@ -207,9 +207,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_update() throws Exception {
 		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
+		BlueKey key2 = insertAtTime(10, new TestValue("Bob", 0));
         assertCupcakes(key, 0);
+        assertCupcakes(key2, 0);
         getTimeCollection().update(key, (v) -> v.addCupcake());
         assertCupcakes(key, 1);
+        assertCupcakes(key2, 0);
 	}
 
 	@Test
