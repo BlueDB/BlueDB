@@ -32,7 +32,7 @@ public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
 		recoveryManager.markComplete(change);
 	}
 
-	private List<IndividualChange<T>> createSortedChangeList(List<BlueEntity<T>> entities) {
+	protected static <T extends Serializable> List<IndividualChange<T>> createSortedChangeList(List<BlueEntity<T>> entities) {
 		return entities.stream()
 				.map((e) -> new IndividualChange<>(e.getKey(), e.getValue(), null))
 				.sorted()
