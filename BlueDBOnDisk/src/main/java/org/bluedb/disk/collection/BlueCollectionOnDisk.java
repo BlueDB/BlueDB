@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -56,8 +57,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 	private final IndexManager<T> indexManager;
+	private final Timer sharedTimer;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+		sharedTimer = db.getSharedTimer();
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
@@ -142,6 +145,10 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return results;
 	}
 
+	public Timer getSharedTimer() {
+		return sharedTimer;
+	}
+
 	public void submitTask(Runnable task) {
 		executor.submit(task);
 	}
@@ -186,9 +193,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public void shutdown() {
-		recoveryManager.getChangeHistoryCleaner().stop();
-		rollupScheduler.forceScheduleRollups();
-		rollupScheduler.stop();
 		executor.shutdown();
 	}
 
