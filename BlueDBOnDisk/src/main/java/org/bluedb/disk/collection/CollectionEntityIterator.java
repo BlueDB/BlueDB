@@ -2,6 +2,7 @@ package org.bluedb.disk.collection;
 
 import java.io.Closeable;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +54,14 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 		BlueEntity<T> response = next;
 		next = null;
 		return response;
+	}
+
+	public List<BlueEntity<T>> next(int n) {
+		List<BlueEntity<T>> result = new ArrayList<>();
+		while (hasNext() && result.size() < n) {
+			result.add(next());
+		}
+		return result;
 	}
 
 	private BlueEntity<T> nextFromSegment() {
