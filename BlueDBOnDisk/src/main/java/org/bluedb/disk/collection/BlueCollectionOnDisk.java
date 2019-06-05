@@ -46,9 +46,11 @@ import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
+import io.bluedb.util.CachedSingleThreadingPool;
+
 public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
-	ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+	final static CachedSingleThreadingPool executor = new CachedSingleThreadingPool();
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
@@ -167,11 +169,11 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public void submitTask(Runnable task) {
-		executor.submit(task);
+		executor.submit(collectionPath.toString(), task);
 	}
 
 	public void executeTask(Runnable task) throws BlueDbException{
-		Future<?> future = executor.submit(task);
+		Future<?> future = executor.submit(collectionPath.toString(), task);
 		try {
 			future.get();
 		} catch (InterruptedException | ExecutionException e) {
