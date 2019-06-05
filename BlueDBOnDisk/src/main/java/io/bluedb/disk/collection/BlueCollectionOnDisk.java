@@ -8,8 +8,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import io.bluedb.api.BlueCollection;
@@ -40,10 +38,11 @@ import io.bluedb.disk.segment.Range;
 import io.bluedb.disk.serialization.BlueEntity;
 import io.bluedb.disk.serialization.BlueSerializer;
 import io.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import io.bluedb.util.CachedSingleThreadingPool;
 
 public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
-	ExecutorService executor = Executors.newFixedThreadPool(1);
+	private final static CachedSingleThreadingPool executor = new CachedSingleThreadingPool();
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
@@ -138,11 +137,11 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public void submitTask(Runnable task) {
-		executor.submit(task);
+		executor.submit(collectionPath.toString(), task);
 	}
 
 	public void executeTask(Runnable task) throws BlueDbException{
-		Future<?> future = executor.submit(task);
+		Future<?> future = executor.submit(collectionPath.toString(), task);
 		try {
 			future.get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -184,7 +183,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		recoveryManager.getChangeHistoryCleaner().stop();
 		rollupScheduler.forceScheduleRollups();
 		rollupScheduler.stop();
-		executor.shutdown();
 	}
 
 	public Class<T> getType() {
