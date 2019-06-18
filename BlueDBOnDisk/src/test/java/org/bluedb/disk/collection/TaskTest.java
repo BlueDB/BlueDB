@@ -8,6 +8,7 @@ import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.task.DeleteMultipleTask;
 import org.bluedb.disk.collection.task.DeleteTask;
 import org.bluedb.disk.collection.task.InsertTask;
+import org.bluedb.disk.collection.task.ReplaceMultipleTask;
 import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateMultipleTask;
 import org.bluedb.disk.collection.task.UpdateTask;
@@ -48,6 +49,20 @@ public class TaskTest extends TestCase {
 		query.afterOrAtTime(min).beforeOrAtTime(max);		
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		Runnable task = new UpdateMultipleTask(null, query, null);
+		String taskString = task.toString();
+		assertTrue(taskString.contains(task.getClass().getSimpleName()));
+		assertTrue(taskString.contains(String.valueOf(min)));
+		assertTrue(taskString.contains(String.valueOf(max)));
+	}
+
+	@Test
+	public void test_ReplaceMultipleTask_toString() {
+		long min = 37;
+		long max = 101;
+		BlueQueryOnDisk<?> query = new BlueQueryOnDisk<TestValue>(null);
+		query.afterOrAtTime(min).beforeOrAtTime(max);		
+		@SuppressWarnings({"rawtypes", "unchecked"})
+		Runnable task = new ReplaceMultipleTask(null, query, null);
 		String taskString = task.toString();
 		assertTrue(taskString.contains(task.getClass().getSimpleName()));
 		assertTrue(taskString.contains(String.valueOf(min)));

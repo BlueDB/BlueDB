@@ -434,6 +434,17 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_replaceAll_invalid() {
+		TestValue value = new TestValue("Joe", 0);
+		insertAtTime(1, value);
+		try {
+			getTimeCollection().query().replace((v) -> {v.doSomethingNaughty(); return null; });
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
 		@SuppressWarnings("unchecked")
 		BlueCollection<?> collectionWithTimeKeys =db().initializeCollection("test_collection_TimeKey", TimeKey.class, Serializable.class);
