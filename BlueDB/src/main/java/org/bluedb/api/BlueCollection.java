@@ -10,7 +10,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 
 /**
- * A BlueCollection is a persisted map of keys (of type BlueKey) to values of object type T.
+ * A BlueCollection represents a persisted map of keys (of type BlueKey) to values of object type T.
  * 
  * A collection has a name (to distinguish between collections in a BlueDb instance), a key type, and a value type.
  * @param <T> object type of values to be serialized into collection
@@ -18,8 +18,8 @@ import org.bluedb.api.keys.ValueKey;
 public interface BlueCollection<T extends Serializable> {
 
 	/**
-	 * Creates (or returns existing) BlueIndex that maps objects of type keyType to values in the collection.
-	 * @param name index (one index per name per each collection)
+	 * Creates (or returns existing) BlueIndex that maps objects of type ValueKey (UUIDKey, StringKey, IntegerKey, LongKey) to values in the collection.
+	 * @param name index name (one index per name per each collection)
 	 * @param keyType the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
 	 * @param keyExtractor a function that maps a value to the keys by which the value should be indexed
 	 * @return a BlueIndex (existing index if it exists, otherwise a newly created index)
@@ -29,7 +29,7 @@ public interface BlueCollection<T extends Serializable> {
 
 	/**
 	 * Returns existing BlueIndex that maps objects of type keyType to values in the collection.
-	 * @param name index (one index per name per each collection)
+	 * @param name index name (one index per name per each collection)
 	 * @param keyType the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
 	 * @return a BlueIndex with the same name if it exists and has the same keyType
 	 * @throws BlueDbException if index doesn't exist or has a different keyType
@@ -39,8 +39,8 @@ public interface BlueCollection<T extends Serializable> {
 	/**
 	 * Returns true if the collection contains a value at key.
 	 * @param key key that may or may not be in collection
-	 * @return true if the collection contains a value at the key, else false
-	 * @throws BlueDbException if type of key is not the type specified when the index was created
+	 * @return true if the collection contains a value for given the key, else false
+	 * @throws BlueDbException if type of key is not the type specified when the collection was created
 	 */
 	public boolean contains(BlueKey key) throws BlueDbException;
 
