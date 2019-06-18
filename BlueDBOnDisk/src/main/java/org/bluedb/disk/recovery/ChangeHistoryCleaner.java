@@ -13,7 +13,7 @@ public class ChangeHistoryCleaner {
 	private static int DEFAULT_RETENTION_LIMIT = 200;
 	private int completedChangeLimit = DEFAULT_RETENTION_LIMIT;
 	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
-	private long waitBetweenCleanups = 500;
+	private long waitBetweenCleanups = 5_000;
 	final Path historyFolderPath;
 	RecoveryManager<?> recoveryManager;
 	Thread thread;
