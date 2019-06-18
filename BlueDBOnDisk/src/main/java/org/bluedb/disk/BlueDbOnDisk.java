@@ -85,7 +85,7 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public void shutdown() throws BlueDbException {
+	public void shutdown() {
 		for (BlueCollection<?> collection: collections.values()) {
 			BlueCollectionOnDisk<?> diskCollection = (BlueCollectionOnDisk<?>) collection;
 			diskCollection.shutdown();
