@@ -4,8 +4,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.bluedb.disk.Blutils;
 
 public class ChangeHistoryCleaner {
@@ -16,18 +17,17 @@ public class ChangeHistoryCleaner {
 	private long waitBetweenCleanups = 5_000;
 	final Path historyFolderPath;
 	RecoveryManager<?> recoveryManager;
-	Thread thread;
 
 	public ChangeHistoryCleaner(RecoveryManager<?> recoveryManager) {
 		this.recoveryManager = recoveryManager;
 		this.historyFolderPath = recoveryManager.getHistoryFolder();
-		TimerTask task = new TimerTask() {
+		Runnable cleanupTask = new Runnable() {
 			@Override
 			public void run() {
 				cleanupHistory();
 			}
 		};
-		recoveryManager.getCollection().getSharedTimer().schedule(task, waitBetweenCleanups, waitBetweenCleanups);
+		recoveryManager.getCollection().getSharedExecutor().scheduleAtFixedRate(cleanupTask, waitBetweenCleanups, waitBetweenCleanups, TimeUnit.MILLISECONDS);
 	}
 
 	public void setRetentionLimit(int completedChangeLimit) {

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.index.IndexRollupTask;
@@ -31,7 +32,7 @@ public class RollupScheduler {
 				scheduleLimitedReadyRollups();
 			}
 		};
-		collection.getSharedTimer().schedule(task, waitBetweenReviews, waitBetweenReviews);
+		collection.getSharedExecutor().scheduleAtFixedRate(task, waitBetweenReviews, waitBetweenReviews, TimeUnit.MILLISECONDS);
 	}
 
 	public void reportReads(List<? extends RollupTarget> rollupTargets) {
