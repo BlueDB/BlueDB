@@ -1,4 +1,4 @@
-package io.bluedb.util;
+package org.bluedb.disk;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;

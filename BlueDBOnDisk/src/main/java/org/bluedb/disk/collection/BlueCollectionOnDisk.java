@@ -22,6 +22,7 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BlueDbOnDisk;
+import org.bluedb.disk.CachedSingleThreadingPool;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.IndexManager;
 import org.bluedb.disk.collection.task.BatchChangeTask;
@@ -42,8 +43,6 @@ import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
-
-import io.bluedb.util.CachedSingleThreadingPool;
 
 public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
