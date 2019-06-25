@@ -232,7 +232,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	@Override
 	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
-		return indexManager.createIndex(name, keyType, keyExtractor);
+		return indexManager.getOrCreate(name, keyType, keyExtractor);
 	}
 
 	@Override

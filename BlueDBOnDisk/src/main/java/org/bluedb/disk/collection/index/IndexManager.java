@@ -29,7 +29,10 @@ public class IndexManager<T extends Serializable> {
 		indexesByName = getIndexesFromDisk(collection, collectionPath);
 	}
 
-	public <K extends ValueKey> BlueIndex<K, T> createIndex(String indexName, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+	public <K extends ValueKey> BlueIndex<K, T> getOrCreate(String indexName, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+		if (indexesByName.containsKey(indexName)) {
+			return getIndex(indexName, keyType);
+		}
 		Path indexPath = Paths.get(collection.getPath().toString(), INDEXES_SUBFOLDER, indexName);
 		BlueIndexOnDisk<K, T> index = BlueIndexOnDisk.createNew(collection, indexPath, keyExtractor);
 		@SuppressWarnings("unchecked")
