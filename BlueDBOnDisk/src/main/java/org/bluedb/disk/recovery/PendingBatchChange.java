@@ -21,7 +21,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 		timeCreated = System.currentTimeMillis();
 	}
 
-	public static <T extends Serializable> PendingBatchChange<T> createBatchUpsert(List<IndividualChange<T>> sortedChanges){
+	public static <T extends Serializable> PendingBatchChange<T> createBatchChange(List<IndividualChange<T>> sortedChanges){
 		return new PendingBatchChange<T>(sortedChanges);
 	}
 

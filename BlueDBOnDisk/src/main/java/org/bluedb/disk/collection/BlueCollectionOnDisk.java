@@ -28,6 +28,7 @@ import org.bluedb.disk.BlueDbOnDisk;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.IndexManager;
 import org.bluedb.disk.collection.task.BatchChangeTask;
+import org.bluedb.disk.collection.task.BatchDeleteTask;
 import org.bluedb.disk.collection.task.DeleteTask;
 import org.bluedb.disk.collection.task.InsertTask;
 import org.bluedb.disk.collection.task.ReplaceTask;
@@ -113,6 +114,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		ensureCorrectKeyTypes(values.keySet());
 		Runnable insertTask = new BatchChangeTask<T>(this, values);
 		executeTask(insertTask);
+	}
+
+	@Override
+	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException {
+		ensureCorrectKeyTypes(keys);
+		Runnable deleteTask = new BatchDeleteTask<T>(this, keys);
+		executeTask(deleteTask);
 	}
 
 	@Override

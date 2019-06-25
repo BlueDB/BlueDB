@@ -102,6 +102,30 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_batchDelete() throws Exception {
+		TestValue value1 = new TestValue("Joe");
+		TestValue value2 = new TestValue("Bob");
+		TestValue value3 = new TestValue("Chuck");
+		BlueKey key1 = createTimeKey(10, value1);
+		BlueKey key2 = createTimeKey(20, value2);
+		BlueKey key3 = createTimeKey(20, value3);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key1, value1);
+		batchInserts.put(key2, value2);
+		batchInserts.put(key3, value3);
+
+		getTimeCollection().batchUpsert(batchInserts);
+		assertValueAtKey(key1, value1);
+		assertValueAtKey(key2, value2);
+		assertValueAtKey(key3, value3);
+
+		getTimeCollection().batchDelete(Arrays.asList(key1, key3));
+		assertValueNotAtKey(key1, value1);
+		assertValueAtKey(key2, value2);
+		assertValueNotAtKey(key3, value3);
+	}
+
+	@Test
 	public void test_batchInsert_spanningSegments() throws Exception {
 		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
 		TestValue value = new TestValue("Joe");
@@ -183,9 +207,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_update() throws Exception {
 		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
+		BlueKey key2 = insertAtTime(10, new TestValue("Bob", 0));
         assertCupcakes(key, 0);
+        assertCupcakes(key2, 0);
         getTimeCollection().update(key, (v) -> v.addCupcake());
         assertCupcakes(key, 1);
+        assertCupcakes(key2, 0);
 	}
 
 	@Test
