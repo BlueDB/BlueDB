@@ -54,7 +54,7 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 
 	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T value, Mapper<T> mapper, BlueSerializer serializer){
 		T oldValue = serializer.clone(value);
-		T newValue = mapper.update(oldValue);
+		T newValue = mapper.update(serializer.clone(oldValue));
 		return new PendingChange<T>(key, oldValue, newValue);
 	}
 

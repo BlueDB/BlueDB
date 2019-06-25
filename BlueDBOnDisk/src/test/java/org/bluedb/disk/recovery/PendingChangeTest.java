@@ -1,12 +1,13 @@
 package org.bluedb.disk.recovery;
 
 import org.junit.Test;
-
+import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.serialization.BlueEntity;
 
 public class PendingChangeTest extends BlueDbDiskTestBase {
 
@@ -98,6 +99,53 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		change.applyChange(segment);
 		assertEquals(newValue, getTimeCollection().get(key));
 
+
+		removeKey(key);
+	}
+
+	@Test
+	public void test_applyChange_replace() throws Exception {
+		BlueKey key = createKey(1, 2);
+		TestValue value = createValue("Joe");
+		insertToTimeCollection(key, value);
+		
+		TestValue replacementValue = new TestValue(value.getName(), value.getCupcakes() + 1);
+		Mapper<TestValue> updater = (v) -> {
+			return replacementValue;
+		};
+		
+		PendingChange<TestValue> change = PendingChange.createUpdate(new BlueEntity<TestValue>(key, value), updater, getSerializer());
+
+		assertEquals(value, getTimeCollection().get(key));
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		change.applyChange(segment);
+		assertEquals(replacementValue, getTimeCollection().get(key));
+
+		removeKey(key);
+	}
+
+	@Test
+	public void test_applyChange_mutatingReplace() throws Exception {
+		BlueKey key = createKey(1, 2);
+		TestValue originalValue = createValue("Joe");
+		TestValue originalCopy = createValue("Joe");
+		insertToTimeCollection(key, originalValue);
+		
+		TestValue expectedAfterUpdate = new TestValue(originalValue.getName(), originalValue.getCupcakes() + 1);
+		
+		Mapper<TestValue> updater = (v) -> {
+			v.addCupcake();
+			return v;
+		};
+		
+		PendingChange<TestValue> change = PendingChange.createUpdate(key, originalValue, updater, getSerializer());
+		assertEquals(originalCopy, change.getOldValue());
+		assertEquals(expectedAfterUpdate, change.getNewValue());
+
+		assertEquals(originalValue, getTimeCollection().get(key));
+		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		change.applyChange(segment);
+		assertEquals(expectedAfterUpdate, getTimeCollection().get(key));
 
 		removeKey(key);
 	}
