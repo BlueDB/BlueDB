@@ -9,10 +9,15 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class CachedSingleThreadingPool {
-
-	
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<FutureTask<Void>>> collectionTaskMap = new ConcurrentHashMap<>();
 	private ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
+
+	public int getQueueSize(String collectionName) {
+		synchronized (collectionTaskMap) {
+			ConcurrentLinkedQueue<FutureTask<Void>> collectionTaskQueue = collectionTaskMap.get(collectionName);
+			return collectionTaskQueue != null ? collectionTaskQueue.size() : 0;
+		}
+	}
 	
 	public Future<?> submit(String collectionName, Runnable runnable) {
 		
@@ -72,4 +77,7 @@ public class CachedSingleThreadingPool {
 		return ((ThreadPoolExecutor)cachedThreadPool).getLargestPoolSize();
 	}
 
+	public void shutdown() {
+		cachedThreadPool.shutdown();
+	}
 }

@@ -8,7 +8,7 @@ public class CollectionTestTools {
 
 	public static void waitForExecutorToFinish(BlueCollectionOnDisk<?> collection) {
 		Runnable doNothing = new Runnable() {@Override public void run() {}};
-		Future<?> future = collection.executor.submit(doNothing);
+		Future<?> future = BlueCollectionOnDisk.executor.submit(collection.getPath().toString(), doNothing);
 		try {
 			future.get();
 		} catch (ExecutionException | InterruptedException e) {
