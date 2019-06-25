@@ -3,7 +3,6 @@ package org.bluedb.disk.collection;
 import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,8 +14,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
-import org.bluedb.api.BlueCollection;
 import org.bluedb.api.Condition;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -34,12 +31,13 @@ import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
-import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
+import org.junit.Test;
 
 public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
@@ -143,8 +141,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_times() throws Exception {
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", TimeKey.class, String.class);
+		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", TimeKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -157,8 +154,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
+		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -172,8 +168,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", StringKey.class, String.class);
+		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", StringKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -423,6 +418,28 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_rollup_scheduling_presegment() throws Exception {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		long segmentStart = segmentSize * 2;
+		BlueKey key = new TimeFrameKey(1, 1, segmentStart + 1);
+		Range rollupRange = new Range(0, segmentStart - 1);
+		long rollupDelay = segmentSize * 2;
+		RollupTarget rollupTarget = new RollupTarget(segmentStart, rollupRange, rollupDelay);
+
+		TestValue value = createValue("Anna");
+		getTimeCollection().insert(key, value);
+		long now = System.currentTimeMillis();
+
+		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
+		Map<RollupTarget, Long> rollupTimes = scheduler.getRollupTimes();
+		long rollupTime = rollupTimes.get(rollupTarget);
+		assertTrue(rollupTime > now + rollupDelay - 10_000);
+		assertTrue(rollupTime < now + rollupDelay + 10_000);
+
+		assertEquals(Arrays.asList(value), getTimeCollection().query().getList());
+	}
+
+	@Test
 	public void test_updateAll_invalid() {
 		TestValue value = new TestValue("Joe", 0);
 		insertAtTime(1, value);
@@ -446,10 +463,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
-		@SuppressWarnings("unchecked")
-		BlueCollection<?> collectionWithTimeKeys =db().initializeCollection("test_collection_TimeKey", TimeKey.class, Serializable.class);
-		@SuppressWarnings("unchecked")
-		BlueCollection<?> collectionWithLongKeys = db().initializeCollection("test_collection_LongKey", LongKey.class, Serializable.class);
+		BlueCollectionOnDisk<String> collectionWithTimeKeys = db().collectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
+		BlueCollectionOnDisk<String> collectionWithLongKeys = db().collectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
+
 		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
 		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
 		collectionWithLongKeys.get(new LongKey(1));  // should not throw an Exception
@@ -464,20 +480,19 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void test_determineKeyType() throws BlueDbException {
-		db().initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);  // regular instantiation approach
+		db().collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();  // regular instantiation approach
 
 		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();  // reopen database without collections instantiated
 
 		try {
-			reopenedDatbase.initializeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class);  // try to open with the wrong key type
+			reopenedDatbase.collectionBuilder(getTimeCollectionName(), HashGroupedKey.class, TestValue.class).build();  // try to open with the wrong key type
 			fail();
 		} catch (BlueDbException e) {
 		}
 
-		BlueCollectionOnDisk<?> collectionWithoutType = (BlueCollectionOnDisk<?>) reopenedDatbase.initializeCollection(getTimeCollectionName(), null, TestValue.class);  // open without specifying key type
+		BlueCollectionOnDisk<?> collectionWithoutType = (BlueCollectionOnDisk<?>) reopenedDatbase.collectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
 		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
 	}
 
@@ -493,7 +508,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_contains_HashGroupedKey() throws Exception {
 		TestValue value = new TestValue("Joe");
-		HashGroupedKey key = insertAtId(UUID.randomUUID(), value);
+		HashGroupedKey<?> key = insertAtId(UUID.randomUUID(), value);
 		List<TestValue> values = getHashGroupedCollection().query().getList();
 		assertEquals(1, values.size());
 		assertTrue(getHashGroupedCollection().contains(key));

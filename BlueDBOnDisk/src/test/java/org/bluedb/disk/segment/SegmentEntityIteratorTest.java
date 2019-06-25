@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import org.junit.Test;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
@@ -16,6 +16,7 @@ import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.serialization.BlueEntity;
+import org.junit.Test;
 
 public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
@@ -261,8 +262,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().initializeCollection("test_strings", LongKey.class, String.class);
+		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "longs";
 		int n = 100;
 		for (int i = 0; i < n; i++) {

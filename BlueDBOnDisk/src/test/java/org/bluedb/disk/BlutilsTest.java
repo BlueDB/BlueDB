@@ -151,4 +151,14 @@ public class BlutilsTest {
 			fail();
 		}
 	}
+	
+	@SuppressWarnings("null")
+	@Test
+	public void test_surroundTaskWithTryCatch() {
+		String validString = "Valid";
+		String nullString = null;
+		
+		Blutils.surroundTaskWithTryCatch(() -> validString.equals("Valid")).run();
+		Blutils.surroundTaskWithTryCatch(() -> nullString.equals("Valid")).run();
+	}
 }

@@ -4,13 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueDb;
-import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
@@ -19,6 +22,7 @@ public class BlueDbOnDisk implements BlueDb {
 
 	private final Path path;
 	private final BackupManager backupManager;
+	private final ScheduledThreadPoolExecutor sharedExecutor = new ScheduledThreadPoolExecutor(1);
 	
 	private final Map<String, BlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
@@ -45,7 +49,17 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
+	public <T extends Serializable, K extends BlueKey> BlueCollectionOnDiskBuilder<T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
+		return new BlueCollectionOnDiskBuilder<T>(this, name, keyType, valueType);
+	}
+
+	@Deprecated
+	@Override
 	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException {
+		return initializeCollection(name, keyType, valueType, Arrays.asList(additionalClassesToRegister));
+	}
+
+	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
@@ -88,6 +102,10 @@ public class BlueDbOnDisk implements BlueDb {
 		return backupManager;
 	}
 
+	public ScheduledThreadPoolExecutor getSharedExecutor() {
+		return sharedExecutor;
+	}
+
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
 		List<File> subfolders = FileUtils.getFolderContents(path.toFile(), (f) -> f.isDirectory());
 		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getUntypedCollectionForBackup(folder.getName()));
@@ -101,7 +119,7 @@ public class BlueDbOnDisk implements BlueDb {
 			collection = collections.get(folderName);
 		}
 		if (collection == null) {
-			collection = new BlueCollectionOnDisk(this, folderName, null, Serializable.class);
+			collection = new BlueCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
 		}
 		return collection;
 	}

@@ -29,13 +29,15 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {}
 		//		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
 
+		BlueIndex<IntegerKey, TestValue> index2 = collection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
+		assertTrue(index == index2);
 	}
 
 	@Test
 	public void test_getIndexesFromDisk() throws Exception {
 		String indexName = "test_index";
 		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
-		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
+		collection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
 
 		TestValue valueFred1 = new TestValue("Fred", 1);
 		TestValue valueBob3 = new TestValue("Bob", 3);
@@ -52,7 +54,6 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 
 		List<BlueKey> emptyList = Arrays.asList();
 		List<BlueKey> bobAndJoe = Arrays.asList(timeKeyBob3, timeKeyJoe3);
-		List<BlueKey> justBob = Arrays.asList(timeKeyBob3);
 		List<BlueKey> justFred = Arrays.asList(timeKeyFred1);
 
 		@SuppressWarnings({"rawtypes", "unchecked"})

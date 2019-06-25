@@ -117,7 +117,7 @@ public class IndexCompositeKeyTest {
 		IndexCompositeKey<LongKey> compositeKeyLongLong = new IndexCompositeKey<LongKey>(longKey, longKey);
 		IndexCompositeKey<TimeFrameKey> compositeKeyTimeLongCopy = new IndexCompositeKey<TimeFrameKey>(timeFrameKeyCopy, longKeyCopy);
 
-		IndexCompositeKey<LongKey> compositeKeyLong = new IndexCompositeKey<LongKey>(longKey, timeFrameKey);
+//		IndexCompositeKey<LongKey> compositeKeyLong = new IndexCompositeKey<LongKey>(longKey, timeFrameKey);
 
 		assertTrue(compositeKeyTimeLong.compareTo(compositeKeyTimeLongCopy) == 0);
 		assertTrue(compositeKeyTimeLong.compareTo(null) == -1);

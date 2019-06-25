@@ -76,7 +76,7 @@ public class AutoCloseCountdownTest {
 		};
 
 		try {
-			AutoCloseCountdown countDown = new AutoCloseCountdown(exceptionCloseable, 0);
+			new AutoCloseCountdown(exceptionCloseable, 0);
 		} catch (Exception e) {
 			fail();
 		}

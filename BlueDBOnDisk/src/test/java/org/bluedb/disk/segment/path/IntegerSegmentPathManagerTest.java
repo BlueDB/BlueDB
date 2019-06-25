@@ -80,7 +80,6 @@ public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getAllPossibleSegmentPaths() {
-		SegmentPathManager pathManager = getPathManager();
 		LongKey longKey = new LongKey(randomValue());
 		List<Path> paths = getPathManager().getAllPossibleSegmentPaths(longKey);
 		assertEquals(1, paths.size());

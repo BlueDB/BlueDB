@@ -2,15 +2,14 @@ package org.bluedb.disk.segment.rollup;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import org.junit.Test;
-import org.mockito.Mockito;
+
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
-import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionTestTools;
@@ -18,7 +17,8 @@ import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
-import org.bluedb.disk.segment.rollup.RollupScheduler;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
@@ -47,9 +47,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_reportRead() {
 		Range timeRange = new Range(2, 5);
-		Range timeRangeCopy = new Range(2, 5);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		RollupTarget rollupTargetCopy = new RollupTarget(0, timeRangeCopy);
 		assertEquals(0, getRollupScheduler().getRollupTimes().size());
 		assertEquals(Long.MAX_VALUE, getRollupScheduler().getScheduledRollupTime(rollupTarget));
 		long readTime = System.currentTimeMillis();
@@ -223,7 +221,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_run() throws Exception {
+	public void test_scheduleLimitedReadyRollups() throws Exception {
 		List<RollupTarget> rollupsRequested = new ArrayList<>();
 		BlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
@@ -233,8 +231,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		mockRollupScheduler.reportWrite(rollupTarget, 0);
 		assertEquals(0 + rollupTarget.getWriteRollupDelay(), mockRollupScheduler.getScheduledRollupTime(rollupTarget));
 
-		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
-		rollupSchedulerThread.start();
+		mockRollupScheduler.scheduleLimitedReadyRollups();
 
 		for (int i = 0; i < 100; i++) {
 			try { Thread.sleep(10);} catch (InterruptedException e) {e.printStackTrace();}
@@ -242,38 +239,19 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 				break;
 		}
 		
-		rollupSchedulerThread.stop();
-//		getRollupScheduler().stop();
-
 		assertEquals(1, rollupsRequested.size());
 		assertTrue(rollupsRequested.contains(rollupTarget));
 	}
 
-	@Test
-	public void test_run_interruption() {
-		RollupScheduler mockRollupScheduler = new RollupScheduler(getTimeCollection());
-		mockRollupScheduler.setWaitBetweenReviews(0);
-		Range timeRange = new Range(0, 1);
-		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
-		assertEquals(Long.MAX_VALUE, mockRollupScheduler.getScheduledRollupTime(rollupTarget));
-
-
-		Thread rollupSchedulerThread = new Thread(mockRollupScheduler);
-		rollupSchedulerThread.start();
-		Blutils.trySleep(10);
-		assertTrue(mockRollupScheduler.isRunning());
-		rollupSchedulerThread.interrupt();
-		Blutils.trySleep(20);
-		assertFalse(mockRollupScheduler.isRunning());
-	}
-
 	private BlueCollectionOnDisk<TestValue> createMockCollection(List<RollupTarget> rollupsRequested) throws Exception {
-        return new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class) {
+		@SuppressWarnings("unchecked")
+		BlueCollectionOnDisk<TestValue> collection = new BlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class, Arrays.asList()) {
             @Override
             public void submitTask(Runnable r) {
-            	RollupTask rollupTask = (RollupTask) r;
+            	RollupTask<TestValue> rollupTask = (RollupTask<TestValue>) r;
                 rollupsRequested.add(rollupTask.getTarget());
             }
         };
+        return collection;
 	}
 }
