@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Condition;
+import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -29,6 +30,7 @@ import org.bluedb.disk.collection.index.IndexManager;
 import org.bluedb.disk.collection.task.BatchChangeTask;
 import org.bluedb.disk.collection.task.DeleteTask;
 import org.bluedb.disk.collection.task.InsertTask;
+import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateTask;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.query.BlueQueryOnDisk;
@@ -111,6 +113,13 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		ensureCorrectKeyTypes(values.keySet());
 		Runnable insertTask = new BatchChangeTask<T>(this, values);
 		executeTask(insertTask);
+	}
+
+	@Override
+	public void replace(BlueKey key, Mapper<T> mapper) throws BlueDbException {
+		ensureCorrectKeyType(key);
+		Runnable updateTask = new ReplaceTask<T>(this, key, mapper);
+		executeTask(updateTask);
 	}
 
 	@Override

@@ -21,5 +21,6 @@ public interface BlueQuery<T extends Serializable> {
 
 	void delete() throws BlueDbException;
 	void update(Updater<T> updater) throws BlueDbException;
+	void replace(Mapper<T> mapper) throws BlueDbException;
 	public int count() throws BlueDbException;
 }
