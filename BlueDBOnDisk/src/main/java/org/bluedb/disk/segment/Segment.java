@@ -166,6 +166,9 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	public void rollup(Range timeRange) throws BlueDbException {
 		rollup(timeRange, true);
+		if (getAllFileRangesInOrder(segmentPath).size() == 0) {
+			segmentPath.toFile().delete();
+		}
 	}
 
 	private void rollup(Range timeRange, boolean abortIfOnlyOneFile) throws BlueDbException {
