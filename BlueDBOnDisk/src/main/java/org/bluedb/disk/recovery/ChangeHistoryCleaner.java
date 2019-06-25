@@ -4,25 +4,26 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.bluedb.disk.Blutils;
 
-public class ChangeHistoryCleaner implements Runnable {
+public class ChangeHistoryCleaner {
 
 	private static int DEFAULT_RETENTION_LIMIT = 200;
 	private int completedChangeLimit = DEFAULT_RETENTION_LIMIT;
 	private final AtomicInteger holdsOnHistoryCleanup = new AtomicInteger(0);
-	private long waitBetweenCleanups = 500;
-	private boolean isStopped = false;
+	private long waitBetweenCleanups = 5_000;
 	final Path historyFolderPath;
 	RecoveryManager<?> recoveryManager;
-	Thread thread;
 
 	public ChangeHistoryCleaner(RecoveryManager<?> recoveryManager) {
 		this.recoveryManager = recoveryManager;
 		this.historyFolderPath = recoveryManager.getHistoryFolder();
-		thread = new Thread(this);
-		thread.start();
+		
+		Runnable cleanupTask = Blutils.surroundTaskWithTryCatch(this::cleanupHistory);
+		recoveryManager.getCollection().getSharedExecutor().scheduleAtFixedRate(cleanupTask, waitBetweenCleanups, waitBetweenCleanups, TimeUnit.MILLISECONDS);
 	}
 
 	public void setRetentionLimit(int completedChangeLimit) {
@@ -56,18 +57,5 @@ public class ChangeHistoryCleaner implements Runnable {
 
 	public void setWaitBetweenCleanups(long millis) {
 		this.waitBetweenCleanups = millis;
-	}
-
-	public void stop() {
-		isStopped = true;
-	}
-
-	@Override
-	public void run() {
-		while(!isStopped) {
-			cleanupHistory();
-			Blutils.trySleep(waitBetweenCleanups);
-		}
-		
 	}
 }
