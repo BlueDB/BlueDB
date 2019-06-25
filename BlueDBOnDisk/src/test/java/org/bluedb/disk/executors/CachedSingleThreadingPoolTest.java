@@ -1,11 +1,11 @@
-package org.bluedb.disk;
+package org.bluedb.disk.executors;
 
 import static org.junit.Assert.*;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.bluedb.disk.CachedSingleThreadingPool;
+import org.bluedb.disk.executors.CachedSingleThreadingPool;
 import org.junit.Test;
 
 public class CachedSingleThreadingPoolTest {
