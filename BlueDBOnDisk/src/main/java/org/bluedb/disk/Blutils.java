@@ -151,4 +151,14 @@ public class Blutils {
 	    }
 	    return new String(hexChars);
 	}
+	
+	public static Runnable surroundTaskWithTryCatch(Runnable r) {
+		return () -> {
+			try {
+				r.run();
+			} catch(Throwable t) {
+				t.printStackTrace();
+			}
+		};
+	}
 }

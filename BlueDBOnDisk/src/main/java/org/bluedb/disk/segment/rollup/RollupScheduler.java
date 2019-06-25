@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.index.IndexRollupTask;
 
@@ -26,12 +26,7 @@ public class RollupScheduler {
 	}
 
 	public void start() {
-		TimerTask task = new TimerTask() {
-			@Override
-			public void run() {
-				scheduleLimitedReadyRollups();
-			}
-		};
+		Runnable task = Blutils.surroundTaskWithTryCatch(this::scheduleLimitedReadyRollups);
 		collection.getSharedExecutor().scheduleAtFixedRate(task, waitBetweenReviews, waitBetweenReviews, TimeUnit.MILLISECONDS);
 	}
 

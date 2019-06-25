@@ -21,12 +21,8 @@ public class ChangeHistoryCleaner {
 	public ChangeHistoryCleaner(RecoveryManager<?> recoveryManager) {
 		this.recoveryManager = recoveryManager;
 		this.historyFolderPath = recoveryManager.getHistoryFolder();
-		Runnable cleanupTask = new Runnable() {
-			@Override
-			public void run() {
-				cleanupHistory();
-			}
-		};
+		
+		Runnable cleanupTask = Blutils.surroundTaskWithTryCatch(this::cleanupHistory);
 		recoveryManager.getCollection().getSharedExecutor().scheduleAtFixedRate(cleanupTask, waitBetweenCleanups, waitBetweenCleanups, TimeUnit.MILLISECONDS);
 	}
 
