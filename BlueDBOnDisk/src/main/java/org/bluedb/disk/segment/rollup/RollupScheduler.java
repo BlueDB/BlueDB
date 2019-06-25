@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.index.IndexRollupTask;
 
-public class RollupScheduler implements Runnable {
+public class RollupScheduler {
 
 	private static final long WAIT_BETWEEN_REVIEWS_DEFAULT = 30_000;
 
@@ -18,30 +20,14 @@ public class RollupScheduler implements Runnable {
 	private final BlueCollectionOnDisk<?> collection;
 	private final Map<RollupTarget, Long> rollupTimes;
 
-	private Thread thread;
-	private boolean isStopped;
-
 	public RollupScheduler(BlueCollectionOnDisk<?> collection) {
 		rollupTimes = new ConcurrentHashMap<>();
 		this.collection = collection;
 	}
 
 	public void start() {
-		isStopped = false;
-		thread = new Thread(this, "RollupScheduler");
-		thread.start();
-	}
-
-	@Override
-	public void run() {
-		while (!isStopped) {
-			scheduleLimitedReadyRollups();
-			isStopped |= !Blutils.trySleep(waitBetweenReviews);
-		}
-	}
-
-	public void stop() {
-		isStopped = true;
+		Runnable task = Blutils.surroundTaskWithTryCatch(this::scheduleLimitedReadyRollups);
+		collection.getSharedExecutor().scheduleAtFixedRate(task, waitBetweenReviews, waitBetweenReviews, TimeUnit.MILLISECONDS);
 	}
 
 	public void reportReads(List<? extends RollupTarget> rollupTargets) {
@@ -78,10 +64,6 @@ public class RollupScheduler implements Runnable {
 		return rollupTimes.getOrDefault(target, Long.MAX_VALUE);
 	}
 
-	public boolean isRunning() {
-		return !isStopped;
-	}
-
 	protected void scheduleLimitedReadyRollups() {
 		int rollupsToSchedule = 30 - collection.getQueuedTaskCount();
 		if (rollupsToSchedule > 0) {
@@ -100,10 +82,6 @@ public class RollupScheduler implements Runnable {
 		for (RollupTarget timeRange: allRangesWaitingForRollups) {
 			scheduleRollup(timeRange);
 		}
-	}
-
-	public void setWaitBetweenReviews(long newWaitTimeMillis) {
-		waitBetweenReviews = newWaitTimeMillis;
 	}
 
 	protected List<RollupTarget> rollupTargetsReadyForRollup(int maxCount) {
