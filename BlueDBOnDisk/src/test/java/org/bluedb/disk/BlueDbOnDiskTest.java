@@ -552,6 +552,13 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertCupcakes(keyBob, 1);
         assertCupcakes(keyJosey, 2);
         assertCupcakes(keyBobby, 2);
+
+        // test replace
+        getTimeCollection().query().byStartTime().afterOrAtTime(3).replace((v) -> { return new TestValue(v.getName(), v.getCupcakes() + 2); } );
+        assertCupcakes(keyJoe, 1);
+        assertCupcakes(keyBob, 1);
+        assertCupcakes(keyJosey, 2);
+        assertCupcakes(keyBobby, 4);
 	}
 	
 	@Test

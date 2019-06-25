@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueDb;
@@ -21,6 +22,7 @@ public class BlueDbOnDisk implements BlueDb {
 
 	private final Path path;
 	private final BackupManager backupManager;
+	private final ScheduledThreadPoolExecutor sharedExecutor = new ScheduledThreadPoolExecutor(1);
 	
 	private final Map<String, BlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
@@ -98,6 +100,10 @@ public class BlueDbOnDisk implements BlueDb {
 
 	public BackupManager getBackupManager() {
 		return backupManager;
+	}
+
+	public ScheduledThreadPoolExecutor getSharedExecutor() {
+		return sharedExecutor;
 	}
 
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {

@@ -26,6 +26,8 @@ public interface BlueCollection<T extends Serializable> {
 
 	public T get(BlueKey key) throws BlueDbException;
 
+	public void replace(BlueKey key, Mapper<T> updater) throws BlueDbException;
+
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException;
 
 	public void delete(BlueKey key) throws BlueDbException;

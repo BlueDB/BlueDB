@@ -3,12 +3,14 @@ package org.bluedb.disk.recovery;
 import java.io.Serializable;
 import java.util.List;
 
+import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.index.IndexManager;
 import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class PendingChange<T extends Serializable> implements Serializable, Recoverable<T> {
@@ -41,6 +43,18 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 		T oldValue = serializer.clone(value);
 		T newValue = serializer.clone(oldValue);
 		updater.update(newValue);
+		return new PendingChange<T>(key, oldValue, newValue);
+	}
+
+	public static <T extends Serializable> PendingChange<T> createUpdate(BlueEntity<T> entity, Mapper<T> mapper, BlueSerializer serializer){
+		BlueKey key = entity.getKey();
+		T value = entity.getValue();
+		return createUpdate(key, value, mapper, serializer);
+	}
+
+	public static <T extends Serializable> PendingChange<T> createUpdate(BlueKey key, T value, Mapper<T> mapper, BlueSerializer serializer){
+		T oldValue = serializer.clone(value);
+		T newValue = mapper.update(oldValue);
 		return new PendingChange<T>(key, oldValue, newValue);
 	}
 

@@ -6,12 +6,14 @@ import java.util.List;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
+import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.collection.task.DeleteMultipleTask;
+import org.bluedb.disk.collection.task.ReplaceMultipleTask;
 import org.bluedb.disk.collection.task.UpdateMultipleTask;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -86,6 +88,12 @@ public class BlueQueryOnDisk<T extends Serializable> implements BlueQuery<T> {
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
 		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, clone(), updater);
+		collection.executeTask(updateMultipleTask);
+	}
+
+	@Override
+	public void replace(Mapper<T> mapper) throws BlueDbException {
+		Runnable updateMultipleTask = new ReplaceMultipleTask<T>(collection, clone(), mapper);
 		collection.executeTask(updateMultipleTask);
 	}
 
