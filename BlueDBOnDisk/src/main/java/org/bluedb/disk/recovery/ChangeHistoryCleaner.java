@@ -23,7 +23,7 @@ public class ChangeHistoryCleaner {
 		this.historyFolderPath = recoveryManager.getHistoryFolder();
 		
 		Runnable cleanupTask = Blutils.surroundTaskWithTryCatch(this::cleanupHistory);
-		recoveryManager.getCollection().getSharedExecutor().scheduleAtFixedRate(cleanupTask, waitBetweenCleanups, waitBetweenCleanups, TimeUnit.MILLISECONDS);
+		recoveryManager.getCollection().getSharedExecutor().scheduleTaskAtFixedRate(cleanupTask, waitBetweenCleanups, waitBetweenCleanups, TimeUnit.MILLISECONDS);
 	}
 
 	public void setRetentionLimit(int completedChangeLimit) {
