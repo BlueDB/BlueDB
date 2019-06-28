@@ -9,10 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
@@ -33,6 +29,7 @@ import org.bluedb.disk.collection.task.DeleteTask;
 import org.bluedb.disk.collection.task.InsertTask;
 import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateTask;
+import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.query.BlueQueryOnDisk;
 import org.bluedb.disk.recovery.RecoveryManager;
@@ -48,25 +45,25 @@ import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
-	ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
 	private final BlueSerializer serializer;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path collectionPath;
+	private final String collectionKey;
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 	private final IndexManager<T> indexManager;
-	private final ScheduledThreadPoolExecutor sharedExecutor;
+	private final BlueExecutor sharedExecutor;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		sharedExecutor = db.getSharedExecutor();
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		collectionPath.toFile().mkdirs();
+		collectionKey = collectionPath.toString();
 		metaData = new CollectionMetaData(collectionPath);
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
@@ -81,7 +78,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	public int getQueuedTaskCount() {
-		return executor.getQueue().size();
+		return sharedExecutor.getQueryQueueSize(collectionKey);
 	}
 
 	@Override
@@ -162,16 +159,16 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return results;
 	}
 
-	public ScheduledThreadPoolExecutor getSharedExecutor() {
+	public BlueExecutor getSharedExecutor() {
 		return sharedExecutor;
 	}
 
 	public void submitTask(Runnable task) {
-		executor.submit(task);
+		sharedExecutor.submitQueryTask(collectionKey, task);
 	}
 
 	public void executeTask(Runnable task) throws BlueDbException{
-		Future<?> future = executor.submit(task);
+		Future<?> future = sharedExecutor.submitQueryTask(collectionKey, task);
 		try {
 			future.get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -207,10 +204,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	public CollectionMetaData getMetaData() {
 		return metaData;
-	}
-
-	public void shutdown() {
-		executor.shutdown();
 	}
 
 	public Class<T> getType() {

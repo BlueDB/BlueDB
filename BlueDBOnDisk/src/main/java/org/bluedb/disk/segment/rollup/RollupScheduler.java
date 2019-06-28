@@ -27,7 +27,7 @@ public class RollupScheduler {
 
 	public void start() {
 		Runnable task = Blutils.surroundTaskWithTryCatch(this::scheduleLimitedReadyRollups);
-		collection.getSharedExecutor().scheduleAtFixedRate(task, waitBetweenReviews, waitBetweenReviews, TimeUnit.MILLISECONDS);
+		collection.getSharedExecutor().scheduleTaskAtFixedRate(task, waitBetweenReviews, waitBetweenReviews, TimeUnit.MILLISECONDS);
 	}
 
 	public void reportReads(List<? extends RollupTarget> rollupTargets) {
