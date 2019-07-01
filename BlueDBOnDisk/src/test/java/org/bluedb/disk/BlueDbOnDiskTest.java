@@ -6,28 +6,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
+import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
-import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
-import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.tasks.AsynchronousTestTask;
+import org.bluedb.tasks.TestTask;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
 
 public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
-	public void test_shutdown() throws Exception{
-		getTimeCollection().createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
-		db.shutdown();
-	}
-
-    @Test
     public void test_getUntypedCollectionForBackup() throws Exception {
         String timeCollectionName = getTimeCollectionName();
 		BlueCollectionOnDisk<String> newCollection = db.collectionBuilder("new_collection", TimeKey.class, String.class).build();
@@ -552,6 +549,13 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertCupcakes(keyBob, 1);
         assertCupcakes(keyJosey, 2);
         assertCupcakes(keyBobby, 2);
+
+        // test replace
+        getTimeCollection().query().byStartTime().afterOrAtTime(3).replace((v) -> { return new TestValue(v.getName(), v.getCupcakes() + 2); } );
+        assertCupcakes(keyJoe, 1);
+        assertCupcakes(keyBob, 1);
+        assertCupcakes(keyJosey, 2);
+        assertCupcakes(keyBobby, 4);
 	}
 	
 	@Test
@@ -652,5 +656,86 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         } catch (BlueDbException e) {
         }
 
+	}
+
+	@Test
+	public void test_shutdown() throws Exception{
+		TestValue testValue = new TestValue("Joe Dirt");
+		insertAtTime(10, testValue);
+		
+		TestTask updateAndSleepTask = new TestTask(() -> {
+			Thread.sleep(10);
+		});
+		
+		AsynchronousTestTask queryTask = AsynchronousTestTask.run(() -> {
+			getTimeCollection().query()
+				.where(value -> testValue.getName().equals(value.getName()))
+				.update(value -> {
+					updateAndSleepTask.run();
+				});
+		});
+		
+		updateAndSleepTask.awaitStart();
+		
+		db.shutdown();
+		validateShutdown();
+		
+		AsynchronousTestTask interruptedTask = AsynchronousTestTask.run(() -> {
+			db.awaitTermination(1, TimeUnit.MINUTES);
+		});
+		interruptedTask.interrupt();
+		
+		assertEquals(false, db.awaitTermination(3, TimeUnit.MILLISECONDS));
+		assertEquals(true, db.awaitTermination(1, TimeUnit.MINUTES));
+		TestUtils.assertThrowable(BlueDbException.class, interruptedTask.getError());
+		
+		assertEquals(true, queryTask.isComplete());
+		assertEquals(true, queryTask.getError() == null);
+		
+		assertEquals(true, updateAndSleepTask.isComplete());
+		assertEquals(true, updateAndSleepTask.getError() == null);
+	}
+
+	@Test
+	public void test_shutdownNow() throws Exception {
+		TestValue testValue = new TestValue("Joe Dirt");
+		insertAtTime(10, testValue);
+		
+		TestTask updateAndSleepTask = new TestTask(() -> {
+			Thread.sleep(100);
+		});
+		
+		AsynchronousTestTask queryTask = AsynchronousTestTask.run(() -> {
+			getTimeCollection().query()
+				.where(value -> testValue.getName().equals(value.getName()))
+				.update(value -> {
+					updateAndSleepTask.run();
+				});
+		});
+		
+		updateAndSleepTask.awaitStart();
+		
+		db.shutdownNow();
+		validateShutdown();
+		
+		assertEquals(true, db.awaitTermination(1, TimeUnit.MINUTES));
+		
+		assertEquals(true, queryTask.isComplete());
+		TestUtils.assertThrowable(null, queryTask.getError()); //query is run on separate thread, so we won't see the intruption on this task
+		
+		assertEquals(true, updateAndSleepTask.isComplete());
+		TestUtils.assertThrowable(InterruptedException.class, updateAndSleepTask.getError());
+	}
+
+	private void validateShutdown() {
+		TestTask scheduledTask = TestTask.run(() -> {
+			db.getSharedExecutor().scheduleTaskAtFixedRate(() -> System.out.println("Hi!"), 10, 10, TimeUnit.MINUTES);
+		});
+		TestTask queryTask = TestTask.run(() -> {
+			insertAtTime(11, new TestValue("Oliver"));
+		});
+	
+		TestUtils.assertThrowable(RejectedExecutionException.class, scheduledTask.getError());
+		TestUtils.assertThrowable(RejectedExecutionException.class, queryTask.getError());
 	}
 }

@@ -2,6 +2,8 @@ package org.bluedb.api;
 
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 
@@ -16,4 +18,8 @@ public interface BlueDb {
 	public void backup(Path path) throws BlueDbException;
 
 	public void shutdown() throws BlueDbException;
+
+	public void shutdownNow() throws BlueDbException;
+	
+	public boolean awaitTermination(long timeout, TimeUnit timeUnit) throws BlueDbException;
 }

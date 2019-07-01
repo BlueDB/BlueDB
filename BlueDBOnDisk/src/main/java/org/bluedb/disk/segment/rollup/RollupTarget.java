@@ -6,10 +6,21 @@ public class RollupTarget {
 
 	private final long segmentGroupingNumber;
 	private final Range range;
+	private final long writeRollupDelay;
+	private final long readRollupDelay;
+
+	public RollupTarget(long segmentGroupingNumber, Range range, long rollupDelay) {
+		this.segmentGroupingNumber = segmentGroupingNumber;
+		this.range = range;
+		writeRollupDelay = rollupDelay;
+		readRollupDelay = rollupDelay;
+	}
 
 	public RollupTarget(long segmentGroupingNumber, Range range) {
 		this.segmentGroupingNumber = segmentGroupingNumber;
 		this.range = range;
+		writeRollupDelay = (range == null) ? 0 : range.length();
+		readRollupDelay = (range == null) ? 0 : range.length();
 	}
 
 	public long getSegmentGroupingNumber() {
@@ -21,11 +32,11 @@ public class RollupTarget {
 	}
 
 	public long getWriteRollupDelay() {
-		return range.length();
+		return writeRollupDelay;
 	}
 
 	public long getReadRollupDelay() {
-		return range.length();
+		return readRollupDelay;
 	}
 
 	@Override

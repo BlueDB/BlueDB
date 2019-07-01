@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.bluedb.api.Updater;
+import org.bluedb.api.Mapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
@@ -16,16 +16,16 @@ import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 
-public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
+public class ReplaceMultipleTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionOnDisk<T> collection;
 	private final BlueQueryOnDisk<T> query;
-	private final Updater<T> updater;
+	private final Mapper<T> mapper;
 
 
-	public UpdateMultipleTask(BlueCollectionOnDisk<T> collection, BlueQueryOnDisk<T> query, Updater<T> updater) {
+	public ReplaceMultipleTask(BlueCollectionOnDisk<T> collection, BlueQueryOnDisk<T> query, Mapper<T> mapper) {
 		this.collection = collection;
 		this.query = query;
-		this.updater = updater;
+		this.mapper = mapper;
 	}
 
 	@Override
@@ -33,12 +33,12 @@ public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 		List<BlueEntity<T>> entities = query.getEntities();
 		List<IndividualChange<T>> changes;
 		try {
-			changes = createChanges(entities, updater);
+			changes = createChanges(entities, mapper);
 		} catch(Throwable t) {
 			t.printStackTrace();
 			throw new BlueDbException("Error updating values", t);
 		}
-
+		
 		Collections.sort(changes);
 		PendingBatchChange<T> change = PendingBatchChange.createBatchChange(changes);
 
@@ -48,26 +48,25 @@ public class UpdateMultipleTask<T extends Serializable> extends QueryTask {
 		recoveryManager.markComplete(change);
 	}
 
-	private List<IndividualChange<T>> createChanges(List<BlueEntity<T>> entities, Updater<T> updater) {
+	private List<IndividualChange<T>> createChanges(List<BlueEntity<T>> entities, Mapper<T> mapper) {
 		List<IndividualChange<T>> updates = new ArrayList<>();
 		for (BlueEntity<T> entity: entities) {
-			IndividualChange<T> update = createChange(entity, updater);
+			IndividualChange<T> update = createChange(entity, mapper);
 			updates.add(update);
 		}
 		return updates;
 	}
-
-	private IndividualChange<T> createChange(BlueEntity<T> entity, Updater<T> updater) {
+	
+	private IndividualChange<T> createChange(BlueEntity<T> entity, Mapper<T> mapper) {
 		BlueSerializer serializer = collection.getSerializer();
 		BlueKey key = entity.getKey();
 		T oldValue = serializer.clone(entity.getValue());
-		T newValue = serializer.clone(oldValue);
-		updater.update(newValue);
+		T newValue = mapper.update(serializer.clone(oldValue));
 		return new IndividualChange<T>(key, oldValue, newValue);
 	}
 
 	@Override
 	public String toString() {
-		return "<UpdateMultipleTask on query " + query.toString() + ">";
+		return "<" + this.getClass().getSimpleName() + " on query " + query.toString() + ">";
 	}
 }

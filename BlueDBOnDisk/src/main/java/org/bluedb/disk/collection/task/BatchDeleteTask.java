@@ -1,9 +1,10 @@
 package org.bluedb.disk.collection.task;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
@@ -12,14 +13,16 @@ import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 
-public class BatchChangeTask<T extends Serializable> extends QueryTask {
+public class BatchDeleteTask<T extends Serializable> extends QueryTask {
 
 	private final BlueCollectionOnDisk<T> collection;
 	private final List<IndividualChange<T>> sortedChanges;
 
-	public BatchChangeTask(BlueCollectionOnDisk<T> collection, Map<BlueKey, T> values) {
+	public BatchDeleteTask(BlueCollectionOnDisk<T> collection, Collection<BlueKey> keys) {
 		this.collection = collection;
-		sortedChanges = toSortedChangeList(values);
+		sortedChanges = new ArrayList<>();
+		keys.forEach( (key) -> sortedChanges.add( IndividualChange.createDeleteChange(key)));
+		Collections.sort(sortedChanges);
 	}
 
 	@Override
@@ -36,10 +39,4 @@ public class BatchChangeTask<T extends Serializable> extends QueryTask {
 		return "<" + getClass().getSimpleName() + " for " + sortedChanges.size() + ">";
 	}
 
-	private static <T extends Serializable> List<IndividualChange<T>> toSortedChangeList(Map<BlueKey, T> values) {
-		return values.entrySet().stream()
-				.map( (e) -> IndividualChange.createInsertChange(e.getKey(), e.getValue()) )
-				.sorted()
-				.collect(Collectors.toList());
-	}
 }

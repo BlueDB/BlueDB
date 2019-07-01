@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.bluedb.api.SegmentSize;
@@ -45,11 +46,11 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 
     @Test
     public void test_reopeningSegmentWithDifferentSizes() throws Exception {
-		BlueCollectionOnDisk<TestValue> hourCollection = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+		db.collectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withRequestedSegmentSize(SegmentSize.TIME_1_HOUR)
 				.build();
-		hourCollection.shutdown();
 		db.shutdown();
+		db.awaitTermination(1, TimeUnit.MINUTES);
 		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();  // reopen
 		
 		BlueCollectionOnDisk<TestValue> hourCollectionReopenedAsDaily = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)

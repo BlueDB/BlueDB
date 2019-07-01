@@ -10,16 +10,20 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.junit.Test;
-
+import org.mockito.Mockito;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingRollup;
 import org.bluedb.disk.segment.rollup.RollupTarget;
+import org.bluedb.disk.segment.rollup.Rollupable;
 
 public class SegmentTest extends BlueDbDiskTestBase {
 
@@ -46,6 +50,25 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertTrue(segment.contains(key1At1));
 		assertTrue(segment.contains(key2At1));
 		assertTrue(segment.contains(key3At3));
+	}
+
+	@Test
+	public void test_removedSegmentFolderDoesntCauseExceptions() throws Exception {
+		Path segmentParentPath = createTempFolder().toPath();
+		Path segmentPath = Paths.get(segmentParentPath.toString(), "nonexistingChildFolder");
+		Range segmentRange = new Range(100, 200);
+		Rollupable rollupable = Mockito.mock(BlueCollectionOnDisk.class);
+		FileManager fileManager = getFileManager();
+		List<Long> rollupLevels = Arrays.asList(100L);
+		Segment<TestValue> segment = new Segment<>(segmentPath, segmentRange, rollupable, fileManager, rollupLevels);
+
+		// perform read actions on nonexisting folder to make sure that deleting empty folder during rollup won't break reads.
+		segment.get(new TimeKey(1L, 1L));
+		segment.contains(new TimeKey(1L, 1L));
+		segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE).forEachRemaining((t) -> {});
+
+		// make sure it didn't exist the whole time
+		assertFalse(segment.getPath().toFile().exists());
 	}
 
 	@Test
@@ -294,6 +317,30 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_rollup_previousData() throws Exception {
+		long timeSegmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		Segment<TestValue> segment10 = getSegment(timeSegmentSize * 10);
+
+		BlueKey key1 = createKey(1, 1*timeSegmentSize);
+		BlueKey key2 = createKey(2, 2*timeSegmentSize);
+		TestValue value1 = createValue("Anna");
+		TestValue value2 = createValue("Bob");
+
+		assertEquals(0, countItems(segment10));
+		assertEquals(0, countFiles(segment10));
+
+		segment10.insert(key1, value1);
+		segment10.insert(key2, value2);
+		assertEquals(2, countItems(segment10));
+		assertEquals(2, countFiles(segment10));
+
+		Range preSegmentRange = new Range(0, segment10.getRange().getStart() - 1);
+		segment10.rollup(preSegmentRange);
+		assertEquals(2, countItems(segment10));
+		assertEquals(1, countFiles(segment10));
+	}
+
+	@Test
 	public void test_rollup() throws Exception {
 		Segment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
@@ -307,10 +354,8 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 		segment.insert(key1At1, value1);
 		segment.insert(key3At3, value3);
-		values = getAll(segment);
-		assertEquals(2, values.size());
-		File[] directoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(2, directoryContents.length);
+		assertEquals(2, countFiles(segment));
+		assertEquals(2, countFiles(segment));
 
 		Range invalidRollupTimeRange = new Range(0, 3);
 		try {
@@ -320,10 +365,8 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 		Range validRollupTimeRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 		segment.rollup(validRollupTimeRange);
-		values = getAll(segment);
-		assertEquals(2, values.size());
-		directoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(1, directoryContents.length);
+		assertEquals(2, countItems(segment));
+		assertEquals(1, countFiles(segment));
 	}
 
 	@Test
@@ -340,7 +383,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 		Range rollupRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 		segment.rollup(rollupRange);
-		assertEquals(0, segment.getPath().toFile().listFiles().length);
+		assertFalse(segment.getPath().toFile().exists()); // empty folder should get deleted
 	}
 
 	@Test
@@ -621,6 +664,34 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertFalse(valueSegment.isValidRollupRange(validTimeSegmentRange));
 		assertFalse(valueSegment.isValidRollupRange(invalidTimeSegmentRange1));
 		assertFalse(valueSegment.isValidRollupRange(invalidTimeSegmentRange2));
+		assertTrue(valueSegment.isValidRollupRange(validValueSegmentRange));
+		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange1));
+		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange2));
+	}
+
+	@Test
+	public void test_isValidRollupRange_preSegment() {
+		SegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
+		SegmentManager<TestValue> valueSegmentManager = getHashGroupedCollection().getSegmentManager();
+		long timeSegmentSize = timeSegmentManager.getSegmentSize();
+		long valueSegmentSize = valueSegmentManager.getSegmentSize();
+		Segment<TestValue> timeSegment = timeSegmentManager.getSegment(timeSegmentSize * 10);
+		Segment<TestValue> valueSegment = valueSegmentManager.getSegment(valueSegmentSize * 10);
+		long timeSegmentStart = timeSegment.getRange().getStart();
+		long valueSegmentStart = timeSegment.getRange().getStart();
+		Range validTimeSegmentRange = new Range(0, timeSegmentStart - 1);
+		Range invalidTimeSegmentRange1 = new Range(1, timeSegmentStart - 1);
+		Range invalidTimeSegmentRange2 = new Range(0, timeSegmentStart);
+		Range invalidTimeSegmentRange3 = new Range(0, timeSegmentStart - timeSegmentSize - 1);
+		Range validValueSegmentRange = new Range(0, valueSegmentSize - 1);
+		Range invalidValueSegmentRange1 = new Range(1, valueSegmentStart - 1);
+		Range invalidValueSegmentRange2 = new Range(0, valueSegmentStart);
+
+		assertTrue(timeSegment.isValidRollupRange(validTimeSegmentRange));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange1));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange2));
+		assertFalse(timeSegment.isValidRollupRange(invalidTimeSegmentRange3));
+
 		assertTrue(valueSegment.isValidRollupRange(validValueSegmentRange));
 		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange1));
 		assertFalse(valueSegment.isValidRollupRange(invalidValueSegmentRange2));

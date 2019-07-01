@@ -1,5 +1,6 @@
 package org.bluedb.disk.file;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -144,7 +145,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 
 	protected static DataInputStream openDataInputStream(File file) throws BlueDbException {
 		try {
-			return new DataInputStream(new FileInputStream(file));
+			return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			throw new BlueDbException("cannot open input stream on file " + file.toPath(), e);

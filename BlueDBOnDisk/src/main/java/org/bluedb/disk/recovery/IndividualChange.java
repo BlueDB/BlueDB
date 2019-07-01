@@ -18,6 +18,10 @@ public class IndividualChange <T extends Serializable> implements Serializable, 
 		return new IndividualChange<T>(key, null, value);
 	}
 
+	public static <T extends Serializable> IndividualChange<T> createDeleteChange(BlueKey key) {
+		return new IndividualChange<T>(key, null, null);
+	}
+
 	public IndividualChange(BlueKey key, T oldValue, T newValue) {
 		this.key = key;
 		this.oldValue = oldValue;

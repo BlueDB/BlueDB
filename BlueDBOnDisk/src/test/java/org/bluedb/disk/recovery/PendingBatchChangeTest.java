@@ -15,7 +15,7 @@ public class PendingBatchChangeTest {
 
 	@Test
 	public void test_toString() {
-		PendingBatchChange<TestValue> batch = PendingBatchChange.createBatchUpsert(empty);
+		PendingBatchChange<TestValue> batch = PendingBatchChange.createBatchChange(empty);
 		assertTrue(batch.toString().contains(batch.getClass().getSimpleName()));
 	}
 }

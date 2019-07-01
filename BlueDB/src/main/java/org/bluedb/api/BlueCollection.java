@@ -1,6 +1,7 @@
 package org.bluedb.api;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -21,7 +22,11 @@ public interface BlueCollection<T extends Serializable> {
 
 	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException;
 
+	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException;
+
 	public T get(BlueKey key) throws BlueDbException;
+
+	public void replace(BlueKey key, Mapper<T> updater) throws BlueDbException;
 
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException;
 

@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueDb;
@@ -15,18 +16,21 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 
 public class BlueDbOnDisk implements BlueDb {
 
 	private final Path path;
 	private final BackupManager backupManager;
+	private final BlueExecutor sharedExecutor;
 	
 	private final Map<String, BlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
 	BlueDbOnDisk(Path path, Class<?>...registeredSerializableClasses) {
 		this.path = path;
 		this.backupManager = new BackupManager(this);
+		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
 	}
 
 	@Override
@@ -90,9 +94,20 @@ public class BlueDbOnDisk implements BlueDb {
 
 	@Override
 	public void shutdown() throws BlueDbException {
-		for (BlueCollection<?> collection: collections.values()) {
-			BlueCollectionOnDisk<?> diskCollection = (BlueCollectionOnDisk<?>) collection;
-			diskCollection.shutdown();
+		sharedExecutor.shutdown();
+	}
+	
+	@Override
+	public void shutdownNow() throws BlueDbException {
+		sharedExecutor.shutdownNow();
+	}
+	
+	@Override
+	public boolean awaitTermination(long timeout, TimeUnit timeUnit) throws BlueDbException {
+		try {
+			return sharedExecutor.awaitTermination(timeout, timeUnit);
+		} catch(Throwable t) {
+			throw new BlueDbException("Failure during shutdown", t);
 		}
 	}
 
@@ -102,6 +117,10 @@ public class BlueDbOnDisk implements BlueDb {
 
 	public BackupManager getBackupManager() {
 		return backupManager;
+	}
+
+	public BlueExecutor getSharedExecutor() {
+		return sharedExecutor;
 	}
 
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {

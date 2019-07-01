@@ -102,6 +102,30 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_batchDelete() throws Exception {
+		TestValue value1 = new TestValue("Joe");
+		TestValue value2 = new TestValue("Bob");
+		TestValue value3 = new TestValue("Chuck");
+		BlueKey key1 = createTimeKey(10, value1);
+		BlueKey key2 = createTimeKey(20, value2);
+		BlueKey key3 = createTimeKey(20, value3);
+		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
+		batchInserts.put(key1, value1);
+		batchInserts.put(key2, value2);
+		batchInserts.put(key3, value3);
+
+		getTimeCollection().batchUpsert(batchInserts);
+		assertValueAtKey(key1, value1);
+		assertValueAtKey(key2, value2);
+		assertValueAtKey(key3, value3);
+
+		getTimeCollection().batchDelete(Arrays.asList(key1, key3));
+		assertValueNotAtKey(key1, value1);
+		assertValueAtKey(key2, value2);
+		assertValueNotAtKey(key3, value3);
+	}
+
+	@Test
 	public void test_batchInsert_spanningSegments() throws Exception {
 		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
 		TestValue value = new TestValue("Joe");
@@ -183,9 +207,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_update() throws Exception {
 		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
+		BlueKey key2 = insertAtTime(10, new TestValue("Bob", 0));
         assertCupcakes(key, 0);
+        assertCupcakes(key2, 0);
         getTimeCollection().update(key, (v) -> v.addCupcake());
         assertCupcakes(key, 1);
+        assertCupcakes(key2, 0);
 	}
 
 	@Test
@@ -206,6 +233,37 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		BlueKey key = insertAtTime(1, value);
 		try {
 			getTimeCollection().update(key, (v) -> v.doSomethingNaughty());
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_replace() throws Exception {
+		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
+        assertCupcakes(key, 0);
+        getTimeCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
+        assertCupcakes(key, 1);
+	}
+
+	@Test
+	public void test_replace_nonexisting() {
+		AtomicBoolean wasUpdaterCalled = new AtomicBoolean(false);
+		BlueKey key = new TimeKey(1, 1);
+		try {
+	        getTimeCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
+			fail();
+		} catch (BlueDbException e) {
+		}
+		assertFalse(wasUpdaterCalled.get());
+	}
+
+	@Test
+	public void test_replace_invalid() {
+		TestValue value = new TestValue("Joe", 0);
+		BlueKey key = insertAtTime(1, value);
+		try {
+			getTimeCollection().replace(key, (v) -> {throw new RuntimeException("no go");}) ;
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -387,11 +445,44 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_rollup_scheduling_presegment() throws Exception {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		long segmentStart = segmentSize * 2;
+		BlueKey key = new TimeFrameKey(1, 1, segmentStart + 1);
+		Range rollupRange = new Range(0, segmentStart - 1);
+		long rollupDelay = segmentSize * 2;
+		RollupTarget rollupTarget = new RollupTarget(segmentStart, rollupRange, rollupDelay);
+
+		TestValue value = createValue("Anna");
+		getTimeCollection().insert(key, value);
+		long now = System.currentTimeMillis();
+
+		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
+		Map<RollupTarget, Long> rollupTimes = scheduler.getRollupTimes();
+		long rollupTime = rollupTimes.get(rollupTarget);
+		assertTrue(rollupTime > now + rollupDelay - 10_000);
+		assertTrue(rollupTime < now + rollupDelay + 10_000);
+
+		assertEquals(Arrays.asList(value), getTimeCollection().query().getList());
+	}
+
+	@Test
 	public void test_updateAll_invalid() {
 		TestValue value = new TestValue("Joe", 0);
 		insertAtTime(1, value);
 		try {
 			getTimeCollection().query().update((v) -> v.doSomethingNaughty());
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_replaceAll_invalid() {
+		TestValue value = new TestValue("Joe", 0);
+		insertAtTime(1, value);
+		try {
+			getTimeCollection().query().replace((v) -> {v.doSomethingNaughty(); return null; });
 			fail();
 		} catch (BlueDbException e) {
 		}

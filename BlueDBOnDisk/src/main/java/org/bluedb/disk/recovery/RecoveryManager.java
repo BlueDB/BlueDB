@@ -51,6 +51,10 @@ public class RecoveryManager<T extends Serializable> {
 		return historyFolderPath;
 	}
 
+	public BlueCollectionOnDisk<T> getCollection() {
+		return collection;
+	}
+
 	public void markComplete(Recoverable<?> change) throws BlueDbException {
 		String pendingFileName = getPendingFileName(change);
 		String completedFileName = getCompletedFileName(change);
