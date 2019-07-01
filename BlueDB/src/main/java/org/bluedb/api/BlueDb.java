@@ -9,11 +9,11 @@ import org.bluedb.api.keys.BlueKey;
 
 public interface BlueDb {
 	
-	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException;
+	public <V extends Serializable> BlueCollection<V> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<V> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException;
 
-	public <K extends BlueKey, T extends Serializable> BlueCollectionBuilder<K, T> collectionBuilder(String name, Class<K> keyType, Class<T> valueType);
+	public <K extends BlueKey, V extends Serializable> BlueCollectionBuilder<K, V> collectionBuilder(String name, Class<K> keyType, Class<V> valueType);
 
-	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException;
+	public <V extends Serializable> BlueCollection<V> getCollection(String name, Class<V> valueType) throws BlueDbException;
 
 	public void backup(Path path) throws BlueDbException;
 

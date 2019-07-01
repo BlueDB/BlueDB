@@ -44,7 +44,7 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 		return firstClassName.compareTo(secondClassName);
 	}
 	
-	public static <T extends Comparable<T>> int compareWithNullsLast(T item1, T item2) {
+	public static <K extends Comparable<K>> int compareWithNullsLast(K item1, K item2) {
 		if(item1 != null && item2 != null) {
 			return item1.compareTo(item2);
 		}

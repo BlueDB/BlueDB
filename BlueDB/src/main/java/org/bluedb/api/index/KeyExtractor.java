@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 import org.bluedb.api.keys.ValueKey;
 
-public interface KeyExtractor<K extends ValueKey, T extends Serializable> extends Serializable {
-	public List<K> extractKeys(T object);
+public interface KeyExtractor<K extends ValueKey, V extends Serializable> extends Serializable {
+	public List<K> extractKeys(V object);
 	public Class<K> getType();
 }

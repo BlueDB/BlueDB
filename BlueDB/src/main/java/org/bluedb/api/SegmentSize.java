@@ -6,7 +6,7 @@ import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeKey;
 
-public class SegmentSize<T extends BlueKey> {
+public class SegmentSize<K extends BlueKey> {
 
 	public static final SegmentSize<TimeKey> TIME_1_HOUR = new SegmentSize<>(3_600_000L);
 	public static final SegmentSize<TimeKey> TIME_1_DAY = new SegmentSize<>(24 * 3_600_000L);
