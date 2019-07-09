@@ -152,7 +152,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		Path newDbPath = createTempFolder().toPath();
 		BlueDbOnDisk newDb = new BlueDbOnDiskBuilder().setPath(newDbPath).build();
 		BlueCollectionOnDisk<TestValue> newCollection = newDb.collectionBuilder("time_collection", TimeKey.class, TestValue.class)
-			.withOptimizedClasses(Arrays.asList(TestValue2.class, TestValueSub.class)).build();
+			.withOptimizedClasses(Arrays.asList(TestValue2.class, TestValueSub.class))
+			.build();
 
 		TestValue value1 = new TestValue("Anna");
 		TestValue value2 = new TestValueSub("Bob");

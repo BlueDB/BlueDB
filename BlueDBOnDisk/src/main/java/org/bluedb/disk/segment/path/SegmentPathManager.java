@@ -8,11 +8,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.SegmentSizeSettings;
 
 
 public class SegmentPathManager {
@@ -22,11 +22,12 @@ public class SegmentPathManager {
 	private final long segmentSize;
 	private final List<Long> rollupLevels;
 
-	public SegmentPathManager(Path collectionPath, SegmentSizeSettings settings) {
+	public SegmentPathManager(Path collectionPath, SegmentSizeConfiguration sizeConfig) {
 		this.collectionPath = collectionPath;
-		this.folderSizes = settings.getFolderSizes();
-		this.segmentSize = settings.getSegmentSize();
-		this.rollupLevels = settings.getRollupSizes();
+		
+		this.folderSizes = sizeConfig.getFolderSizesTopToBottom();
+		this.segmentSize = sizeConfig.getSegmentSize();
+		this.rollupLevels = sizeConfig.getRollupsBottomToTop();
 	}
 
 	public Path getSegmentPath(BlueKey key) {

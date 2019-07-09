@@ -12,6 +12,7 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class CollectionMetaDataTest extends BlueDbDiskTestBase {
@@ -26,8 +27,8 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_segmentSize() throws Exception {
-		Long size1 = 42L;
-		Long size2 = 84L;
+		SegmentSizeSetting size1 = SegmentSizeSetting.HASH_128K;
+		SegmentSizeSetting size2 = SegmentSizeSetting.TIME_2_HOURS;
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
 		assertNull(metaData.getSegmentSize());
 		metaData.saveSegmentSize(size1);

@@ -18,6 +18,7 @@ import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 
 public class BlueDbOnDisk implements BlueDb {
 
@@ -65,7 +66,7 @@ public class BlueDbOnDisk implements BlueDb {
 		return initializeCollection(name, keyType, valueType, additionalClassesToRegister, null);
 	}
 
-	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, Long segmentSize) throws BlueDbException {
+	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);

@@ -5,10 +5,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
+import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
 public class SegmentManager<T extends Serializable> {
@@ -18,16 +18,10 @@ public class SegmentManager<T extends Serializable> {
 	private final FileManager fileManager;
 	private final Rollupable rollupable;
 
-	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, Class<? extends BlueKey> keyType) throws BlueDbException {
+	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, SegmentSizeConfiguration sizeConfig) {
 		this.fileManager = fileManager;
 		this.rollupable = rollupable;
-		this.pathManager = createSegmentPathManager(collectionPath, keyType);
-	}
-
-	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, SegmentSizeSettings settings) {
-		this.fileManager = fileManager;
-		this.rollupable = rollupable;
-		this.pathManager = createSegmentPathManager(settings, collectionPath);
+		this.pathManager = createSegmentPathManager(sizeConfig, collectionPath);
 	}
 
 	public Range getSegmentRange(long groupingValue) {
@@ -87,12 +81,7 @@ public class SegmentManager<T extends Serializable> {
 		return pathManager.getSegmentSize();
 	}
 
-	protected static SegmentPathManager createSegmentPathManager(SegmentSizeSettings segmentSettings, Path collectionPath) {
-		return new SegmentPathManager(collectionPath, segmentSettings);
-	}
-
-	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) throws BlueDbException {
-		SegmentSizeSettings segmentSettings = SegmentSizeSettings.getDefaultSettingsFor(keyType);
-		return new SegmentPathManager(collectionPath, segmentSettings);
+	protected static SegmentPathManager createSegmentPathManager(SegmentSizeConfiguration sizeConfig, Path collectionPath) {
+		return new SegmentPathManager(collectionPath, sizeConfig);
 	}
 }

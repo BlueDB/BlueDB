@@ -13,18 +13,9 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.SegmentSizeSettings;
 import org.junit.Test;
 
 public class IntegerSegmentPathManagerTest extends BlueDbDiskTestBase {
-
-	@Test
-	public void test_validate_rollup_levels() {
-		List<Long> rollupLevels = SegmentSizeSettings.INT_DEFAULT.getRollupSizes();
-		for (int i = 0; i < rollupLevels.size() - 1; i++) {
-			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
-		}
-	}
 
 	@Test
 	public void test_getSegmentRange() {

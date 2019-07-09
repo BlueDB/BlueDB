@@ -8,6 +8,7 @@ import java.util.List;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.FileManager;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
@@ -41,14 +42,13 @@ public class CollectionMetaData {
 		return (Class<? extends BlueKey>) savedValue;
 	}
 
-	public Long getSegmentSize() throws BlueDbException {
+	public SegmentSizeSetting getSegmentSize() throws BlueDbException {
 		Object savedValue = fileManager.loadObject(segmentSizePath);
-		Long longValue = (Long) savedValue;
-		return longValue;
+		return (SegmentSizeSetting) savedValue;
 	}
 
-	public void saveSegmentSize(Long segmentSize) throws BlueDbException {
-		fileManager.saveObject(segmentSizePath, segmentSize);;
+	public void saveSegmentSize(SegmentSizeSetting segmentSize) throws BlueDbException {
+		fileManager.saveObject(segmentSizePath, segmentSize);
 	}
 
 	public List<Class<? extends Serializable>> getSerializedClassList() throws BlueDbException {
