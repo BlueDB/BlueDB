@@ -25,10 +25,18 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 
 	public CollectionEntityIterator(final SegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
 		this.range = range;
-		this.endGroupingValueOfCompletedSegments = byStartTime ? (range.getStart()) - 1 : Long.MIN_VALUE;
+		this.endGroupingValueOfCompletedSegments = calculateEndGroupingValueOfCompletedSegments(range, byStartTime);
 		segments = segmentManager.getExistingSegments(range);
 		Collections.sort(segments);
 		conditions = objectConditions;
+	}
+
+	private long calculateEndGroupingValueOfCompletedSegments(Range range, boolean byStartTime) {
+		if(!byStartTime || range.getStart() == Long.MIN_VALUE) {
+			return Long.MIN_VALUE;
+		}
+		
+		return range.getStart() - 1;
 	}
 
 	@Override
