@@ -31,6 +31,10 @@ public class SegmentSizeConfiguration {
 		return result;
 	}
 	
+	public Class<? extends BlueKey> getKeyType() {
+		return keyType;
+	}
+	
 	public List<Long> getFolderSizesTopToBottom() {
 		return folderSizesTopToBottom;
 	}

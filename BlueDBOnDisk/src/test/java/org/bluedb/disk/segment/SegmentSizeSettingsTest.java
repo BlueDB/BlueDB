@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -228,6 +230,22 @@ public class SegmentSizeSettingsTest {
 		} else {
 			Files.write(serializedSettingsPath, serializer.serializeObjectToByteArray(allValuesInCodeInAlphabeticalOrder));
 			fail();
+		}
+	}
+	
+	@Test
+	public void testCollectionAndIndicesForEachSegmentSize() throws Exception {
+		Instant start = Instant.now();
+		
+		for(SegmentSizeSetting sizeSetting : SegmentSizeSetting.values()) {
+			System.out.println(Duration.between(start, Instant.now()) + "Starting config test: " + sizeSetting);
+			SegmentSizeSupportTest test = new SegmentSizeSupportTest(sizeSetting);
+			try {
+				test.testCollectionAndIndices();
+			} finally {
+				test.cleanup();
+			}
+			System.out.println(Duration.between(start, Instant.now()) + "Finishing config test: " + sizeSetting);
 		}
 	}
 }

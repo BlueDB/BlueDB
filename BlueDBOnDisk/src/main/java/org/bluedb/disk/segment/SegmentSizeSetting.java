@@ -104,6 +104,10 @@ public enum SegmentSizeSetting {
 	public SegmentSizeConfiguration getConfig() {
 		return config;
 	}
+	
+	public Class<? extends BlueKey> getKeyType() {
+		return config.getKeyType();
+	}
 
 	public long getSegmentSize() {
 		return config.getSegmentSize();
