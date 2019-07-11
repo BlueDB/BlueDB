@@ -144,7 +144,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		Path restoredDirectory = createTempFolder().toPath();
 		ZipUtils.extractFiles(zipPath, restoredDirectory);
 		Path restoredDbPath = Paths.get(restoredDirectory.toString(), "bluedb");
-		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(restoredDbPath).build();
+		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().withPath(restoredDbPath).build();
 		return restoredDb;
 	}
 
