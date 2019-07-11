@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.bluedb.api.keys.LongKey;
 
-@FunctionalInterface
 public interface LongIndexExtractor<V extends Serializable> extends KeyExtractor<LongKey, V> {
 	
 	public default Class<LongKey> getType() {

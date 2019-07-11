@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.bluedb.api.keys.UUIDKey;
 
-@FunctionalInterface
 public interface UUIDIndexExtractor<V extends Serializable> extends KeyExtractor<UUIDKey, V> {
 	
 	public default Class<UUIDKey> getType() {
