@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.bluedb.api.keys.IntegerKey;
 
-@FunctionalInterface
 public interface IntegerIndexExtractor<V extends Serializable> extends KeyExtractor<IntegerKey, V> {
 	
 	public default Class<IntegerKey> getType() {

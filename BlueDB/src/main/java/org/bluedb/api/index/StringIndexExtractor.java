@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.bluedb.api.keys.StringKey;
 
-@FunctionalInterface
 public interface StringIndexExtractor<V extends Serializable> extends KeyExtractor<StringKey, V> {
 	
 	public default Class<StringKey> getType() {
