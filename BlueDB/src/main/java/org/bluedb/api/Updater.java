@@ -4,14 +4,14 @@ import java.io.Serializable;
 
 /**
  * Function to mutate value objects in a collection.
- * @param <T> the class of objects stored in collection as values
+ * @param <V> the class of objects stored in collection as values
  */
 @FunctionalInterface
-public interface Updater<T extends Serializable> {
+public interface Updater<V extends Serializable> {
 
 	/**
 	 * Function to mutate a value in a collection.
 	 * @param object value in the collection
 	 */
-	public void update(T object);
+	public void update(V object);
 }

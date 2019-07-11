@@ -29,6 +29,8 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {}
 		//		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
 
+		BlueIndex<IntegerKey, TestValue> index2 = collection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
+		assertTrue(index == index2);
 	}
 
 	@Test

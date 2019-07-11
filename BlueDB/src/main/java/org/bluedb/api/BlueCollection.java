@@ -1,6 +1,7 @@
 package org.bluedb.api;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -15,7 +16,7 @@ import org.bluedb.api.keys.ValueKey;
  * A collection has a name (to distinguish between collections in a BlueDb instance), a key type, and a value type.
  * @param <T> object type of values to be serialized into collection
  */
-public interface BlueCollection<T extends Serializable> {
+public interface BlueCollection<V extends Serializable> {
 
 	/**
 	 * Creates (or returns existing) BlueIndex that maps objects of type ValueKey (UUIDKey, StringKey, IntegerKey, LongKey) to values in the collection.
@@ -25,7 +26,7 @@ public interface BlueCollection<T extends Serializable> {
 	 * @return a BlueIndex (existing index if it exists, otherwise a newly created index)
 	 * @throws BlueDbException if index doesn't exist or has a different keyType
 	 */
-	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException;
+	public <K extends ValueKey> BlueIndex<K, V> createIndex(String name, Class<K> keyType, KeyExtractor<K, V> keyExtractor) throws BlueDbException;
 
 	/**
 	 * Returns existing BlueIndex that maps objects of type keyType to values in the collection.
@@ -34,7 +35,7 @@ public interface BlueCollection<T extends Serializable> {
 	 * @return a BlueIndex with the same name if it exists and has the same keyType
 	 * @throws BlueDbException if index doesn't exist or has a different keyType
 	 */
-	public <I extends ValueKey> BlueIndex<I, T> getIndex(String name, Class<I> keyType) throws BlueDbException;
+	public <K extends ValueKey> BlueIndex<K, V> getIndex(String name, Class<K> keyType) throws BlueDbException;
 
 	/**
 	 * Returns true if the collection contains a value at key.
@@ -50,14 +51,18 @@ public interface BlueCollection<T extends Serializable> {
 	 * @param value value to be saved at the key
 	 * @throws BlueDbException if type of key is not the type specified when the index was created
 	 */
-	public void insert(BlueKey key, T value) throws BlueDbException;
+	public void insert(BlueKey key, V value) throws BlueDbException;
+
+	public void batchUpsert(Map<BlueKey, V> values) throws BlueDbException;
+
+	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException;
 
 	/**
 	 * Inserts or replaces values at the corresponding keys
 	 * @param values a map of keys and the values that should be stored at each key
 	 * @throws BlueDbException if type of key is not the type specified when the index was created
 	 */
-	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException;
+	public V get(BlueKey key) throws BlueDbException;
 
 	/**
 	 * Returns the value stored at key.
@@ -65,7 +70,7 @@ public interface BlueCollection<T extends Serializable> {
 	 * @return value stored at key, or null
 	 * @throws BlueDbException if any of the keys are not the same type specified when getIndex or createIndex was called
 	 */
-	public T get(BlueKey key) throws BlueDbException;
+	public void replace(BlueKey key, Mapper<V> updater) throws BlueDbException;
 
 	/**
 	 * Mutates value stored at key by passing it through the updater.
@@ -73,7 +78,7 @@ public interface BlueCollection<T extends Serializable> {
 	 * @param updater function that mutates the value stored at key
 	 * @throws BlueDbException if type of key is not the type specified when the index was created or if updater throws exception
 	 */
-	public void update(BlueKey key, Updater<T> updater) throws BlueDbException;
+	public void update(BlueKey key, Updater<V> updater) throws BlueDbException;
 
 	/**
 	 * Deletes value stored at key, if any.
@@ -86,7 +91,7 @@ public interface BlueCollection<T extends Serializable> {
 	 * Creates, but does not run, a BlueQuery.
 	 * @return a BlueQuery
 	 */
-	public BlueQuery<T> query();
+	public BlueQuery<V> query();
 
 	/**
 	 * Returns the saved key with the highest grouping number.

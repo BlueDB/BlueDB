@@ -2,6 +2,7 @@ package org.bluedb.disk.collection;
 
 import java.io.Closeable;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -24,10 +25,18 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 
 	public CollectionEntityIterator(final SegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
 		this.range = range;
-		this.endGroupingValueOfCompletedSegments = byStartTime ? (range.getStart()) - 1 : Long.MIN_VALUE;
+		this.endGroupingValueOfCompletedSegments = calculateEndGroupingValueOfCompletedSegments(range, byStartTime);
 		segments = segmentManager.getExistingSegments(range);
 		Collections.sort(segments);
 		conditions = objectConditions;
+	}
+
+	private long calculateEndGroupingValueOfCompletedSegments(Range range, boolean byStartTime) {
+		if(!byStartTime || range.getStart() == Long.MIN_VALUE) {
+			return Long.MIN_VALUE;
+		}
+		
+		return range.getStart() - 1;
 	}
 
 	@Override
@@ -53,6 +62,14 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 		BlueEntity<T> response = next;
 		next = null;
 		return response;
+	}
+
+	public List<BlueEntity<T>> next(int n) {
+		List<BlueEntity<T>> result = new ArrayList<>();
+		while (hasNext() && result.size() < n) {
+			result.add(next());
+		}
+		return result;
 	}
 
 	private BlueEntity<T> nextFromSegment() {

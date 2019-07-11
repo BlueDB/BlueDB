@@ -9,13 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Condition;
+import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -26,56 +24,69 @@ import org.bluedb.disk.BlueDbOnDisk;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.IndexManager;
 import org.bluedb.disk.collection.task.BatchChangeTask;
+import org.bluedb.disk.collection.task.BatchDeleteTask;
 import org.bluedb.disk.collection.task.DeleteTask;
 import org.bluedb.disk.collection.task.InsertTask;
+import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateTask;
+import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.query.BlueQueryOnDisk;
 import org.bluedb.disk.recovery.RecoveryManager;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
-import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollection<T>, Rollupable {
 
-	ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
 	private final BlueSerializer serializer;
 	private final RecoveryManager<T> recoveryManager;
 	private final Path collectionPath;
+	private final String collectionKey;
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
 	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 	private final IndexManager<T> indexManager;
+	private final BlueExecutor sharedExecutor;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
+	}
+
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+		sharedExecutor = db.getSharedExecutor();
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
+		boolean isNewCollection = !collectionPath.toFile().exists();
 		collectionPath.toFile().mkdirs();
+		collectionKey = collectionPath.toString();
 		metaData = new CollectionMetaData(collectionPath);
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		fileManager = new FileManager(serializer);
-		this.keyType = determineKeyType(metaData, requestedKeyType);
+		segmentSize = determineSegmentSize(metaData, requestedKeyType, segmentSize, isNewCollection);
+		keyType = determineKeyType(metaData, requestedKeyType);
+		SegmentSizeSetting segmentSizeSettings = segmentSize;
 		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
 		rollupScheduler = new RollupScheduler(this);
-		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, this.keyType);
+		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, segmentSizeSettings.getConfig());
 		indexManager = new IndexManager<>(this, collectionPath);
 		rollupScheduler.start();
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 
 	public int getQueuedTaskCount() {
-		return executor.getQueue().size();
+		return sharedExecutor.getQueryQueueSize(collectionKey);
 	}
 
 	@Override
@@ -111,6 +122,20 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 	}
 
 	@Override
+	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException {
+		ensureCorrectKeyTypes(keys);
+		Runnable deleteTask = new BatchDeleteTask<T>(this, keys);
+		executeTask(deleteTask);
+	}
+
+	@Override
+	public void replace(BlueKey key, Mapper<T> mapper) throws BlueDbException {
+		ensureCorrectKeyType(key);
+		Runnable updateTask = new ReplaceTask<T>(this, key, mapper);
+		executeTask(updateTask);
+	}
+
+	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
 		ensureCorrectKeyType(key);
 		Runnable updateTask = new UpdateTask<T>(this, key, updater);
@@ -142,12 +167,16 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return results;
 	}
 
+	public BlueExecutor getSharedExecutor() {
+		return sharedExecutor;
+	}
+
 	public void submitTask(Runnable task) {
-		executor.submit(task);
+		sharedExecutor.submitQueryTask(collectionKey, task);
 	}
 
 	public void executeTask(Runnable task) throws BlueDbException{
-		Future<?> future = executor.submit(task);
+		Future<?> future = sharedExecutor.submitQueryTask(collectionKey, task);
 		try {
 			future.get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -185,13 +214,6 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		return metaData;
 	}
 
-	public void shutdown() {
-		recoveryManager.getChangeHistoryCleaner().stop();
-		rollupScheduler.forceScheduleRollups();
-		rollupScheduler.stop();
-		executor.shutdown();
-	}
-
 	public Class<T> getType() {
 		return valueType;
 	}
@@ -212,6 +234,18 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 		}
 	}
 
+	protected static SegmentSizeSetting determineSegmentSize(CollectionMetaData metaData, Class<? extends BlueKey> keyType, SegmentSizeSetting requestedSegmentSize, boolean isNewCollection) throws BlueDbException {
+		SegmentSizeSetting existingSegmentSize = metaData.getSegmentSize();
+		if (existingSegmentSize == null) {
+			if (!isNewCollection) {
+				return SegmentSizeSetting.getOriginalDefaultSettingsFor(keyType);
+			}
+			existingSegmentSize = (requestedSegmentSize != null) ? requestedSegmentSize : SegmentSizeSetting.getDefaultSettingsFor(keyType);
+			metaData.saveSegmentSize(existingSegmentSize);
+		}
+		return existingSegmentSize;
+	}
+
 	protected static Class<? extends BlueKey> determineKeyType(CollectionMetaData metaData, Class<? extends BlueKey> providedKeyType) throws BlueDbException {
 		Class<? extends BlueKey> storedKeyType = metaData.getKeyType();
 		if (storedKeyType == null) {
@@ -228,7 +262,7 @@ public class BlueCollectionOnDisk<T extends Serializable> implements BlueCollect
 
 	@Override
 	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
-		return indexManager.createIndex(name, keyType, keyExtractor);
+		return indexManager.getOrCreate(name, keyType, keyExtractor);
 	}
 
 	@Override

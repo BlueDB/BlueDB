@@ -28,6 +28,6 @@ public class DeleteTask<T extends Serializable> extends QueryTask {
 
 	@Override
 	public String toString() {
-		return "<DeleteTask for key " + key + ">";
+		return "<" + getClass().getSimpleName() + " for key " + key + ">";
 	}
 }

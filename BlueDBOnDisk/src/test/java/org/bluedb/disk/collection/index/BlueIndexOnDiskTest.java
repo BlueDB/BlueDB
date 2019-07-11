@@ -139,6 +139,45 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_createNew_populateNewIndex() throws Exception {
+		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+
+		IntegerKey integerKey1 = new IntegerKey(1);
+		IntegerKey integerKey2 = new IntegerKey(2);
+		IntegerKey integerKey3 = new IntegerKey(3);
+
+		List<TestValue> emptyList = Arrays.asList();
+		List<TestValue> bobAndJoe = Arrays.asList(valueBob3, valueJoe3);
+		List<TestValue> justBob = Arrays.asList(valueBob3);
+		List<TestValue> justFred = Arrays.asList(valueFred1);
+
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+
+		assertEquals(justFred, indexOnDisk.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk.get(integerKey2));
+		assertEquals(bobAndJoe, indexOnDisk.get(integerKey3));
+
+		collection.delete(timeKeyFred1);
+		collection.delete(timeKeyJoe3);
+
+		assertEquals(emptyList, indexOnDisk.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk.get(integerKey2));
+		assertEquals(justBob, indexOnDisk.get(integerKey3));
+	}
+
+	@Test
 	public void test_rollup() throws Exception {
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
 		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();

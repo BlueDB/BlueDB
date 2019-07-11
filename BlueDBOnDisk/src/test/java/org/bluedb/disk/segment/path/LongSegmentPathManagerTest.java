@@ -29,15 +29,6 @@ public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
 		longCollection = db().collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
 	}
 
-
-	@Test
-	public void test_validate_rollup_levels() {
-		List<Long> rollupLevels = LongSegmentPathManager.ROLLUP_LEVELS;
-		for (int i = 0; i < rollupLevels.size() - 1; i++) {
-			assertTrue(rollupLevels.get(i + 1) % rollupLevels.get(i) == 0);
-		}
-	}
-
 	@Test
 	public void test_getSegmentRange() {
 		Range segmentRangeStartingAtZero = longCollection.getSegmentManager().getSegmentRange(0);

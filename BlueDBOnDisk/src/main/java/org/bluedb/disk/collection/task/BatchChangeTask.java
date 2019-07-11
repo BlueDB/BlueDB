@@ -25,7 +25,7 @@ public class BatchChangeTask<T extends Serializable> extends QueryTask {
 	@Override
 	public void execute() throws BlueDbException {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
-		PendingBatchChange<T> batchChange = PendingBatchChange.createBatchUpsert(sortedChanges);
+		PendingBatchChange<T> batchChange = PendingBatchChange.createBatchChange(sortedChanges);
 		recoveryManager.saveChange(batchChange);
 		batchChange.apply(collection);
 		recoveryManager.markComplete(batchChange);	

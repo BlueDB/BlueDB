@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
@@ -43,7 +45,19 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		fileManager.saveObject(keyExtractorPath, keyExtractor);
-		return new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
+		BlueIndexOnDisk<K, T> index = new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
+		populateNewIndex(collection, index);
+		return index;
+	}
+
+	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(BlueCollectionOnDisk<T> collection, BlueIndexOnDisk<K, T> index) throws BlueDbException {
+		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
+			while (iterator.hasNext()) {
+				List<BlueEntity<T>> entities = iterator.next(1000);
+				index.addEntities(entities);
+			}
+		}
 	}
 
 	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(BlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
@@ -58,12 +72,23 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return keyExtractor.getType();
 	}
 
-	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) {
+	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
 		this.fileManager = collection.getFileManager();
 		this.indexName = indexPath.toFile().getName();
-		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, keyExtractor.getType());
+		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
+		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
+	}
+
+	protected static SegmentSizeSetting determineSegmentSize(Class<? extends BlueKey> keyType) throws BlueDbException {
+		/*
+		 * TODO: This will change to use the default index setting once we support different index segment sizes. We
+		 * may require information from the meta data in order to make this determiniation. We may also need to
+		 * know if the index is new and if the user has requeste a particular size for this index. See BlueCollectionOnDisk#determineSegmentSize
+		 * for inspiration.
+		 */
+		return SegmentSizeSetting.getOriginalDefaultSettingsFor(keyType);
 	}
 
 	public void add(BlueKey key, T newItem) throws BlueDbException {
@@ -74,6 +99,15 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
 			segment.insert(compositeKey, key);
 		}
+	}
+
+	public void addEntities(Collection<BlueEntity<T>> entities) throws BlueDbException {
+		List<IndividualChange<BlueKey>> sortedIndexChanges = entities.stream()
+				.map( this::toIndexChanges )
+				.flatMap(List::stream)
+				.sorted()
+				.collect(Collectors.toList());
+		BatchUtils.apply(segmentManager, sortedIndexChanges);
 	}
 
 	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
@@ -127,6 +161,13 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 				.flatMap(List::stream)
 				.sorted()
 				.collect(Collectors.toList());
+	}
+
+	private List<IndividualChange<BlueKey>> toIndexChanges(BlueEntity<T> entity) {
+		BlueKey key = entity.getKey();
+		T newValue = entity.getValue();
+		List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(key, newValue);
+		return toIndexChanges(compositeKeys, key);
 	}
 
 	private List<IndividualChange<BlueKey>> toIndexChanges(IndividualChange<T> change) {

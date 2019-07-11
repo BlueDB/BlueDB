@@ -2,6 +2,8 @@ package org.bluedb.api;
 
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 
@@ -21,7 +23,7 @@ public interface BlueDb {
 	 * @return a new BlueCollection, or the existing one of the same name, if it exists
 	 * @throws BlueDbException if any problems are encountered, such as collection already existing with a different type 
 	 */
-	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException;
+	public <V extends Serializable> BlueCollection<V> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<V> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException;
 
 	/**
 	 * Create CollectionBuilder for this BlueDb
@@ -30,7 +32,7 @@ public interface BlueDb {
 	 * @param valueType class of values stored in collection
 	 * @return new CollectionBuilder
 	 */
-	public <T extends Serializable, K extends BlueKey> BlueCollectionBuilder<T> collectionBuilder(String name, Class<K> keyType, Class<T> valueType);
+	public <K extends BlueKey, V extends Serializable> BlueCollectionBuilder<K, V> collectionBuilder(String name, Class<K> keyType, Class<V> valueType);
 
 	/**
 	 * Get existing BlueCollection.
@@ -39,7 +41,7 @@ public interface BlueDb {
 	 * @return existing BlueCollection, if it exists, else null
 	 * @throws BlueDbException if any issues encountered, such as existing collection has a different key type
 	 */
-	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException;
+	public <V extends Serializable> BlueCollection<V> getCollection(String name, Class<V> valueType) throws BlueDbException;
 
 	/**
 	 * Create a backup of the entire database.
@@ -53,4 +55,8 @@ public interface BlueDb {
 	 * Shutdown BlueDb and all related threads, in an orderly manner
 	 */
 	public void shutdown();
+
+	public void shutdownNow() throws BlueDbException;
+	
+	public boolean awaitTermination(long timeout, TimeUnit timeUnit) throws BlueDbException;
 }

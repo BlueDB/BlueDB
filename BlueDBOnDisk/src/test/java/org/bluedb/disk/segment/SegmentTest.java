@@ -10,16 +10,20 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.junit.Test;
-
+import org.mockito.Mockito;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingRollup;
 import org.bluedb.disk.segment.rollup.RollupTarget;
+import org.bluedb.disk.segment.rollup.Rollupable;
 
 public class SegmentTest extends BlueDbDiskTestBase {
 
@@ -46,6 +50,25 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertTrue(segment.contains(key1At1));
 		assertTrue(segment.contains(key2At1));
 		assertTrue(segment.contains(key3At3));
+	}
+
+	@Test
+	public void test_removedSegmentFolderDoesntCauseExceptions() throws Exception {
+		Path segmentParentPath = createTempFolder().toPath();
+		Path segmentPath = Paths.get(segmentParentPath.toString(), "nonexistingChildFolder");
+		Range segmentRange = new Range(100, 200);
+		Rollupable rollupable = Mockito.mock(BlueCollectionOnDisk.class);
+		FileManager fileManager = getFileManager();
+		List<Long> rollupLevels = Arrays.asList(100L);
+		Segment<TestValue> segment = new Segment<>(segmentPath, segmentRange, rollupable, fileManager, rollupLevels);
+
+		// perform read actions on nonexisting folder to make sure that deleting empty folder during rollup won't break reads.
+		segment.get(new TimeKey(1L, 1L));
+		segment.contains(new TimeKey(1L, 1L));
+		segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE).forEachRemaining((t) -> {});
+
+		// make sure it didn't exist the whole time
+		assertFalse(segment.getPath().toFile().exists());
 	}
 
 	@Test
@@ -360,7 +383,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 		Range rollupRange = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 		segment.rollup(rollupRange);
-		assertEquals(0, segment.getPath().toFile().listFiles().length);
+		assertFalse(segment.getPath().toFile().exists()); // empty folder should get deleted
 	}
 
 	@Test
