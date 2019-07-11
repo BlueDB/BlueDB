@@ -28,7 +28,7 @@ public class BlueDbOnDisk implements BlueDb {
 	
 	private final Map<String, BlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
-	BlueDbOnDisk(Path path, Class<?>...registeredSerializableClasses) {
+	BlueDbOnDisk(Path path) {
 		this.path = path;
 		this.backupManager = new BackupManager(this);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
