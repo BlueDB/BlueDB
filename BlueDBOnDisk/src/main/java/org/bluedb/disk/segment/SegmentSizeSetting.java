@@ -49,8 +49,8 @@ public enum SegmentSizeSetting {
 	TIME_5_DAYS(new SegmentSizeConfiguration(TimeKey.class, 	asList(FIVE_DAYS, 		  6L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIVE_DAYS))),
 	TIME_15_DAYS(new SegmentSizeConfiguration(TimeKey.class,	asList(FIFTEEN_DAYS, 	  2L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIFTEEN_DAYS))),
 	TIME_1_MONTH(new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_MONTH, 			  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH))),
-	TIME_3_MONTHS(new SegmentSizeConfiguration(TimeKey.class,	asList(THREE_MONTHS, 		  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS))),
-	TIME_6_MONTHS(new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))),
+	TIME_3_MONTHS(new SegmentSizeConfiguration(TimeKey.class,	asList(THREE_MONTHS, 		   4L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS))),
+	TIME_6_MONTHS(new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			   2L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))),
 	
 	INT_128(new SegmentSizeConfiguration(IntegerKey.class, 	asList(128L,  128L, 64L, 64L), 	asList(1L, 128L))),
 	INT_256(new SegmentSizeConfiguration(IntegerKey.class, 	asList(256L,   64L, 64L, 64L), 	asList(1L, 256L))), //Original, Default
