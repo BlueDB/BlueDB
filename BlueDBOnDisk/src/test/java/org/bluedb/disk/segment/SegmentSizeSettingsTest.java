@@ -55,8 +55,8 @@ public class SegmentSizeSettingsTest {
 		new SegmentSizeConfiguration(TimeKey.class, 	asList(FIVE_DAYS, 		  6L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIVE_DAYS)),
 		new SegmentSizeConfiguration(TimeKey.class,		asList(FIFTEEN_DAYS, 	  2L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIFTEEN_DAYS)),
 		new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_MONTH, 			  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH)),
-		new SegmentSizeConfiguration(TimeKey.class,		asList(THREE_MONTHS, 		  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))
+		new SegmentSizeConfiguration(TimeKey.class,		asList(THREE_MONTHS, 		   4L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			   2L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))
 	);
 	
 	private static final List<SegmentSizeConfiguration> allSupportedIntegerKeyConfigs = Arrays.asList(
