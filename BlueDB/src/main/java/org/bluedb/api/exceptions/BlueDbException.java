@@ -7,17 +7,17 @@ public class BlueDbException extends Exception {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * Exception for BlueDb.
-	 * @param message message describing what happened
-	 * @param cause underlying exception
+	 * Exception in BlueDb.
+	 * @param message - a message describing what happened
+	 * @param cause - the underlying exception
 	 */
 	public BlueDbException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
 	/**
-	 * Exception for BlueDb.
-	 * @param message message describing what happened
+	 * Exception in BlueDb.
+	 * @param message - a message describing what happened
 	 */
 	public BlueDbException(String message) {
 		super(message);

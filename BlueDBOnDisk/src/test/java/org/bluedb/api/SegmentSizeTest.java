@@ -38,9 +38,10 @@ public class SegmentSizeTest {
 		assertEquals(SegmentSizeSetting.HASH_1M, SegmentSizeSetting.fromUserSelection(SegmentSize.HASH_1M));
 		assertEquals(SegmentSizeSetting.HASH_2M, SegmentSizeSetting.fromUserSelection(SegmentSize.HASH_2M));
 		assertEquals(SegmentSizeSetting.HASH_4M, SegmentSizeSetting.fromUserSelection(SegmentSize.HASH_4M));
+		assertEquals(SegmentSizeSetting.HASH_8M, SegmentSizeSetting.fromUserSelection(SegmentSize.HASH_8M));
 		
 		try {
-			SegmentSizeSetting.fromUserSelection(new SegmentSize<>("whatever"));
+			SegmentSizeSetting.fromUserSelection(SegmentSize.INVALID);
 			fail();
 		} catch(BlueDbException e) { }
 	}

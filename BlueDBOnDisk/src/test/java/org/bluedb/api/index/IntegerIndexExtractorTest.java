@@ -15,13 +15,13 @@ public class IntegerIndexExtractorTest {
 	public void test() {
 		IndexableTestValue testValue = new IndexableTestValue(UUID.randomUUID(), 0, 5, "Whatever", 27);
 		
-		IntegerIndexExtractor<IndexableTestValue> extractor = value -> Arrays.asList(value.getIntValue());
+		IntegerIndexKeyExtractor<IndexableTestValue> extractor = value -> Arrays.asList(value.getIntValue());
 		assertEquals(Arrays.asList(testValue.getIntegerKey()), extractor.extractKeys(testValue));
 		
-		IntegerIndexExtractor<IndexableTestValue> badExtractor = value -> null;
+		IntegerIndexKeyExtractor<IndexableTestValue> badExtractor = value -> null;
 		assertEquals(Arrays.asList(), badExtractor.extractKeys(testValue));
 		
-		IntegerIndexExtractor<IndexableTestValue> listExtractor = value -> Arrays.asList(value.getIntValue(), 10);
+		IntegerIndexKeyExtractor<IndexableTestValue> listExtractor = value -> Arrays.asList(value.getIntValue(), 10);
 		assertEquals(Arrays.asList(testValue.getIntegerKey(), new IntegerKey(10)), listExtractor.extractKeys(testValue));
 	}
 

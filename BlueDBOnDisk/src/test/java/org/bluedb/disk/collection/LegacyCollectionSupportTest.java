@@ -13,10 +13,10 @@ import java.util.stream.Collectors;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.index.IntegerIndexExtractor;
-import org.bluedb.api.index.LongIndexExtractor;
-import org.bluedb.api.index.StringIndexExtractor;
-import org.bluedb.api.index.UUIDIndexExtractor;
+import org.bluedb.api.index.IntegerIndexKeyExtractor;
+import org.bluedb.api.index.LongIndexKeyExtractor;
+import org.bluedb.api.index.StringIndexKeyExtractor;
+import org.bluedb.api.index.UUIDIndexKeyExtractor;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -126,10 +126,10 @@ public class LegacyCollectionSupportTest extends TestCase {
 		
 		allCollections = Arrays.asList(timeframeCollection, timeCollection, intCollection, longCollection, stringCollection, uuidCollection);
 		
-		LongIndexExtractor<IndexableTestValue> longExtractor = value -> Arrays.asList(value.getLongValue());
-		IntegerIndexExtractor<IndexableTestValue> intExtractor = value -> Arrays.asList(value.getIntValue());
-		StringIndexExtractor<IndexableTestValue> stringExtractor = value -> Arrays.asList(value.getStringValue());
-		UUIDIndexExtractor<IndexableTestValue> uuidExtractor = value -> Arrays.asList(value.getId());
+		LongIndexKeyExtractor<IndexableTestValue> longExtractor = value -> Arrays.asList(value.getLongValue());
+		IntegerIndexKeyExtractor<IndexableTestValue> intExtractor = value -> Arrays.asList(value.getIntValue());
+		StringIndexKeyExtractor<IndexableTestValue> stringExtractor = value -> Arrays.asList(value.getStringValue());
+		UUIDIndexKeyExtractor<IndexableTestValue> uuidExtractor = value -> Arrays.asList(value.getId());
 		
 		longIndex = (BlueIndexOnDisk<LongKey, IndexableTestValue>) timeCollection.createIndex("long-index", LongKey.class, longExtractor);
 		intIndex = (BlueIndexOnDisk<IntegerKey, IndexableTestValue>) timeCollection.createIndex("int-index", IntegerKey.class, intExtractor);

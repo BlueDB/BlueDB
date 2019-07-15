@@ -2,6 +2,13 @@ package org.bluedb.api.keys;
 
 import java.util.UUID;
 
+import org.bluedb.api.BlueCollection;
+import org.bluedb.api.index.BlueIndex;
+
+/**
+ * A key that can be mapped to a value in a {@link BlueCollection} or {@link BlueIndex}. Values inserted with
+ * this key will be ordered by time. I-node usage will scale with the size of the timeframe that your data covers.
+ */
 public class TimeKey implements BlueKey {
 	private static final long serialVersionUID = 1L;
 

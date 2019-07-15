@@ -10,8 +10,8 @@ import java.io.Serializable;
 public interface Condition<V extends Serializable> {
 	/**
 	 * Filter function for queries.
-	 * @param object value in the collection
+	 * @param value - collection value to be tested
 	 * @return true if the value meets the requirement
 	 */
-	public boolean test(V object);
+	public boolean test(V value);
 }

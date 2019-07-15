@@ -3,8 +3,13 @@ package org.bluedb.api.keys;
 import java.io.Serializable;
 import java.util.Comparator;
 
+import org.bluedb.api.BlueCollection;
+import org.bluedb.api.index.BlueIndex;
+
 /**
- * This class and subclasses are used as keys that may map to a value in a BlueCollection or BlueIndex.
+ * A key that can be mapped to a value in a {@link BlueCollection} or {@link BlueIndex}.</br></br>
+ * 
+ * Known implementations include {@link TimeKey}, {@link TimeFrameKey}, {@link UUIDKey}, {@link StringKey}, {@link LongKey}, {@link IntegerKey}
  */
 public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
@@ -16,11 +21,14 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	@Override
 	public abstract boolean equals(Object object);
 
+	/**
+	 * This is used to order the key/value pairs on disk. Grouping number must be the first thing you order by
+	 */
 	@Override
 	public abstract int compareTo(BlueKey other);
 	
 	/**
-	 * Returns the grouping number.  For a TimeKey, this is the Unix timestamp.
+	 * Returns the grouping number which helps to determine the order and location of the key/value pairs on disk
 	 * @return grouping number
 	 */
 	public long getGroupingNumber();
@@ -43,8 +51,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
 	/**
 	 * Returns true if this key's grouping number is in the range [min, max] inclusive, else false
-	 * @param min the minimum grouping number
-	 * @param max the maximum grouping number
+	 * @param min - the minimum grouping number
+	 * @param max - the maximum grouping number
 	 * @return true if this key's grouping number is in the range [min, max] inclusive, else false
 	 */
 	default boolean isInRange(long min, long max) {
@@ -52,8 +60,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	}
 
 	/**
-	 * Compares the canonical class name so that two keys of different subtypes can be ordered consistently.
-	 * @param other the key that this is being compared against
+	 * Compares the canonical class name so that two keys of different types can be ordered consistently
+	 * @param other - the key that this is being compared against
 	 * @return 0 if this has the same class as other, or else a negative or positive int to indicate relative order
 	 */
 	default int compareCanonicalClassNames(BlueKey other) {
@@ -61,9 +69,9 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	}
 
 	/**
-	 * Compares the canonical class name so that two keys of different subtypes can be ordered consistently.
-	 * @param first key to compare against second
-	 * @param second key to compare against first
+	 * Compares the canonical class name so that two keys of different types can be ordered consistently
+	 * @param first - the key to compare against second
+	 * @param second - the key to compare against first
 	 * @return 0 if the classes are the same, a negative number if first should come first and a positive number if second should
 	 */
 	public static int compareCanonicalClassNames(Object first, Object second) {
@@ -71,9 +79,9 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	}
 
 	/**
-	 * Compares the canonical class name so that two keys of different subtypes can be ordered consistently.
-	 * @param first key to compare against second
-	 * @param second key to compare against first
+	 * Compares the canonical class name so that two keys of different types can be ordered consistently
+	 * @param first - key to compare against second
+	 * @param second - key to compare against first
 	 * @return 0 if the classes are the same, a negative number if first should come first and a positive number if second should
 	 */
 	public static int unsafeCompareCanonicalClassNames(Object first, Object second) {
@@ -84,8 +92,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	
 	/**
 	 * Compares the the values in a null-safe way
-	 * @param item1 value to compare against item2
-	 * @param item2 value to compare against item1
+	 * @param item1 - value to compare against item2
+	 * @param item2 - value to compare against item1
 	 * @return 0 if the classes are the same, a negative number if first should come first and a positive number if second should
 	 */
 	public static <K extends Comparable<K>> int compareWithNullsLast(K item1, K item2) {
