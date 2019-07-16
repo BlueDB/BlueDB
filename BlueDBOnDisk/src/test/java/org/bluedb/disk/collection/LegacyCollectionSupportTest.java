@@ -13,10 +13,6 @@ import java.util.stream.Collectors;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.index.IntegerIndexKeyExtractor;
-import org.bluedb.api.index.LongIndexKeyExtractor;
-import org.bluedb.api.index.StringIndexKeyExtractor;
-import org.bluedb.api.index.UUIDIndexKeyExtractor;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -27,6 +23,10 @@ import org.bluedb.disk.BlueDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.IndexableTestValue;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueIntIndexExtractor;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueLongIndexExtractor;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueStringIndexExtractor;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueUUIDIndexExtractor;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.zip.ZipUtils;
@@ -57,25 +57,19 @@ public class LegacyCollectionSupportTest extends TestCase {
 	private BlueIndexOnDisk<UUIDKey, IndexableTestValue> uuidIndex;
 	
 	private List<Long> existingValuesToTest = Arrays.asList(
-		0L,
-		1000L,
-		10_000L,
-		10_005L,
-		10_010L,
-		10_100L,
-		100_000L,
-		1_000_000L,
-		1_100_000L,
-		1_200_000L,
-		1_300_000L,
-		1_400_000L,
-		10_000_000L,
-		100_000_000L,
-		100_100_000L,
-		100_200_000L,
-		100_300_000L,
-		100_400_000L,
-		100_500_000L
+			0L,
+			1000L,
+			10_000L,
+			10_010L,
+			10_100L,
+			100_000L,
+			1_000_000L,
+			1_200_000L,
+			1_400_000L,
+			10_000_000L,
+			100_100_000L,
+			100_200_000L,
+			100_500_000L
 	);
 	
 	private List<Long> newValuesToTest;
@@ -126,15 +120,10 @@ public class LegacyCollectionSupportTest extends TestCase {
 		
 		allCollections = Arrays.asList(timeframeCollection, timeCollection, intCollection, longCollection, stringCollection, uuidCollection);
 		
-		LongIndexKeyExtractor<IndexableTestValue> longExtractor = value -> Arrays.asList(value.getLongValue());
-		IntegerIndexKeyExtractor<IndexableTestValue> intExtractor = value -> Arrays.asList(value.getIntValue());
-		StringIndexKeyExtractor<IndexableTestValue> stringExtractor = value -> Arrays.asList(value.getStringValue());
-		UUIDIndexKeyExtractor<IndexableTestValue> uuidExtractor = value -> Arrays.asList(value.getId());
-		
-		longIndex = (BlueIndexOnDisk<LongKey, IndexableTestValue>) timeCollection.createIndex("long-index", LongKey.class, longExtractor);
-		intIndex = (BlueIndexOnDisk<IntegerKey, IndexableTestValue>) timeCollection.createIndex("int-index", IntegerKey.class, intExtractor);
-		stringIndex = (BlueIndexOnDisk<StringKey, IndexableTestValue>) timeCollection.createIndex("string-index", StringKey.class, stringExtractor);
-		uuidIndex = (BlueIndexOnDisk<UUIDKey, IndexableTestValue>) timeCollection.createIndex("uuid-index", UUIDKey.class, uuidExtractor);
+		longIndex = (BlueIndexOnDisk<LongKey, IndexableTestValue>) timeCollection.createIndex("long-index", LongKey.class, new IndexableTestValueLongIndexExtractor());
+		intIndex = (BlueIndexOnDisk<IntegerKey, IndexableTestValue>) timeCollection.createIndex("int-index", IntegerKey.class, new IndexableTestValueIntIndexExtractor());
+		stringIndex = (BlueIndexOnDisk<StringKey, IndexableTestValue>) timeCollection.createIndex("string-index", StringKey.class, new IndexableTestValueStringIndexExtractor());
+		uuidIndex =(BlueIndexOnDisk<UUIDKey, IndexableTestValue>) timeCollection.createIndex("uuid-index", UUIDKey.class, new IndexableTestValueUUIDIndexExtractor());
 		
 		newValuesToTest = existingValuesToTest.stream()
 				.map(l -> l+1)

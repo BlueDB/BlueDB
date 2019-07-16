@@ -21,15 +21,11 @@ public class SegmentPathTimeUnitsTest {
 		
 		assertEquals(TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS), SegmentPathTimeUnits.ONE_HOUR);
 		assertEquals(TimeUnit.MILLISECONDS.convert(2, TimeUnit.HOURS), SegmentPathTimeUnits.TWO_HOURS);
-		assertEquals(TimeUnit.MILLISECONDS.convert(4, TimeUnit.HOURS), SegmentPathTimeUnits.FOUR_HOURS);
 		assertEquals(TimeUnit.MILLISECONDS.convert(6, TimeUnit.HOURS), SegmentPathTimeUnits.SIX_HOURS);
-		assertEquals(TimeUnit.MILLISECONDS.convert(8, TimeUnit.HOURS), SegmentPathTimeUnits.EIGHT_HOURS);
 		assertEquals(TimeUnit.MILLISECONDS.convert(12, TimeUnit.HOURS), SegmentPathTimeUnits.TWELVE_HOURS);
 		
 		assertEquals(TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS), SegmentPathTimeUnits.ONE_DAY);
-		assertEquals(TimeUnit.MILLISECONDS.convert(2, TimeUnit.DAYS), SegmentPathTimeUnits.TWO_DAYS);
 		assertEquals(TimeUnit.MILLISECONDS.convert(5, TimeUnit.DAYS), SegmentPathTimeUnits.FIVE_DAYS);
-		assertEquals(TimeUnit.MILLISECONDS.convert(10, TimeUnit.DAYS), SegmentPathTimeUnits.TEN_DAYS);
 		assertEquals(TimeUnit.MILLISECONDS.convert(15, TimeUnit.DAYS), SegmentPathTimeUnits.FIFTEEN_DAYS);
 		assertEquals(TimeUnit.MILLISECONDS.convert(30, TimeUnit.DAYS), SegmentPathTimeUnits.ONE_MONTH);
 		assertEquals(TimeUnit.MILLISECONDS.convert(90, TimeUnit.DAYS), SegmentPathTimeUnits.THREE_MONTHS);
