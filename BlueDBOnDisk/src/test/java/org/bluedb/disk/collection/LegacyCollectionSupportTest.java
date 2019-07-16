@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.SegmentSize;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
@@ -96,26 +97,32 @@ public class LegacyCollectionSupportTest extends TestCase {
 		
 		timeframeCollection = db.collectionBuilder("timeframe-collection", TimeFrameKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.TIME_FRAME_1_MONTH)
 				.build();
 		
 		timeCollection = db.collectionBuilder("time-collection", TimeKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.TIME_1_MONTH)
 				.build();
 		
 		intCollection = db.collectionBuilder("int-collection", IntegerKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.INT_1K)
 				.build();
 		
 		longCollection = db.collectionBuilder("long-collection", LongKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.LONG_1K)
 				.build();
 		
 		stringCollection = db.collectionBuilder("string-collection", StringKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.STRING_4M)
 				.build();
 		
 		uuidCollection = db.collectionBuilder("uuid-collection", UUIDKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.UUID_4M)
 				.build();
 		
 		allCollections = Arrays.asList(timeframeCollection, timeCollection, intCollection, longCollection, stringCollection, uuidCollection);
