@@ -29,7 +29,7 @@ public interface BlueDb {
 	 * @param name - The unique name of the collection
 	 * @param keyType - the class type of the collection's keys
 	 * @param valueType - the class type of the values stored in the collection
-	 * @return a new a {@link BlueCollectionBuilder} object for this {@link BlueDb}
+	 * @return a new {@link BlueCollectionBuilder} object for this {@link BlueDb}
 	 */
 	public <K extends BlueKey, V extends Serializable> BlueCollectionBuilder<K, V> collectionBuilder(String name, Class<K> keyType, Class<V> valueType);
 
