@@ -10,29 +10,29 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 
-public interface BlueCollection<T extends Serializable> {
+public interface BlueCollection<V extends Serializable> {
 
-	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException;
+	public <K extends ValueKey> BlueIndex<K, V> createIndex(String name, Class<K> keyType, KeyExtractor<K, V> keyExtractor) throws BlueDbException;
 
-	public <I extends ValueKey> BlueIndex<I, T> getIndex(String name, Class<I> keyType) throws BlueDbException;
+	public <K extends ValueKey> BlueIndex<K, V> getIndex(String name, Class<K> keyType) throws BlueDbException;
 
 	public boolean contains(BlueKey key) throws BlueDbException;
 
-	public void insert(BlueKey key, T value) throws BlueDbException;
+	public void insert(BlueKey key, V value) throws BlueDbException;
 
-	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException;
+	public void batchUpsert(Map<BlueKey, V> values) throws BlueDbException;
 
 	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException;
 
-	public T get(BlueKey key) throws BlueDbException;
+	public V get(BlueKey key) throws BlueDbException;
 
-	public void replace(BlueKey key, Mapper<T> updater) throws BlueDbException;
+	public void replace(BlueKey key, Mapper<V> updater) throws BlueDbException;
 
-	public void update(BlueKey key, Updater<T> updater) throws BlueDbException;
+	public void update(BlueKey key, Updater<V> updater) throws BlueDbException;
 
 	public void delete(BlueKey key) throws BlueDbException;
 
-	public BlueQuery<T> query();
+	public BlueQuery<V> query();
 
 	public BlueKey getLastKey() throws BlueDbException;
 }

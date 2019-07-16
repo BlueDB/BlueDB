@@ -4,17 +4,11 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.api.keys.HashGroupedKey;
-import org.bluedb.api.keys.IntegerKey;
-import org.bluedb.api.keys.LongKey;
-import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.file.FileManager;
-import org.bluedb.disk.segment.path.LongSegmentPathManager;
-import org.bluedb.disk.segment.path.HashSegmentPathManager;
-import org.bluedb.disk.segment.path.IntegerSegmentPathManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
-import org.bluedb.disk.segment.path.TimeSegmentPathManager;
+import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
 public class SegmentManager<T extends Serializable> {
@@ -24,10 +18,10 @@ public class SegmentManager<T extends Serializable> {
 	private final FileManager fileManager;
 	private final Rollupable rollupable;
 
-	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, Class<? extends BlueKey> keyType) {
+	public SegmentManager(Path collectionPath, FileManager fileManager, Rollupable rollupable, SegmentSizeConfiguration sizeConfig) {
 		this.fileManager = fileManager;
 		this.rollupable = rollupable;
-		this.pathManager = createSegmentPathManager(collectionPath, keyType);
+		this.pathManager = createSegmentPathManager(sizeConfig, collectionPath);
 	}
 
 	public Range getSegmentRange(long groupingValue) {
@@ -87,17 +81,7 @@ public class SegmentManager<T extends Serializable> {
 		return pathManager.getSegmentSize();
 	}
 
-	protected static SegmentPathManager createSegmentPathManager(Path collectionPath, Class<? extends BlueKey> keyType) {
-		if (TimeKey.class.isAssignableFrom(keyType)) {
-			return new TimeSegmentPathManager(collectionPath);
-		} else if (LongKey.class.isAssignableFrom(keyType)) {
-			return new LongSegmentPathManager(collectionPath);
-		} else if (IntegerKey.class.isAssignableFrom(keyType)) {
-			return new IntegerSegmentPathManager(collectionPath);
-		} else if (HashGroupedKey.class.isAssignableFrom(keyType)) {
-			return new HashSegmentPathManager(collectionPath);
-		} else {
-			throw new UnsupportedOperationException("Cannot create a SegmentPathManager for type " + keyType);
-		}
+	protected static SegmentPathManager createSegmentPathManager(SegmentSizeConfiguration sizeConfig, Path collectionPath) {
+		return new SegmentPathManager(collectionPath, sizeConfig);
 	}
 }

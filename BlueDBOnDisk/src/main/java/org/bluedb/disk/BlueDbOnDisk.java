@@ -18,6 +18,7 @@ import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 
 public class BlueDbOnDisk implements BlueDb {
 
@@ -27,7 +28,7 @@ public class BlueDbOnDisk implements BlueDb {
 	
 	private final Map<String, BlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
-	BlueDbOnDisk(Path path, Class<?>...registeredSerializableClasses) {
+	BlueDbOnDisk(Path path) {
 		this.path = path;
 		this.backupManager = new BackupManager(this);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
@@ -51,8 +52,8 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public <T extends Serializable, K extends BlueKey> BlueCollectionOnDiskBuilder<T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
-		return new BlueCollectionOnDiskBuilder<T>(this, name, keyType, valueType);
+	public <K extends BlueKey, T extends Serializable> BlueCollectionOnDiskBuilder<K, T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
+		return new BlueCollectionOnDiskBuilder<K, T>(this, name, keyType, valueType);
 	}
 
 	@Deprecated
@@ -62,11 +63,15 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister) throws BlueDbException {
+		return initializeCollection(name, keyType, valueType, additionalClassesToRegister, null);
+	}
+
+	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			BlueCollectionOnDisk<T> collection = (BlueCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new BlueCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister);
+				collection = new BlueCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");

@@ -12,12 +12,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.SegmentSize;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.index.BlueIndex;
-import org.bluedb.api.index.IntegerIndexExtractor;
-import org.bluedb.api.index.LongIndexExtractor;
-import org.bluedb.api.index.StringIndexExtractor;
-import org.bluedb.api.index.UUIDIndexExtractor;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -28,6 +24,12 @@ import org.bluedb.disk.BlueDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.IndexableTestValue;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueIntIndexExtractor;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueLongIndexExtractor;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueStringIndexExtractor;
+import org.bluedb.disk.IndexableTestValue.IndexableTestValueUUIDIndexExtractor;
+import org.bluedb.disk.collection.index.BlueIndexOnDisk;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
 
@@ -50,31 +52,25 @@ public class LegacyCollectionSupportTest extends TestCase {
 	private BlueCollectionOnDisk<IndexableTestValue> stringCollection;
 	private BlueCollectionOnDisk<IndexableTestValue> uuidCollection;
 	
-	private BlueIndex<LongKey, IndexableTestValue> longIndex;
-	private BlueIndex<IntegerKey, IndexableTestValue> intIndex;
-	private BlueIndex<StringKey, IndexableTestValue> stringIndex;
-	private BlueIndex<UUIDKey, IndexableTestValue> uuidIndex;
+	private BlueIndexOnDisk<LongKey, IndexableTestValue> longIndex;
+	private BlueIndexOnDisk<IntegerKey, IndexableTestValue> intIndex;
+	private BlueIndexOnDisk<StringKey, IndexableTestValue> stringIndex;
+	private BlueIndexOnDisk<UUIDKey, IndexableTestValue> uuidIndex;
 	
 	private List<Long> existingValuesToTest = Arrays.asList(
-		0L,
-		1000L,
-		10_000L,
-		10_005L,
-		10_010L,
-		10_100L,
-		100_000L,
-		1_000_000L,
-		1_100_000L,
-		1_200_000L,
-		1_300_000L,
-		1_400_000L,
-		10_000_000L,
-		100_000_000L,
-		100_100_000L,
-		100_200_000L,
-		100_300_000L,
-		100_400_000L,
-		100_500_000L
+			0L,
+			1000L,
+			10_000L,
+			10_010L,
+			10_100L,
+			100_000L,
+			1_000_000L,
+			1_200_000L,
+			1_400_000L,
+			10_000_000L,
+			100_100_000L,
+			100_200_000L,
+			100_500_000L
 	);
 	
 	private List<Long> newValuesToTest;
@@ -101,39 +97,40 @@ public class LegacyCollectionSupportTest extends TestCase {
 		
 		timeframeCollection = db.collectionBuilder("timeframe-collection", TimeFrameKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.TIME_FRAME_1_MONTH)
 				.build();
 		
 		timeCollection = db.collectionBuilder("time-collection", TimeKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.TIME_1_MONTH)
 				.build();
 		
 		intCollection = db.collectionBuilder("int-collection", IntegerKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.INT_1K)
 				.build();
 		
 		longCollection = db.collectionBuilder("long-collection", LongKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.LONG_1K)
 				.build();
 		
 		stringCollection = db.collectionBuilder("string-collection", StringKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.STRING_4M)
 				.build();
 		
 		uuidCollection = db.collectionBuilder("uuid-collection", UUIDKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
+				.withSegmentSize(SegmentSize.UUID_4M)
 				.build();
 		
 		allCollections = Arrays.asList(timeframeCollection, timeCollection, intCollection, longCollection, stringCollection, uuidCollection);
 		
-		LongIndexExtractor<IndexableTestValue> longExtractor = value -> Arrays.asList(value.getLongValue());
-		IntegerIndexExtractor<IndexableTestValue> intExtractor = value -> Arrays.asList(value.getIntValue());
-		StringIndexExtractor<IndexableTestValue> stringExtractor = value -> Arrays.asList(value.getStringValue());
-		UUIDIndexExtractor<IndexableTestValue> uuidExtractor = value -> Arrays.asList(value.getId());
-		
-		longIndex = timeCollection.createIndex("long-index", LongKey.class, longExtractor);
-		intIndex = timeCollection.createIndex("int-index", IntegerKey.class, intExtractor);
-		stringIndex = timeCollection.createIndex("string-index", StringKey.class, stringExtractor);
-		uuidIndex = timeCollection.createIndex("uuid-index", UUIDKey.class, uuidExtractor);
+		longIndex = (BlueIndexOnDisk<LongKey, IndexableTestValue>) timeCollection.createIndex("long-index", LongKey.class, new IndexableTestValueLongIndexExtractor());
+		intIndex = (BlueIndexOnDisk<IntegerKey, IndexableTestValue>) timeCollection.createIndex("int-index", IntegerKey.class, new IndexableTestValueIntIndexExtractor());
+		stringIndex = (BlueIndexOnDisk<StringKey, IndexableTestValue>) timeCollection.createIndex("string-index", StringKey.class, new IndexableTestValueStringIndexExtractor());
+		uuidIndex =(BlueIndexOnDisk<UUIDKey, IndexableTestValue>) timeCollection.createIndex("uuid-index", UUIDKey.class, new IndexableTestValueUUIDIndexExtractor());
 		
 		newValuesToTest = existingValuesToTest.stream()
 				.map(l -> l+1)
@@ -205,9 +202,24 @@ public class LegacyCollectionSupportTest extends TestCase {
 	
 	@Test
 	public void test() throws BlueDbException {
+		assertSegmentSizes();
 		assertValues();
 	}
 	
+	private void assertSegmentSizes() throws BlueDbException {
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(TimeFrameKey.class).getSegmentSize(), timeframeCollection.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(TimeKey.class).getSegmentSize(), timeCollection.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(IntegerKey.class).getSegmentSize(), intCollection.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(LongKey.class).getSegmentSize(), longCollection.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(StringKey.class).getSegmentSize(), stringCollection.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(UUIDKey.class).getSegmentSize(), uuidCollection.getSegmentManager().getSegmentSize());
+		
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(LongKey.class).getSegmentSize(), longIndex.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(IntegerKey.class).getSegmentSize(), intIndex.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(StringKey.class).getSegmentSize(), stringIndex.getSegmentManager().getSegmentSize());
+		assertEquals(SegmentSizeSetting.getOriginalDefaultSettingsFor(UUIDKey.class).getSegmentSize(), uuidIndex.getSegmentManager().getSegmentSize());
+	}
+
 	private void assertValues() throws BlueDbException {
 		for(BlueCollectionOnDisk<IndexableTestValue> collection : allCollections) {
 			assertEquals(allValuesToTest.size(), collection.query().getList().size());

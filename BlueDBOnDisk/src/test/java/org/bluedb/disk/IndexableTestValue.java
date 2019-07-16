@@ -1,8 +1,14 @@
 package org.bluedb.disk;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
+import org.bluedb.api.index.IntegerIndexExtractor;
+import org.bluedb.api.index.LongIndexExtractor;
+import org.bluedb.api.index.StringIndexExtractor;
+import org.bluedb.api.index.UUIDIndexExtractor;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -139,5 +145,41 @@ public class IndexableTestValue implements Serializable {
 		} else if (!stringValue.equals(other.stringValue))
 			return false;
 		return true;
+	}
+	
+	public static class IndexableTestValueLongIndexExtractor implements LongIndexExtractor<IndexableTestValue> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public List<Long> extractLongsForIndex(IndexableTestValue value) {
+			return Arrays.asList(value.getLongValue());
+		}
+	}
+	
+	public static class IndexableTestValueIntIndexExtractor implements IntegerIndexExtractor<IndexableTestValue> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public List<Integer> extractIntsForIndex(IndexableTestValue value) {
+			return Arrays.asList(value.getIntValue());
+		}
+	}
+	
+	public static class IndexableTestValueStringIndexExtractor implements StringIndexExtractor<IndexableTestValue> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public List<String> extractStringsForIndex(IndexableTestValue value) {
+			return Arrays.asList(value.getStringValue());
+		}
+	}
+	
+	public static class IndexableTestValueUUIDIndexExtractor implements UUIDIndexExtractor<IndexableTestValue> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public List<UUID> extractUUIDsForIndex(IndexableTestValue value) {
+			return Arrays.asList(value.getId());
+		}
 	}
 }

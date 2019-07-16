@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import org.junit.Test;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
@@ -12,7 +11,7 @@ import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.segment.path.SegmentPathManager;
+import org.junit.Test;
 
 public class SegmentManagerTest extends BlueDbDiskTestBase {
 
@@ -87,23 +86,6 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		assertEquals(expectedFirstRange, firstRange);
 		assertEquals(expectedSecondRange, secondRange);
 		assertEquals(firstRange.getEnd() + 1, secondRange.getStart());
-	}
-
-	@Test
-	public void test_createSegmentPathManager() {
-		Path collectionPath = getTimeCollection().getPath();
-		SegmentPathManager timePathManager = SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class);
-		SegmentPathManager valuePathManager = SegmentManager.createSegmentPathManager(collectionPath, TimeKey.class);
-		assertNotNull(timePathManager);
-		assertNotNull(valuePathManager);
-
-		try {
-			SegmentManager.createSegmentPathManager(collectionPath, BlueKey.class);
-		} catch (UnsupportedOperationException e) {}
-		try {
-			SegmentManager.createSegmentPathManager(collectionPath, null);
-		} catch (UnsupportedOperationException | NullPointerException e) {
-		}
 	}
 
 	private SegmentManager<TestValue> getSegmentManager() {
