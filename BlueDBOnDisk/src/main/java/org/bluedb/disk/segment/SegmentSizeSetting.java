@@ -77,22 +77,22 @@ public enum SegmentSizeSetting {
 	LONG_16K(new SegmentSizeConfiguration(LongKey.class, 	asList(8192L,   2L, 512L, 512L, 512L, 256L, 128L), 	asList(1L, 8192L))),
 	LONG_32K(new SegmentSizeConfiguration(LongKey.class, 	asList(16384L,      512L, 512L, 512L, 256L, 128L), 	asList(1L, 16384L))),
 	
-	HASH_1K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(1024L,    512L, 128L, 64L), 	asList(1L, 1024L))), //4M Segments
-	HASH_2K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(2048L,    256L, 128L, 64L), 	asList(1L, 2048L))), //2M Segments
-	HASH_4K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(4096L,    128L, 128L, 64L), 	asList(1L, 4096L))), //1M Segments
-	HASH_8K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(8192L,     64L, 128L, 64L),  asList(1L, 8192L))), //512K Segments
-	HASH_16K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(16384L,    32L, 128L, 64L),  asList(1L, 16384L))), //256K Segments
-	HASH_32K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(32768L,    16L, 128L, 64L),  asList(1L, 32768L))), //128K Segments
-	HASH_64K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(65536L,     8L, 128L, 64L),  asList(1L, 65536L))), //64K Segments
-	HASH_128K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(131072L,    4L, 128L, 64L),  asList(1L, 131072L))), //32K Segments
-	HASH_256K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(262144L,    2L, 128L, 64L),  asList(1L, 262144L))), //16K Segments
-	HASH_512K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(524288L,        128L, 64L),  asList(1L, 524288L))), //8K Segments Original
-	HASH_1M(new SegmentSizeConfiguration(HashGroupedKey.class,		asList(1048576L,        64L, 64L),  asList(1L, 1048576L))), //4K Segments Default
-	HASH_2M(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(2097152L,        32L, 64L),  asList(1L, 2097152L))), //2K Segments Index Default
-	HASH_4M(new SegmentSizeConfiguration(HashGroupedKey.class,		asList(4194304L,        16L, 64L),  asList(1L, 4194304L))), //1K Segments
-	HASH_8M(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(8388608L,         8L, 64L),	asList(1L, 8388608L))), //512 Segments
-	HASH_16M(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(16777216L,        4L, 64L),  asList(1L, 16777216L))), //256 Segments
-	HASH_32M(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(33554432L,        2L, 64L),  asList(1L, 33554432L))), //128 Segments
+	HASH_1K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(1024L,    512L, 128L, 64L), 	asList(1L, 1024L))), //4M Segments, 8,396,864 i-nodes
+	HASH_2K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(2048L,    256L, 128L, 64L), 	asList(1L, 2048L))), //2M Segments, 4,202,560 i-nodes
+	HASH_4K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(4096L,    128L, 128L, 64L), 	asList(1L, 4096L))), //1M Segments, 2,105,408 i-nodes
+	HASH_8K(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(8192L,     64L, 128L, 64L),  asList(1L, 8192L))), //512K Segments, 1,056,832 i-nodes
+	HASH_16K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(16384L,    32L, 128L, 64L),  asList(1L, 16384L))), //256K Segments, 532,544 i-nodes
+	HASH_32K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(32768L,    16L, 128L, 64L),  asList(1L, 32768L))), //128K Segments, 270,400 i-nodes
+	HASH_64K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(65536L,     8L, 128L, 64L),  asList(1L, 65536L))), //64K Segments, 139,328 i-nodes
+	HASH_128K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(131072L,    4L, 128L, 64L),  asList(1L, 131072L))), //32K Segments, 73,792 i-nodes
+	HASH_256K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(262144L,    2L, 128L, 64L),  asList(1L, 262144L))), //16K Segments, 41,024 i-nodes
+	HASH_512K(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(524288L,        128L, 64L),  asList(1L, 524288L))), //8K Segments, 16,448 i-nodes Original
+	HASH_1M(new SegmentSizeConfiguration(HashGroupedKey.class,		asList(1048576L,        64L, 64L),  asList(1L, 1048576L))), //4K Segments, 8,256 i-nodes Default
+	HASH_2M(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(2097152L,        32L, 64L),  asList(1L, 2097152L))), //2K Segments, 4,160 i-nodes Index Default
+	HASH_4M(new SegmentSizeConfiguration(HashGroupedKey.class,		asList(4194304L,        16L, 64L),  asList(1L, 4194304L))), //1K Segments, 2,112 i-nodes
+	HASH_8M(new SegmentSizeConfiguration(HashGroupedKey.class, 		asList(8388608L,         8L, 64L),	asList(1L, 8388608L))), //512 Segments, 1,088 i-nodes
+	HASH_16M(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(16777216L,        4L, 64L),  asList(1L, 16777216L))), //256 Segments, 576 i-nodes
+	HASH_32M(new SegmentSizeConfiguration(HashGroupedKey.class, 	asList(33554432L,        2L, 64L),  asList(1L, 33554432L))), //128 Segments, 320 i-nodes
 	;
 	
 	private SegmentSizeConfiguration config;
