@@ -72,13 +72,13 @@ public final class SegmentSize<K extends BlueKey> {
 	/** All values in each 15 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeKey> TIME_15_DAYS = new SegmentSize<>("TIME_15_DAYS");
 	
-	/** All values in each month time interval will be grouped together in a segment */
+	/** All values in each 30 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeKey> TIME_1_MONTH = new SegmentSize<>("TIME_1_MONTH");
 	
-	/** All values in each 3 month time interval will be grouped together in a segment */
+	/** All values in each 90 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeKey> TIME_3_MONTHS = new SegmentSize<>("TIME_3_MONTHS");
 	
-	/** All values in each 6 month time interval will be grouped together in a segment */
+	/** All values in each 180 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeKey> TIME_6_MONTHS = new SegmentSize<>("TIME_6_MONTHS");
 	
 
@@ -103,13 +103,13 @@ public final class SegmentSize<K extends BlueKey> {
 	/** All values in each 15 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeFrameKey> TIME_FRAME_15_DAYS = new SegmentSize<>("TIME_15_DAYS");
 	
-	/** All values in each month time interval will be grouped together in a segment */
+	/** All values in each 30 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeFrameKey> TIME_FRAME_1_MONTH = new SegmentSize<>("TIME_1_MONTH");
 	
-	/** All values in each 3 month time interval will be grouped together in a segment */
+	/** All values in each 90 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeFrameKey> TIME_FRAME_3_MONTHS = new SegmentSize<>("TIME_3_MONTHS");
 	
-	/** All values in each 6 month time interval will be grouped together in a segment */
+	/** All values in each 180 day time interval will be grouped together in a segment */
 	public static final SegmentSize<TimeFrameKey> TIME_FRAME_6_MONTHS = new SegmentSize<>("TIME_6_MONTHS");
 	
 	

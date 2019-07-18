@@ -34,7 +34,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * before the specified time. For a {@link TimeKey} it means that it is before the specified time. It doesn't make 
 	 * sense to use it with other key types.
 	 * 
-	 * @param time an exclusive max time for the queried time interval
+	 * @param time an exclusive max time (millis since epoch) for the queried time interval
 	 * @return itself, with an exclusive max time for the queried time interval
 	 */
 	BlueQuery<V> beforeTime(long time);
@@ -44,7 +44,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * before or at the specified time. For a {@link TimeKey} it means that it is before or at the specified time. It doesn't 
 	 * make sense to use it with other key types.
 	 * 
-	 * @param time an inclusive max time for the queried time interval
+	 * @param time an inclusive max time (millis since epoch) for the queried time interval
 	 * @return itself, with an inclusive max time for the queried time interval
 	 */
 	BlueQuery<V> beforeOrAtTime(long time);
@@ -54,7 +54,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * after the specified time. For a {@link TimeKey} it means that it is after the specified time. It doesn't make 
 	 * sense to use it with other key types.
 	 * 
-	 * @param time an exclusive min time for the queried time interval
+	 * @param time an exclusive min time (millis since epoch) for the queried time interval
 	 * @return itself, with an exclusive min time for the queried time interval
 	 */
 	BlueQuery<V> afterTime(long time);
@@ -64,7 +64,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * after or at the specified time. For a {@link TimeKey} it means that it is after or at the specified time. It doesn't 
 	 * make sense to use it with other key types.
 	 * 
-	 * @param time an inclusive min time for the queried time interval
+	 * @param time an inclusive min time (millis since epoch) for the queried time interval
 	 * @return itself, with an exclusive min time for the queried time interval
 	 */
 	BlueQuery<V> afterOrAtTime(long time);
