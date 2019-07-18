@@ -17,14 +17,14 @@ import org.bluedb.api.keys.ValueKey;
  * data. Currently this only supports the retrieval of values using a specific index key, but could be extended in the future to
  * provide more powerful index based queries.
  * 
- * @param <K> - the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
+ * @param <K> the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
  * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}).
- * @param <V> - the value type of the collection being indexed
+ * @param <V> the value type of the collection being indexed
  */
 public interface BlueIndex<K extends ValueKey, V extends Serializable> {
 
 	/**
-	 * @param key - a key that maps to the desired value(s)
+	 * @param key a key that maps to the desired value(s)
 	 * @return all the values in the collection for the given index key
 	 * @throws BlueDbException if any problems occur
 	 */

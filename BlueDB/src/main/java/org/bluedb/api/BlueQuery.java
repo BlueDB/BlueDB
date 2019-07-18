@@ -10,7 +10,7 @@ public interface BlueQuery<V extends Serializable> {
 
 	/**
 	 * Adds a condition to the query before returning itself.
-	 * @param condition - a filter function to be applied to possible matching values
+	 * @param condition a filter function to be applied to possible matching values
 	 * @return itself, with the condition added to the query
 	 */
 	BlueQuery<V> where(Condition<V> condition);
@@ -34,7 +34,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * before the specified time. For a {@link TimeKey} it means that it is before the specified time. It doesn't make 
 	 * sense to use it with other key types.
 	 * 
-	 * @param time - an exclusive max time for the queried time interval
+	 * @param time an exclusive max time for the queried time interval
 	 * @return itself, with an exclusive max time for the queried time interval
 	 */
 	BlueQuery<V> beforeTime(long time);
@@ -44,7 +44,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * before or at the specified time. For a {@link TimeKey} it means that it is before or at the specified time. It doesn't 
 	 * make sense to use it with other key types.
 	 * 
-	 * @param time - an inclusive max time for the queried time interval
+	 * @param time an inclusive max time for the queried time interval
 	 * @return itself, with an inclusive max time for the queried time interval
 	 */
 	BlueQuery<V> beforeOrAtTime(long time);
@@ -54,7 +54,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * after the specified time. For a {@link TimeKey} it means that it is after the specified time. It doesn't make 
 	 * sense to use it with other key types.
 	 * 
-	 * @param time - an exclusive min time for the queried time interval
+	 * @param time an exclusive min time for the queried time interval
 	 * @return itself, with an exclusive min time for the queried time interval
 	 */
 	BlueQuery<V> afterTime(long time);
@@ -64,7 +64,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * after or at the specified time. For a {@link TimeKey} it means that it is after or at the specified time. It doesn't 
 	 * make sense to use it with other key types.
 	 * 
-	 * @param time - an inclusive min time for the queried time interval
+	 * @param time an inclusive min time for the queried time interval
 	 * @return itself, with an exclusive min time for the queried time interval
 	 */
 	BlueQuery<V> afterOrAtTime(long time);
@@ -101,14 +101,14 @@ public interface BlueQuery<V extends Serializable> {
 
 	/**
 	 * Executes the query and updates any matching values
-	 * @param updater - a function that mutates the values in the query results
+	 * @param updater a function that mutates the values in the query results
 	 * @throws BlueDbException if there are any problems, such as an exception thrown by the updater
 	 */
 	void update(Updater<V> updater) throws BlueDbException;
 	
 	/**
 	 * Executes the query and replaces any matching values
-	 * @param mapper - a function that replaces the values in the query results
+	 * @param mapper a function that replaces the values in the query results
 	 * @throws BlueDbException if there are any problems, such as an exception thrown by the mapper
 	 */
 	void replace(Mapper<V> mapper) throws BlueDbException;

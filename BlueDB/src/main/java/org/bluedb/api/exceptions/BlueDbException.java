@@ -8,8 +8,8 @@ public class BlueDbException extends Exception {
 
 	/**
 	 * Exception in BlueDb.
-	 * @param message - a message describing what happened
-	 * @param cause - the underlying exception
+	 * @param message a message describing what happened
+	 * @param cause the underlying exception
 	 */
 	public BlueDbException(String message, Throwable cause) {
 		super(message, cause);
@@ -17,7 +17,7 @@ public class BlueDbException extends Exception {
 
 	/**
 	 * Exception in BlueDb.
-	 * @param message - a message describing what happened
+	 * @param message a message describing what happened
 	 */
 	public BlueDbException(String message) {
 		super(message);

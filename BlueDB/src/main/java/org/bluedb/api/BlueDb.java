@@ -18,10 +18,10 @@ public interface BlueDb {
 	 * 
 	 * @param <V> the object type of values to be serialized into the collection
 	 * 
-	 * @param name - the unique name of the collection
-	 * @param keyType - the class type of the collection's keys
-	 * @param valueType - the class type of the values stored in the collection
-	 * @param additionalClassesToRegister - classes to optimize for in the serializer (should be classes that will be stored in collection keys or values)
+	 * @param name the unique name of the collection
+	 * @param keyType the class type of the collection's keys
+	 * @param valueType the class type of the values stored in the collection
+	 * @param additionalClassesToRegister classes to optimize for in the serializer (should be classes that will be stored in collection keys or values)
 	 * 
 	 * @return a new BlueCollection, or the existing one if it exists
 	 * 
@@ -35,9 +35,9 @@ public interface BlueDb {
 	 * @param <K> the key type of the collection
 	 * @param <V> the object type of values to be serialized into the collection
 	 * 
-	 * @param name - The unique name of the collection
-	 * @param keyType - the class type of the collection's keys
-	 * @param valueType - the class type of the values stored in the collection
+	 * @param name The unique name of the collection
+	 * @param keyType the class type of the collection's keys
+	 * @param valueType the class type of the values stored in the collection
 	 * @return a new {@link BlueCollectionBuilder} object for this {@link BlueDb}
 	 */
 	public <K extends BlueKey, V extends Serializable> BlueCollectionBuilder<K, V> collectionBuilder(String name, Class<K> keyType, Class<V> valueType);
@@ -47,8 +47,8 @@ public interface BlueDb {
 	 * 
 	 * @param <V> the object type of values to be serialized into the collection
 	 * 
-	 * @param name - The unique name of the collection
-	 * @param valueType - the class type of the values stored in the collection
+	 * @param name The unique name of the collection
+	 * @param valueType the class type of the values stored in the collection
 	 * 
 	 * @return existing {@link BlueCollection} if it exists, else null
 	 * 
@@ -58,7 +58,7 @@ public interface BlueDb {
 
 	/**
 	 * Creates a backup of the entire database
-	 * @param path - where the backup will be created
+	 * @param path where the backup will be created
 	 * @throws BlueDbException if any issues encountered, such as file system problems
 	 */
 	public void backup(Path path) throws BlueDbException;
@@ -80,8 +80,8 @@ public interface BlueDb {
 	/**
 	 * Blocks until all tasks have completed execution after a shutdown request, or the timeout occurs, or the current 
 	 * thread is interrupted, whichever happens first.
-	 * @param timeout - the maximum time to wait
-	 * @param timeUnit - the time unit of the timeout argument
+	 * @param timeout the maximum time to wait
+	 * @param timeUnit the time unit of the timeout argument
 	 * @return true if bluedb terminated and false if the timeout elapsed before termination
 	 * @throws BlueDbException if any issues are encountered, such as being interrupted
 	 */

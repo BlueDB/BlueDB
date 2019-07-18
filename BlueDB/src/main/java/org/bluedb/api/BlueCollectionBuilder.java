@@ -25,7 +25,7 @@ public interface BlueCollectionBuilder<K extends BlueKey, V extends Serializable
 	 * a specific value in a segment and how many i-nodes (files and directories) the collection will use on disk. This will 
 	 * be ignored if the collection already exists. In the future BlueDB might support migrating from one segment size to another.
 	 * 
-	 * @param segmentSize - the requested segment size for the collection. Values of the collection are grouped into segments and
+	 * @param segmentSize the requested segment size for the collection. Values of the collection are grouped into segments and
 	 * values in a segment can be vacuumed into a single file. Therefore, segment size will affect how fast you can access
 	 * a specific value in a segment and how many i-nodes (files and directories) the collection will use on disk. This will be 
 	 * ignored if the collection already exists. In the future BlueDB might support migrating from one segment size to another.

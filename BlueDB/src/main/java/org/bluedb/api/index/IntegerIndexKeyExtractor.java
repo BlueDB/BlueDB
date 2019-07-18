@@ -15,7 +15,7 @@ import org.bluedb.api.keys.IntegerKey;
  * and for this reason it is <b>NOT</b> recommended to use lambdas or anonymous 
  * inner classes to define key extractors.
  * 
- * @param <V> - the value type of the collection being indexed
+ * @param <V> the value type of the collection being indexed
  */
 public interface IntegerIndexKeyExtractor<V extends Serializable> extends KeyExtractor<IntegerKey, V> {
 	
@@ -37,7 +37,7 @@ public interface IntegerIndexKeyExtractor<V extends Serializable> extends KeyExt
 	/**
 	 * Extracts integers from the given value in order to create index keys. The {@link BlueIndex} class
 	 * uses this method to map the resulting index keys to this value. 
-	 * @param value - the value from which index keys are to be extracted
+	 * @param value the value from which index keys are to be extracted
 	 * @return one or many integers that this value should be indexed on
 	 */
 	public List<Integer> extractIntsForIndex(V value);

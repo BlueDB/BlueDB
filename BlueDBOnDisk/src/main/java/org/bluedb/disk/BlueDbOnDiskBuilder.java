@@ -11,7 +11,7 @@ public class BlueDbOnDiskBuilder {
 	
 	/**
 	 * Sets the path you wish to use for the BlueDB data
-	 * @param path - the path directory that will contain the BlueDB data
+	 * @param path the path directory that will contain the BlueDB data
 	 * @return itself with the path set
 	 */
 	public BlueDbOnDiskBuilder withPath(Path path) {
@@ -30,7 +30,7 @@ public class BlueDbOnDiskBuilder {
 	/**
 	 * Replaced by withPath<br><br>
 	 * Sets the path you wish to use for the BlueDB data
-	 * @param path - the path directory that will contain the BlueDB data
+	 * @param path the path directory that will contain the BlueDB data
 	 * @return itself with the path set
 	 */
 	@Deprecated

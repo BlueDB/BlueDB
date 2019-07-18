@@ -11,7 +11,7 @@ public interface Updater<V extends Serializable> {
 
 	/**
 	 * Function to mutate a value in a collection.
-	 * @param value - collection value to be mutated
+	 * @param value collection value to be mutated
 	 */
 	public void update(V value);
 }

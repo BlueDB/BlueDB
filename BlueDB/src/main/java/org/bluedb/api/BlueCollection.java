@@ -29,12 +29,12 @@ public interface BlueCollection<V extends Serializable> {
 	/**
 	 * Creates (or returns existing) {@link BlueIndex} that maps objects of type {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link IntegerKey}, {@link LongKey}) to values in the collection.
 	 * 
-	 * @param <K> - the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
+	 * @param <K> the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
 	 * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}).
 	 * 
-	 * @param name - index name (one index per name per each collection)
-	 * @param keyType - the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
-	 * @param keyExtractor - a function that maps a value to the keys by which the value should be indexed. The appropriate subclass can be used and would be more
+	 * @param name index name (one index per name per each collection)
+	 * @param keyType the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
+	 * @param keyExtractor a function that maps a value to the keys by which the value should be indexed. The appropriate subclass can be used and would be more
 	 * simple to implement. These include {@link UUIDIndexKeyExtractor}, {@link StringIndexKeyExtractor}, {@link IntegerIndexKeyExtractor}, and {@link LongIndexKeyExtractor}
 	 * 
 	 * @return a {@link BlueIndex} object (existing index if it exists, otherwise a newly created index)
@@ -46,11 +46,11 @@ public interface BlueCollection<V extends Serializable> {
 	/**
 	 * Returns existing BlueIndex that maps objects of type keyType to values in the collection.
 	 * 
-	 * @param <K> - the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
+	 * @param <K> the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
 	 * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}).
 	 * 
-	 * @param name - index name (one index per name per each collection)
-	 * @param keyType - the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
+	 * @param name index name (one index per name per each collection)
+	 * @param keyType the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
 	 * 
 	 * @return a {@link BlueIndex} with the same name if it exists and has the same keyType
 	 * 
@@ -60,7 +60,7 @@ public interface BlueCollection<V extends Serializable> {
 
 	/**
 	 * Returns true if the collection contains a value for the given key.
-	 * @param key - the key that may or may not be in collection
+	 * @param key the key that may or may not be in collection
 	 * @return true if the collection contains a value for the given key, else false
 	 * @throws BlueDbException if the type of key was not the type specified when the collection was created
 	 */
@@ -68,22 +68,22 @@ public interface BlueCollection<V extends Serializable> {
 
 	/**
 	 * Inserts the given key value pair
-	 * @param key - key where value should be saved (must match the keyType specified when the collection was created)
-	 * @param value - value to be saved for the key
+	 * @param key key where value should be saved (must match the keyType specified when the collection was created)
+	 * @param value value to be saved for the key
 	 * @throws BlueDbException if the key type is not the type specified when the collection was created
 	 */
 	public void insert(BlueKey key, V value) throws BlueDbException;
 	
 	/**
 	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch methods many times. 
-	 * @param values - the key value pairs to insert. Key types must match the keyType specified when the collection was created.
+	 * @param values the key value pairs to insert. Key types must match the keyType specified when the collection was created.
 	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
 	 */
 	public void batchUpsert(Map<BlueKey, V> values) throws BlueDbException;
 
 	/**
 	 * Returns the value to which the specified key is mapped, or null if this map contains no mapping for the key
-	 * @param key - the key for the desired value
+	 * @param key the key for the desired value
 	 * @return the value to which the specified key is mapped, or null if this map contains no mapping for the key
 	 * @throws BlueDbException if the key is not the same type specified when the collection was created
 	 */
@@ -91,30 +91,30 @@ public interface BlueCollection<V extends Serializable> {
 
 	/**
 	 * Mutates the value for the given key by passing it to the given updater
-	 * @param key - The key for the value which will be updated
-	 * @param updater - a function that mutates the value to which the specified key is mapped
+	 * @param key The key for the value which will be updated
+	 * @param updater a function that mutates the value to which the specified key is mapped
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created or if updater throws an exception
 	 */
 	public void update(BlueKey key, Updater<V> updater) throws BlueDbException;
 	
 	/**
 	 * Replaces the value for the given key by passing it to the given updater
-	 * @param key - the key for the value which will be replaced
-	 * @param updater - a function that returns the value that should replace the value to which the specified key is mapped
+	 * @param key the key for the value which will be replaced
+	 * @param updater a function that returns the value that should replace the value to which the specified key is mapped
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created or if updater throws an exception
 	 */
 	public void replace(BlueKey key, Mapper<V> updater) throws BlueDbException;
 
 	/**
 	 * Deletes the value for the given key
-	 * @param key - the key for the value which will be deleted
+	 * @param key the key for the value which will be deleted
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created
 	 */
 	public void delete(BlueKey key) throws BlueDbException;
 
 	/**
 	 * Deletes the values for the given keys. Batch methods are much more efficient than calling non-batch methods many times.
-	 * @param keys - the keys for the values which will be deleted
+	 * @param keys the keys for the values which will be deleted
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created
 	 */
 	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException;

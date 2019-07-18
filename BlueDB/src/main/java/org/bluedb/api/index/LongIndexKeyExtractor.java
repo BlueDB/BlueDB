@@ -14,7 +14,7 @@ import org.bluedb.api.keys.LongKey;
  * The value can then be quickly found using those longs. Note that key extractors are serialized by {@link BlueIndex} 
  * and for this reason it is <b>NOT</b> recommended to use lambdas or anonymous inner classes to define key extractors.
  * 
- * @param <V> - the value type of the collection being indexed
+ * @param <V> the value type of the collection being indexed
  */
 public interface LongIndexKeyExtractor<V extends Serializable> extends KeyExtractor<LongKey, V> {
 	
@@ -36,7 +36,7 @@ public interface LongIndexKeyExtractor<V extends Serializable> extends KeyExtrac
 	/**
 	 * Extracts longs from the given value in order to create index keys. The {@link BlueIndex} class
 	 * uses this method to map the resulting index keys to this value. 
-	 * @param value - the value from which index keys are to be extracted
+	 * @param value the value from which index keys are to be extracted
 	 * @return one or many longs that this value should be indexed on
 	 */
 	public List<Long> extractLongsForIndex(V value);

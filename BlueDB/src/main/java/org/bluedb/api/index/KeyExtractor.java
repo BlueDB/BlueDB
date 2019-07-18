@@ -20,15 +20,15 @@ import org.bluedb.api.keys.ValueKey;
  * are serialized by {@link BlueIndex} and for this reason it is <b>NOT</b> recommended to use lambdas or anonymous 
  * inner classes to define key extractors.
  * 
- * @param <K> - the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
+ * @param <K> the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
  * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}).
- * @param <V> - the value type of the collection being indexed
+ * @param <V> the value type of the collection being indexed
  */
 public interface KeyExtractor<K extends ValueKey, V extends Serializable> extends Serializable {
 	/**
 	 * Extracts data from the given value in the form of index keys. The {@link BlueIndex} class
 	 * uses this method to map the resulting index keys to this value. 
-	 * @param value - the value from which index keys are to be extracted
+	 * @param value the value from which index keys are to be extracted
 	 * @return one or many index keys representing the data that this value should be indexed on
 	 */
 	public List<K> extractKeys(V value);

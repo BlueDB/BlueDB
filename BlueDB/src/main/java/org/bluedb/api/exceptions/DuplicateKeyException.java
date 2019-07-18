@@ -11,8 +11,8 @@ public class DuplicateKeyException extends BlueDbException {
 
 	/**
 	 * Exception caused by inserting a value for a key that already has a value associated with it
-	 * @param message - a message describing what happened
-	 * @param key - the key that already has a value associated with it
+	 * @param message a message describing what happened
+	 * @param key the key that already has a value associated with it
 	 */
 	public DuplicateKeyException(String message, BlueKey key) {
 		super(message);

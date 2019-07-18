@@ -51,8 +51,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
 	/**
 	 * Returns true if this key's grouping number is in the range [min, max] inclusive, else false
-	 * @param min - the minimum grouping number
-	 * @param max - the maximum grouping number
+	 * @param min the minimum grouping number
+	 * @param max the maximum grouping number
 	 * @return true if this key's grouping number is in the range [min, max] inclusive, else false
 	 */
 	default boolean isInRange(long min, long max) {
@@ -61,7 +61,7 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
 	/**
 	 * Compares the canonical class name so that two keys of different types can be ordered consistently
-	 * @param other - the key that this is being compared against
+	 * @param other the key that this is being compared against
 	 * @return 0 if this has the same class as other, or else a negative or positive int to indicate relative order
 	 */
 	default int compareCanonicalClassNames(BlueKey other) {
@@ -70,8 +70,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
 	/**
 	 * Compares the canonical class name so that two keys of different types can be ordered consistently
-	 * @param first - the key to compare against second
-	 * @param second - the key to compare against first
+	 * @param first the key to compare against second
+	 * @param second the key to compare against first
 	 * @return 0 if the classes are the same, a negative number if first should come first and a positive number if second should
 	 */
 	public static int compareCanonicalClassNames(Object first, Object second) {
@@ -80,8 +80,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
 	/**
 	 * Compares the canonical class name so that two keys of different types can be ordered consistently
-	 * @param first - key to compare against second
-	 * @param second - key to compare against first
+	 * @param first key to compare against second
+	 * @param second key to compare against first
 	 * @return 0 if the classes are the same, a negative number if first should come first and a positive number if second should
 	 */
 	public static int unsafeCompareCanonicalClassNames(Object first, Object second) {
@@ -93,10 +93,10 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	/**
 	 * Compares the the values in a null-safe way
 	 * 
-	 * @param <T> - Any type that you want to compare
+	 * @param <T> Any type that you want to compare
 	 * 
-	 * @param item1 - value to compare against item2
-	 * @param item2 - value to compare against item1
+	 * @param item1 value to compare against item2
+	 * @param item2 value to compare against item1
 	 * 
 	 * @return 0 if the classes are the same, a negative number if first should come first and a positive number if second should
 	 */

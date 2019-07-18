@@ -12,7 +12,7 @@ import org.bluedb.api.index.BlueIndex;
  * means that there will be few collisions and high i-node usage. <br><br>
  * 
  * Known implementations include {@link UUIDKey} and {@link StringKey}
- * @param <T> - The type of the id of this key. Existing types include {@link UUID} and String.
+ * @param <T> The type of the id of this key. Existing types include {@link UUID} and String.
  */
 public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 	private static final long serialVersionUID = 1L;
