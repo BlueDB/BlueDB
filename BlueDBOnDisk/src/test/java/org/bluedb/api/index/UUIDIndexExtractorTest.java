@@ -15,14 +15,14 @@ public class UUIDIndexExtractorTest {
 	public void test() {
 		IndexableTestValue testValue = new IndexableTestValue(UUID.randomUUID(), 0, 5, "Whatever", 27);
 		
-		UUIDIndexExtractor<IndexableTestValue> extractor = value -> Arrays.asList(value.getId());
+		UUIDIndexKeyExtractor<IndexableTestValue> extractor = value -> Arrays.asList(value.getId());
 		assertEquals(Arrays.asList(testValue.getUUIDKey()), extractor.extractKeys(testValue));
 		
-		UUIDIndexExtractor<IndexableTestValue> badExtractor = value -> null;
+		UUIDIndexKeyExtractor<IndexableTestValue> badExtractor = value -> null;
 		assertEquals(Arrays.asList(), badExtractor.extractKeys(testValue));
 		
 		UUID extraUUID = UUID.randomUUID();
-		UUIDIndexExtractor<IndexableTestValue> listExtractor = value -> Arrays.asList(value.getId(), extraUUID);
+		UUIDIndexKeyExtractor<IndexableTestValue> listExtractor = value -> Arrays.asList(value.getId(), extraUUID);
 		assertEquals(Arrays.asList(testValue.getUUIDKey(), new UUIDKey(extraUUID)), listExtractor.extractKeys(testValue));
 	}
 

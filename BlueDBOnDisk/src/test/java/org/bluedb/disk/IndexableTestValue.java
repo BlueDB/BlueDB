@@ -5,10 +5,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import org.bluedb.api.index.IntegerIndexExtractor;
-import org.bluedb.api.index.LongIndexExtractor;
-import org.bluedb.api.index.StringIndexExtractor;
-import org.bluedb.api.index.UUIDIndexExtractor;
+import org.bluedb.api.index.IntegerIndexKeyExtractor;
+import org.bluedb.api.index.LongIndexKeyExtractor;
+import org.bluedb.api.index.StringIndexKeyExtractor;
+import org.bluedb.api.index.UUIDIndexKeyExtractor;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -147,7 +147,7 @@ public class IndexableTestValue implements Serializable {
 		return true;
 	}
 	
-	public static class IndexableTestValueLongIndexExtractor implements LongIndexExtractor<IndexableTestValue> {
+	public static class IndexableTestValueLongIndexExtractor implements LongIndexKeyExtractor<IndexableTestValue> {
 		private static final long serialVersionUID = 1L;
 
 		@Override
@@ -156,7 +156,7 @@ public class IndexableTestValue implements Serializable {
 		}
 	}
 	
-	public static class IndexableTestValueIntIndexExtractor implements IntegerIndexExtractor<IndexableTestValue> {
+	public static class IndexableTestValueIntIndexExtractor implements IntegerIndexKeyExtractor<IndexableTestValue> {
 		private static final long serialVersionUID = 1L;
 
 		@Override
@@ -165,7 +165,7 @@ public class IndexableTestValue implements Serializable {
 		}
 	}
 	
-	public static class IndexableTestValueStringIndexExtractor implements StringIndexExtractor<IndexableTestValue> {
+	public static class IndexableTestValueStringIndexExtractor implements StringIndexKeyExtractor<IndexableTestValue> {
 		private static final long serialVersionUID = 1L;
 
 		@Override
@@ -174,7 +174,7 @@ public class IndexableTestValue implements Serializable {
 		}
 	}
 	
-	public static class IndexableTestValueUUIDIndexExtractor implements UUIDIndexExtractor<IndexableTestValue> {
+	public static class IndexableTestValueUUIDIndexExtractor implements UUIDIndexKeyExtractor<IndexableTestValue> {
 		private static final long serialVersionUID = 1L;
 
 		@Override

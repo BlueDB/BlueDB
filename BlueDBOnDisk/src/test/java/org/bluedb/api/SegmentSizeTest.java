@@ -47,15 +47,21 @@ public class SegmentSizeTest {
 		assertEquals(SegmentSizeSetting.HASH_1M, SegmentSizeSetting.fromUserSelection(SegmentSize.UUID_1M));
 		assertEquals(SegmentSizeSetting.HASH_2M, SegmentSizeSetting.fromUserSelection(SegmentSize.UUID_2M));
 		assertEquals(SegmentSizeSetting.HASH_4M, SegmentSizeSetting.fromUserSelection(SegmentSize.UUID_4M));
+		assertEquals(SegmentSizeSetting.HASH_8M, SegmentSizeSetting.fromUserSelection(SegmentSize.UUID_8M));
+		assertEquals(SegmentSizeSetting.HASH_16M, SegmentSizeSetting.fromUserSelection(SegmentSize.UUID_16M));
+		assertEquals(SegmentSizeSetting.HASH_32M, SegmentSizeSetting.fromUserSelection(SegmentSize.UUID_32M));
 		
 		assertEquals(SegmentSizeSetting.HASH_256K, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_256K));
 		assertEquals(SegmentSizeSetting.HASH_512K, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_512K));
 		assertEquals(SegmentSizeSetting.HASH_1M, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_1M));
 		assertEquals(SegmentSizeSetting.HASH_2M, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_2M));
 		assertEquals(SegmentSizeSetting.HASH_4M, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_4M));
+		assertEquals(SegmentSizeSetting.HASH_8M, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_8M));
+		assertEquals(SegmentSizeSetting.HASH_16M, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_16M));
+		assertEquals(SegmentSizeSetting.HASH_32M, SegmentSizeSetting.fromUserSelection(SegmentSize.STRING_32M));
 		
 		try {
-			SegmentSizeSetting.fromUserSelection(new SegmentSize<>("whatever"));
+			SegmentSizeSetting.fromUserSelection(SegmentSize.INVALID);
 			fail();
 		} catch(BlueDbException e) { }
 	}

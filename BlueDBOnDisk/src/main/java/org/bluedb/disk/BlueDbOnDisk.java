@@ -94,12 +94,12 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	public void shutdown() throws BlueDbException {
+	public void shutdown() {
 		sharedExecutor.shutdown();
 	}
 	
 	@Override
-	public void shutdownNow() throws BlueDbException {
+	public void shutdownNow() {
 		sharedExecutor.shutdownNow();
 	}
 	

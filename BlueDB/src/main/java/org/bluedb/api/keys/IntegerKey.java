@@ -1,5 +1,13 @@
 package org.bluedb.api.keys;
 
+import org.bluedb.api.BlueCollection;
+import org.bluedb.api.index.BlueIndex;
+
+/**
+ * A key that can be mapped to a value in a {@link BlueCollection} or {@link BlueIndex}. Values inserted with
+ * this key will be ordered and will fill up an entire segment before creating a new one. I-node usage will grow
+ * as new segments are needed.
+ */
 public final class IntegerKey extends ValueKey {
 	private static final long serialVersionUID = 1L;
 
@@ -9,6 +17,9 @@ public final class IntegerKey extends ValueKey {
 		this.id = id;
 	}
 
+	/**
+	 * @return the id of this key
+	 */
 	public int getId() {
 		return id;
 	}

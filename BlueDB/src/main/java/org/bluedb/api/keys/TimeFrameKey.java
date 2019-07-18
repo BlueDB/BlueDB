@@ -2,6 +2,13 @@ package org.bluedb.api.keys;
 
 import java.util.UUID;
 
+import org.bluedb.api.BlueCollection;
+import org.bluedb.api.index.BlueIndex;
+
+/**
+ * A key that can be mapped to a value in a {@link BlueCollection} or {@link BlueIndex}. Values inserted with
+ * this key will be ordered by start time. I-node usage will scale with the size of the timeframe that your data covers.
+ */
 public final class TimeFrameKey extends TimeKey {
 	@Override
 	public int hashCode() {
@@ -60,10 +67,16 @@ public final class TimeFrameKey extends TimeKey {
 		this.endTime = endTime;
 	}
 
+	/**
+	 * @return the start time of this key
+	 */
 	public long getStartTime() {
 		return super.getTime();
 	}
 
+	/**
+	 * @return the end time of this key
+	 */
 	public long getEndTime() {
 		return endTime;
 	}

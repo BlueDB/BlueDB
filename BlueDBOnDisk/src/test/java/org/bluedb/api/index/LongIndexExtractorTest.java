@@ -15,13 +15,13 @@ public class LongIndexExtractorTest {
 	public void test() {
 		IndexableTestValue testValue = new IndexableTestValue(UUID.randomUUID(), 12, 45, "Whatever", 27);
 		
-		LongIndexExtractor<IndexableTestValue> extractor = value -> Arrays.asList(value.getLongValue());
+		LongIndexKeyExtractor<IndexableTestValue> extractor = value -> Arrays.asList(value.getLongValue());
 		assertEquals(Arrays.asList(testValue.getLongKey()), extractor.extractKeys(testValue));
 		
-		LongIndexExtractor<IndexableTestValue> badExtractor = value -> null;
+		LongIndexKeyExtractor<IndexableTestValue> badExtractor = value -> null;
 		assertEquals(Arrays.asList(), badExtractor.extractKeys(testValue));
 		
-		LongIndexExtractor<IndexableTestValue> listExtractor = value -> Arrays.asList(value.getLongValue(), 10L);
+		LongIndexKeyExtractor<IndexableTestValue> listExtractor = value -> Arrays.asList(value.getLongValue(), 10L);
 		assertEquals(Arrays.asList(testValue.getLongKey(), new LongKey(10)), listExtractor.extractKeys(testValue));
 	}
 
