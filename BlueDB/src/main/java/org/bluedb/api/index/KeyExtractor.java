@@ -14,7 +14,7 @@ import org.bluedb.api.keys.ValueKey;
  * This is used by the {@link BlueIndex} class to extract data in the form of index keys from each value in 
  * the {@link BlueCollection}. The value can then be quickly found using those index keys.
  * 
- * <br/><br/>
+ * <br><br>
  * The following sub types are more simple and can be used in place of this: {@link IntegerIndexKeyExtractor}, 
  * {@link LongIndexKeyExtractor}, {@link StringIndexKeyExtractor}, {@link UUIDIndexKeyExtractor}. Note that key extractors
  * are serialized by {@link BlueIndex} and for this reason it is <b>NOT</b> recommended to use lambdas or anonymous 

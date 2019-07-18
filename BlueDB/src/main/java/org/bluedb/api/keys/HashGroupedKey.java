@@ -9,7 +9,7 @@ import org.bluedb.api.index.BlueIndex;
  * A key that can be mapped to a value in a {@link BlueCollection} or {@link BlueIndex}. The hashcode of these keys
  * is used to determine the location of the corresponding values on disk. Collections with this type of key will
  * be unordered and if the hash is good then they will be spread fairly evenly across the collection segments. This 
- * means that there will be few collisions and high i-node usage. </br></br>
+ * means that there will be few collisions and high i-node usage. <br><br>
  * 
  * Known implementations include {@link UUIDKey} and {@link StringKey}
  * @param <T> - The type of the id of this key. Existing types include {@link UUID} and String.

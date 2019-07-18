@@ -28,20 +28,32 @@ public interface BlueCollection<V extends Serializable> {
 
 	/**
 	 * Creates (or returns existing) {@link BlueIndex} that maps objects of type {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link IntegerKey}, {@link LongKey}) to values in the collection.
+	 * 
+	 * @param <K> - the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
+	 * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}).
+	 * 
 	 * @param name - index name (one index per name per each collection)
 	 * @param keyType - the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
 	 * @param keyExtractor - a function that maps a value to the keys by which the value should be indexed. The appropriate subclass can be used and would be more
 	 * simple to implement. These include {@link UUIDIndexKeyExtractor}, {@link StringIndexKeyExtractor}, {@link IntegerIndexKeyExtractor}, and {@link LongIndexKeyExtractor}
+	 * 
 	 * @return a {@link BlueIndex} object (existing index if it exists, otherwise a newly created index)
+	 * 
 	 * @throws BlueDbException if the index exists but is not compatible with these types
 	 */
 	public <K extends ValueKey> BlueIndex<K, V> createIndex(String name, Class<K> keyType, KeyExtractor<K, V> keyExtractor) throws BlueDbException;
 
 	/**
 	 * Returns existing BlueIndex that maps objects of type keyType to values in the collection.
+	 * 
+	 * @param <K> - the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
+	 * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}).
+	 * 
 	 * @param name - index name (one index per name per each collection)
 	 * @param keyType - the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
+	 * 
 	 * @return a {@link BlueIndex} with the same name if it exists and has the same keyType
+	 * 
 	 * @throws BlueDbException if index doesn't exist or has a different keyType
 	 */
 	public <K extends ValueKey> BlueIndex<K, V> getIndex(String name, Class<K> keyType) throws BlueDbException;

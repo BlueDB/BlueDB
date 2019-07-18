@@ -18,11 +18,11 @@ public interface BlueQuery<V extends Serializable> {
 	/**
 	 * For queries on a collection with a key type of {@link TimeFrameKey}, this adds a condition that the value starts in the 
 	 * queried interval. Normally, it is only required that the value's time interval overlaps the queried time interval.
-	 * </br></br>
+	 * <br><br>
 	 * This can be very useful if you want to map reduce the results. Instead of making one query for the entire time interval you
 	 * can split it into multiple time intervals to be queried and processed individually. By using this condition on all but the 
 	 * first query you can guarantee that each value will only be processed once.
-	 * </br></br>
+	 * <br><br>
 	 * This condition only has an effect on collections with a key type of {@link TimeFrameKey}
 	 * 
 	 * @return itself, with the condition added to the query that the key start time be in the queried time interval
@@ -82,7 +82,7 @@ public interface BlueQuery<V extends Serializable> {
 	 * the collection on disk as you iterate over it in memory. This makes the iterator an extremely memory efficient
 	 * way to read large collections. 
 	 * 
-	 * </br></br>
+	 * <br><br>
 	 * 
 	 * <b>Important: </b>Use within a try-with-resources statement and iterate through as quickly as possible
 	 * in order to ensure that you don't block other BlueDB tasks. If you fail to call next for 15 seconds then

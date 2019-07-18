@@ -14,7 +14,7 @@ import org.bluedb.api.keys.UUIDKey;
  * This class contains public static final variables representing the segment size options available to BlueDB users.
  * It is typed in order to ensure that the selected segment size is compatible with the key type of the {@link BlueCollection}.
  * 
- * <br/><br/>
+ * <br><br>
  * 
  * Think of a collection as an on disk {@link HashMap}. Values are stored in a segment based on the value's grouping number. 
  * If only one value is in a segment then looking up that value by key is constant time. If there are a lot of values in the segment
@@ -23,7 +23,7 @@ import org.bluedb.api.keys.UUIDKey;
  * This will result in slower lookup times, slower write speeds, faster retrieval of large amounts of data, and less usage of 
  * i-nodes.
  * 
- * <br/><br/>
+ * <br><br>
  * 
  * 	<ul>
  * 		<li>
