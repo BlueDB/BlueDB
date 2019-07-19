@@ -38,6 +38,16 @@ public class BestPractices {
 	//IGNORE ABOVE THIS LINE
 	
 	/*
+	 * Modeling Your Data
+	 * 
+	 * [Website note] The Ball, BallV1, and BallV2 sections all kind of belong with each other in the "Modeling Your Data" section so try
+	 * to find a way to group them somehow. They also take up a lot of space wich is unfortunate. If you can figure out a way to make
+	 * it work well but not take up a ton of space that would be great. Maybe by making the classes collapsed but expandable for more
+	 * details. The details are important though, so I don't want them too lost. You could put BallV1 and BallV2 into columns next to
+	 * each other if you wanted.
+	 */
+	
+	/*
 	 * BlueDB uses FST in order to serialize and deserialize objects very quickly. However, it is much easier
 	 * to break serialization with FST than with standard java serialization. For this reason it is recommended
 	 * to use an interface as the type of a collection. New data can be added to the interface and new versions
