@@ -20,17 +20,45 @@ import org.bluedb.disk.BlueDbOnDiskBuilder;
 
 public class QuickStart {
 	
-	/*
-	 *  We'll create a POJO for our examples.  In a real database, best practice suggests using an 
-	 *  interface for the collection’s value type and to version the implementations of that interface 
-	 *  so that you can update the schema in the future without breaking serialization.
-	 */
-	
-	public static class Ball implements Serializable {
-		private static final long serialVersionUID = 1L;
-
-		private int radius;
+	public static void main(String[] args) throws BlueDbException {
+		Path path = Paths.get("usr", "local", "bluedb", "data");
 		
+		BlueDb blueDb = createBlueDbInstance(path);
+		
+		BlueCollection<Ball> ballCollection = createCollectionInstance(blueDb);
+		
+		TimeKey key = insertValueUsingTime(ballCollection);
+		
+		confirmValueSaved(ballCollection, key);
+		
+		fetchValue(ballCollection, key);
+		
+		updateValue(ballCollection, key);
+		
+		deleteValue(ballCollection, key);
+		
+		batchUpsert(ballCollection);
+		
+		queryValuesInTimeframeMatchingCondition(ballCollection);
+		
+		deleteAllValuesMeetingCondition(ballCollection);
+		
+		updateAllValuesMatchingCondition(ballCollection);
+		
+		BlueIndex<IntegerKey, Ball> ballSizeIndex = createIndexOnBallSize(ballCollection);
+		
+		insertValueAndRetreiveViaIndex(ballCollection, ballSizeIndex);
+	}
+	
+	//IGNORE ABOVE HERE
+	
+	/*
+	 *  For this quick start we'll persist a POJO called ball that has a radius property. See best practices
+	 *  for more information about how to structure your database model objects.
+	 */
+	public static class Ball implements Serializable {
+		private int radius;
+		//[Hide below here in a ... Maybe give them access to expand to see the details or a link or something]
 		public Ball(int radius) {
 			this.radius = radius;
 		}
@@ -42,66 +70,56 @@ public class QuickStart {
 		public void setRadius(int radius) {
 			this.radius = radius;
 		}
-	}
-	
-	
-	//Create an index key extractor that can help BlueDB create an index on the size of the ball
-	
-	public static class BallSizeIndexKeyExtractor implements IntegerIndexKeyExtractor<Ball> {
-		private static final long serialVersionUID = 1L;
-		@Override
-		public List<Integer> extractIntsForIndex(Ball value) {
-			return Arrays.asList(value.getRadius());
-		}
+		//[Hide above here in a ...]
 	}
 
-	public static void main(String[] args) throws BlueDbException {
-		
-		//Create a BlueDB instance
-		
-		Path path = Paths.get("usr", "local", "bluedb", "data");
+	//Create a BlueDB instance
+	private static BlueDb createBlueDbInstance(Path path) {
 		BlueDb blueDb = new BlueDbOnDiskBuilder()
 				.withPath(path)
 				.build();
+		return blueDb; //[Line not needed on website]
+	}
 
-		
-		// Create a collection instance.
-		
+	// Create a collection instance.
+	private static BlueCollection<Ball> createCollectionInstance(BlueDb blueDb) throws BlueDbException {
 		BlueCollection<Ball> ballCollection = blueDb.collectionBuilder("ball_collection", TimeKey.class, Ball.class).build();
-		
-		
-		// Insert an object. BlueDB is optimized for time so we’ll use a TimeKey for our example.
-		
+		return ballCollection; //[Line not needed on website]
+	}
+
+	// Insert an object. BlueDB is optimized for time so we’ll use a TimeKey for our example.
+	private static TimeKey insertValueUsingTime(BlueCollection<Ball> ballCollection) throws BlueDbException {
 		TimeKey key = new TimeKey(1, System.currentTimeMillis());
-		Ball myBall = new Ball(1);
-		ballCollection.insert(key, myBall);
-		
-		
-		// Confirm the object is saved.
-		
-		ballCollection.contains(key);  // true
+		Ball ball = new Ball(1);
+		ballCollection.insert(key, ball);
+		return key; //[Line not needed on website]
+	}
 
-		
-		// Fetch the object.
-		
-		ballCollection.get(key);  // ball
+	// Confirm the value is saved
+	private static void confirmValueSaved(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
+		boolean contains = ballCollection.contains(key);
+	}
 
-		
-		// Update the object.
-		
+	// Fetch the value
+	private static void fetchValue(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
+		Ball ball = ballCollection.get(key);
+	}
+
+	// Update the value
+	private static void updateValue(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
 		ballCollection.update(key, ball -> ball.setRadius(2));
+	}
 
-		
-		// Delete the object.
-		
+	// Delete the value
+	private static void deleteValue(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
 		ballCollection.delete(key);
+	}
 
-		
-		/*
-		 *  Batch upsert (inserts or overwrites values at matching keys) can significantly improve performance 
-		 *  when inserting many objects into the collection.
-		 */
-		
+	/*
+	 *  Batch upsert (inserts or overwrites key/value pairs) can significantly improve performance 
+	 *  when inserting many objects into the collection rather than one at a time.
+	 */
+	private static void batchUpsert(BlueCollection<Ball> ballCollection) throws BlueDbException {
 		TimeKey key1 = new TimeKey(1, System.currentTimeMillis());
 		Ball ball1 = new Ball(1);
 		
@@ -112,10 +130,10 @@ public class QuickStart {
 		batch.put(key1, ball1);
 		batch.put(key2, ball2);
 		ballCollection.batchUpsert(batch);
+	}
 
-		
-		// Query objects mapped to a TimeKey within the last hour, meeting a filter.
-		
+	// Query objects mapped to a TimeKey within the last hour, meeting a filter.
+	private static void queryValuesInTimeframeMatchingCondition(BlueCollection<Ball> ballCollection) throws BlueDbException {
 		long now = System.currentTimeMillis();
 		long oneHourAgo = now - 60 * 60 * 1000;
 		List<Ball> ballsOfRadius2= ballCollection.query()
@@ -123,33 +141,46 @@ public class QuickStart {
 			.beforeOrAtTime(now)
 			.where(ball -> ball.getRadius() == 2)
 			.getList();
-		
-		
-		// Delete all objects meeting some filter.
-		
+	}
+
+	// Delete all values meeting some condition
+	private static void deleteAllValuesMeetingCondition(BlueCollection<Ball> ballCollection) throws BlueDbException {
 		ballCollection.query()
 			.where(ball -> ball.getRadius() == 2)
 			.delete();
+	}
 
-		
-		// Update all objects meeting some filter.
-		
+	// Update all values meeting some condition
+	private static void updateAllValuesMatchingCondition(BlueCollection<Ball> ballCollection) throws BlueDbException {
 		ballCollection.query()
 			.where(ball -> ball.getRadius() == 2)
 			.update(ball -> ball.setRadius(3));
-		
-		
-		//Create an index on ball size 
-		
+	}
+	
+	/*
+	 * Add an index on ball size to the collection. This index key extractor allows BlueDB to create an
+	 * index key based on the radius of any ball. See best practices for details on creating index key extractors.
+	 */
+	
+	//[Website note] This whole class definition should be included, not just the body
+	public static class BallSizeIndexKeyExtractor implements IntegerIndexKeyExtractor<Ball> {
+		@Override
+		public List<Integer> extractIntsForIndex(Ball value) {
+			return Arrays.asList(value.getRadius());
+		}
+	}
+	
+	//[Website note] The body of this method should be in its own code block but it belongs with the same description of the above class
+	private static BlueIndex<IntegerKey, Ball> createIndexOnBallSize(BlueCollection<Ball> ballCollection) throws BlueDbException {
 		BlueIndex<IntegerKey, Ball> ballSizeIndex = ballCollection.createIndex("ball_size_index", IntegerKey.class, new BallSizeIndexKeyExtractor());
-		
-		
-		// Insert a value and then retrieve it using the index.
-		
-		TimeKey key3 = new TimeKey(3, System.currentTimeMillis());
-		Ball ball3 = new Ball(7);
-		ballCollection.insert(key, ball3);
-		List<Ball> ballsOfSize7 = ballSizeIndex.get(new IntegerKey(7));  // returns List containing ball3;
+		return ballSizeIndex; //[Line not needed on website]
+	}
 
+	// Insert a value and then retrieve it using the index
+	private static void insertValueAndRetreiveViaIndex(BlueCollection<Ball> ballCollection, BlueIndex<IntegerKey, Ball> ballSizeIndex) throws BlueDbException {
+		TimeKey key = new TimeKey(3, System.currentTimeMillis());
+		Ball ball = new Ball(7);
+		ballCollection.insert(key, ball);
+		List<Ball> ballsOfSize7 = ballSizeIndex.get(new IntegerKey(7));  // returns List containing the ball;
 	}
 }
