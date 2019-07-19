@@ -40,18 +40,21 @@ public abstract class HashGroupedKey<T extends Comparable<T>> extends ValueKey {
 	@Override
 	public final int postGroupingNumberCompareTo(BlueKey other) {
 		if(getClass() == other.getClass()) {
-			Object otherId = ((HashGroupedKey<?>) other).getId();
-			try {
-				@SuppressWarnings("unchecked")
-				T otherIdAsT = (T) otherId;
-				return BlueKey.compareWithNullsLast(getId(), otherIdAsT);
-			} catch(Throwable t) {
-				//If ids are of different types then just compare the class names
-				return BlueKey.compareCanonicalClassNames(getId(), otherId);
-			}
+			return compareIds((HashGroupedKey<?>)other);
 		} 
-		
 		return compareCanonicalClassNames(other);
+	}
+
+	private int compareIds(HashGroupedKey<?> other) {
+		Object otherId = other.getId();
+		try {
+			@SuppressWarnings("unchecked")
+			T otherIdAsT = (T) otherId;
+			return BlueKey.compareWithNullsLast(getId(), otherIdAsT);
+		} catch(Throwable t) {
+			//If ids are of different types then just compare the class names
+			return BlueKey.compareCanonicalClassNames(getId(), otherId);
+		}
 	}
 	
 	@Override
