@@ -20,12 +20,26 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 
 	@Override
 	public abstract boolean equals(Object object);
-
-	/**
-	 * This is used to order the key/value pairs on disk. Grouping number must be the first thing you order by
-	 */
+	
 	@Override
-	public abstract int compareTo(BlueKey other);
+	default public int compareTo(BlueKey other) {
+		if(other == null) {
+			return -1;
+		}
+		
+		int groupingNumberComparison = Long.compare(getGroupingNumber(), other.getGroupingNumber());
+		if (groupingNumberComparison != 0) {
+			return groupingNumberComparison;
+		}
+		
+		return postGroupingNumberCompareTo(other);
+	}
+	
+	/**
+	 * This is used to order the key/value pairs on disk. If this is being called then other is not null
+	 * and the grouping numbers matched.
+	 */
+	public abstract int postGroupingNumberCompareTo(BlueKey other);
 	
 	/**
 	 * Returns the grouping number which helps to determine the order and location of the key/value pairs on disk

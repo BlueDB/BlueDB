@@ -98,8 +98,10 @@ public class IntegerKeyTest extends TestCase {
 		IntegerKey zero = new IntegerKey(0);
 		IntegerKey one = new IntegerKey(1);
 		IntegerKey oneCopy = new IntegerKey(1);
+		IntegerKey two = new IntegerKey(4);
 		StringKey stringKey = new StringKey("1");
 		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
+		TimeKey timeKeyWithGroupingNumberMatchingTwo = new TimeKey(5, 2147483652l);
 		assertTrue(zero.compareTo(one) < 0);  // basic
 		assertTrue(one.compareTo(zero) > 0);  // reverse
 		assertTrue(min.compareTo(max) < 0);  // extreme
@@ -108,6 +110,7 @@ public class IntegerKeyTest extends TestCase {
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
 		assertTrue(one.compareTo(uuidKey) != 0);  // sanity check
+		assertTrue(two.compareTo(timeKeyWithGroupingNumberMatchingTwo) < 0);  // same grouping number, different class
 	}
 
 	@Test

@@ -85,22 +85,11 @@ public class TimeKey implements BlueKey {
 	}
 
 	@Override
-	public final int compareTo(BlueKey other) {
-		if(other == null) {
-			return -1;
+	public final int postGroupingNumberCompareTo(BlueKey other) {
+		if (other instanceof TimeKey) {
+			return id.compareTo(((TimeKey) other).getId());
 		}
 		
-		if (other instanceof TimeKey) {
-			long otherTime = ((TimeKey)other).getTime();
-			if (getTime() == otherTime) {
-				return id.compareTo(((TimeKey) other).getId());
-			} else if (getTime() > otherTime) {
-				return 1;
-			} else {
-				return -1;
-			}
-		}
-		// grouping number is not comparable between most subclasses
 		return compareCanonicalClassNames(other);
 	}
 

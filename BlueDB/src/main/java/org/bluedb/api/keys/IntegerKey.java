@@ -61,15 +61,11 @@ public final class IntegerKey extends ValueKey {
 	}
 
 	@Override
-	public int compareTo(BlueKey other) {
-		if(other == null) {
-			return -1;
-		} else if(other instanceof IntegerKey) {
+	public int postGroupingNumberCompareTo(BlueKey other) {
+		if(other instanceof IntegerKey) {
 			return Integer.compare(id, ((IntegerKey)other).id);
-		} else {
-			// grouping number is not comparable between most subclasses
-			return compareCanonicalClassNames(other);
-		}		
+		} 
+		return compareCanonicalClassNames(other);
 	}
 
 	@Override

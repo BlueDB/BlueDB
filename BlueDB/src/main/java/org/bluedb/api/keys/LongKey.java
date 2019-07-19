@@ -58,21 +58,10 @@ public final class LongKey extends ValueKey {
 	}
 
 	@Override
-	public int compareTo(BlueKey other) {
-		if(other == null) {
-			return -1;
-		}
-		
+	public int postGroupingNumberCompareTo(BlueKey other) {
 		if(other instanceof LongKey) {
-			long otherId = ((LongKey)other).id;
-			if(id < otherId) {
-				return -1;
-			}
-			if(id > otherId) {
-				return 1;
-			}
-		}
-		// grouping number is not comparable between most subclasses
+			return Long.compare(id, ((LongKey)other).id);
+		} 
 		return compareCanonicalClassNames(other);
 	}
 
