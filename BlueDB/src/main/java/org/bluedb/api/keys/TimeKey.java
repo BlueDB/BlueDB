@@ -87,12 +87,24 @@ public class TimeKey implements BlueKey {
 	@Override
 	public final int postGroupingNumberCompareTo(BlueKey other) {
 		if (other instanceof TimeKey) {
-			return id.compareTo(((TimeKey) other).getId());
+			int idCompare = id.compareTo(((TimeKey) other).getId());
+			if(idCompare != 0) {
+				return idCompare;
+			}
+			
+			return Long.compare(getEndTime(this), getEndTime((TimeKey)other));
 		}
 		
 		return compareCanonicalClassNames(other);
 	}
 
+
+	private static long getEndTime(TimeKey timeKey) {
+		if(timeKey instanceof TimeFrameKey) {
+			return ((TimeFrameKey)timeKey).getEndTime();
+		}
+		return timeKey.getTime();
+	}
 
 	@Override
 	public Integer getIntegerIdIfPresent() {
