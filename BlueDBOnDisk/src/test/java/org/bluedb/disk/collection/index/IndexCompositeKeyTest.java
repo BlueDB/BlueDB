@@ -109,11 +109,16 @@ public class IndexCompositeKeyTest {
 	public void test_compareTo() {
 		TimeFrameKey timeFrameKey = new TimeFrameKey(1, 2, 3);
 		TimeFrameKey timeFrameKeyCopy = new TimeFrameKey(1, 2, 3);
+		TimeFrameKey timeFrameKey2 = new TimeFrameKey(2, 4611686018427387906l, 4611686018427387907l);
+		TimeFrameKey timeFrameKey3 = new TimeFrameKey(3, 2, 3);
 		LongKey longKey = new LongKey(4L);
 		LongKey longKeyCopy = new LongKey(4L);
 		LongKey longKey5 = new LongKey(5L);
 		IndexCompositeKey<TimeFrameKey> compositeKeyTimeLong = new IndexCompositeKey<TimeFrameKey>(timeFrameKey, longKey);
+		IndexCompositeKey<TimeFrameKey> compositeKeyTime2Long = new IndexCompositeKey<TimeFrameKey>(timeFrameKey2, longKey);
+		IndexCompositeKey<TimeFrameKey> compositeKeyTime3Long = new IndexCompositeKey<TimeFrameKey>(timeFrameKey3, longKey);
 		IndexCompositeKey<TimeFrameKey> compositeKeyTimeLong5 = new IndexCompositeKey<TimeFrameKey>(timeFrameKey, longKey5);
+		IndexCompositeKey<TimeFrameKey> compositeKeyTime2Long5 = new IndexCompositeKey<TimeFrameKey>(timeFrameKey2, longKey5);
 		IndexCompositeKey<LongKey> compositeKeyLongLong = new IndexCompositeKey<LongKey>(longKey, longKey);
 		IndexCompositeKey<TimeFrameKey> compositeKeyTimeLongCopy = new IndexCompositeKey<TimeFrameKey>(timeFrameKeyCopy, longKeyCopy);
 
@@ -124,7 +129,10 @@ public class IndexCompositeKeyTest {
 		assertTrue(compositeKeyTimeLong.compareTo(new IndexCompositeKey(longKey, longKey) {}) != 0);
 		assertTrue(compositeKeyTimeLong.compareTo(compositeKeyLongLong) != 0);
 		assertTrue(compositeKeyTimeLong.compareTo(compositeKeyTimeLong5) < 0);
-		assertTrue(compositeKeyTimeLong.compareTo(longKey) != 0);
+		assertTrue(compositeKeyTimeLong.compareTo(compositeKeyTime3Long) < 0);
+		assertTrue(compositeKeyTimeLong.compareTo(compositeKeyTime2Long5) < 0);
+		assertTrue(compositeKeyTimeLong.compareTo(longKey) < 0);
+		assertTrue(compositeKeyTime2Long.compareTo(longKey5) > 0); //Grouping numbers are the same but types are different so it ends up ordering by canonical class name
 	}
 
 	@Test

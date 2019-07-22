@@ -16,11 +16,7 @@ public class IndexCompositeKey<K extends BlueKey> implements BlueKey {
 	}
 
 	@Override
-	public int compareTo(BlueKey other) {
-		if(other == null) {
-			return -1;
-		}
-		
+	public int postGroupingNumberCompareTo(BlueKey other) {
 		if(other instanceof IndexCompositeKey) {
 			IndexCompositeKey<?> otherIndexKey = (IndexCompositeKey<?>)other;
 			int indexComparison = indexKey.compareTo(otherIndexKey.indexKey);
@@ -31,7 +27,7 @@ public class IndexCompositeKey<K extends BlueKey> implements BlueKey {
 			}
 		}
 		
-		return getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		return compareCanonicalClassNames(other);
 	}
 
 	@Override

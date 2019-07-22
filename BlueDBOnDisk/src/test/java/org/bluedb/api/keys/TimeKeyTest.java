@@ -117,6 +117,8 @@ public class TimeKeyTest extends TestCase {
 		TimeKey oneDifferent = new TimeKey(5, 1);
 		StringKey stringKey = new StringKey("1");
 		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
+		LongKey longKey = new LongKey(4);
+		TimeKey timeKeyWithGroupingNumberMatchingLong = new TimeKey(5, 4611686018427387906l);
 		assertTrue(zero.compareTo(one) < 0);  // basic
 		assertTrue(one.compareTo(zero) > 0);  // reverse
 		assertTrue(min.compareTo(max) < 0);  // extreme
@@ -126,6 +128,7 @@ public class TimeKeyTest extends TestCase {
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
 		assertTrue(one.compareTo(uuidKey) != 0);  // sanity check
+		assertTrue(timeKeyWithGroupingNumberMatchingLong.compareTo(longKey) > 0);  // same grouping number, different class
 	}
 
 	@Test

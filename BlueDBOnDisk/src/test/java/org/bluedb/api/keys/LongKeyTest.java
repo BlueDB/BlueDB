@@ -98,8 +98,10 @@ public class LongKeyTest extends TestCase {
 		LongKey zero = new LongKey(0);
 		LongKey one = new LongKey(1);
 		LongKey oneCopy = new LongKey(1);
+		LongKey two = new LongKey(4);
 		StringKey stringKey = new StringKey("1");
 		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
+		TimeKey timeKeyWithGroupingNumberMatchingTwo = new TimeKey(5, 4611686018427387906l);
 		assertTrue(zero.compareTo(one) < 0);  // basic
 		assertTrue(one.compareTo(zero) > 0);  // reverse
 		assertTrue(min.compareTo(max) < 0);  // extreme
@@ -108,6 +110,7 @@ public class LongKeyTest extends TestCase {
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
 		assertTrue(one.compareTo(uuidKey) != 0);  // sanity check
+		assertTrue(two.compareTo(timeKeyWithGroupingNumberMatchingTwo) < 0);  // same grouping number, different class
 	}
 
 

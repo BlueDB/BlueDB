@@ -148,7 +148,7 @@ public class TimeFrameKeyTest extends TestCase {
 		assertTrue(max.compareTo(min) > 0);  // extreme backwards
 		assertTrue(one.compareTo(oneCopy) == 0);  // equals
 		assertTrue(oneToTwo.compareTo(oneToTwoCopy) == 0);  // equals
-		assertTrue(one.compareTo(oneToTwo) == 0);  // same start but different end, we're actually going to let them be in the same spot
+		assertTrue(one.compareTo(oneToTwo) < 0);  // same start but different end
 		assertTrue(one.compareTo(oneDifferent) != 0);  // same time but not equals
 		assertTrue(one.compareTo(null) != 0);  // sanity check
 		assertTrue(one.compareTo(stringKey) != 0);  // sanity check
