@@ -1,8 +1,10 @@
+apply plugin: 'java'
+version = '2.0.3'
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'eclipse'
     group = 'org.bluedb'
-    version = '2.0.3'
     repositories {
         mavenCentral()
     }
@@ -19,6 +21,12 @@ project(':BlueDBOnDisk') {
 
 def onDiskProjects = [':BlueDB',':BlueDBOnDisk']
 task onDiskJar(type: Jar) {
+	manifest {
+        attributes(
+            'Version'       : "${version}",
+            'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+        )
+    }
 	baseName = 'bluedb-on-disk'
 	from {
 		files(onDiskProjects.collect{ project(it).sourceSets.main.output })
