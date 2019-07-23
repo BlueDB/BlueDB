@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.bluedb.disk.recovery.IndividualChange;
 
@@ -22,12 +21,12 @@ public class SegmentBatch<T extends Serializable> {
 		changeQueue = new LinkedList<IndividualChange<T>>(changes);
 	}
 
-	public List<ChunkBatch<T>> breakIntoChunks(List<Range> existingChunkRanges, List<Long> rollupLevels) {
+	public List<ChunkBatch<T>> breakIntoChunks(List<Range> existingChunkRanges, Segment<T> segment) {
 		Set<Range> existingChunkRangesSet = new HashSet<>(existingChunkRanges);
 		LinkedList<IndividualChange<T>> sortedQueue = new LinkedList<>(changeQueue);
 		List<ChunkBatch<T>> results = new ArrayList<>();
 		while (!sortedQueue.isEmpty()) {
-			Range nextChunkRange = getNextRangeToUse(sortedQueue, existingChunkRangesSet, rollupLevels);
+			Range nextChunkRange = getNextRangeToUse(sortedQueue, existingChunkRangesSet, segment);
 			LinkedList<IndividualChange<T>> changesInExistingRange = pollChangesBeforeOrAt(sortedQueue, nextChunkRange.getEnd());
 			ChunkBatch<T> existingChunkUpdate = new ChunkBatch<T>(changesInExistingRange, nextChunkRange);
 			results.add(existingChunkUpdate);
@@ -35,10 +34,10 @@ public class SegmentBatch<T extends Serializable> {
 		return results;
 	}
 
-	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, Set<Range> existingChunkRanges, List<Long> rollupLevels) {
+	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, Set<Range> existingChunkRanges, Segment<T> segment) {
 		changeQueue = new LinkedList<>(changeQueue);  // to avoid mutation later
 		long firstChangeGroupingNumber = changeQueue.peekFirst().getGroupingNumber();
-		List<Range> possibleNextRanges = calculatePossibleChunkRanges(firstChangeGroupingNumber, rollupLevels);
+		List<Range> possibleNextRanges = segment.calculatePossibleChunkRanges(firstChangeGroupingNumber);
 		Range existingRange = findMatchingRange(possibleNextRanges, existingChunkRanges);
 		if (existingRange != null) {
 			return existingRange;
@@ -47,13 +46,6 @@ public class SegmentBatch<T extends Serializable> {
 		LinkedList<IndividualChange<T>> changesForRange = pollChangesBeforeOrAt(changeQueue, largestEmptyRange.getEnd());
 		Range smallestRangeContainingSameChanges = chooseSmallestRangeContainingChanges(possibleNextRanges, changesForRange);
 		return smallestRangeContainingSameChanges;
-	}
-
-	protected static List<Range> calculatePossibleChunkRanges(long groupingNumber, List<Long> rollupLevels) {
-		return rollupLevels.stream()
-				.map( (rangeSize) -> Range.forValueAndRangeSize(groupingNumber, rangeSize))
-				.collect(Collectors.toList())
-				;
 	}
 
 	protected static Range getLargestEmptyRange(List<Range> rangeOptions, Set<Range> existingChunkRanges) {
