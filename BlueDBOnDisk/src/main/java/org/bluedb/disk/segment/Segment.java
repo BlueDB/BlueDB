@@ -122,7 +122,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		performPreBatchRollups();
 		SegmentBatch<T> segmentBatch = new SegmentBatch<>(changeQueueForSegment);
 		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
-		List<ChunkBatch<T>> chunkBatches = segmentBatch.breakIntoChunks(existingChunkRanges, rollupLevels);
+		List<ChunkBatch<T>> chunkBatches = segmentBatch.breakIntoChunks(existingChunkRanges, this);
 		for (ChunkBatch<T> chunkBatch: chunkBatches) {
 			String fileName = chunkBatch.getRange().toUnderscoreDelimitedString();
 			Path path = Paths.get(segmentPath.toString(), fileName);
@@ -344,6 +344,18 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 			rollupRangesEnclosingChunk.add(preSegmentRange);
 		}
 		return rollupRangesEnclosingChunk;
+	}
+
+	public List<Range> calculatePossibleChunkRanges(long groupingNumber) {
+		List<Range> chunkRanges = rollupLevels.stream()
+				.map( (rangeSize) -> Range.forValueAndRangeSize(groupingNumber, rangeSize))
+				.collect(Collectors.toList());
+		
+		if(groupingNumber < segmentRange.getStart()) {
+			chunkRanges.add(preSegmentRange);
+		}
+		
+		return chunkRanges;
 	}
 
 	private Path getPathFor(Range range) {

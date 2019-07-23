@@ -2,6 +2,7 @@ package org.bluedb.disk.segment;
 
 import static org.junit.Assert.*;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -17,6 +18,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 public class SegmentBatchTest {
 	
 	private static List<Long> ROLLUP_LEVELS = Arrays.asList(1L, 2L, 4L, 8L);
+	Segment<TestValue> segment = new Segment<>(Paths.get(""), new Range(0, 7), null, null, ROLLUP_LEVELS);
 	private static BlueKey key0At0 = createKey(0, 0);
 	private static BlueKey key1At1 = createKey(1, 1);
 	private static BlueKey key2At1 = createKey(2, 1);
@@ -65,7 +67,7 @@ public class SegmentBatchTest {
 		// existing: |-|-|-|-|-|-|-|o|
 		// proposed: |x|x|-|-|x|-|-|-|
 		// expected:  ---     -      
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(ranges7to7, ROLLUP_LEVELS);
+		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(ranges7to7, segment);
 		assertEquals(2, chunkBatches.size());
 		assertEquals(range0to1, chunkBatches.get(0).getRange());
 		assertEquals(range4to4, chunkBatches.get(1).getRange());
@@ -80,7 +82,7 @@ public class SegmentBatchTest {
 		// existing: |o|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|-|x|-|-|-|
 		// expected:  - -     -      
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(ranges0to0, ROLLUP_LEVELS);
+		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(ranges0to0, segment);
 		assertEquals(3, chunkBatches.size());
 		assertEquals(range0to0, chunkBatches.get(0).getRange());
 		assertEquals(range1to1, chunkBatches.get(1).getRange());
@@ -96,7 +98,7 @@ public class SegmentBatchTest {
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |-|-|-|-|-|-|-|-|
 		// expected:  
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsertEmtpy.breakIntoChunks(Arrays.asList(), ROLLUP_LEVELS);
+		List<ChunkBatch<TestValue>> chunkBatches = batchInsertEmtpy.breakIntoChunks(Arrays.asList(), segment);
 		assertEquals(0, chunkBatches.size());
 	}
 
@@ -106,7 +108,7 @@ public class SegmentBatchTest {
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|-|x|-|-|-|
 		// expected:  ---------------
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(Arrays.asList(), ROLLUP_LEVELS);
+		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(Arrays.asList(), segment);
 		assertEquals(1, chunkBatches.size());
 		assertEquals(range0to7, chunkBatches.get(0).getRange());
 		assertEquals(inserts0and1and4, chunkBatches.get(0).getChangesInOrder());
@@ -118,7 +120,7 @@ public class SegmentBatchTest {
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|x|-|-|-|-|
 		// expected:  ---------------
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and3.breakIntoChunks(Arrays.asList(), ROLLUP_LEVELS);
+		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and3.breakIntoChunks(Arrays.asList(), segment);
 		assertEquals(1, chunkBatches.size());
 		assertEquals(range0to3, chunkBatches.get(0).getRange());
 		assertEquals(inserts0and1and3, chunkBatches.get(0).getChangesInOrder());
@@ -130,7 +132,7 @@ public class SegmentBatchTest {
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |X|-|-|-|-|-|-|-|
 		// expected:  -
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert1and2at1.breakIntoChunks(Arrays.asList(), ROLLUP_LEVELS);
+		List<ChunkBatch<TestValue>> chunkBatches = batchInsert1and2at1.breakIntoChunks(Arrays.asList(), segment);
 		assertEquals(1, chunkBatches.size());
 		assertEquals(range1to1, chunkBatches.get(0).getRange());
 		assertEquals(inserts1And2At1, chunkBatches.get(0).getChangesInOrder());

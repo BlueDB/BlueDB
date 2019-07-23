@@ -6,8 +6,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -758,5 +761,75 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		assertEquals(targets_100, rangesFor10to19);
 		assertEquals(targets_none, rangesFor0to99);
 		assertEquals(targets_none, rangesFor0to100);
+	}
+	
+	@Test
+	public void test_calculatePossibleChunkRanges() {
+		Segment<TestValue> segment = new Segment<>(null, new Range(120, 179), null, null, Arrays.asList(5l, 10l, 30l, 60l));
+		
+		Set<Range> expectedFor120 = new HashSet<>(Arrays.asList(
+				new Range(120, 124), 
+				new Range(120, 129), 
+				new Range(120, 149), 
+				new Range(120, 179)
+		));
+		
+		Set<Range> expectedFor137 = new HashSet<>(Arrays.asList(
+				new Range(135, 139), 
+				new Range(130, 139), 
+				new Range(120, 149), 
+				new Range(120, 179)
+		));
+		
+		Set<Range> expectedFor179 = new HashSet<>(Arrays.asList(
+				new Range(175, 179), 
+				new Range(170, 179), 
+				new Range(150, 179), 
+				new Range(120, 179)
+		));
+		
+		Set<Range> expectedFor72 = new HashSet<>(Arrays.asList(
+				new Range(70, 74), 
+				new Range(70, 79), 
+				new Range(60, 89), 
+				new Range(60, 119),
+				new Range(0, 119) //Pre segment chunk range
+		));
+		
+		assertEquals(expectedFor120, new HashSet<>(segment.calculatePossibleChunkRanges(120)));
+		assertEquals(expectedFor137, new HashSet<>(segment.calculatePossibleChunkRanges(137)));
+		assertEquals(expectedFor179, new HashSet<>(segment.calculatePossibleChunkRanges(179)));
+		assertEquals(expectedFor72, new HashSet<>(segment.calculatePossibleChunkRanges(72)));
+	}
+
+	@Test
+	public void test_batchUpdateIntoInfinitelyRolledUpPreSegmentChunk() throws BlueDbException {
+		assertEquals(TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS), getTimeSegmentManager().getPathManager().getSegmentSize());
+		
+		long now = System.currentTimeMillis();
+		long fiveHoursAgo = now - TimeUnit.MILLISECONDS.convert(5, TimeUnit.HOURS);
+		long threeHoursAgo = now - TimeUnit.MILLISECONDS.convert(3, TimeUnit.HOURS);
+		long twoHoursInFuture = now + TimeUnit.MILLISECONDS.convert(2, TimeUnit.HOURS);
+		long threeHoursInFuture = now + TimeUnit.MILLISECONDS.convert(3, TimeUnit.HOURS);
+		
+		TestValue derek = new TestValue("Derek", 0);
+		TestValue jeremy = new TestValue("Jeremy", 2);
+		TestValue ben = new TestValue("Ben", 5);
+		TestValue weston = new TestValue("Weston", 4);
+		
+		insertAtTimeFrame(fiveHoursAgo, twoHoursInFuture, derek);
+		insertAtTimeFrame(threeHoursAgo, threeHoursInFuture, jeremy);
+		insertAtTimeFrame(now, now + 10, ben);
+
+		getTimeCollection().getRollupScheduler().forceScheduleRollups();
+		insertAtTimeFrame(now + 20, now + 50, weston); //Shouldn't complete until rollups are done
+		
+		getTimeCollection().query()
+			.update(value -> value.addCupcake());
+		
+		assertEquals(1, getTimeCollection().query().where(value -> "Derek".equals(value.getName())).getList().get(0).getCupcakes());
+		assertEquals(3, getTimeCollection().query().where(value -> "Jeremy".equals(value.getName())).getList().get(0).getCupcakes());
+		assertEquals(6, getTimeCollection().query().where(value -> "Ben".equals(value.getName())).getList().get(0).getCupcakes());
+		assertEquals(5, getTimeCollection().query().where(value -> "Weston".equals(value.getName())).getList().get(0).getCupcakes());
 	}
 }
