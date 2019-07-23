@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.Blutils.CheckedFunction;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.FileManager;
@@ -285,15 +284,8 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	public BlueReadLock<Path> getReadLockFor(long groupingNumber) throws BlueDbException {
-		for (long rollupLevel: rollupLevels) {
-			Path path = getPathFor(groupingNumber, rollupLevel);
-			BlueReadLock<Path> lock = fileManager.getReadLockIfFileExists(path);
-			if (lock != null) {
-				return lock;
-			}
-		}
-		if (groupingNumber < segmentRange.getStart()) {
-			Path path = getPathFor(preSegmentRange);
+		for (Range range: calculatePossibleChunkRanges(groupingNumber) ) {
+			Path path = getPathFor(range);
 			BlueReadLock<Path> lock = fileManager.getReadLockIfFileExists(path);
 			if (lock != null) {
 				return lock;
@@ -335,15 +327,11 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 	}
 
 	protected List<Range> getRollupRanges(Range currentChunkRange) {
-		long currentChunkSize = currentChunkRange.length();
-		List<Long> rollupLevelsLargerThanChunk = Blutils.filter(rollupLevels, (l) -> l > currentChunkSize);
-		CheckedFunction<Long, Range> toRange = (l) -> Range.forValueAndRangeSize(currentChunkRange.getStart(), l);
-		List<Range> possibleRollupRanges = Blutils.mapIgnoringExceptions(rollupLevelsLargerThanChunk, toRange);
-		List<Range> rollupRangesEnclosingChunk = Blutils.filter(possibleRollupRanges, (r) -> r.encloses(currentChunkRange));
-		if (currentChunkRange.getEnd() < segmentRange.getStart()) {
-			rollupRangesEnclosingChunk.add(preSegmentRange);
-		}
-		return rollupRangesEnclosingChunk;
+		long currentChunkStart = currentChunkRange.getStart();
+		return calculatePossibleChunkRanges(currentChunkStart).stream()
+				.filter((r) -> r.encloses(currentChunkRange))
+				.filter((r) -> r.length() > currentChunkRange.length())
+				.collect(Collectors.toList());
 	}
 
 	public List<Range> calculatePossibleChunkRanges(long groupingNumber) {
