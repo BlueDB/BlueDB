@@ -4,6 +4,7 @@
 
 ![First XFF Hawaiian Shirt Day.jpg]({{site.baseurl}}/First XFF Hawaiian Shirt Day.jpg)
 The first XFF
+Here's a [link](Test1.md) to another page.
 
 BlueDB is simple, light on memory usage, and most importantly: __fast__ at reading a large number of objects for a specified time period.  It is written in pure Java and intended to be embedded within a Java application.  It does not support any kind of query language or API from another process.
 
