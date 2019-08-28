@@ -32,3 +32,10 @@ task onDiskJar(type: Jar) {
 		files(onDiskProjects.collect{ project(it).sourceSets.main.output })
 	}
 }
+
+task alljavadoc(type: Javadoc) {
+    source onDiskProjects.collect { project(it).sourceSets.main.allJava }    											  
+    classpath = files(onDiskProjects.collect { project(it).sourceSets.main.compileClasspath })
+    destinationDir = file("${buildDir}/docs/javadoc")
+}
+
