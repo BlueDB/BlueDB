@@ -6,4 +6,4 @@ BlueDB is simple, light on memory usage, and most importantly: __fast__ at readi
 
 It's written in pure Java and is single-user.  Reads are eventually consistent.  Writes are fully serializable.
 
-BlueDB utilizes [FST](https://github.com/RuedigerMoeller/fast-serialization "FST Home") for ultra-fast object serialization/deserializaion and special file-system directory structures to build near constant-time access to records by ID or time. 
+BlueDB utilizes [FST](https://github.com/RuedigerMoeller/fast-serialization "FST Home") for ultra-fast object serialization/deserializaion and special file-system directory structures to build near constant-time access to records by ID or time.
