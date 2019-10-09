@@ -4,7 +4,8 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Set;
 
 public class ObjectValidation {
@@ -12,7 +13,7 @@ public class ObjectValidation {
 	protected ObjectValidation() {} // just to get 100% test coverage
 
 	public static void validateFieldValueTypesForObject(Object obj) throws IllegalArgumentException, IllegalAccessException, SerializationException {
-		validateFieldValueTypesForObject(obj, new HashSet<>());
+		validateFieldValueTypesForObject(obj, Collections.newSetFromMap(new IdentityHashMap<>()));
 	}
 	
 	private static void validateFieldValueTypesForObject(Object obj, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
