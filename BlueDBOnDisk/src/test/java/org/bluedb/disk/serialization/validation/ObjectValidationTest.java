@@ -1,5 +1,7 @@
 package org.bluedb.disk.serialization.validation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
@@ -87,6 +89,18 @@ public class ObjectValidationTest {
 		try {
 			ObjectValidation.validateFieldValueTypesForObject(basicValidObjectWithBoxedValuesSwappedAndCollectionsSet);
 		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+			e.printStackTrace();
+			fail();
+		}
+		
+		try {
+			//Ensure that cycles are caught after serializing and deserializing an object that has a cycle
+			ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer();
+			byte[] bytes = serializer.serializeObjectToByteArray(basicValidObjectWithBoxedValuesSwappedAndCollectionsSet);
+			TypeValidationTestObject serializedClone = (TypeValidationTestObject) serializer.deserializeObjectFromByteArray(bytes);
+			assertEquals(basicValidObjectWithBoxedValuesSwappedAndCollectionsSet, serializedClone);
+			assertTrue(serializedClone == serializedClone.getAnotherInstanceOfTheSameClass().getAnotherInstanceOfTheSameClass().getAnotherInstanceOfTheSameClass());
+		} catch (Exception e) {
 			e.printStackTrace();
 			fail();
 		}
