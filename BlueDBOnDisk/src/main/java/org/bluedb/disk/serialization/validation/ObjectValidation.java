@@ -31,7 +31,7 @@ public class ObjectValidation {
 	private static void handleArray(Object objArray, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
 		for(int i = 0; i < Array.getLength(objArray); i++) {
 			Object obj = Array.get(objArray, i);
-			if(!previouslyValidatedObjects.contains(obj)) {
+			if(obj != null && !previouslyValidatedObjects.contains(obj)) {
 				previouslyValidatedObjects.add(obj);
 				validateFieldValueTypesForObject(obj, previouslyValidatedObjects);
 			}
