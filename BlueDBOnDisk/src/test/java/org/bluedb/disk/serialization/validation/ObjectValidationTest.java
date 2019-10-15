@@ -60,10 +60,12 @@ public class ObjectValidationTest {
 		List<TestValue> validTestValuesListNull = null;
 		List<TestValue> validTestValuesListEmpty = new ArrayList<>();
 		List<TestValue> validTestValuesList = new ArrayList<>(Arrays.asList(testValue1, testValue2));
+		List<TestValue> validTestValuesListWithNull = new ArrayList<>(Arrays.asList(testValue1, testValue2, null));
 		
 		TestValue[] validTestValuesArrayNull = null;
 		TestValue[] validTestValuesArrayEmpty = new TestValue[] { };
 		TestValue[] validTestValuesArray = new TestValue[] { testValue1, testValue2 };
+		TestValue[] validTestValuesArrayWithNull = new TestValue[] { testValue1, testValue2, null };
 		
 		Map<String, TestValue> validTestValuesMapNull = null;
 		Map<String, TestValue> validTestValuesMapEmpty = new HashMap<>();
@@ -113,6 +115,20 @@ public class ObjectValidationTest {
 
 		try {
 			ObjectValidation.validateFieldValueTypesForObject(selfReferencingObject);
+		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+			e.printStackTrace();
+			fail();
+		}
+		
+		try {
+			ObjectValidation.validateFieldValueTypesForObject(validTestValuesListWithNull);
+		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+			e.printStackTrace();
+			fail();
+		}
+		
+		try {
+			ObjectValidation.validateFieldValueTypesForObject(validTestValuesArrayWithNull);
 		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
 			e.printStackTrace();
 			fail();
