@@ -72,6 +72,34 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_peekNext() throws Exception {
+        BlueKey key1 = createKey(1, 1);
+        BlueKey key2 = createKey(2, 2);
+        TestValue value1 = createValue("Anna");
+        TestValue value2 = createValue("Bob");
+        getTimeCollection().insert(key1, value1);
+        getTimeCollection().insert(key2, value2);
+        CollectionValueIterator<TestValue> iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(0).beforeOrAtTime(0).getIterator();
+    	assertNull(iterator.peek());
+        iterator.close();
+
+        iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(1).beforeOrAtTime(1).getIterator();
+        assertEquals(value1, iterator.peek());
+        assertEquals(value1, iterator.peek()); // make sure doing it twice doesn't break anything
+        assertEquals(value1, iterator.next());
+    	assertNull(iterator.peek());
+        iterator.close();
+
+        iterator = (CollectionValueIterator<TestValue>) getTimeCollection().query().afterOrAtTime(1).beforeOrAtTime(2).getIterator();
+        assertEquals(value1, iterator.peek());
+        assertEquals(value1, iterator.next());
+        assertEquals(value2, iterator.peek());
+        assertEquals(value2, iterator.next());
+    	assertNull(iterator.peek());
+        iterator.close();
+	}
+
+	@Test
 	public void test_next() throws Exception {
         BlueKey key1 = createKey(1, 1);
         BlueKey key2 = createKey(2, 2);
@@ -142,6 +170,11 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 
 			try {
 				iterator.hasNext();  // make sure the iterator throws an error
+				fail();
+			} catch (Exception e) {}
+
+			try {
+				iterator.peek();  // make sure the iterator throws an error
 				fail();
 			} catch (Exception e) {}
 		}

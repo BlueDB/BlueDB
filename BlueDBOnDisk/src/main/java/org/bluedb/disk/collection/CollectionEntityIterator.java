@@ -1,20 +1,20 @@
 package org.bluedb.disk.collection;
 
-import java.io.Closeable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import org.bluedb.disk.segment.SegmentEntityIterator;
-import org.bluedb.disk.segment.SegmentManager;
+
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.SegmentEntityIterator;
+import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class CollectionEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
+public class CollectionEntityIterator<T extends Serializable> implements CloseableIterator<BlueEntity<T>> {
 
 	final private List<Segment<T>> segments;
 	final private Range range;
@@ -52,6 +52,14 @@ public class CollectionEntityIterator<T extends Serializable> implements Iterato
 			next = nextFromSegment();
 		}
 		return next != null;
+	}
+
+	@Override
+	public BlueEntity<T> peek() {
+		if (next == null) {
+			next = nextFromSegment();
+		}
+		return next;
 	}
 
 	@Override

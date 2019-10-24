@@ -8,4 +8,5 @@ import java.util.Iterator;
  * @param <V> the class of objects stored in collection as values
  */
 public interface CloseableIterator<V> extends Closeable, Iterator<V> {
+	public V peek();
 }

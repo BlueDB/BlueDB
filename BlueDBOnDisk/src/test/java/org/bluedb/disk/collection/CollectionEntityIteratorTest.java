@@ -63,6 +63,35 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_peek() throws Exception {
+        BlueKey key1 = createKey(1, 1);
+        BlueKey key2 = createKey(2, 2);
+        TestValue value1 = createValue("Anna");
+        TestValue value2 = createValue("Bob");
+
+        getTimeCollection().insert(key1, value1);
+        getTimeCollection().insert(key2, value2);
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>());
+    	assertNull(iterator.peek());
+        iterator.close();
+
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>());
+        assertEquals(value1, iterator.peek().getValue());
+        assertEquals(value1, iterator.peek().getValue()); // make sure doing it twice doesn't break anything
+        assertEquals(value1, iterator.next().getValue());
+    	assertNull(iterator.peek());
+        iterator.close();
+
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>());
+        assertEquals(value1, iterator.peek().getValue());
+        assertEquals(value1, iterator.next().getValue());
+        assertEquals(value2, iterator.peek().getValue());
+        assertEquals(value2, iterator.next().getValue());
+    	assertNull(iterator.peek());
+        iterator.close();
+	}
+
+	@Test
 	public void test_next() throws Exception {
         BlueKey key1 = createKey(1, 1);
         BlueKey key2 = createKey(2, 2);
