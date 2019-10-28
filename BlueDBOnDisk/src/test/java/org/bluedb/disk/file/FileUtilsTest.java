@@ -63,6 +63,7 @@ public class FileUtilsTest extends TestCase {
 		File nonEmptyFolder = new File("owa_tana_siam");
 		filesToDelete.add(nonEmptyFolder);
 		nonEmptyFolder.mkdirs();
+		File tempFile = createTempFile(nonEmptyFolder, "garbage" + suffix);
 		File fileWithSuffix = createFile(nonEmptyFolder, "legit" + suffix);
 		File fileWithSuffix2 = createFile(nonEmptyFolder, "legit.stuff" + suffix);
 		createFile(nonEmptyFolder, "not" + suffix + ".this");
@@ -71,6 +72,7 @@ public class FileUtilsTest extends TestCase {
 		assertEquals(2, filesWithSuffix.size());
 		assertTrue(filesWithSuffix.contains(fileWithSuffix));
 		assertTrue(filesWithSuffix.contains(fileWithSuffix2));
+		assertFalse(filesWithSuffix.contains(tempFile));
 	}
 
 	@Test
@@ -272,6 +274,14 @@ public class FileUtilsTest extends TestCase {
 		}
 	}
 
+
+	private File createTempFile(File parentFolder, String fileName) throws IOException {
+		File targetFile = Paths.get(parentFolder.toPath().toString(), fileName).toFile();
+		Path tempFilePath = FileUtils.createTempFilePath(targetFile.toPath());
+		File tempFile = tempFilePath.toFile();
+		tempFile.createNewFile();
+		return tempFile;
+	}
 
 	private File createFile(File parentFolder, String fileName) throws IOException {
 		File file = Paths.get(parentFolder.toPath().toString(), fileName).toFile();

@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
@@ -23,18 +24,14 @@ public class FileUtils {
 
 	public static List<File> getFolderContents(File folder) {
 		File[] folderContentsArray = folder.listFiles();
-		if (folderContentsArray == null) {
-			return new ArrayList<>();
-		}
-		return Arrays.asList(folderContentsArray);
+		List<File> folderContentList = toList(folderContentsArray);
+		return filterOutTempFiles(folderContentList);
 	}
 
 	public static List<File> getFolderContents(File folder, FileFilter filter) {
 		File[] folderContentsArray = folder.listFiles(filter);
-		if (folderContentsArray == null) {
-			return new ArrayList<>();
-		}
-		return Arrays.asList(folderContentsArray);
+		List<File> folderContentList = toList(folderContentsArray);
+		return filterOutTempFiles(folderContentList);
 	}
 
 	public static List<File> getFolderContents(Path path, String suffix) {
@@ -134,5 +131,18 @@ public class FileUtils {
 	public static boolean deleteFile(BlueWriteLock<Path> writeLock) {
 		Path path = writeLock.getKey();
 		return path.toFile().delete();
+	}
+
+	private static List<File> filterOutTempFiles(List<File> files) {
+		return files.stream()
+				.filter( (f) -> !f.getName().startsWith(TEMP_FILE_PREFIX) )
+				.collect(Collectors.toList());
+	}
+
+	private static List<File> toList(File[] files) {
+		if (files == null) {
+			return new ArrayList<>();
+		}
+		return Arrays.asList(files);
 	}
 }

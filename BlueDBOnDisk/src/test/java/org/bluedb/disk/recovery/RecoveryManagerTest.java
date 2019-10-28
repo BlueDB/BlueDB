@@ -118,10 +118,10 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		File tempFile = FileUtils.createTempFilePath(changeFile.toPath()).toFile();
 		tempFile.createNewFile();
 		Path historyFolderPath = changeFile.getParentFile().toPath();
-		List<File> allPendingFilesInChangeFolder = FileUtils.getFolderContents(historyFolderPath, RecoveryManager.SUFFIX_PENDING);
-		assertEquals(2, allPendingFilesInChangeFolder.size());
+		List<File> allFilesInChangeFolder = Arrays.asList(historyFolderPath.toFile().listFiles()); // [pending change temp file, pending change file]
+		assertEquals(2, allFilesInChangeFolder.size());
 		changes = getRecoveryManager().getPendingChangeFiles();
-		assertEquals(1, changes.size());
+		assertEquals(1, changes.size());  // ignores temp file
 
 		getRecoveryManager().markComplete(change);
 		changes = getRecoveryManager().getPendingChangeFiles();
@@ -133,8 +133,8 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		File completedChangeFile = completedChanges.get(0);
 		File tempCompletedFile = FileUtils.createTempFilePath(completedChangeFile.toPath()).toFile();
 		tempCompletedFile.createNewFile();
-		List<File> allCompletedFilesInChangeFolder = FileUtils.getFolderContents(historyFolderPath, RecoveryManager.SUFFIX_COMPLETE);
-		assertEquals(2, allCompletedFilesInChangeFolder.size());
+		allFilesInChangeFolder = Arrays.asList(historyFolderPath.toFile().listFiles());
+		assertEquals(3, allFilesInChangeFolder.size());  // [pending change temp file, complete change temp file, complete change file]
 		completedChanges = getRecoveryManager().getCompletedChangeFiles();
 		assertEquals(1, completedChanges.size());
 	}
