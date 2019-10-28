@@ -7,6 +7,7 @@ import org.bluedb.api.Condition;
 import org.bluedb.disk.lock.AutoCloseCountdown;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionValueIterator<T extends Serializable> implements CloseableIterator<T> {
 
@@ -40,6 +41,20 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 		}
 		timeoutCloser.snooze();
 		return entityIterator.hasNext();
+	}
+
+	@Override
+	public T peek() {
+		if (entityIterator == null) {
+			throw new RuntimeException("CollectionValueIterator has already been closed");
+		}
+		timeoutCloser.snooze();
+		BlueEntity<T> peekedEntity = entityIterator.peek();
+		if (peekedEntity == null) {
+			return null;
+		} else {
+			return peekedEntity.getValue();
+		}
 	}
 
 	@Override
