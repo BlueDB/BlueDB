@@ -53,24 +53,26 @@ public class FileUtilsTest extends TestCase {
 		File nonExistant = new File("forever_or_never_whatever");
 		filesToDelete.add(nonExistant);
 		List<File> emptyFileList = new ArrayList<>();
-		assertEquals(emptyFileList, FileUtils.getFolderContents(nonExistant.toPath(), suffix));
+		assertEquals(emptyFileList, FileUtils.getFolderContentsExcludingTempFiles(nonExistant.toPath(), suffix));
 
 		File emptyFolder = new File("bah_bah_black_sheep");
 		filesToDelete.add(emptyFolder);
 		emptyFolder.mkdirs();
-		assertEquals(emptyFileList, FileUtils.getFolderContents(emptyFolder.toPath(), suffix));
+		assertEquals(emptyFileList, FileUtils.getFolderContentsExcludingTempFiles(emptyFolder.toPath(), suffix));
 
 		File nonEmptyFolder = new File("owa_tana_siam");
 		filesToDelete.add(nonEmptyFolder);
 		nonEmptyFolder.mkdirs();
+		File tempFile = createTempFile(nonEmptyFolder, "garbage" + suffix);
 		File fileWithSuffix = createFile(nonEmptyFolder, "legit" + suffix);
 		File fileWithSuffix2 = createFile(nonEmptyFolder, "legit.stuff" + suffix);
 		createFile(nonEmptyFolder, "not" + suffix + ".this");
 		createFile(nonEmptyFolder, "junk");
-		List<File> filesWithSuffix = FileUtils.getFolderContents(nonEmptyFolder.toPath(), suffix);
+		List<File> filesWithSuffix = FileUtils.getFolderContentsExcludingTempFiles(nonEmptyFolder.toPath(), suffix);
 		assertEquals(2, filesWithSuffix.size());
 		assertTrue(filesWithSuffix.contains(fileWithSuffix));
 		assertTrue(filesWithSuffix.contains(fileWithSuffix2));
+		assertFalse(filesWithSuffix.contains(tempFile));
 	}
 
 	@Test
@@ -272,6 +274,14 @@ public class FileUtilsTest extends TestCase {
 		}
 	}
 
+
+	private File createTempFile(File parentFolder, String fileName) throws IOException {
+		File targetFile = Paths.get(parentFolder.toPath().toString(), fileName).toFile();
+		Path tempFilePath = FileUtils.createTempFilePath(targetFile.toPath());
+		File tempFile = tempFilePath.toFile();
+		tempFile.createNewFile();
+		return tempFile;
+	}
 
 	private File createFile(File parentFolder, String fileName) throws IOException {
 		File file = Paths.get(parentFolder.toPath().toString(), fileName).toFile();

@@ -18,28 +18,29 @@ import org.bluedb.disk.lock.BlueWriteLock;
 public class FileUtils {
 	
 	private final static String TEMP_FILE_PREFIX = "_tmp_";
+	private final static FileFilter IS_NOT_TEMP_FILE = (f) -> !f.getName().startsWith(TEMP_FILE_PREFIX);
 
 	protected FileUtils() {}  // just to get test coverage to 100%
 
-	public static List<File> getFolderContents(File folder) {
-		File[] folderContentsArray = folder.listFiles();
-		if (folderContentsArray == null) {
-			return new ArrayList<>();
-		}
-		return Arrays.asList(folderContentsArray);
+	public static List<File> getSubFolders(File folder) {
+		File[] subfolders = folder.listFiles( (f) -> f.isDirectory() );
+		return toList(subfolders);
 	}
 
-	public static List<File> getFolderContents(File folder, FileFilter filter) {
-		File[] folderContentsArray = folder.listFiles(filter);
-		if (folderContentsArray == null) {
-			return new ArrayList<>();
-		}
-		return Arrays.asList(folderContentsArray);
+	public static List<File> getFolderContentsExcludingTempFiles(File folder) {
+		File[] folderContentsArray = folder.listFiles(IS_NOT_TEMP_FILE);
+		return toList(folderContentsArray);
 	}
 
-	public static List<File> getFolderContents(Path path, String suffix) {
+	public static List<File> getFolderContentsExcludingTempFiles(Path path, String suffix) {
 		FileFilter endsWithSuffix = (f) -> f.toPath().toString().endsWith(suffix);
-		return getFolderContents(path.toFile(), endsWithSuffix);
+		return getFolderContentsExcludingTempFiles(path.toFile(), endsWithSuffix);
+	}
+
+	public static List<File> getFolderContentsExcludingTempFiles(File folder, FileFilter filter) {
+		FileFilter passesFilterAndIsNotTempFile = (f) -> filter.accept(f) && IS_NOT_TEMP_FILE.accept(f);
+		File[] folderContentsArray = folder.listFiles(passesFilterAndIsNotTempFile);
+		return toList(folderContentsArray);
 	}
 
 	public static void ensureFileExists(Path path) throws BlueDbException {
@@ -134,5 +135,12 @@ public class FileUtils {
 	public static boolean deleteFile(BlueWriteLock<Path> writeLock) {
 		Path path = writeLock.getKey();
 		return path.toFile().delete();
+	}
+
+	private static List<File> toList(File[] files) {
+		if (files == null) {
+			return new ArrayList<>();
+		}
+		return Arrays.asList(files);
 	}
 }

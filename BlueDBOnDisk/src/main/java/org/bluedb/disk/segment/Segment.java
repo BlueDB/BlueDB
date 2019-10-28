@@ -252,7 +252,7 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 
 	public static List<Range> getAllFileRangesInOrder(Path segmentPath) {
 		File segmentFolder = segmentPath.toFile();
-		List<File> allFilesInSegment = FileUtils.getFolderContents(segmentFolder);
+		List<File> allFilesInSegment = FileUtils.getFolderContentsExcludingTempFiles(segmentFolder);
 		return allFilesInSegment.stream()
 				.map( Range::fromFileWithUnderscoreDelmimitedName )
 				.filter( Objects::nonNull )

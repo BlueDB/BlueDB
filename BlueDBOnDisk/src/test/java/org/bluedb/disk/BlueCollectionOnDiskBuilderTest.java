@@ -74,11 +74,10 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
     	LinkedList<File> queue = new LinkedList<>();
     	queue.push(collectionPath.toFile());
     	while (!queue.isEmpty()) {
-    		List<File> contents = FileUtils.getFolderContents(queue.pop());
+    		List<File> subFolders = FileUtils.getSubFolders(queue.pop());
     		// add non-metadata directories to results
-    		List<File> nonMetadataFolders = contents.stream()
+    		List<File> nonMetadataFolders = subFolders.stream()
     			.filter((f) -> !f.getName().startsWith("."))
-    			.filter((f) -> f.isDirectory())
     			.collect(Collectors.toList());
     		results.addAll(nonMetadataFolders);
     		queue.addAll(nonMetadataFolders);

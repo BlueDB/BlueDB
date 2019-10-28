@@ -125,7 +125,7 @@ public class BlueDbOnDisk implements BlueDb {
 	}
 
 	protected List<BlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
-		List<File> subfolders = FileUtils.getFolderContents(path.toFile(), (f) -> f.isDirectory());
+		List<File> subfolders = FileUtils.getSubFolders(path.toFile());
 		List<BlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getUntypedCollectionForBackup(folder.getName()));
 		return collections;
 	}

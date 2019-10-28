@@ -85,9 +85,8 @@ public class SegmentPathManager {
 	}
 
 	public static List<File> getSubfoldersInRange(File folder, long minValue, long maxValue) {
-		return FileUtils.getFolderContents(folder)
+		return FileUtils.getSubFolders(folder)
             .stream()
-			.filter((f) -> f.isDirectory())
 			.filter((f) -> folderNameIsLongInRange(f, minValue, maxValue))
 			.collect(Collectors.toList());
 	}
