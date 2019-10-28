@@ -76,7 +76,7 @@ public class IndexManager<T extends Serializable> {
 	private Map<String, BlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		Map<String, BlueIndexOnDisk<ValueKey, T>> map = new HashMap<>();
 		Path indexesPath = Paths.get(collectionPath.toString(), INDEXES_SUBFOLDER);
-		List<File> subfolders = FileUtils.getFolderContents(indexesPath.toFile(), (f) -> f.isDirectory());
+		List<File> subfolders = FileUtils.getSubFolders(indexesPath.toFile());
 		for (File folder: subfolders) {
 			BlueIndexOnDisk<ValueKey, T> index = BlueIndexOnDisk.fromExisting(collection, folder.toPath());
 			String indexName = folder.getName();

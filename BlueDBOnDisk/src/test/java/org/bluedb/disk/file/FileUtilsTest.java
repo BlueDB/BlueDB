@@ -53,12 +53,12 @@ public class FileUtilsTest extends TestCase {
 		File nonExistant = new File("forever_or_never_whatever");
 		filesToDelete.add(nonExistant);
 		List<File> emptyFileList = new ArrayList<>();
-		assertEquals(emptyFileList, FileUtils.getFolderContents(nonExistant.toPath(), suffix));
+		assertEquals(emptyFileList, FileUtils.getFolderContentsExcludingTemps(nonExistant.toPath(), suffix));
 
 		File emptyFolder = new File("bah_bah_black_sheep");
 		filesToDelete.add(emptyFolder);
 		emptyFolder.mkdirs();
-		assertEquals(emptyFileList, FileUtils.getFolderContents(emptyFolder.toPath(), suffix));
+		assertEquals(emptyFileList, FileUtils.getFolderContentsExcludingTemps(emptyFolder.toPath(), suffix));
 
 		File nonEmptyFolder = new File("owa_tana_siam");
 		filesToDelete.add(nonEmptyFolder);
@@ -68,7 +68,7 @@ public class FileUtilsTest extends TestCase {
 		File fileWithSuffix2 = createFile(nonEmptyFolder, "legit.stuff" + suffix);
 		createFile(nonEmptyFolder, "not" + suffix + ".this");
 		createFile(nonEmptyFolder, "junk");
-		List<File> filesWithSuffix = FileUtils.getFolderContents(nonEmptyFolder.toPath(), suffix);
+		List<File> filesWithSuffix = FileUtils.getFolderContentsExcludingTemps(nonEmptyFolder.toPath(), suffix);
 		assertEquals(2, filesWithSuffix.size());
 		assertTrue(filesWithSuffix.contains(fileWithSuffix));
 		assertTrue(filesWithSuffix.contains(fileWithSuffix2));
