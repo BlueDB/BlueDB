@@ -23,21 +23,22 @@ public class FileUtils {
 	protected FileUtils() {}  // just to get test coverage to 100%
 
 	public static List<File> getSubFolders(File folder) {
-		return getFolderContentsExcludingTemps(folder, (f) -> f.isDirectory());
+		File[] subfolders = folder.listFiles( (f) -> f.isDirectory() );
+		return toList(subfolders);
 	}
 
-	public static List<File> getFolderContents(File folder) {
+	public static List<File> getFolderContentsExcludingTempFiles(File folder) {
 		File[] folderContentsArray = folder.listFiles();
 		List<File> folderContentList = toList(folderContentsArray);
 		return filterOutTempFiles(folderContentList);
 	}
 
-	public static List<File> getFolderContentsExcludingTemps(Path path, String suffix) {
+	public static List<File> getFolderContentsExcludingTempFiles(Path path, String suffix) {
 		FileFilter endsWithSuffix = (f) -> f.toPath().toString().endsWith(suffix);
-		return getFolderContentsExcludingTemps(path.toFile(), endsWithSuffix);
+		return getFolderContentsExcludingTempFiles(path.toFile(), endsWithSuffix);
 	}
 
-	public static List<File> getFolderContentsExcludingTemps(File folder, FileFilter filter) {
+	public static List<File> getFolderContentsExcludingTempFiles(File folder, FileFilter filter) {
 		File[] folderContentsArray = folder.listFiles(filter);
 		List<File> folderContentList = toList(folderContentsArray);
 		return filterOutTempFiles(folderContentList);

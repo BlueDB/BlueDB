@@ -18,7 +18,7 @@ public class RangeNamedFiles {
 		long max = range.getEnd();
 		File segmentFolder = segmentPath.toFile();
 		FileFilter filter = (f) -> isFileNameRangeEnclosed(f, min, max);
-		List<File> filesInFolder = FileUtils.getFolderContentsExcludingTemps(segmentFolder, filter);
+		List<File> filesInFolder = FileUtils.getFolderContentsExcludingTempFiles(segmentFolder, filter);
 		sortByRange(filesInFolder);
 		return filesInFolder;
 	}
@@ -73,7 +73,7 @@ public class RangeNamedFiles {
 		long max = range.getEnd();
 		File segmentFolder = segmentPath.toFile();
 		FileFilter filter = (f) -> doesfileNameRangeOverlap(f, min, max);
-		List<File> filesInFolder = FileUtils.getFolderContentsExcludingTemps(segmentFolder, filter);
+		List<File> filesInFolder = FileUtils.getFolderContentsExcludingTempFiles(segmentFolder, filter);
 		sortByRange(filesInFolder);
 		return filesInFolder;
 	}

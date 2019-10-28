@@ -71,7 +71,7 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<File> getChangeHistory(long backupStartTime, long backupEndTime) throws BlueDbException {
-		List<File> files = FileUtils.getFolderContentsExcludingTemps(historyFolderPath, SUFFIX);
+		List<File> files = FileUtils.getFolderContentsExcludingTempFiles(historyFolderPath, SUFFIX);
 		if (files.isEmpty()) {
 			return files;
 		}
@@ -97,11 +97,11 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public List<File> getCompletedChangeFiles() {
-		return FileUtils.getFolderContentsExcludingTemps(historyFolderPath, SUFFIX_COMPLETE);
+		return FileUtils.getFolderContentsExcludingTempFiles(historyFolderPath, SUFFIX_COMPLETE);
 	}
 
 	public List<File> getPendingChangeFiles() {
-		return FileUtils.getFolderContentsExcludingTemps(historyFolderPath, SUFFIX_PENDING);
+		return FileUtils.getFolderContentsExcludingTempFiles(historyFolderPath, SUFFIX_PENDING);
 	}
 
 	public void recover() throws BlueDbException {
