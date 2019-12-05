@@ -64,7 +64,7 @@ public class CollectionMetaData {
 	}
 
 	public void updateSerializedClassList(List<Class<? extends Serializable>> classes) throws BlueDbException {
-		fileManager.saveObject(serializedClassesPath, classes);;
+		fileManager.saveObject(serializedClassesPath, classes);
 	}
 
 	public void saveKeyType(Class<? extends BlueKey> keyType) throws BlueDbException {
@@ -78,20 +78,32 @@ public class CollectionMetaData {
 	public final Class<? extends Serializable>[] getAndAddToSerializedClassList(Class<? extends Serializable> primaryClass, List<Class<? extends Serializable>> additionalClasses) throws BlueDbException {
 		List<Class<? extends Serializable>> existingClassList = getSerializedClassList();
 		List<Class<? extends Serializable>> newClassList = (existingClassList == null) ? new ArrayList<>() : new ArrayList<>(existingClassList);
+		
+		boolean madeAChange = false;
+		
 		for (Class<? extends Serializable> clazz: ThreadLocalFstSerializer.getClassesToAlwaysRegister()) {
 			if (!newClassList.contains(clazz)) {  // don't keep expanding the list every time we call this method
 				newClassList.add(clazz);
+				madeAChange = true;
 			}
 		}
+		
 		if (!newClassList.contains(primaryClass)) {  // don't keep expanding the list every time we call this method
 			newClassList.add(primaryClass);
+			madeAChange = true;
 		}
+		
 		for (Class<? extends Serializable> clazz: additionalClasses) {
 			if (!newClassList.contains(clazz)) {  // don't keep expanding the list every time we call this method
 				newClassList.add(clazz);
+				madeAChange = true;
 			}
 		}
-		updateSerializedClassList(newClassList);
+		
+		if(madeAChange) {
+			updateSerializedClassList(newClassList);
+		}
+		
 		@SuppressWarnings("unchecked")
 		Class<? extends Serializable>[] returnValue = newClassList.toArray(new Class[newClassList.size()]);
 		return returnValue;

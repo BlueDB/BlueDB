@@ -1,17 +1,24 @@
 package org.bluedb.disk.collection;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
+import org.bluedb.disk.TestValueSub;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
@@ -65,11 +72,14 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	public void test_updateSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
 		assertNull(metaData.getSerializedClassList());
+		
 		List<Class<? extends Serializable>> classes = Arrays.asList(TestValue.class);
 		metaData.updateSerializedClassList(classes);
 		assertEquals(classes, metaData.getSerializedClassList());
+		
 		classes = Arrays.asList(TestValue.class, TestValue2.class);
 		assertFalse(classes.equals(metaData.getSerializedClassList())); // we haven't synced them yet
+		
 		metaData.updateSerializedClassList(classes);
 		assertTrue(classes.equals(metaData.getSerializedClassList()));
 	}
@@ -77,24 +87,48 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getAndAddToSerializedClassList() throws Exception {
 		metaData = createNewMetaData();  // use fresh metadata so collection startup doesn't change things
+		
 		Class<? extends Serializable>[] defaultClasses = getClassesToAlwaysRegister();
-
-		assertNull(metaData.getSerializedClassList());
+		
 		@SuppressWarnings("unchecked")
 		Class<? extends Serializable>[] testValue1 = new Class[] {TestValue.class};
+		
 		@SuppressWarnings("unchecked")
-		Class<? extends Serializable>[] testValueBoth = new Class[] {TestValue.class, TestValue2.class};
+		Class<? extends Serializable>[] testValues = new Class[] {TestValue.class, TestValue2.class, TestValueSub.class};
+		
 		Class<? extends Serializable>[] testValue1PlusDefaults = concatenate(defaultClasses, testValue1);
-		Class<? extends Serializable>[] testValueBothPlusDefaults =  concatenate(defaultClasses, testValueBoth);
+		
+		Class<? extends Serializable>[] testValuesPlusDefaults =  concatenate(defaultClasses, testValues);
+		
+		List<Class<? extends Serializable>> testValue1PlusDefaultsShuffled = shuffle(testValue1PlusDefaults);
+		List<Class<? extends Serializable>> testValuesPlusDefaultsShuffled = shuffle(testValuesPlusDefaults);
+		
+		assertNull(metaData.getSerializedClassList()); //Doesn't exist to start
 
 		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
-		assertArrayEquals(testValue1PlusDefaults, afterAdding1);
+		FileTime lastModifiedTime1 = Files.getLastModifiedTime(metaData.serializedClassesPath);
+		assertArrayEquals(testValue1PlusDefaults, afterAdding1); //Now contains defaults and value 1
 
 		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
-		assertArrayEquals(testValue1PlusDefaults, afterAdding1Again);
+		assertArrayEquals(testValue1PlusDefaults, afterAdding1Again); //Shouldn't change
+		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't be overwritten
 
-		Class<? extends Serializable>[] afterAddingBoth = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList(TestValue2.class));
-		assertArrayEquals(testValueBothPlusDefaults, afterAddingBoth);
+		Class<? extends Serializable>[] afterAdding1AgainInWeirdOrder = metaData.getAndAddToSerializedClassList(TestValue.class, testValue1PlusDefaultsShuffled);
+		assertArrayEquals(testValue1PlusDefaults, afterAdding1AgainInWeirdOrder); //Shouldn't change
+		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't be overwritten
+
+		Class<? extends Serializable>[] afterAddingValues = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList(TestValue2.class, TestValueSub.class));
+		FileTime lastModifiedTime2 = Files.getLastModifiedTime(metaData.serializedClassesPath);
+		assertArrayEquals(testValuesPlusDefaults, afterAddingValues); //Contains all values now
+		assertNotEquals(lastModifiedTime1, lastModifiedTime2); //It got overwritten
+		
+		Class<? extends Serializable>[] afterAddingValuesBackwards = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList(TestValueSub.class, TestValue2.class));
+		assertArrayEquals(testValuesPlusDefaults, afterAddingValuesBackwards); //Shouldn't change
+		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't change
+		
+		Class<? extends Serializable>[] afterAddingEverythingInWeirdOrder = metaData.getAndAddToSerializedClassList(TestValue.class, testValuesPlusDefaultsShuffled);
+		assertArrayEquals(testValuesPlusDefaults, afterAddingEverythingInWeirdOrder); //Shouldn't change
+		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't change
 	}
 
 	private Class<? extends Serializable>[] getClassesToAlwaysRegister() {
@@ -110,6 +144,12 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		T[] combined = Arrays.copyOf(a, combinedLength);
 	    System.arraycopy(b, 0, combined, a.length, b.length);
 	    return combined;
+	}
+
+	private <T> List<T> shuffle(T[] array) {
+		List<T> list = new ArrayList<>(Arrays.asList(array));
+		Collections.shuffle(list);
+		return list;
 	}
 
 	private CollectionMetaData createNewMetaData() {
