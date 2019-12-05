@@ -264,8 +264,8 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_recover_invalidPendingChange() throws Exception {
-		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.HISTORY_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
+	public void test_recover_invalidChange() throws Exception {
+		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.RECOVERY_FOLDER, RecoveryManager.HISTORY_SUBFOLDER, "123" + RecoveryManager.SUFFIX);
 		pathForGarbage.getParent().toFile().mkdirs();
 		byte[] bytes = new byte[]{1, 2, 3};
 
@@ -274,7 +274,20 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 			fos.close();
 		}
 
-		pathForGarbage.toFile().delete();
+		getRecoveryManager().recover();
+	}
+
+	@Test
+	public void test_recover_invalidPendingChange() throws Exception {
+		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.RECOVERY_FOLDER, RecoveryManager.HISTORY_SUBFOLDER, "123" + RecoveryManager.SUFFIX_PENDING);
+		pathForGarbage.getParent().toFile().mkdirs();
+		byte[] bytes = new byte[]{1, 2, 3};
+
+		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
+			fos.write(bytes);
+			fos.close();
+		}
+
 		getRecoveryManager().recover();
 	}
 
