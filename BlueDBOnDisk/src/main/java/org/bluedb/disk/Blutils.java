@@ -53,7 +53,9 @@ public class Blutils {
 		List<Y> results = new ArrayList<>();
 		for (X originalValue: values) {
 			Y newValue = mapper.apply(originalValue);
-			results.add(newValue);
+			if(newValue != null) {
+				results.add(newValue);
+			}
 		}
 		return results;
 	}
@@ -63,7 +65,9 @@ public class Blutils {
 		for (X originalValue: values) {
 			try {
 				Y newValue = mapper.apply(originalValue);
-				results.add(newValue);
+				if(newValue != null) {
+					results.add(newValue);
+				}
 			} catch (Throwable e) {
 			}
 		}
