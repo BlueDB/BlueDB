@@ -88,9 +88,13 @@ public class RecoveryManager<T extends Serializable> {
 	public List<Recoverable<T>> getPendingChanges() throws BlueDbException {
 		List<Recoverable<T>> changes = new ArrayList<>();
 		for (File file: getPendingChangeFiles()) {
-			@SuppressWarnings("unchecked")
-			Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
-			changes.add(change);
+			try {
+				@SuppressWarnings("unchecked")
+				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
+				changes.add(change);
+			} catch (Throwable t) {
+				System.out.println("BlueDB ignoring corrupt recovery file: " + file.getAbsolutePath());
+			}
 		}
 		Collections.sort(changes);
 		return changes;
