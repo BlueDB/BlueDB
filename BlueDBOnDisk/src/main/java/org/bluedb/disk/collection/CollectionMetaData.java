@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.FileManager;
@@ -79,28 +81,23 @@ public class CollectionMetaData {
 		List<Class<? extends Serializable>> existingClassList = getSerializedClassList();
 		List<Class<? extends Serializable>> newClassList = (existingClassList == null) ? new ArrayList<>() : new ArrayList<>(existingClassList);
 		
-		boolean madeAChange = false;
-		
 		for (Class<? extends Serializable> clazz: ThreadLocalFstSerializer.getClassesToAlwaysRegister()) {
 			if (!newClassList.contains(clazz)) {  // don't keep expanding the list every time we call this method
 				newClassList.add(clazz);
-				madeAChange = true;
 			}
 		}
 		
 		if (!newClassList.contains(primaryClass)) {  // don't keep expanding the list every time we call this method
 			newClassList.add(primaryClass);
-			madeAChange = true;
 		}
 		
 		for (Class<? extends Serializable> clazz: additionalClasses) {
 			if (!newClassList.contains(clazz)) {  // don't keep expanding the list every time we call this method
 				newClassList.add(clazz);
-				madeAChange = true;
 			}
 		}
 		
-		if(madeAChange) {
+		if(!Objects.equals(existingClassList, newClassList)) {
 			updateSerializedClassList(newClassList);
 		}
 		
