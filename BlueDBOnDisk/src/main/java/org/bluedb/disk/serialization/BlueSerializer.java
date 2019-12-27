@@ -6,7 +6,7 @@ import org.bluedb.disk.serialization.validation.SerializationException;
 
 public interface BlueSerializer {
 
-	public byte[] serializeObjectToByteArray(Object o);
+	public byte[] serializeObjectToByteArray(Object o) throws SerializationException;
 
 	public Object deserializeObjectFromByteArray(byte[] bytes) throws SerializationException;
 

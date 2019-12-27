@@ -21,7 +21,7 @@ import org.nustaq.serialization.simpleapi.DefaultCoder;
 
 public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
 	
-	private static final int MAX_DESERIALIZE_ATTEMPTS = 5;
+	private static final int MAX_ATTEMPTS = 5;
 	
 	private Class<?>[] registeredSerializableClasses;
 	
@@ -49,9 +49,51 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		);
 	}
 
-	@Override
-	public byte[] serializeObjectToByteArray(Object o) {
+	protected byte[] serializeObjectToByteArrayWithoutChecks(Object o) {
 		return get().toByteArray(o);
+	}
+
+	@Override
+	public byte[] serializeObjectToByteArray(Object o) throws SerializationException {
+		validateObjectBeforeSerializing(o);
+		return serializeValidObject(o);
+	}
+
+	protected byte[] serializeValidObject(Object o) throws SerializationException {
+		Throwable failureCause = null;
+		int retryCount = 0;
+		while(retryCount < MAX_ATTEMPTS) {
+			try {
+				byte[] serializedBytes = get().toByteArray(o);
+				validateBytesAfterSerialization(serializedBytes);
+				return serializedBytes;
+			} catch(Throwable t) {
+				failureCause = t;
+				retryCount++;
+			}
+		}
+		
+		throw new SerializationException("Failed to serialize object since it keeps producing bytes that cannot be deserialized properly", failureCause); //Don't try to put the object details in the message since any usage of the invalid field will throw an exception. The caused by will contain some good detail
+	}
+	
+	protected void validateObjectBeforeSerializing(Object o) throws SerializationException {
+		try {
+			validateObject(o);
+		} catch(Throwable t) {
+			throw new SerializationException("Cannot serialize an invalid object", t);
+		}
+	}
+
+	protected void validateBytesAfterSerialization(byte[] serializedBytes) throws SerializationException {
+		try {
+			deserializeObjectFromByteArray(serializedBytes);
+		} catch(Throwable t) {
+			throw new SerializationException("Failed to serialize object since the resulting bytes cannot be deserialized properly", t);
+		}
+	}
+	
+	protected Object deserializeObjectFromByteArrayWithoutChecks(byte[] bytes) {
+		return toObject(bytes);
 	}
 
 	@Override
@@ -59,10 +101,10 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		Throwable failureCause = null;
 		
 		int retryCount = 0;
-		while(retryCount < MAX_DESERIALIZE_ATTEMPTS) {
+		while(retryCount < MAX_ATTEMPTS) {
 			try {
 				Object obj = toObject(bytes);
-				ObjectValidation.validateFieldValueTypesForObject(obj);
+				validateObject(obj);
 				return obj;
 			} catch(Throwable t) {
 				failureCause = t;
@@ -79,6 +121,14 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		} catch(Throwable t) {
 			byte[] bytesToTry = ByteUtils.replaceClassPathBytes(bytes, "io.bluedb", "org.bluedb");
 			return get().toObject(bytesToTry);
+		}
+	}
+
+	private void validateObject(Object obj) throws SerializationException {
+		try {
+			ObjectValidation.validateFieldValueTypesForObject(obj);
+		} catch(Throwable t) {
+			throw new SerializationException("Invalid Object Identified", t); //Don't try to put the object details in the message since any usage of the invalid field will throw an exception. The caused by will contain some good detail
 		}
 	}
 
