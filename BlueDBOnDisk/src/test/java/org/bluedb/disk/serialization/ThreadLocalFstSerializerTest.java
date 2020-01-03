@@ -5,8 +5,6 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,7 +30,12 @@ import org.junit.Test;
 public class ThreadLocalFstSerializerTest {
 	
 	@Test
-	public void testStaticRegisteredClassesProblem() {
+	public void testStaticRegisteredClassesProblem() throws SerializationException {
+		/*
+		 * I found a weird issue with FST that I was able to work around by changing how we
+		 * use FST a little bit. This test keeps someone from changing it back to the other way
+		 * since that way has an issue.
+		 */
 		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer(TestValue.class);
 		TestValue value1 = new TestValue("Derek", 1);
 		TestValue clone1 = s1.clone(value1);
@@ -63,8 +66,7 @@ public class ThreadLocalFstSerializerTest {
 	@Test
 	public void testSerializingInvalidObject() throws URISyntaxException, BlueDbException, IOException {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
-		Path invalidObjectPath = TestUtils.getResourcePath("corruptCall-1.bin");
-		Object invalidObject = serializer.deserializeObjectFromByteArrayWithoutChecks(Files.readAllBytes(invalidObjectPath));
+		Object invalidObject = TestUtils.loadCorruptCall();
 		
 		try {
 			serializer.validateObjectBeforeSerializing(invalidObject);

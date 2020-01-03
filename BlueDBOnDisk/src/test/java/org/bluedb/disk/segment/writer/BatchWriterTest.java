@@ -9,7 +9,6 @@ import static org.mockito.Matchers.anyObject;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -89,18 +88,19 @@ public class BatchWriterTest {
 	public void testUpdatingInvalidObjectThenMakingOtherChanges() throws BlueDbException, IOException, URISyntaxException {
 		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
 		
-		BlueEntity<Call> call1 = createTestCallEntity(920832 - 10);
-		@SuppressWarnings({ "unchecked", "deprecation" })
-		BlueEntity<Call> invalidCall = (BlueEntity<Call>) serializer.deserializeObjectFromByteArrayWithoutChecks(getResourceBytes("corruptCall-1.bin"));
-		BlueEntity<Call> call3 = createTestCallEntity(920832 + 10);
-		BlueEntity<Call> call4 = createTestCallEntity(920832 + 20);
-		BlueEntity<Call> call5 = createTestCallEntity(920832 + 30);
+		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
+		long invalidCallStart = invalidCall.getValue().getStart();
+		
+		BlueEntity<Call> call1 = Call.generateBasicTestCallEntity(invalidCallStart - 10);
+		BlueEntity<Call> call3 = Call.generateBasicTestCallEntity(invalidCallStart + 10);
+		BlueEntity<Call> call4 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
+		BlueEntity<Call> call5 = Call.generateBasicTestCallEntity(invalidCallStart + 30);
 		
 		@SuppressWarnings("deprecation")
 		BlueEntity<Call> updatedInvalidCall = serializer.cloneWithoutChecks(invalidCall);
 		updatedInvalidCall.getValue().setReceivingParty("testChange");
 		
-		BlueEntity<Call> updatedcall4 = wrapCallAsEntity(call4.getValue().clone());
+		BlueEntity<Call> updatedcall4 = Call.wrapCallAsEntity(call4.getValue().clone());
 		updatedcall4.getValue().setCallingParty("testChange");
 		
 		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(call1, invalidCall, call4, call5));
@@ -140,9 +140,10 @@ public class BatchWriterTest {
 	public void testDeletingInvalidObjectThenMakingOtherChanges() throws URISyntaxException, IOException, BlueDbException {
 		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
 		
-		@SuppressWarnings({ "unchecked", "deprecation" })
-		BlueEntity<Call> invalidCall = (BlueEntity<Call>) serializer.deserializeObjectFromByteArrayWithoutChecks(getResourceBytes("corruptCall-1.bin"));
-		BlueEntity<Call> call2 = createTestCallEntity(920832 + 20);
+		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
+		long invalidCallStart = invalidCall.getValue().getStart();
+		
+		BlueEntity<Call> call2 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
 		
 		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(invalidCall, call2));
 		BlueObjectInput<BlueEntity<Call>> mockInput = createMockInput(serializer, initialValues);
@@ -150,7 +151,7 @@ public class BatchWriterTest {
 		List<BlueEntity<Call>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<Call>> mockOutput = createMockOutput(serializer, results);
 		
-		BlueEntity<Call> updatedcall2 = wrapCallAsEntity(call2.getValue().clone());
+		BlueEntity<Call> updatedcall2 = Call.wrapCallAsEntity(call2.getValue().clone());
 		updatedcall2.getValue().setCallingParty("testChange2");
 		
 		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall.getKey());
@@ -172,9 +173,10 @@ public class BatchWriterTest {
 	public void testInsertingInvalidObjectThenMakingOtherUpdates() throws BlueDbException, IOException, URISyntaxException {
 		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
 		
-		@SuppressWarnings({ "unchecked", "deprecation" })
-		BlueEntity<Call> invalidCall = (BlueEntity<Call>) serializer.deserializeObjectFromByteArrayWithoutChecks(getResourceBytes("corruptCall-1.bin"));
-		BlueEntity<Call> call2 = createTestCallEntity(920832 + 20);
+		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
+		long invalidCallStart = invalidCall.getValue().getStart();
+		
+		BlueEntity<Call> call2 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
 		
 		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(call2));
 		BlueObjectInput<BlueEntity<Call>> mockInput = createMockInput(serializer, initialValues);
@@ -182,7 +184,7 @@ public class BatchWriterTest {
 		List<BlueEntity<Call>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<Call>> mockOutput = createMockOutput(serializer, results);
 		
-		BlueEntity<Call> updatedcall2 = wrapCallAsEntity(call2.getValue().clone());
+		BlueEntity<Call> updatedcall2 = Call.wrapCallAsEntity(call2.getValue().clone());
 		updatedcall2.getValue().setCallingParty("testChange3");
 		
 		IndividualChange<Call> insertInvalidObject = IndividualChange.createInsertChange(invalidCall.getKey(), invalidCall.getValue());
@@ -198,19 +200,6 @@ public class BatchWriterTest {
 		
 		assertNotNull(resultingCall2);
 		assertEquals("testChange3", resultingCall2.getValue().getCallingParty()); //Update should still happen
-	}
-
-	private BlueEntity<Call> createTestCallEntity(long start) {
-		Call call = Call.generateBasicTestCall(start);
-		return wrapCallAsEntity(call);
-	}
-	
-	private BlueEntity<Call> wrapCallAsEntity(Call call) {
-		return new BlueEntity<Call>(call.createTimeframeKey(), call);
-	}
-	
-	private byte[] getResourceBytes(String filepath) throws IOException, URISyntaxException {
-		return Files.readAllBytes(TestUtils.getResourcePath(filepath));
 	}
 
 	private static <T extends Serializable> BlueObjectInput<T> createMockInput(ThreadLocalFstSerializer serializer, List<T> values) throws BlueDbException {

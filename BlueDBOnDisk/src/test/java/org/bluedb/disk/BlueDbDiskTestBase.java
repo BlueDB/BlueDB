@@ -29,6 +29,7 @@ import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionMetaData;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.lock.LockManager;
+import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentEntityIterator;
@@ -44,11 +45,13 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	private static String HASH_GROUPED_COLLECTION_NAME = "testing_value";
 	private static String LONG_COLLECTION_NAME = "long_value";
 	private static String INT_COLLECTION_NAME = "int_value";
+	private static String CALL_COLLECTION_NAME = "call_collection";
 	BlueDbOnDisk db;
 	BlueCollectionOnDisk<TestValue> timeCollection;
 	BlueCollectionOnDisk<TestValue> hashGroupedCollection;
 	BlueCollectionOnDisk<TestValue> intCollection;
 	BlueCollectionOnDisk<TestValue> longCollection;
+	BlueCollectionOnDisk<Call> callCollection;
 	Path dbPath;
 	LockManager<Path> lockManager;
 	RollupScheduler rollupScheduler;
@@ -64,6 +67,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		timeCollection = db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
 		hashGroupedCollection = db.collectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
 		longCollection = db.collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		callCollection = db.collectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
 		intCollection = db.collectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
 		dbPath = db.getPath();
 		lockManager = timeCollection.getFileManager().getLockManager();
@@ -96,6 +100,10 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	public BlueCollectionOnDisk<TestValue> getLongCollection() {
 		return longCollection;
+	}
+	
+	public BlueCollectionOnDisk<Call> getCallCollection() {
+		return callCollection;
 	}
 	
 	public BlueCollectionOnDisk<TestValue> getIntCollection() {

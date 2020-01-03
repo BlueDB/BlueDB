@@ -33,7 +33,6 @@ public class UpdateTask<T extends Serializable> extends QueryTask {
 		try {
 			change = PendingChange.createUpdate(key, value, updater, serializer);
 		} catch(Throwable t) {
-			t.printStackTrace();
 			throw new BlueDbException("Error updating value", t);
 		}
 		recoveryManager.saveChange(change);

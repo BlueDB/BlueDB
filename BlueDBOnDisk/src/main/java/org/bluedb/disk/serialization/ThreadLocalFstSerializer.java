@@ -135,10 +135,17 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			throw new SerializationException("Invalid Object Identified", t); //Don't try to put the object details in the message since any usage of the invalid field will throw an exception. The caused by will contain some good detail
 		}
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Deprecated
+	/** Should only be used by tests */
+	public <T extends Serializable> T cloneWithoutChecks(T object) {
+		return (T) deserializeObjectFromByteArrayWithoutChecks(serializeObjectToByteArrayWithoutChecks(object));
+	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> T clone(T object) {
-		return (T) get().toObject(get().toByteArray(object));
+	public <T extends Serializable> T clone(T object) throws SerializationException {
+		return (T) deserializeObjectFromByteArray(serializeObjectToByteArray(object));
 	}
 }

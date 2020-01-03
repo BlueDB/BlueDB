@@ -10,5 +10,5 @@ public interface BlueSerializer {
 
 	public Object deserializeObjectFromByteArray(byte[] bytes) throws SerializationException;
 
-	public <T extends Serializable> T clone(T object);
+	public <T extends Serializable> T clone(T object) throws SerializationException;
 }

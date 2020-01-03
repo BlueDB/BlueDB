@@ -34,7 +34,6 @@ public class ReplaceTask<T extends Serializable> extends QueryTask {
 		try {
 			change = PendingChange.createUpdate(key, value, mapper, serializer);
 		} catch(Throwable t) {
-			t.printStackTrace();
 			throw new BlueDbException("Error updating value", t);
 		}
 		recoveryManager.saveChange(change);

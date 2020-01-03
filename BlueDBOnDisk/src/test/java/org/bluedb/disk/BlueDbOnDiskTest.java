@@ -601,11 +601,11 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getAllCollectionsFromDisk() throws Exception {
         getTimeCollection();
         List<BlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
-        assertEquals(4, allCollections.size());
+        assertEquals(5, allCollections.size());
         db().collectionBuilder("string", HashGroupedKey.class, String.class).build();
         db().collectionBuilder("long", HashGroupedKey.class, Long.class).build();
         allCollections = db().getAllCollectionsFromDisk();
-        assertEquals(6, allCollections.size());
+        assertEquals(7, allCollections.size());
 	}
 
 	@Test

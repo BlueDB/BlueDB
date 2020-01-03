@@ -3,6 +3,8 @@ package org.bluedb.disk.collection;
 import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -14,6 +16,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.bluedb.TestUtils;
 import org.bluedb.api.Condition;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -31,6 +34,7 @@ import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
@@ -202,6 +206,17 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		}
 		List<String> storedValues = stringCollection.query().getList();
 		assertEquals(n, storedValues.size());
+	}
+
+	@Test
+	public void test_insert_invalid() throws BlueDbException, URISyntaxException, IOException {
+		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
+		
+		try {
+			getCallCollection().insert(invalidCall.getKey(), invalidCall.getValue());
+			fail();
+		} catch (BlueDbException e) {
+		}
 	}
 
 	@Test

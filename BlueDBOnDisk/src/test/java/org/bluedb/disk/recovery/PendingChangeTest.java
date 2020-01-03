@@ -8,6 +8,7 @@ import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.serialization.BlueEntity;
+import org.bluedb.disk.serialization.validation.SerializationException;
 
 public class PendingChangeTest extends BlueDbDiskTestBase {
 
@@ -24,7 +25,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_createInsert() {
+	public void test_createInsert() throws SerializationException {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, getSerializer());
@@ -37,7 +38,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_createUpdate() {
+	public void test_createUpdate() throws SerializationException {
 		BlueKey key = createKey(1, 2);
 		TestValue initialValue = createValue("Joe");
 		Updater<TestValue> updater = ((v) -> v.addCupcake());
@@ -151,7 +152,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_DeleteMultipleTask_toString() {
+	public void test_DeleteMultipleTask_toString() throws SerializationException {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
 		Updater<TestValue> updater = ((v) -> v.addCupcake());
