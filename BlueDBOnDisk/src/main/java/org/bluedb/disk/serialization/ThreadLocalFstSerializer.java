@@ -49,7 +49,9 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		);
 	}
 
-	protected byte[] serializeObjectToByteArrayWithoutChecks(Object o) {
+	@Deprecated
+	/** Should only be used by tests */
+	public byte[] serializeObjectToByteArrayWithoutChecks(Object o) {
 		return get().toByteArray(o);
 	}
 
@@ -92,7 +94,9 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		}
 	}
 	
-	protected Object deserializeObjectFromByteArrayWithoutChecks(byte[] bytes) {
+	@Deprecated
+	/** Should only be used by tests */
+	public Object deserializeObjectFromByteArrayWithoutChecks(byte[] bytes) {
 		return toObject(bytes);
 	}
 

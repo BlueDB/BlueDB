@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import org.bluedb.api.keys.TimeFrameKey;
+
 public class Call implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -137,9 +139,11 @@ public class Call implements Serializable {
 		this.events = events;
 	}
 
-
-	
 	public static Call generateBasicTestCall() {
+		return generateBasicTestCall(-1);
+	}
+	
+	public static Call generateBasicTestCall(long start) {
 		Random r = new Random();
 		
 		UUID callId = UUID.randomUUID();
@@ -147,7 +151,7 @@ public class Call implements Serializable {
 		String group = "";
 		String tag = "";
 		
-		long callStart = r.nextInt(1_000_000);
+		long callStart = start >= 0 ? start : r.nextInt(1_000_000);
 		long ringStart = callStart + r.nextInt(30_000);
 		long talkStart = ringStart + r.nextInt(30_000);
 		long callEnd = talkStart + r.nextInt(30_000);
@@ -216,5 +220,13 @@ public class Call implements Serializable {
 				return;
 			}
 		}
+	}
+	
+	public TimeFrameKey createTimeframeKey() {
+		return new TimeFrameKey(id, start, end);
+	}
+	
+	public Call clone() {
+		return new Call(id, callDirection, callerId, callingParty, receivingParty, group, start, end, tag, accountCodes, notes, events);
 	}
 }
