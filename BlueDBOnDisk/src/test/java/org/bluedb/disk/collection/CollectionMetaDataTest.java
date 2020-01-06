@@ -6,21 +6,22 @@ import static org.junit.Assert.assertNotEquals;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Test;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
 import org.bluedb.disk.TestValueSub;
+import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.junit.Test;
 
 public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
@@ -59,7 +60,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSerializedClassList_exception() throws Exception {
-		Path serializedClassesPath = Paths.get(metaData.getPath().toString(), "serialized_classes");
+		Path serializedClassesPath = FileManager.getNewestVersionPath(metaData.getPath(), CollectionMetaData.FILENAME_SERIALIZED_CLASSES);
 		getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 		try {
 			metaData.getSerializedClassList();  // now this should fail with BlueDbException
@@ -106,29 +107,38 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		assertNull(metaData.getSerializedClassList()); //Doesn't exist to start
 
 		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
-		FileTime lastModifiedTime1 = Files.getLastModifiedTime(metaData.serializedClassesPath);
+		Path file1Path = FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES);
+		FileTime lastModifiedTime1 = Files.getLastModifiedTime(file1Path);
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1); //Now contains defaults and value 1
 
 		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1Again); //Shouldn't change
-		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't be overwritten
+		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't be overwritten
+		assertEquals(file1Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 
 		Class<? extends Serializable>[] afterAdding1AgainInWeirdOrder = metaData.getAndAddToSerializedClassList(TestValue.class, testValue1PlusDefaultsShuffled);
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1AgainInWeirdOrder); //Shouldn't change
-		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't be overwritten
+		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't be overwritten
+		assertEquals(file1Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 
 		Class<? extends Serializable>[] afterAddingValues = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList(TestValue2.class, TestValueSub.class));
-		FileTime lastModifiedTime2 = Files.getLastModifiedTime(metaData.serializedClassesPath);
+		Path file2Path = FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES);
+		FileTime lastModifiedTime2 = Files.getLastModifiedTime(file2Path);
 		assertArrayEquals(testValuesPlusDefaults, afterAddingValues); //Contains all values now
-		assertNotEquals(lastModifiedTime1, lastModifiedTime2); //It got overwritten
+		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Original file shouldn't have changed
+		assertNotEquals(file1Path, file2Path); //Newest file is no longer the first file
 		
 		Class<? extends Serializable>[] afterAddingValuesBackwards = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList(TestValueSub.class, TestValue2.class));
 		assertArrayEquals(testValuesPlusDefaults, afterAddingValuesBackwards); //Shouldn't change
-		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't change
+		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't change
+		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(file2Path)); //Shouldn't change
+		assertEquals(file2Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 		
 		Class<? extends Serializable>[] afterAddingEverythingInWeirdOrder = metaData.getAndAddToSerializedClassList(TestValue.class, testValuesPlusDefaultsShuffled);
 		assertArrayEquals(testValuesPlusDefaults, afterAddingEverythingInWeirdOrder); //Shouldn't change
-		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(metaData.serializedClassesPath)); //Shouldn't change
+		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't change
+		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(file2Path)); //Shouldn't change
+		assertEquals(file2Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 	}
 
 	private Class<? extends Serializable>[] getClassesToAlwaysRegister() {

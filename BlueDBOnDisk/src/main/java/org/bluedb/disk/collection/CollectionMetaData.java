@@ -1,5 +1,6 @@
 package org.bluedb.disk.collection;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,14 +17,13 @@ import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class CollectionMetaData {
 	
-	private static final String FILENAME_SERIALIZED_CLASSES = "serialized_classes";
+	public static final String FILENAME_SERIALIZED_CLASSES = "serialized_classes";
 	private static final String FILENAME_KEY_TYPE = "key_type";
 	private static final String FILENAME_SEGMENT_SIZE = "segment_size";
 	private static final String META_DATA_FOLDER = ".meta";
 	
 	final Path folderPath;
 	final FileManager fileManager;
-	final Path serializedClassesPath;
 	final Path keyTypePath;
 	final Path segmentSizePath;
 
@@ -33,7 +33,6 @@ public class CollectionMetaData {
 		
 		fileManager = new FileManager(serializer);  
 		folderPath = Paths.get(collectionPath.toString(), META_DATA_FOLDER);
-		serializedClassesPath = Paths.get(folderPath.toString(), FILENAME_SERIALIZED_CLASSES);
 		keyTypePath = Paths.get(folderPath.toString(), FILENAME_KEY_TYPE);
 		segmentSizePath = Paths.get(folderPath.toString(), FILENAME_SEGMENT_SIZE);
 	}
@@ -54,19 +53,19 @@ public class CollectionMetaData {
 	}
 
 	public List<Class<? extends Serializable>> getSerializedClassList() throws BlueDbException {
-		Object savedValue = fileManager.loadObject(serializedClassesPath);
 		try {
+			Object savedValue = fileManager.loadVersionedObject(folderPath, FILENAME_SERIALIZED_CLASSES);
 			@SuppressWarnings("unchecked")
 			List<Class<? extends Serializable>> typedList = (List<Class<? extends Serializable>>) savedValue;
 			return typedList;
-		} catch(ClassCastException e) {
+		} catch(ClassCastException | IOException e) {
 			e.printStackTrace();
-			throw new BlueDbException("Serialized class list in collection data is corrupted: " + serializedClassesPath, e);
+			throw new BlueDbException("Serialized class list in collection data is corrupted: " + Paths.get(folderPath.toString(), FILENAME_SERIALIZED_CLASSES), e);
 		}
 	}
 
 	public void updateSerializedClassList(List<Class<? extends Serializable>> classes) throws BlueDbException {
-		fileManager.saveObject(serializedClassesPath, classes);
+		fileManager.saveVersionedObject(folderPath, FILENAME_SERIALIZED_CLASSES, classes);
 	}
 
 	public void saveKeyType(Class<? extends BlueKey> keyType) throws BlueDbException {
