@@ -154,6 +154,8 @@ public class FileManagerTest extends TestCase {
 		Files.createFile(legacyPath);
 		testPaths.add(legacyPath);
 		
+		assertEquals(legacyPath, FileManager.getNewestVersionPath(tempDirPath, filename));
+		
 		long maxTime = -1;
 		Path maxPath = null;
 		for(int i = 0; i < 1000; i++) {
