@@ -17,6 +17,8 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.CollectionMetaData;
+import org.bluedb.disk.file.FileManager;
 import org.bluedb.tasks.AsynchronousTestTask;
 import org.bluedb.tasks.TestTask;
 import org.bluedb.zip.ZipUtils;
@@ -642,7 +644,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_backup_fail() throws Exception {
 		@SuppressWarnings("rawtypes")
         BlueCollectionOnDisk newUntypedCollection = db.getUntypedCollectionForBackup(getTimeCollectionName());
-        Path serializedClassesPath = Paths.get(newUntypedCollection.getPath().toString(), ".meta", "serialized_classes");
+        Path serializedClassesPath = FileManager.getNewestVersionPath(newUntypedCollection.getPath().resolve(".meta"), CollectionMetaData.FILENAME_SERIALIZED_CLASSES);
         getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 
         Path tempFolder = createTempFolder().toPath();

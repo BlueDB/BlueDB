@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Comparator;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.lock.BlueReadLock;
@@ -13,6 +15,7 @@ import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class FileManager {
+	public static final String TIMESTAMP_VERSION_FORMAT = "yyyy-MM-dd_HH-mm-ss-SSS";
 
 	private final BlueSerializer serializer;
 	private final LockManager<Path> lockManager;
@@ -50,6 +53,34 @@ public class FileManager {
 				FileUtils.moveFile(tmpPath, targetFileLock);
 			}
 		}
+	}
+
+	public Object loadVersionedObject(Path folderPath, String filename) throws BlueDbException, IOException {
+		Path newestVersionPath = getNewestVersionPath(folderPath, filename);
+		if(newestVersionPath == null) {
+			return null;
+		}
+		
+		return loadObject(newestVersionPath);
+	}
+
+	public void saveVersionedObject(Path folderPath, String filename, Object o) throws BlueDbException {
+		SimpleDateFormat postfixFormat = new SimpleDateFormat(TIMESTAMP_VERSION_FORMAT);
+		String postfix = postfixFormat.format(System.currentTimeMillis());
+		
+		saveObject(folderPath.resolve(filename + "_" + postfix), o);
+	}
+	
+	public static Path getNewestVersionPath(Path folderPath, String filename) throws IOException {
+		if(!Files.isDirectory(folderPath)) {
+			return null;
+		}
+		
+		return Files.list(folderPath)
+				.filter(path -> path.getFileName().toString().startsWith(filename))
+				.sorted(Comparator.comparing(Path::getFileName, Comparator.comparing(Path::toString)).reversed())
+				.findFirst()
+				.orElse(null);
 	}
 
 	public void lockMoveFileUnlock(Path src, Path dst) throws BlueDbException {
