@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -14,6 +15,9 @@ import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.IndexableTestValue;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.models.calls.Call;
+import org.bluedb.disk.serialization.BlueEntity;
+import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class TestUtils {
 	public static Path getResourcePath(String relativePath) throws URISyntaxException, IOException {
@@ -22,6 +26,14 @@ public class TestUtils {
 			pathToStartFrom = pathToStartFrom.resolve("../").toRealPath();
 		}
 		return pathToStartFrom.resolve("src/test/resources").resolve(relativePath);
+	}
+
+	public static BlueEntity<Call> loadCorruptCall() throws URISyntaxException, IOException {
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		Path invalidObjectPath = TestUtils.getResourcePath("corruptCall-1.bin");
+		@SuppressWarnings({ "deprecation", "unchecked" })
+		BlueEntity<Call> invalidCall = (BlueEntity<Call>) serializer.deserializeObjectFromByteArrayWithoutChecks(Files.readAllBytes(invalidObjectPath));
+		return invalidCall;
 	}
 
 	public static void assertThrowable(Class<? extends Throwable> expected, Throwable error) {

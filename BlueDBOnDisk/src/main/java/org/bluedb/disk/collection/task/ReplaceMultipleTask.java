@@ -15,6 +15,7 @@ import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
+import org.bluedb.disk.serialization.validation.SerializationException;
 
 public class ReplaceMultipleTask<T extends Serializable> extends QueryTask {
 	private final BlueCollectionOnDisk<T> collection;
@@ -35,7 +36,6 @@ public class ReplaceMultipleTask<T extends Serializable> extends QueryTask {
 		try {
 			changes = createChanges(entities, mapper);
 		} catch(Throwable t) {
-			t.printStackTrace();
 			throw new BlueDbException("Error updating values", t);
 		}
 		
@@ -48,16 +48,20 @@ public class ReplaceMultipleTask<T extends Serializable> extends QueryTask {
 		recoveryManager.markComplete(change);
 	}
 
-	private List<IndividualChange<T>> createChanges(List<BlueEntity<T>> entities, Mapper<T> mapper) {
+	protected List<IndividualChange<T>> createChanges(List<BlueEntity<T>> entities, Mapper<T> mapper) {
 		List<IndividualChange<T>> updates = new ArrayList<>();
 		for (BlueEntity<T> entity: entities) {
-			IndividualChange<T> update = createChange(entity, mapper);
-			updates.add(update);
+			try {
+				IndividualChange<T> update = createChange(entity, mapper);
+				updates.add(update);
+			} catch(SerializationException e) {
+				new BlueDbException("Failed to clone objects that will be replaced by a query. This object will be skipped. Key: " + entity.getKey(), e);
+			}
 		}
 		return updates;
 	}
 	
-	private IndividualChange<T> createChange(BlueEntity<T> entity, Mapper<T> mapper) {
+	private IndividualChange<T> createChange(BlueEntity<T> entity, Mapper<T> mapper) throws SerializationException {
 		BlueSerializer serializer = collection.getSerializer();
 		BlueKey key = entity.getKey();
 		T oldValue = serializer.clone(entity.getValue());

@@ -149,7 +149,7 @@ public class PerformanceTests {
 		}
 	}
 
-	private void serializeListToFileOneObjectAtATime() throws FileNotFoundException, IOException {
+	private void serializeListToFileOneObjectAtATime() throws FileNotFoundException, IOException, SerializationException {
 		try(DataOutputStream dos = new DataOutputStream(new FileOutputStream(file.toFile()))) {
 			for(TestValue value : values) {
 				byte[] bytes = serializer.serializeObjectToByteArray(value);
@@ -210,7 +210,7 @@ public class PerformanceTests {
 //		return values;
 //	}
 
-	private void serializeObject(Object obj) throws FileNotFoundException, IOException {
+	private void serializeObject(Object obj) throws FileNotFoundException, IOException, SerializationException {
 		byte[] bytes = serializer.serializeObjectToByteArray(obj);
 
 		try(FileOutputStream fos = new FileOutputStream(file.toFile())) {

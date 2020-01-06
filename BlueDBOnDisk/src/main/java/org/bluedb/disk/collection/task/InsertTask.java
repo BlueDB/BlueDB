@@ -28,7 +28,13 @@ public class InsertTask<T extends Serializable> extends QueryTask {
 		if (collection.contains(key)) {
 			throw new DuplicateKeyException("key already exists", key);
 		}
-		PendingChange<T> change = PendingChange.createInsert(key, value, serializer);
+		PendingChange<T> change;
+		try {
+			change = PendingChange.createInsert(key, value, serializer);
+		} catch(Throwable t) {
+			throw new BlueDbException("Error inserting value", t);
+		}
+		
 		recoveryManager.saveChange(change);
 		change.apply(collection);
 		recoveryManager.markComplete(change);

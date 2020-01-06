@@ -3,14 +3,16 @@ package org.bluedb.disk.serialization;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-import org.junit.Test;
-
+import org.bluedb.TestUtils;
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
@@ -23,11 +25,17 @@ import org.bluedb.disk.models.calls.RecordingStatus;
 import org.bluedb.disk.models.calls.Timeframe;
 import org.bluedb.disk.serialization.validation.ObjectValidation;
 import org.bluedb.disk.serialization.validation.SerializationException;
+import org.junit.Test;
 
 public class ThreadLocalFstSerializerTest {
 	
 	@Test
-	public void testStaticRegisteredClassesProblem() {
+	public void testStaticRegisteredClassesProblem() throws SerializationException {
+		/*
+		 * I found a weird issue with FST that I was able to work around by changing how we
+		 * use FST a little bit. This test keeps someone from changing it back to the other way
+		 * since that way has an issue.
+		 */
 		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer(TestValue.class);
 		TestValue value1 = new TestValue("Derek", 1);
 		TestValue clone1 = s1.clone(value1);
@@ -53,6 +61,37 @@ public class ThreadLocalFstSerializerTest {
 		TestValue newValue = (TestValue) s2.deserializeObjectFromByteArray(bytes);
 		
 		assertEquals(originalValue, newValue);
+	}
+	
+	@Test
+	public void testSerializingInvalidObject() throws URISyntaxException, BlueDbException, IOException {
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		Object invalidObject = TestUtils.loadCorruptCall();
+		
+		try {
+			serializer.validateObjectBeforeSerializing(invalidObject);
+			fail(); //It should have thrown an exception
+		} catch(SerializationException e) {
+		}
+		
+		try {
+			serializer.serializeValidObject(invalidObject);
+			fail(); //It should have thrown an exception
+		} catch(SerializationException e) {
+		}
+		
+		try {
+			serializer.serializeObjectToByteArray(invalidObject);
+			fail(); //It should have thrown an exception
+		} catch(SerializationException e) {
+		}
+		
+		byte[] invalidBytes = serializer.serializeObjectToByteArrayWithoutChecks(invalidObject);
+		try {
+			serializer.validateBytesAfterSerialization(invalidBytes);
+			fail(); //It should have thrown an exception
+		} catch(SerializationException e) {
+		}
 	}
 	
 	@Test
@@ -86,7 +125,7 @@ public class ThreadLocalFstSerializerTest {
 				
 				mutateCall((Call) ((BlueEntity<?>) originalObject).getValue(), random);
 				
-				byte[] mutatedBytes = serializer.serializeObjectToByteArray(originalObject);
+				byte[] mutatedBytes = serializer.serializeObjectToByteArrayWithoutChecks(originalObject);
 				
 				mutatedCallsAsBytes.add(mutatedBytes);
 			}
@@ -96,12 +135,12 @@ public class ThreadLocalFstSerializerTest {
 		}
 	}
 	
-	private List<byte[]> generateTestCallsAsBytes(int callCountPerTest, ThreadLocalFstSerializer serializer) {
+	private List<byte[]> generateTestCallsAsBytes(int callCountPerTest, ThreadLocalFstSerializer serializer) throws SerializationException {
 		List<byte[]> testCallsAsBytes = new LinkedList<>();
 		for(int i = 0; i < callCountPerTest; i++) {
 			Call call = CallV2.generateBasicTestCall();
 			BlueEntity<Call> entity = new BlueEntity<Call>(new TimeFrameKey(call.getId(), call.getStart(), call.getEnd()), call);
-			testCallsAsBytes.add(serializer.serializeObjectToByteArray(entity));
+			testCallsAsBytes.add(serializer.serializeObjectToByteArrayWithoutChecks(entity));
 		}
 		return testCallsAsBytes;
 	}

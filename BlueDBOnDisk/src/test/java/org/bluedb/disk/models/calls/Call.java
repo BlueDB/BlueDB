@@ -2,9 +2,13 @@ package org.bluedb.disk.models.calls;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+
+import org.bluedb.api.keys.TimeFrameKey;
+import org.bluedb.disk.serialization.BlueEntity;
 
 public class Call implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -136,10 +140,24 @@ public class Call implements Serializable {
 	public void setEvents(List<CallEvent> events) {
 		this.events = events;
 	}
-
-
 	
+	public static BlueEntity<Call> generateBasicTestCallEntity() {
+		return wrapCallAsEntity(generateBasicTestCall());
+	}
+	
+	public static BlueEntity<Call> generateBasicTestCallEntity(long start) {
+		return wrapCallAsEntity(generateBasicTestCall(start));
+	}
+	
+	public static BlueEntity<Call> wrapCallAsEntity(Call call) {
+		return new BlueEntity<Call>(call.createTimeframeKey(), call);
+	}
+
 	public static Call generateBasicTestCall() {
+		return generateBasicTestCall(-1);
+	}
+	
+	public static Call generateBasicTestCall(long start) {
 		Random r = new Random();
 		
 		UUID callId = UUID.randomUUID();
@@ -147,7 +165,7 @@ public class Call implements Serializable {
 		String group = "";
 		String tag = "";
 		
-		long callStart = r.nextInt(1_000_000);
+		long callStart = start >= 0 ? start : r.nextInt(1_000_000);
 		long ringStart = callStart + r.nextInt(30_000);
 		long talkStart = ringStart + r.nextInt(30_000);
 		long callEnd = talkStart + r.nextInt(30_000);
@@ -173,9 +191,14 @@ public class Call implements Serializable {
 		Call call = new Call(callId, callDirection, callerId, callingParty, receivingParty, group, callStart, callEnd, tag, accountCodes, notes, events);
 		return call;
 	}
+	
+	public static List<Class<? extends Serializable>> getClassesToRegisterAsList() {
+		return Arrays.asList(getClassesToRegister());
+	}
 
-	public static Class<?>[] getClassesToRegister() {
-		return new Class<?>[] {
+	@SuppressWarnings("unchecked")
+	public static Class<? extends Serializable>[] getClassesToRegister() {
+		return (Class<? extends Serializable>[]) new Class<?>[] {
 			UUID.class,
 			CallDirection.class,
 			Note.class,
@@ -216,5 +239,13 @@ public class Call implements Serializable {
 				return;
 			}
 		}
+	}
+	
+	public TimeFrameKey createTimeframeKey() {
+		return new TimeFrameKey(id, start, end);
+	}
+	
+	public Call clone() {
+		return new Call(id, callDirection, callerId, callingParty, receivingParty, group, start, end, tag, accountCodes, notes, events);
 	}
 }
