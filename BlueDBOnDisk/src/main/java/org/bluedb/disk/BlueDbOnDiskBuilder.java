@@ -3,6 +3,8 @@ package org.bluedb.disk;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.bluedb.api.BlueDb;
+
 /**
  * A builder for the {@link BlueDbOnDisk} class
  */
@@ -21,9 +23,9 @@ public class BlueDbOnDiskBuilder {
 
 	/**
 	 * Builds the {@link BlueDbOnDisk} object
-	 * @return the {@link BlueDbOnDisk} built
+	 * @return the {@link BlueDb} built
 	 */
-	public BlueDbOnDisk build() {
+	public BlueDb build() {
 		return new BlueDbOnDisk(path);
 	}
 	

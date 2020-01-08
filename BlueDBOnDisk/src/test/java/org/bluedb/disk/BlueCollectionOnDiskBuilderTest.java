@@ -51,7 +51,7 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 				.build();
 		db.shutdown();
 		db.awaitTermination(1, TimeUnit.MINUTES);
-		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();  // reopen
+		db = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();  // reopen
 		
 		BlueCollectionOnDisk<TestValue> hourCollectionReopenedAsDaily = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_DAY)

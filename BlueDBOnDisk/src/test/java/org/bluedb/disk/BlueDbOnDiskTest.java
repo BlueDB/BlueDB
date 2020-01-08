@@ -39,7 +39,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 
 
-        BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(getPath()).build();
+        BlueDbOnDisk reopenedDatbase = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
         assertNotNull(reopenedDatbase.getUntypedCollectionForBackup(timeCollectionName));  // this one isn't broken
 		try {
 			reopenedDatbase.getUntypedCollectionForBackup("new_collection"); // we broke it above
@@ -629,7 +629,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		ZipUtils.extractFiles(backedUpPath, restoredPath);
 		Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
 
-		BlueDbOnDisk restoredDb = new BlueDbOnDiskBuilder().setPath(restoredBlueDbPath).build();
+		BlueDbOnDisk restoredDb = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredBlueDbPath).build();
         BlueCollectionOnDisk<TestValue> restoredCollection = restoredDb.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 //        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
 		assertTrue(restoredCollection.contains(key1At1));
@@ -650,7 +650,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         Path tempFolder = createTempFolder().toPath();
         tempFolder.toFile().deleteOnExit();
         Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
-        BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(getPath()).build();
+        BlueDbOnDisk reopenedDatbase = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
         try {
             reopenedDatbase.backup(backedUpPath);
             fail();  // because the "test2" collection was broken, the backup should error out;

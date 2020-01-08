@@ -63,7 +63,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	protected void setUp() throws Exception {
 		filesToDelete = new ArrayList<>();
 		dbPath = createTempFolder().toPath();
-		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
+		db = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();
 		timeCollection = db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
 		hashGroupedCollection = db.collectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
 		longCollection = db.collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();

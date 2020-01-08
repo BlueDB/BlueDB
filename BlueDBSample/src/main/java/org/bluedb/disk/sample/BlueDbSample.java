@@ -34,7 +34,7 @@ public class BlueDbSample {
 	
 	public BlueDbSample() throws BlueDbException {
 		db = new BlueDbOnDiskBuilder()
-				.setPath(Paths.get("", "sample-db"))
+				.withPath(Paths.get("", "sample-db"))
 				.build();
 		
 		db.collectionBuilder(NON_TIME_COLLECTION_NAME, UUIDKey.class, NonTimeObject.class)

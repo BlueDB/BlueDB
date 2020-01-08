@@ -91,7 +91,7 @@ public class LegacyCollectionSupportTest extends TestCase {
 			ZipUtils.extractFiles(backupPath, tmpDirPath);
 		}
 		
-		db = new BlueDbOnDiskBuilder()
+		db = (BlueDbOnDisk) new BlueDbOnDiskBuilder()
 				.setPath(dbPath)
 				.build();
 		

@@ -526,7 +526,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	public void test_determineKeyType() throws BlueDbException {
 		db().collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();  // regular instantiation approach
 
-		BlueDbOnDisk reopenedDatbase = new BlueDbOnDiskBuilder().setPath(db().getPath()).build();  // reopen database without collections instantiated
+		BlueDbOnDisk reopenedDatbase = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(db().getPath()).build();  // reopen database without collections instantiated
 
 		try {
 			reopenedDatbase.collectionBuilder(getTimeCollectionName(), HashGroupedKey.class, TestValue.class).build();  // try to open with the wrong key type

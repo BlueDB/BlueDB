@@ -74,8 +74,8 @@ public class SegmentSizeSupportTest {
 		
 		keySupplier = createKeySupplier(segmentSize.getKeyType());
 		
-		db = new BlueDbOnDiskBuilder()
-				.setPath(dbPath)
+		db = (BlueDbOnDisk) new BlueDbOnDiskBuilder()
+				.withPath(dbPath)
 				.build();
 		
 		this.segmentSize = segmentSize;
