@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueDb;
+import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.IntegerIndexKeyExtractor;
@@ -25,7 +26,7 @@ public class QuickStart {
 		
 		BlueDb blueDb = createBlueDbInstance(path);
 		
-		BlueCollection<Ball> ballCollection = createCollectionInstance(blueDb);
+		BlueTimeCollection<Ball> ballCollection = createCollectionInstance(blueDb);
 		
 		TimeKey key = insertValueUsingTime(ballCollection);
 		
@@ -82,8 +83,8 @@ public class QuickStart {
 	}
 
 	// Create a collection instance.
-	private static BlueCollection<Ball> createCollectionInstance(BlueDb blueDb) throws BlueDbException {
-		BlueCollection<Ball> ballCollection = blueDb.collectionBuilder("ball_collection", TimeKey.class, Ball.class).build();
+	private static BlueTimeCollection<Ball> createCollectionInstance(BlueDb blueDb) throws BlueDbException {
+		BlueTimeCollection<Ball> ballCollection = blueDb.getTimeCollectionBuilder("ball_collection", TimeKey.class, Ball.class).build();
 		return ballCollection; //[Line not needed on website]
 	}
 
@@ -133,7 +134,7 @@ public class QuickStart {
 	}
 
 	// Query objects mapped to a TimeKey within the last hour, meeting a filter.
-	private static void queryValuesInTimeframeMatchingCondition(BlueCollection<Ball> ballCollection) throws BlueDbException {
+	private static void queryValuesInTimeframeMatchingCondition(BlueTimeCollection<Ball> ballCollection) throws BlueDbException {
 		long now = System.currentTimeMillis();
 		long oneHourAgo = now - 60 * 60 * 1000;
 		List<Ball> ballsOfRadius2= ballCollection.query()

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueDb;
+import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -37,13 +38,13 @@ public class BlueDbSample {
 				.withPath(Paths.get("", "sample-db"))
 				.build();
 		
-		db.collectionBuilder(NON_TIME_COLLECTION_NAME, UUIDKey.class, NonTimeObject.class)
+		db.getCollectionBuilder(NON_TIME_COLLECTION_NAME, UUIDKey.class, NonTimeObject.class)
 			.withOptimizedClasses(getNonTimeObjectClassesToRegister())
 			.build();
-		db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TimeObject.class)
+		db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TimeObject.class)
 			.withOptimizedClasses(getTimeObjectClassesToRegister())
 			.build();
-		db.collectionBuilder(TIMEFRAME_COLLECTION_NAME, TimeFrameKey.class, TimeFrameObject.class)
+		db.getTimeCollectionBuilder(TIMEFRAME_COLLECTION_NAME, TimeFrameKey.class, TimeFrameObject.class)
 			.withOptimizedClasses(getTimeframeObjectClassesToRegister())
 			.build();
 		
@@ -80,8 +81,8 @@ public class BlueDbSample {
 		return db.getCollection(TIME_COLLECTION_NAME, TimeObject.class);
 	}
 	
-	private BlueCollection<TimeFrameObject> getTimeframeCollection() throws BlueDbException {
-		return db.getCollection(TIME_COLLECTION_NAME, TimeFrameObject.class);
+	private BlueTimeCollection<TimeFrameObject> getTimeframeCollection() throws BlueDbException {
+		return db.getTimeCollection(TIME_COLLECTION_NAME, TimeFrameObject.class);
 	}
 
 	private BlueIndex<StringKey, TimeObject> getTimeIndex() throws BlueDbException {

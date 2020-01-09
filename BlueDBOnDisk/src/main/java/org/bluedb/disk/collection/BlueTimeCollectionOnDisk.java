@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.bluedb.api.BlueCollection;
-import org.bluedb.api.BlueQuery;
+import org.bluedb.api.BlueTimeCollection;
+import org.bluedb.api.BlueTimeQuery;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
@@ -21,17 +21,17 @@ import org.bluedb.disk.collection.task.DeleteTask;
 import org.bluedb.disk.collection.task.InsertTask;
 import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateTask;
-import org.bluedb.disk.query.BlueQueryOnDisk;
+import org.bluedb.disk.query.BlueTimeQueryOnDisk;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 
-public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCollectionOnDisk<T> implements BlueCollection<T> {
+public class BlueTimeCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueTimeCollectionOnDisk<T> implements BlueTimeCollection<T> {
 
-	public BlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
-		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses);
+	public BlueTimeCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 	}
 
-	public BlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
-		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
+	public BlueTimeCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses);
 	}
 	
 	@Override
@@ -40,10 +40,11 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCo
 	}
 
 	@Override
-	public BlueQuery<T> query() {
-		return new BlueQueryOnDisk<T>(this);
+	public BlueTimeQuery<T> query() {
+		return new BlueTimeQueryOnDisk<T>(this);
 	}
 
+	//TODO: Remember that this is duplicated so you might want to pull of some strategy pattern shiz to share code here
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		ensureCorrectKeyType(key);
@@ -51,7 +52,6 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCo
 		executeTask(insertTask);
 	}
 
-	//TODO: Remember that this is duplicated so you might want to pull of some strategy pattern shiz to share code here
 	@Override
 	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException {
 		ensureCorrectKeyTypes(values.keySet());
@@ -86,4 +86,5 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCo
 		Runnable deleteTask = new DeleteTask<T>(this, key);
 		executeTask(deleteTask);
 	}
+
 }
