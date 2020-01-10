@@ -5,17 +5,17 @@ import java.util.NoSuchElementException;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class UpdateTask<T extends Serializable> extends QueryTask {
-	private final BlueCollectionOnDisk<T> collection;
+	private final ReadOnlyBlueCollectionOnDisk<T> collection;
 	private final BlueKey key;
 	private final Updater<T> updater;
 
-	public UpdateTask(BlueCollectionOnDisk<T> collection, BlueKey key, Updater<T> updater) {
+	public UpdateTask(ReadOnlyBlueCollectionOnDisk<T> collection, BlueKey key, Updater<T> updater) {
 		this.collection = collection;
 		this.key = key;
 		this.updater = updater;

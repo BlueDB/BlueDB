@@ -16,7 +16,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BatchUtils;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
 import org.bluedb.disk.file.FileManager;
@@ -34,13 +34,13 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 
 	private final static String FILE_KEY_EXTRACTOR = ".extractor";
 
-	private final BlueCollectionOnDisk<T> collection;
+	private final ReadOnlyBlueCollectionOnDisk<T> collection;
 	private final KeyExtractor<I, T> keyExtractor;
 	private final FileManager fileManager;
 	private final SegmentManager<BlueKey> segmentManager;
 	private final String indexName;
 
-	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(ReadOnlyBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
@@ -50,7 +50,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return index;
 	}
 
-	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(BlueCollectionOnDisk<T> collection, BlueIndexOnDisk<K, T> index) throws BlueDbException {
+	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadOnlyBlueCollectionOnDisk<T> collection, BlueIndexOnDisk<K, T> index) throws BlueDbException {
 		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
 			while (iterator.hasNext()) {
@@ -60,7 +60,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		}
 	}
 
-	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(BlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(ReadOnlyBlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		@SuppressWarnings("unchecked")
@@ -72,7 +72,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		return keyExtractor.getType();
 	}
 
-	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
+	private BlueIndexOnDisk(ReadOnlyBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
 		this.fileManager = collection.getFileManager();

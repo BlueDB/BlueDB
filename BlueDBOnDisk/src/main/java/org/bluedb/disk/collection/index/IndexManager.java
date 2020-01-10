@@ -13,7 +13,7 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.recovery.IndividualChange;
 
@@ -21,10 +21,10 @@ public class IndexManager<T extends Serializable> {
 
 	private static final String INDEXES_SUBFOLDER = ".index";
 
-	private final BlueCollectionOnDisk<T> collection;
+	private final ReadOnlyBlueCollectionOnDisk<T> collection;
 	private Map<String, BlueIndexOnDisk<ValueKey, T>> indexesByName;
 
-	public IndexManager(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+	public IndexManager(ReadOnlyBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		this.collection = collection;
 		indexesByName = getIndexesFromDisk(collection, collectionPath);
 	}
@@ -73,7 +73,7 @@ public class IndexManager<T extends Serializable> {
 		}
 	}
 
-	private Map<String, BlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+	private Map<String, BlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(ReadOnlyBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		Map<String, BlueIndexOnDisk<ValueKey, T>> map = new HashMap<>();
 		Path indexesPath = Paths.get(collectionPath.toString(), INDEXES_SUBFOLDER);
 		List<File> subfolders = FileUtils.getSubFolders(indexesPath.toFile());
