@@ -37,7 +37,7 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 
 	@Override
 	public <K extends BlueKey, V extends Serializable> BlueTimeCollectionBuilder<K, V> getTimeCollectionBuilder(String name, Class<K> keyType, Class<V> valueType) {
-		return new BlueTimeCollectionBuilderOnDisk<>(this, name, keyType, valueType); //TODO: Should this restrict key type to only TimeKey and/or throw exception if it isn't a TimeKey?
+		return new BlueTimeCollectionOnDiskBuilder<>(this, name, keyType, valueType); //TODO: Should this restrict key type to only TimeKey and/or throw exception if it isn't a TimeKey?
 	}
 
 	@Deprecated
