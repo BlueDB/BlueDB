@@ -1,5 +1,5 @@
 apply plugin: 'java'
-version = '2.0.7'
+version = '2.0.8'
 
 subprojects {
     apply plugin: 'java'
@@ -21,6 +21,7 @@ project(':BlueDBOnDisk') {
 
 def onDiskProjects = [':BlueDB',':BlueDBOnDisk']
 task onDiskJar(type: Jar) {
+	group 'deploy'
 	manifest {
         attributes(
             'Version'       : "${version}",
