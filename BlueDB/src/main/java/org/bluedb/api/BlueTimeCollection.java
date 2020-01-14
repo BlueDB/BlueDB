@@ -10,7 +10,7 @@ import org.bluedb.api.keys.TimeKey;
  * A collection has a name (to distinguish between collections in a {@link BlueDb} instance), a key type, and a value type.
  * @param <V> the object type of values to be serialized into the collection
  */
-public interface BlueTimeCollection<V extends Serializable> extends BlueCollection<V>, ReadOnlyBlueTimeCollection<V> {
+public interface BlueTimeCollection<V extends Serializable> extends BlueCollection<V>, ReadableBlueTimeCollection<V> {
 
 	/**
 	 * Creates a {@link BlueTimeQuery} object which can be used to build and execute a query against this collection.

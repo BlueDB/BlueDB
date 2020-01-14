@@ -24,7 +24,7 @@ import org.bluedb.api.keys.ValueKey;
  * A collection has a name (to distinguish between collections in a {@link BlueDb} instance), a key type, and a value type.
  * @param <V> the object type of values to be serialized into the collection
  */
-public interface BlueCollection<V extends Serializable> extends ReadOnlyBlueCollection<V> {
+public interface BlueCollection<V extends Serializable> extends ReadableBlueCollection<V> {
 
 	/**
 	 * Creates (or returns existing) {@link BlueIndex} that maps objects of type {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link IntegerKey}, {@link LongKey}) to values in the collection.

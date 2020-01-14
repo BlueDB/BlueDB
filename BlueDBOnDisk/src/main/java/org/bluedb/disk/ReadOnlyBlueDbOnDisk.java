@@ -9,16 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.bluedb.api.ReadOnlyBlueCollection;
-import org.bluedb.api.ReadOnlyBlueDb;
-import org.bluedb.api.ReadOnlyBlueTimeCollection;
+import org.bluedb.api.ReadableBlueCollection;
+import org.bluedb.api.ReadableBlueDb;
+import org.bluedb.api.ReadableBlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 
-public class ReadOnlyBlueDbOnDisk implements ReadOnlyBlueDb {
+public class ReadOnlyBlueDbOnDisk implements ReadableBlueDb {
 
 	protected final Path path;
 	protected final BackupManager backupManager;
@@ -36,7 +36,7 @@ public class ReadOnlyBlueDbOnDisk implements ReadOnlyBlueDb {
 	//TODO: Should getTimeCollection throw an exception if the key ove the collection isn't a TimeKey?
 
 	@Override
-	public <T extends Serializable> ReadOnlyBlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
+	public <T extends Serializable> ReadableBlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
 			ReadOnlyBlueCollectionOnDisk<?> untypedCollection = collections.get(name);
 			if (untypedCollection == null) {
@@ -44,7 +44,7 @@ public class ReadOnlyBlueDbOnDisk implements ReadOnlyBlueDb {
 			}
 			if (untypedCollection.getType().equals(valueType)) {
 				@SuppressWarnings("unchecked")
-				ReadOnlyBlueCollection<T> typedCollection = (ReadOnlyBlueCollection<T>) untypedCollection;
+				ReadableBlueCollection<T> typedCollection = (ReadableBlueCollection<T>) untypedCollection;
 				return typedCollection;
 			} else {
 				throw new BlueDbException("Cannot cast BlueCollection<" + untypedCollection.getType() + "> to BlueCollection<" + valueType + ">");
@@ -53,12 +53,12 @@ public class ReadOnlyBlueDbOnDisk implements ReadOnlyBlueDb {
 	}
 
 	@Override
-	public <V extends Serializable> ReadOnlyBlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException {
-		ReadOnlyBlueCollection<V> collection = getCollection(name, valueType);
-		if(collection instanceof ReadOnlyBlueTimeCollection) {
-			return (ReadOnlyBlueTimeCollection<V>) collection;
+	public <V extends Serializable> ReadableBlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException {
+		ReadableBlueCollection<V> collection = getCollection(name, valueType);
+		if(collection instanceof ReadableBlueTimeCollection) {
+			return (ReadableBlueTimeCollection<V>) collection;
 		} else {
-			throw new BlueDbException("Cannot cast " + collection.getClass() + " to " + ReadOnlyBlueTimeCollection.class);
+			throw new BlueDbException("Cannot cast " + collection.getClass() + " to " + ReadableBlueTimeCollection.class);
 		}
 	}
 

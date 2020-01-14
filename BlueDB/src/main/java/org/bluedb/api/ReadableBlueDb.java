@@ -6,38 +6,38 @@ import java.util.concurrent.TimeUnit;
 import org.bluedb.api.exceptions.BlueDbException;
 
 /**
- * {@link ReadOnlyBlueDb} is a set of {@link ReadOnlyBlueCollection} instances. Each collection must have a different name and can be of 
+ * {@link ReadableBlueDb} is a set of {@link ReadableBlueCollection} instances. Each collection must have a different name and can be of 
  * a different type.
  */
-public interface ReadOnlyBlueDb {
+public interface ReadableBlueDb {
 	
 	/**
-	 * Gets an existing {@link ReadOnlyBlueCollection}
+	 * Gets an existing {@link ReadableBlueCollection}
 	 * 
 	 * @param <V> the object type of values to be serialized into the collection
 	 * 
 	 * @param name The unique name of the collection
 	 * @param valueType the class type of the values stored in the collection
 	 * 
-	 * @return existing {@link ReadOnlyBlueCollection} if it exists, else null
+	 * @return existing {@link ReadableBlueCollection} if it exists, else null
 	 * 
 	 * @throws BlueDbException if any issues encountered, such as the existing collection having a different key type
 	 */
-	public <V extends Serializable> ReadOnlyBlueCollection<V> getCollection(String name, Class<V> valueType) throws BlueDbException;
+	public <V extends Serializable> ReadableBlueCollection<V> getCollection(String name, Class<V> valueType) throws BlueDbException;
 	
 	/**
-	 * Gets an existing {@link ReadOnlyBlueCollection}
+	 * Gets an existing {@link ReadableBlueCollection}
 	 * 
 	 * @param <V> the object type of values to be serialized into the collection
 	 * 
 	 * @param name The unique name of the collection
 	 * @param valueType the class type of the values stored in the collection
 	 * 
-	 * @return existing {@link ReadOnlyBlueCollection} if it exists, else null
+	 * @return existing {@link ReadableBlueCollection} if it exists, else null
 	 * 
 	 * @throws BlueDbException if any issues encountered, such as the existing collection having a different key type
 	 */
-	public <V extends Serializable> ReadOnlyBlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException;
+	public <V extends Serializable> ReadableBlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException;
 
 	/*
 	 * The backup method is not allowed on read only instances of BlueDB at this time. In order for the backup to work properly

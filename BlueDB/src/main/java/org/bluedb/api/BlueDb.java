@@ -10,7 +10,7 @@ import org.bluedb.api.keys.BlueKey;
  * {@link BlueDb} is a set of {@link BlueCollection} instances. Each collection must have a different name and can be of 
  * a different type.
  */
-public interface BlueDb extends ReadOnlyBlueDb {
+public interface BlueDb extends ReadableBlueDb {
 	
 	/**
 	 * Creates a {@link BlueCollection}, or returns the existing one of the same name, if one exists. 

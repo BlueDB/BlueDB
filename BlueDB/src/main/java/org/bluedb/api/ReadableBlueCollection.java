@@ -13,11 +13,11 @@ import org.bluedb.api.keys.ValueKey;
 
 /**
  * A ReadOnlyBlueCollection represents a persisted map of keys (of type {@link BlueKey}) to values of object type V.
- * A collection has a name (to distinguish between collections in a {@link ReadOnlyBlueDb} instance), a key type, and a value type.
+ * A collection has a name (to distinguish between collections in a {@link ReadableBlueDb} instance), a key type, and a value type.
  * This collection will not edit any files or allow any updates to the data inside it.
  * @param <V> the object type of values to be serialized into the collection
  */
-public interface ReadOnlyBlueCollection<V extends Serializable> {
+public interface ReadableBlueCollection<V extends Serializable> {
 
 	/**
 	 * Returns existing BlueIndex that maps objects of type keyType to values in the collection.
@@ -57,8 +57,8 @@ public interface ReadOnlyBlueCollection<V extends Serializable> {
 	public BlueKey getLastKey();
 
 	/**
-	 * Creates a {@link ReadOnlyBlueQuery} object which can be used to build and execute a query against this collection.
-	 * @return a {@link ReadOnlyBlueQuery} object which can be used to build and execute a query against this collection.
+	 * Creates a {@link ReadBlueQuery} object which can be used to build and execute a query against this collection.
+	 * @return a {@link ReadBlueQuery} object which can be used to build and execute a query against this collection.
 	 */
-	public ReadOnlyBlueQuery<V> query();
+	public ReadBlueQuery<V> query();
 }

@@ -9,14 +9,14 @@ import org.bluedb.api.exceptions.BlueDbException;
  * Allows one to build and execute a query in a stream like way
  * @param <V> The value type of the collection being queried
  */
-public interface ReadOnlyBlueQuery<V extends Serializable> {
+public interface ReadBlueQuery<V extends Serializable> {
 
 	/**
 	 * Adds a condition to the query before returning itself.
 	 * @param condition a filter function to be applied to possible matching values
 	 * @return itself, with the condition added to the query
 	 */
-	ReadOnlyBlueQuery<V> where(Condition<V> condition);
+	ReadBlueQuery<V> where(Condition<V> condition);
 
 	/**
 	 * Executes the query and returns the results as a list. Use getIterator if you don't want to load all matching 

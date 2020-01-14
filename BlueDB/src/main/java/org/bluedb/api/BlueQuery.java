@@ -8,7 +8,7 @@ import org.bluedb.api.exceptions.BlueDbException;
  * Allows one to build and execute a query in a stream like way
  * @param <V> The value type of the collection being queried
  */
-public interface BlueQuery<V extends Serializable> extends ReadOnlyBlueQuery<V> {
+public interface BlueQuery<V extends Serializable> extends ReadBlueQuery<V> {
 	
 	@Override
 	BlueQuery<V> where(Condition<V> condition);

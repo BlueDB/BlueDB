@@ -10,8 +10,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.bluedb.api.Condition;
-import org.bluedb.api.ReadOnlyBlueCollection;
-import org.bluedb.api.ReadOnlyBlueQuery;
+import org.bluedb.api.ReadableBlueCollection;
+import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
@@ -34,7 +34,7 @@ import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
-public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements ReadOnlyBlueCollection<T>, Rollupable {
+public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements ReadableBlueCollection<T>, Rollupable {
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
@@ -80,7 +80,7 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements Rea
 	}
 
 	@Override
-	public ReadOnlyBlueQuery<T> query() {
+	public ReadBlueQuery<T> query() {
 		return new ReadOnlyBlueQueryOnDisk<T>(this);
 	}
 	

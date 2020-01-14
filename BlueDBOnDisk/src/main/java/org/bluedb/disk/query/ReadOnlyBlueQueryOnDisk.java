@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
-import org.bluedb.api.ReadOnlyBlueQuery;
+import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
@@ -14,7 +14,7 @@ import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class ReadOnlyBlueQueryOnDisk<T extends Serializable> implements ReadOnlyBlueQuery<T> {
+public class ReadOnlyBlueQueryOnDisk<T extends Serializable> implements ReadBlueQuery<T> {
 
 	protected ReadOnlyBlueCollectionOnDisk<T> collection;
 	protected List<Condition<T>> objectConditions = new LinkedList<>();
@@ -27,7 +27,7 @@ public class ReadOnlyBlueQueryOnDisk<T extends Serializable> implements ReadOnly
 	}
 
 	@Override
-	public ReadOnlyBlueQuery<T> where(Condition<T> c) {
+	public ReadBlueQuery<T> where(Condition<T> c) {
 		if (c != null) {
 			objectConditions.add(c);
 		}
