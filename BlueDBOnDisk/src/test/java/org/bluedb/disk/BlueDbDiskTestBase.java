@@ -26,6 +26,7 @@ import org.bluedb.disk.BlueDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionMetaData;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.lock.LockManager;
@@ -47,7 +48,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	private static String INT_COLLECTION_NAME = "int_value";
 	private static String CALL_COLLECTION_NAME = "call_collection";
 	BlueDbOnDisk db;
-	BlueCollectionOnDisk<TestValue> timeCollection;
+	BlueTimeCollectionOnDisk<TestValue> timeCollection;
 	BlueCollectionOnDisk<TestValue> hashGroupedCollection;
 	BlueCollectionOnDisk<TestValue> intCollection;
 	BlueCollectionOnDisk<TestValue> longCollection;
@@ -64,11 +65,11 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		filesToDelete = new ArrayList<>();
 		dbPath = createTempFolder().toPath();
 		db = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();
-		timeCollection = db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
-		hashGroupedCollection = db.collectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
-		longCollection = db.collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
-		callCollection = db.collectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
-		intCollection = db.collectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
+		timeCollection = (BlueTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
+		hashGroupedCollection = (BlueCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
+		longCollection = (BlueCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		callCollection = (BlueCollectionOnDisk<Call>) db.getCollectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
+		intCollection = (BlueCollectionOnDisk<TestValue>) db.getCollectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
 		dbPath = db.getPath();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
@@ -86,7 +87,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public BlueCollectionOnDisk<TestValue> getTimeCollection() {
+	public BlueTimeCollectionOnDisk<TestValue> getTimeCollection() {
 		return timeCollection;
 	}
 

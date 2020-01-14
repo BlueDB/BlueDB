@@ -3,24 +3,23 @@ package org.bluedb.disk.segment.rollup;
 import java.io.File;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
+import org.junit.Test;
 
 public class RollupTaskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup() throws BlueDbException {
-		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
@@ -62,7 +61,7 @@ public class RollupTaskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup_cross_segment() throws BlueDbException {
-		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		SegmentManager<TestValue> segmentManager = collection.getSegmentManager();
 		
 		Segment<TestValue> segment0 = segmentManager.getSegment(0);

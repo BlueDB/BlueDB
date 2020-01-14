@@ -16,4 +16,15 @@ public class CollectionTestTools {
 			fail();
 		}
 	}
+
+	public static void waitForExecutorToFinish(BlueTimeCollectionOnDisk<?> collection) {
+		Runnable doNothing = new Runnable() {@Override public void run() {}};
+		Future<?> future = collection.getSharedExecutor().submitQueryTask(collection.getPath().toString(), doNothing);
+		try {
+			future.get();
+		} catch (ExecutionException | InterruptedException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
 }

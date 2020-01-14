@@ -3,25 +3,25 @@ package org.bluedb.disk.segment.rollup;
 import java.io.File;
 import java.util.List;
 
-import org.junit.Test;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.IndexRollupTask;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
+import org.junit.Test;
 
 public class IndexRollupTaskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup() throws Exception {
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
-		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		String indexName = "test_index";
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, keyExtractor);
 		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;

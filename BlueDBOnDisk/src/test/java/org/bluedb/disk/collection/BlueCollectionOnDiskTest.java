@@ -169,7 +169,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_times() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", TimeKey.class, String.class).build();
+		BlueTimeCollectionOnDisk<String> stringCollection = (BlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_strings", TimeKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -182,7 +182,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", LongKey.class, String.class).build();
+		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -196,7 +196,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = db().collectionBuilder("test_strings", StringKey.class, String.class).build();
+		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -505,8 +505,8 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
-		BlueCollectionOnDisk<String> collectionWithTimeKeys = db().collectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
-		BlueCollectionOnDisk<String> collectionWithLongKeys = db().collectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
+		BlueTimeCollectionOnDisk<String> collectionWithTimeKeys = (BlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
+		BlueCollectionOnDisk<String> collectionWithLongKeys = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
 
 		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
 		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
@@ -524,17 +524,17 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_determineKeyType() throws BlueDbException {
-		db().collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();  // regular instantiation approach
+		db().getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();  // regular instantiation approach
 
 		BlueDbOnDisk reopenedDatbase = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(db().getPath()).build();  // reopen database without collections instantiated
 
 		try {
-			reopenedDatbase.collectionBuilder(getTimeCollectionName(), HashGroupedKey.class, TestValue.class).build();  // try to open with the wrong key type
+			reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), HashGroupedKey.class, TestValue.class).build();  // try to open with the wrong key type
 			fail();
 		} catch (BlueDbException e) {
 		}
 
-		BlueCollectionOnDisk<?> collectionWithoutType = (BlueCollectionOnDisk<?>) reopenedDatbase.collectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
+		BlueTimeCollectionOnDisk<?> collectionWithoutType = (BlueTimeCollectionOnDisk<?>) reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
 		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
 	}
 

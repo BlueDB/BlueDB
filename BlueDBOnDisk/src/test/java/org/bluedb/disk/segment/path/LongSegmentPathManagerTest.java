@@ -26,7 +26,7 @@ public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		longCollection = db().collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		longCollection = (BlueCollectionOnDisk<TestValue>) db().getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
 	}
 
 	@Test

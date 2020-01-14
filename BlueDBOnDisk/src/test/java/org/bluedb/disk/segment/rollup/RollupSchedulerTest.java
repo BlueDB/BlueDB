@@ -12,6 +12,7 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionTestTools;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
@@ -161,7 +162,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_scheduleRollup_index() throws Exception {
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
-		BlueCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		String indexName = "test_index";
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, keyExtractor);
 		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
