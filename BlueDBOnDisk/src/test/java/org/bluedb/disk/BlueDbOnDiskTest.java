@@ -131,6 +131,25 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		} catch(BlueDbException e) {
 		}
 	}
+
+	@Test
+	public void test_initializeTimeCollection_invalid_type() {
+		insertAtTime(10, new TestValue("Bob"));
+		try {
+			db.initializeTimeCollection(getTimeCollectionName(), TimeKey.class, TestValue2.class, Arrays.asList(), null);
+			fail();
+		} catch(BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_initializeTimeCollection_invalid_key_type() {
+		try {
+			db.initializeTimeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class, Arrays.asList(), null);
+			fail();
+		} catch(BlueDbException e) {
+		}
+	}
 	
 	@Test
 	public void test_query_count() throws Exception {
