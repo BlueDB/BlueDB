@@ -798,6 +798,16 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_assertExistingCollectionIsType() throws BlueDbException {
+		BlueDbOnDisk.assertExistingCollectionIsType(getTimeCollection(), BlueTimeCollectionOnDisk.class);
+		try {
+			BlueDbOnDisk.assertExistingCollectionIsType(getLongCollection(), BlueTimeCollectionOnDisk.class);
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
 	public void test_shutdownNow() throws Exception {
 		TestValue testValue = new TestValue("Joe Dirt");
 		insertAtTime(10, testValue);
