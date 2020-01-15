@@ -13,8 +13,11 @@ import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadableBlueDb;
 import org.bluedb.api.ReadableBlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyBlueTimeCollectionOnDisk;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 
@@ -40,7 +43,13 @@ public class ReadOnlyBlueDbOnDisk implements ReadableBlueDb {
 		synchronized(collections) {
 			ReadOnlyBlueCollectionOnDisk<?> untypedCollection = collections.get(name);
 			if (untypedCollection == null) {
-				return null;
+				ReadOnlyBlueCollectionOnDisk<T> collection = new ReadOnlyBlueCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
+				if (TimeKey.class.isAssignableFrom(collection.getKeyType())) {
+					Class<? extends BlueKey> keyType = collection.getKeyType();
+					collection = new ReadOnlyBlueTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
+				}
+				collections.put(name, collection);
+				return collection;
 			}
 			if (untypedCollection.getType().equals(valueType)) {
 				@SuppressWarnings("unchecked")
