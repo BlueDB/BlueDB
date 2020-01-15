@@ -15,6 +15,7 @@ import org.bluedb.api.BlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
+import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
@@ -54,7 +55,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getCollection() throws Exception {
 		db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 
-		BlueCollection<TestValue> collection = db.getCollection(getTimeCollectionName(), TestValue.class);
+		BlueCollection<TestValue> collection = db.getTimeCollection(getTimeCollectionName(), TestValue.class);
 		assertNotNull(collection);
 		assertEquals(collection, db.getCollection(getTimeCollectionName(), TestValue.class));
 		assertNull(db.getCollection("non-existing", TestValue.class));
@@ -67,6 +68,29 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		valueCollection.insert(testValueKey, new TestValue("Bob"));
 		try {
 			db.getCollection(getTimeCollectionName(), String.class);
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_getTimeCollection() throws Exception {
+		db.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+
+		BlueCollection<TestValue> collection = db.getTimeCollection(getTimeCollectionName(), TestValue.class);
+		assertNotNull(collection);
+		assertEquals(collection, db.getTimeCollection(getTimeCollectionName(), TestValue.class));
+		assertNull(db.getCollection("non-existing", TestValue.class));
+	}
+
+	@Test
+	public void test_getTimeCollection_notTimeCollection() throws Exception {
+		String collectionName = "valueCollectionName";
+		BlueCollection<TestValue> valueCollection = db.getCollectionBuilder(collectionName, StringKey.class, TestValue.class).build();
+		StringKey testValueKey = new StringKey("test");
+		valueCollection.insert(testValueKey, new TestValue("Bob"));
+		try {
+			db.getTimeCollection(collectionName, TestValue.class);
 			fail();
 		} catch (BlueDbException e) {
 		}
