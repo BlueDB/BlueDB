@@ -601,6 +601,60 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertEquals(0, storedValues.size());
 	}
 
+
+	@Test
+	public void test_query_update_long() throws Exception {
+        BlueKey keyJoe   = insertAtLong(1, new TestValue("Joe", 0));
+        BlueKey keyBob   = insertAtLong(2, new TestValue("Bob", 0));
+        BlueQuery<TestValue> queryForJoe = getLongCollection().query().where((v) -> v.getName().startsWith("Jo"));
+
+        // sanity check
+        assertEquals(0, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(0, getLongCollection().get(keyBob).getCupcakes());
+
+        // test update with conditions
+        queryForJoe.update((v) -> v.addCupcake());
+        assertEquals(1, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(0, getLongCollection().get(keyBob).getCupcakes());
+
+        // test update all
+        getLongCollection().query().update((v) -> v.addCupcake());
+        assertEquals(2, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(1, getLongCollection().get(keyBob).getCupcakes());
+
+        // test replace
+        queryForJoe.replace((v) -> { return new TestValue(v.getName(), v.getCupcakes() + 2); } );
+        assertEquals(4, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(1, getLongCollection().get(keyBob).getCupcakes());
+	}
+	
+	@Test
+	public void test_query_delete_long() throws Exception {
+		TestValue valueJoe = new TestValue("Joe");
+		TestValue valueBob = new TestValue("Bob");
+        insertAtLong(1, valueJoe);
+        insertAtLong(2, valueBob);
+		List<TestValue> storedValues;
+        BlueQuery<TestValue> queryForJoe = getLongCollection().query().where((v) -> v.getName().startsWith("Jo"));
+
+        // sanity check
+        storedValues = getLongCollection().query().getList();
+        assertEquals(2, storedValues.size());
+        assertTrue(storedValues.contains(valueJoe));
+
+        // test if delete works with query conditions
+        queryForJoe.delete();
+        storedValues = getLongCollection().query().getList();
+        assertEquals(1, storedValues.size());
+        assertFalse(storedValues.contains(valueJoe));
+        assertTrue(storedValues.contains(valueBob));
+
+        // test if delete works without conditions
+        getLongCollection().query().delete();
+        storedValues = getLongCollection().query().getList();
+        assertEquals(0, storedValues.size());
+	}
+
 	@Test
 	public void test_getAllCollectionsFromDisk() throws Exception {
         getTimeCollection();
