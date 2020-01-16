@@ -15,6 +15,7 @@ import org.bluedb.api.BlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
+import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
@@ -54,7 +55,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_getCollection() throws Exception {
 		db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 
-		BlueCollection<TestValue> collection = db.getCollection(getTimeCollectionName(), TestValue.class);
+		BlueCollection<TestValue> collection = db.getTimeCollection(getTimeCollectionName(), TestValue.class);
 		assertNotNull(collection);
 		assertEquals(collection, db.getCollection(getTimeCollectionName(), TestValue.class));
 		assertNull(db.getCollection("non-existing", TestValue.class));
@@ -67,6 +68,29 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		valueCollection.insert(testValueKey, new TestValue("Bob"));
 		try {
 			db.getCollection(getTimeCollectionName(), String.class);
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_getTimeCollection() throws Exception {
+		db.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+
+		BlueCollection<TestValue> collection = db.getTimeCollection(getTimeCollectionName(), TestValue.class);
+		assertNotNull(collection);
+		assertEquals(collection, db.getTimeCollection(getTimeCollectionName(), TestValue.class));
+		assertNull(db.getCollection("non-existing", TestValue.class));
+	}
+
+	@Test
+	public void test_getTimeCollection_notTimeCollection() throws Exception {
+		String collectionName = "valueCollectionName";
+		BlueCollection<TestValue> valueCollection = db.getCollectionBuilder(collectionName, StringKey.class, TestValue.class).build();
+		StringKey testValueKey = new StringKey("test");
+		valueCollection.insert(testValueKey, new TestValue("Bob"));
+		try {
+			db.getTimeCollection(collectionName, TestValue.class);
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -103,6 +127,25 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_initializeCollection_invalid_key_type() {
 		try {
 			db.initializeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class, Arrays.asList());
+			fail();
+		} catch(BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_initializeTimeCollection_invalid_type() {
+		insertAtTime(10, new TestValue("Bob"));
+		try {
+			db.initializeTimeCollection(getTimeCollectionName(), TimeKey.class, TestValue2.class, Arrays.asList(), null);
+			fail();
+		} catch(BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_initializeTimeCollection_invalid_key_type() {
+		try {
+			db.initializeTimeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class, Arrays.asList(), null);
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -601,6 +644,60 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
         assertEquals(0, storedValues.size());
 	}
 
+
+	@Test
+	public void test_query_update_long() throws Exception {
+        BlueKey keyJoe   = insertAtLong(1, new TestValue("Joe", 0));
+        BlueKey keyBob   = insertAtLong(2, new TestValue("Bob", 0));
+        BlueQuery<TestValue> queryForJoe = getLongCollection().query().where((v) -> v.getName().startsWith("Jo"));
+
+        // sanity check
+        assertEquals(0, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(0, getLongCollection().get(keyBob).getCupcakes());
+
+        // test update with conditions
+        queryForJoe.update((v) -> v.addCupcake());
+        assertEquals(1, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(0, getLongCollection().get(keyBob).getCupcakes());
+
+        // test update all
+        getLongCollection().query().update((v) -> v.addCupcake());
+        assertEquals(2, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(1, getLongCollection().get(keyBob).getCupcakes());
+
+        // test replace
+        queryForJoe.replace((v) -> { return new TestValue(v.getName(), v.getCupcakes() + 2); } );
+        assertEquals(4, getLongCollection().get(keyJoe).getCupcakes());
+        assertEquals(1, getLongCollection().get(keyBob).getCupcakes());
+	}
+	
+	@Test
+	public void test_query_delete_long() throws Exception {
+		TestValue valueJoe = new TestValue("Joe");
+		TestValue valueBob = new TestValue("Bob");
+        insertAtLong(1, valueJoe);
+        insertAtLong(2, valueBob);
+		List<TestValue> storedValues;
+        BlueQuery<TestValue> queryForJoe = getLongCollection().query().where((v) -> v.getName().startsWith("Jo"));
+
+        // sanity check
+        storedValues = getLongCollection().query().getList();
+        assertEquals(2, storedValues.size());
+        assertTrue(storedValues.contains(valueJoe));
+
+        // test if delete works with query conditions
+        queryForJoe.delete();
+        storedValues = getLongCollection().query().getList();
+        assertEquals(1, storedValues.size());
+        assertFalse(storedValues.contains(valueJoe));
+        assertTrue(storedValues.contains(valueBob));
+
+        // test if delete works without conditions
+        getLongCollection().query().delete();
+        storedValues = getLongCollection().query().getList();
+        assertEquals(0, storedValues.size());
+	}
+
 	@Test
 	public void test_getAllCollectionsFromDisk() throws Exception {
         getTimeCollection();
@@ -698,6 +795,16 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		
 		assertEquals(true, updateAndSleepTask.isComplete());
 		assertEquals(true, updateAndSleepTask.getError() == null);
+	}
+
+	@Test
+	public void test_assertExistingCollectionIsType() throws BlueDbException {
+		BlueDbOnDisk.assertExistingCollectionIsType(getTimeCollection(), BlueTimeCollectionOnDisk.class);
+		try {
+			BlueDbOnDisk.assertExistingCollectionIsType(getLongCollection(), BlueTimeCollectionOnDisk.class);
+			fail();
+		} catch (BlueDbException e) {
+		}
 	}
 
 	@Test

@@ -6,7 +6,7 @@ import java.io.Serializable;
  * Allows one to build and execute a query in a stream like way
  * @param <V> The value type of the collection being queried
  */
-public interface BlueTimeQuery<V extends Serializable> extends BlueQuery<V>, ReadOnlyBlueTimeQuery<V> {
+public interface BlueTimeQuery<V extends Serializable> extends BlueQuery<V>, ReadBlueTimeQuery<V> {
 	
 	@Override
 	BlueTimeQuery<V> where(Condition<V> condition);

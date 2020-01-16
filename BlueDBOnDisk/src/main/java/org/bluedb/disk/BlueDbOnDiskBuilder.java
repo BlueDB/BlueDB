@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.bluedb.api.BlueDb;
-import org.bluedb.api.ReadOnlyBlueDb;
+import org.bluedb.api.ReadableBlueDb;
 
 /**
  * A builder for the {@link ReadOnlyBlueDbOnDisk} class
@@ -31,10 +31,10 @@ public class BlueDbOnDiskBuilder {
 	}
 
 	/**
-	 * Builds the {@link ReadOnlyBlueDb} object
-	 * @return the {@link ReadOnlyBlueDb} built
+	 * Builds the {@link ReadableBlueDb} object
+	 * @return the {@link ReadableBlueDb} built
 	 */
-	public ReadOnlyBlueDb buildReadOnly() {
+	public ReadableBlueDb buildReadOnly() {
 		return new ReadOnlyBlueDbOnDisk(path);
 	}
 	

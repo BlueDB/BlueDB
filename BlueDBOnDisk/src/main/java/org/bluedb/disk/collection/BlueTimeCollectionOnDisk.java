@@ -30,10 +30,6 @@ public class BlueTimeCollectionOnDisk<T extends Serializable> extends ReadOnlyBl
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 	}
 
-	public BlueTimeCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
-		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses);
-	}
-	
 	@Override
 	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		return indexManager.getOrCreate(name, keyType, keyExtractor);

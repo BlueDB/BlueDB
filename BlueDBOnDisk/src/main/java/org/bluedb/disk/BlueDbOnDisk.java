@@ -61,8 +61,8 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
 			} else if (!collection.getKeyType().equals(keyType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different key type (" + collection.getKeyType() + ") vs " + keyType);
-			} else if(!(collection instanceof BlueCollection)) {
-				throw new BlueDbException("The " + name + " collection already exists but it cannot be cast to a BlueCollection. InvalidType=" + collection.getClass());
+			} else {
+				assertExistingCollectionIsType(collection, BlueCollection.class);
 			}
 			
 			@SuppressWarnings("unchecked")
@@ -82,8 +82,8 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
 			} else if (!collection.getKeyType().equals(keyType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different key type (" + collection.getKeyType() + ") vs " + keyType);
-			} else if(!(collection instanceof BlueTimeCollection)) {
-				throw new BlueDbException("The " + name + " collection already exists but it cannot be cast to a BlueCollection. InvalidType=" + collection.getClass());
+			} else {
+				assertExistingCollectionIsType(collection, BlueTimeCollection.class);
 			}
 			
 			@SuppressWarnings("unchecked")
@@ -107,8 +107,8 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 			}
 			if (!untypedCollection.getType().equals(valueType)) {
 				throw new BlueDbException("Cannot cast BlueCollection<" + untypedCollection.getType() + "> to BlueCollection<" + valueType + ">");
-			} else if(!(untypedCollection instanceof BlueCollection)) {
-				throw new BlueDbException("The " + name + " collection already exists but it cannot be cast to a BlueCollection. InvalidType=" + untypedCollection.getClass());
+			} else {
+				assertExistingCollectionIsType(untypedCollection, BlueCollection.class);
 			}
 			
 			@SuppressWarnings("unchecked")
@@ -137,4 +137,10 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 		}
 	}
 
+	protected static void assertExistingCollectionIsType(ReadOnlyBlueCollectionOnDisk<?> collection, Class<?> klazz) throws BlueDbException {
+		if(!klazz.isAssignableFrom(collection.getClass())) {
+			String name = collection.getPath().toFile().getName();
+			throw new BlueDbException("The " + name + " collection already exists but it cannot be cast to a " + klazz.getSimpleName() + ". InvalidType=" + collection.getClass());
+		}
+	}
 }

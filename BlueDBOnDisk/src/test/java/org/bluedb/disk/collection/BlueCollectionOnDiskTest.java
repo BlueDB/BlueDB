@@ -5,19 +5,15 @@ import static org.junit.Assert.assertNotEquals;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
-import org.bluedb.api.Condition;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
@@ -26,11 +22,7 @@ import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
-import org.bluedb.api.keys.TimeFrameKey;
-import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
-import org.bluedb.disk.BlueDbOnDisk;
-import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
@@ -38,8 +30,6 @@ import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
-import org.bluedb.disk.segment.rollup.RollupScheduler;
-import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
 
@@ -48,8 +38,8 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_query() throws Exception {
 		TestValue value = new TestValue("Joe");
-		insertAtTime(1, value);
-		List<TestValue> values = getTimeCollection().query().getList();
+		insertAtLong(1, value);
+		List<TestValue> values = getLongCollection().query().getList();
 		assertEquals(1, values.size());
 		assertTrue(values.contains(value));
 	}
@@ -57,25 +47,21 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_contains() throws Exception {
 		TestValue value = new TestValue("Joe");
-		BlueKey key = createTimeKey(1, value);
-		getTimeCollection().insert(key, value);
-		assertTrue(getTimeCollection().contains(key));
+		BlueKey key = new LongKey(1);
+		getLongCollection().insert(key, value);
+		assertTrue(getLongCollection().contains(key));
 	}
 
 	@Test
 	public void test_get() throws Exception {
 		TestValue value = new TestValue("Joe");
 		TestValue differentValue = new TestValue("Bob");
-		BlueKey key = createTimeKey(10, value);
-		BlueKey sameTimeDifferentValue = createTimeKey(10, differentValue);
-		BlueKey sameValueDifferentTime = createTimeKey(20, value);
-		BlueKey differentValueAndTime = createTimeKey(20, differentValue);
-		insertToTimeCollection(key, value);
-		assertEquals(value, getTimeCollection().get(key));
+		BlueKey key = new LongKey(10);
+		BlueKey differentKey = new LongKey(20);
+		getLongCollection().insert(key, value);
+		assertEquals(value, getLongCollection().get(key));
 		assertNotEquals(value, differentValue);
-		assertNotEquals(value, getTimeCollection().get(sameTimeDifferentValue));
-		assertNotEquals(value, getTimeCollection().get(sameValueDifferentTime));
-		assertNotEquals(value, getTimeCollection().get(differentValueAndTime));
+		assertNotEquals(value, getLongCollection().get(differentKey));
 	}
 
 	@Test
@@ -85,7 +71,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		insertToTimeCollection(key, value);
 		assertValueAtKey(key, value);
 		try {
-			getTimeCollection().insert(key, value); // insert duplicate
+			getLongCollection().insert(key, value); // insert duplicate
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -95,14 +81,14 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	public void test_batchInsert() throws Exception {
 		TestValue value1 = new TestValue("Joe");
 		TestValue value2 = new TestValue("Bob");
-		BlueKey key1 = createTimeKey(10, value1);
-		BlueKey key2 = createTimeKey(20, value2);
+		BlueKey key1 = new LongKey(10);
+		BlueKey key2 = new LongKey(20);
 		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
 		batchInserts.put(key1, value1);
 		batchInserts.put(key2, value2);
-		getTimeCollection().batchUpsert(batchInserts);
-		assertValueAtKey(key1, value1);
-		assertValueAtKey(key2, value2);
+		getLongCollection().batchUpsert(batchInserts);
+		assertEquals(value1, getLongCollection().get(key1));
+		assertEquals(value2, getLongCollection().get(key2));
 	}
 
 	@Test
@@ -110,40 +96,29 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		TestValue value1 = new TestValue("Joe");
 		TestValue value2 = new TestValue("Bob");
 		TestValue value3 = new TestValue("Chuck");
-		BlueKey key1 = createTimeKey(10, value1);
-		BlueKey key2 = createTimeKey(20, value2);
-		BlueKey key3 = createTimeKey(20, value3);
+		BlueKey key1 = new LongKey(10);
+		BlueKey key2 = new LongKey(20);
+		BlueKey key3 = new LongKey(30);
 		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
 		batchInserts.put(key1, value1);
 		batchInserts.put(key2, value2);
 		batchInserts.put(key3, value3);
 
-		getTimeCollection().batchUpsert(batchInserts);
-		assertValueAtKey(key1, value1);
-		assertValueAtKey(key2, value2);
-		assertValueAtKey(key3, value3);
+		getLongCollection().batchUpsert(batchInserts);
+        assertEquals(value1, getLongCollection().get(key1));
+        assertEquals(value2, getLongCollection().get(key2));
+        assertEquals(value3, getLongCollection().get(key3));
 
-		getTimeCollection().batchDelete(Arrays.asList(key1, key3));
-		assertValueNotAtKey(key1, value1);
-		assertValueAtKey(key2, value2);
-		assertValueNotAtKey(key3, value3);
-	}
-
-	@Test
-	public void test_batchInsert_spanningSegments() throws Exception {
-		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		TestValue value = new TestValue("Joe");
-		BlueKey key = createTimeFrameKey(segmentSize - 1, segmentSize + 1, value);
-		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
-		batchInserts.put(key, value);
-		getTimeCollection().batchUpsert(batchInserts);
-		assertValueAtKey(key, value);
+		getLongCollection().batchDelete(Arrays.asList(key1, key3));
+        assertFalse(getLongCollection().contains(key1));
+        assertEquals(value2, getLongCollection().get(key2));
+        assertFalse(getLongCollection().contains(key3));
 	}
 
 	@Test
 	public void test_batchInsert_index() throws Exception {
 		KeyExtractor<IntegerKey, TestValue> keyExtractor = new TestRetrievalKeyExtractor();
-		BlueIndex<IntegerKey, TestValue> index = getTimeCollection().createIndex("test_index", IntegerKey.class, keyExtractor);
+		BlueIndex<IntegerKey, TestValue> index = getLongCollection().createIndex("test_index", IntegerKey.class, keyExtractor);
 		TestValue value1 = new TestValue("Joe");
 		TestValue value2 = new TestValue("Bob");
 		TestValue value3 = new TestValue("Charlie");
@@ -151,9 +126,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		value2.setCupcakes(777);
 		value3.setCupcakes(42);
 		IntegerKey indexKeyFor1and3 = new IntegerKey(42);
-		BlueKey key1 = createTimeKey(10, value1);
-		BlueKey key2 = createTimeKey(20, value2);
-		BlueKey key3 = createTimeKey(30, value3);
+		BlueKey key1 = new LongKey(10);
+		BlueKey key2 = new LongKey(20);
+		BlueKey key3 = new LongKey(30);
 		Map<BlueKey, TestValue> batchInserts = new HashMap<>();
 		batchInserts.put(key1, value1);
 		batchInserts.put(key2, value2);
@@ -163,21 +138,8 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<TestValue> list1and3 = Arrays.asList(value1, value3);
 
 		assertEquals(listEmpty, index.get(indexKeyFor1and3));
-		getTimeCollection().batchUpsert(batchInserts);
+		getLongCollection().batchUpsert(batchInserts);
 		assertEquals(list1and3, index.get(indexKeyFor1and3));
-	}
-
-	@Test
-	public void test_insert_times() throws Exception {
-		BlueTimeCollectionOnDisk<String> stringCollection = (BlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_strings", TimeKey.class, String.class).build();
-		String value = "string";
-		int n = 100;
-		for (int i = 0; i < n; i++) {
-			TimeKey key = new TimeKey(i, i);
-			stringCollection.insert(key, value);
-		}
-		List<String> storedValues = stringCollection.query().getList();
-		assertEquals(n, storedValues.size());
 	}
 
 	@Test
@@ -221,21 +183,21 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_update() throws Exception {
-		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
-		BlueKey key2 = insertAtTime(10, new TestValue("Bob", 0));
-        assertCupcakes(key, 0);
-        assertCupcakes(key2, 0);
-        getTimeCollection().update(key, (v) -> v.addCupcake());
-        assertCupcakes(key, 1);
-        assertCupcakes(key2, 0);
+		BlueKey key = insertAtLong(10, new TestValue("Joe", 0));
+		BlueKey key2 = insertAtLong(20, new TestValue("Bob", 0));
+		assertEquals(0, getLongCollection().get(key).getCupcakes());
+		assertEquals(0, getLongCollection().get(key2).getCupcakes());
+        getLongCollection().update(key, (v) -> v.addCupcake());
+		assertEquals(1, getLongCollection().get(key).getCupcakes());
+		assertEquals(0, getLongCollection().get(key2).getCupcakes());
 	}
 
 	@Test
 	public void test_update_nonexisting() {
 		AtomicBoolean wasUpdaterCalled = new AtomicBoolean(false);
-		BlueKey key = new TimeKey(1, 1);
+		BlueKey key = new LongKey(1);
 		try {
-			getTimeCollection().update(key, (v) -> wasUpdaterCalled.set(true));
+			getLongCollection().update(key, (v) -> wasUpdaterCalled.set(true));
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -245,9 +207,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_update_invalid() {
 		TestValue value = new TestValue("Joe", 0);
-		BlueKey key = insertAtTime(1, value);
+		BlueKey key = insertAtLong(1, value);
 		try {
-			getTimeCollection().update(key, (v) -> v.doSomethingNaughty());
+			getLongCollection().update(key, (v) -> v.doSomethingNaughty());
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -255,18 +217,18 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_replace() throws Exception {
-		BlueKey key = insertAtTime(10, new TestValue("Joe", 0));
-        assertCupcakes(key, 0);
-        getTimeCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
-        assertCupcakes(key, 1);
+		BlueKey key = insertAtLong(10, new TestValue("Joe", 0));
+		assertEquals(0, getLongCollection().get(key).getCupcakes());
+        getLongCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
+		assertEquals(1, getLongCollection().get(key).getCupcakes());
 	}
 
 	@Test
 	public void test_replace_nonexisting() {
 		AtomicBoolean wasUpdaterCalled = new AtomicBoolean(false);
-		BlueKey key = new TimeKey(1, 1);
+		BlueKey key = new LongKey(1);
 		try {
-	        getTimeCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
+	        getLongCollection().replace(key, (v) -> new TestValue(v.getName(), v.getCupcakes() + 1));
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -276,9 +238,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_replace_invalid() {
 		TestValue value = new TestValue("Joe", 0);
-		BlueKey key = insertAtTime(1, value);
+		BlueKey key = insertAtLong(1, value);
 		try {
-			getTimeCollection().replace(key, (v) -> {throw new RuntimeException("no go");}) ;
+			getLongCollection().replace(key, (v) -> {throw new RuntimeException("no go");}) ;
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -287,85 +249,22 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_delete() throws Exception {
 		TestValue value = new TestValue("Joe");
-        BlueKey key = insertAtTime(10, value);
-        assertValueAtKey(key, value);
-        getTimeCollection().delete(key);
-        assertValueNotAtKey(key, value);
+        BlueKey key = insertAtLong(10, value);
+        assertEquals(value, getLongCollection().get(key));
+        getLongCollection().delete(key);
+        assertFalse(getLongCollection().contains(key));
 	}
 
 	@Test
 	public void test_getLastKey() throws Exception {
-		assertNull(getTimeCollection().getLastKey());
-		BlueKey key1 = insertAtTime(1, new TestValue("Joe"));
-		assertEquals(key1, getTimeCollection().getLastKey());
-		BlueKey key3 = insertAtTime(3, new TestValue("Bob"));
-		assertEquals(key3, getTimeCollection().getLastKey());
+		assertNull(getLongCollection().getLastKey());
+		BlueKey key1 = insertAtLong(1, new TestValue("Joe"));
+		assertEquals(key1, getLongCollection().getLastKey());
+		BlueKey key3 = insertAtLong(3, new TestValue("Bob"));
+		assertEquals(key3, getLongCollection().getLastKey());
 		@SuppressWarnings("unused")
-		BlueKey key2 = insertAtTime(2, new TestValue("Fred"));
-		assertEquals(key3, getTimeCollection().getLastKey());
-	}
-
-	@Test
-	public void test_findMatches() throws Exception {
-		TestValue valueJoe = new TestValue("Joe");
-		TestValue valueBob = new TestValue("Bob");
-		insertAtTime(1, valueJoe);
-		insertAtTime(2, valueBob);
-		List<BlueEntity<TestValue>> allEntities, entitiesWithJoe, entities3to5, entities2to3, entities0to1, entities0to0;
-
-		Condition<TestValue> isJoe = (v) -> v.getName().equals("Joe");
-		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), false);
-		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), Arrays.asList(isJoe), false);
-		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), false);
-		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), false);
-		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), false);
-		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), false);
-
-		assertEquals(2, allEntities.size());
-		assertEquals(1, entitiesWithJoe.size());
-		assertEquals(valueJoe, entitiesWithJoe.get(0).getValue());
-		assertEquals(0, entities3to5.size());
-		assertEquals(1, entities2to3.size());
-		assertEquals(valueBob, entities2to3.get(0).getValue());
-		assertEquals(1, entities0to1.size());
-		assertEquals(valueJoe, entities0to1.get(0).getValue());
-		assertEquals(0, entities0to0.size());
-	}
-
-	@Test
-	public void test_findMatches_byStartTime() throws Exception {
-		TestValue valueJoe = new TestValue("Joe");
-		TestValue valueBob = new TestValue("Bob");
-		insertAtTimeFrame(1, 2, valueJoe);
-		insertAtTimeFrame(2, 3, valueBob);
-		List<BlueEntity<TestValue>> allEntities, entities3to5, entities2to3, entities0to1, entities0to0;
-
-		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), true);
-		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), true);
-		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), true);
-		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), true);
-		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), true);
-
-		assertEquals(2, allEntities.size());
-		assertEquals(0, entities3to5.size());
-		assertEquals(1, entities2to3.size());
-		assertEquals(valueBob, entities2to3.get(0).getValue());
-		assertEquals(1, entities0to1.size());
-		assertEquals(valueJoe, entities0to1.get(0).getValue());
-		assertEquals(0, entities0to0.size());
-	}
-
-	@Test
-	public void test_count_byStartTime() throws Exception {
-		TestValue valueJoe = new TestValue("Joe");
-		TestValue valueBob = new TestValue("Bob");
-		insertAtTimeFrame(1, 2, valueJoe);
-		insertAtTimeFrame(2, 3, valueBob);
-
-		assertEquals(2, getTimeCollection().query().byStartTime().afterOrAtTime(1).beforeOrAtTime(3).count());
-		assertEquals(2, getTimeCollection().query().byStartTime().afterOrAtTime(1).beforeOrAtTime(2).count());
-		assertEquals(1, getTimeCollection().query().byStartTime().afterOrAtTime(2).beforeOrAtTime(3).count());
-		assertEquals(0, getTimeCollection().query().byStartTime().afterOrAtTime(3).beforeOrAtTime(4).count());
+		BlueKey key2 = insertAtLong(2, new TestValue("Fred"));
+		assertEquals(key3, getLongCollection().getLastKey());
 	}
 
 	@Test
@@ -384,109 +283,16 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 			}
 		};
 
-		getTimeCollection().executeTask(task);
+		getLongCollection().executeTask(task);
 		assertTrue(hasRun.get());
-	}
-
-	@Test
-	public void test_rollup() throws Exception {
-		BlueKey key1At1 = createKey(1, 1);
-		BlueKey key3At3 = createKey(3, 3);
-		TestValue value1 = createValue("Anna");
-		TestValue value3 = createValue("Chuck");
-		List<TestValue> values;
-
-		values = getTimeCollection().query().getList();
-		assertEquals(0, values.size());
-
-		getTimeCollection().insert(key1At1, value1);
-		getTimeCollection().insert(key3At3, value3);
-		values = getTimeCollection().query().getList();
-		assertEquals(2, values.size());
-
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
-		File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(2, segmentDirectoryContents.length);
-
-		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		Range offByOneSegmentTimeRange = new Range(0, segmentSize);
-		Range entireFirstSegmentTimeRange = new Range(0, segmentSize -1);
-		try {
-			getTimeCollection().rollup(offByOneSegmentTimeRange);
-			fail();
-		} catch (BlueDbException e) {}
-		try {
-			getTimeCollection().rollup(entireFirstSegmentTimeRange);
-		} catch (BlueDbException e) {
-			fail();
-		}
-
-		values = getTimeCollection().query().getList();
-		assertEquals(2, values.size());
-		segmentDirectoryContents = segment.getPath().toFile().listFiles();
-		assertEquals(1, segmentDirectoryContents.length);
-	}
-
-	@Test
-	public void test_rollup_scheduling() throws Exception {
-		BlueKey key1At1 = createKey(1, 1);
-		BlueKey key3At3 = createKey(3, 3);
-		TestValue value1 = createValue("Anna");
-		TestValue value3 = createValue("Chuck");
-		List<TestValue> values;
-
-		Map<RollupTarget, Long> rollupTimes;
-		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
-		RollupTarget target_6000 = new RollupTarget(0, new Range(0, 5999));
-		RollupTarget target_3600000 = new RollupTarget(0, new Range(0, 3599999));
-		Set<RollupTarget> targets_none = new HashSet<>();
-		Set<RollupTarget> targets_mid_and_top = new HashSet<>(Arrays.asList(target_6000, target_3600000));
-//		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
-		
-		rollupTimes = scheduler.getRollupTimes();
-		assertEquals(targets_none, rollupTimes.keySet());
-
-		values = getTimeCollection().query().getList();
-		assertEquals(0, values.size());
-
-		getTimeCollection().insert(key1At1, value1);
-		getTimeCollection().insert(key3At3, value3);
-		values = getTimeCollection().query().getList();
-		assertEquals(2, values.size());
-
-		rollupTimes = scheduler.getRollupTimes();
-		assertEquals(targets_mid_and_top, rollupTimes.keySet());
-		assertTrue(rollupTimes.get(target_3600000) > rollupTimes.get(target_6000));
-	}
-
-	@Test
-	public void test_rollup_scheduling_presegment() throws Exception {
-		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		long segmentStart = segmentSize * 2;
-		BlueKey key = new TimeFrameKey(1, 1, segmentStart + 1);
-		Range rollupRange = new Range(0, segmentStart - 1);
-		long rollupDelay = segmentSize * 2;
-		RollupTarget rollupTarget = new RollupTarget(segmentStart, rollupRange, rollupDelay);
-
-		TestValue value = createValue("Anna");
-		getTimeCollection().insert(key, value);
-		long now = System.currentTimeMillis();
-
-		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
-		Map<RollupTarget, Long> rollupTimes = scheduler.getRollupTimes();
-		long rollupTime = rollupTimes.get(rollupTarget);
-		assertTrue(rollupTime > now + rollupDelay - 10_000);
-		assertTrue(rollupTime < now + rollupDelay + 10_000);
-
-		assertEquals(Arrays.asList(value), getTimeCollection().query().getList());
 	}
 
 	@Test
 	public void test_updateAll_invalid() {
 		TestValue value = new TestValue("Joe", 0);
-		insertAtTime(1, value);
+		insertAtLong(1, value);
 		try {
-			getTimeCollection().query().update((v) -> v.doSomethingNaughty());
+			getLongCollection().query().update((v) -> v.doSomethingNaughty());
 			fail();
 		} catch (BlueDbException e) {
 		}
@@ -495,47 +301,12 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_replaceAll_invalid() {
 		TestValue value = new TestValue("Joe", 0);
-		insertAtTime(1, value);
+		insertAtLong(1, value);
 		try {
-			getTimeCollection().query().replace((v) -> {v.doSomethingNaughty(); return null; });
+			getLongCollection().query().replace((v) -> {v.doSomethingNaughty(); return null; });
 			fail();
 		} catch (BlueDbException e) {
 		}
-	}
-
-	@Test
-	public void test_ensureCorrectKeyType() throws BlueDbException {
-		BlueTimeCollectionOnDisk<String> collectionWithTimeKeys = (BlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
-		BlueCollectionOnDisk<String> collectionWithLongKeys = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
-
-		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
-		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
-		collectionWithLongKeys.get(new LongKey(1));  // should not throw an Exception
-		try {
-			collectionWithTimeKeys.get(new LongKey(1));
-			fail();
-		} catch (BlueDbException e){}
-		try {
-			collectionWithLongKeys.get(new TimeKey(1, 1));
-			fail();
-		} catch (BlueDbException e){}
-	}
-
-
-	@Test
-	public void test_determineKeyType() throws BlueDbException {
-		db().getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();  // regular instantiation approach
-
-		BlueDbOnDisk reopenedDatbase = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(db().getPath()).build();  // reopen database without collections instantiated
-
-		try {
-			reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), HashGroupedKey.class, TestValue.class).build();  // try to open with the wrong key type
-			fail();
-		} catch (BlueDbException e) {
-		}
-
-		BlueTimeCollectionOnDisk<?> collectionWithoutType = (BlueTimeCollectionOnDisk<?>) reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
-		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
 	}
 
 	@Test
@@ -610,7 +381,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		TestValue value3 = createValue("Chuck");
 		List<TestValue> values;
-		values = getTimeCollection().query().getList();
+		values = getLongCollection().query().getList();
 		assertEquals(0, values.size());
 
 		getIntCollection().insert(key0, value1);
