@@ -14,7 +14,7 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
+import org.bluedb.disk.BlueDbOnDisk;
 import org.bluedb.disk.collection.task.BatchChangeTask;
 import org.bluedb.disk.collection.task.BatchDeleteTask;
 import org.bluedb.disk.collection.task.DeleteTask;
@@ -24,9 +24,9 @@ import org.bluedb.disk.collection.task.UpdateTask;
 import org.bluedb.disk.query.BlueTimeQueryOnDisk;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 
-public class BlueTimeCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueTimeCollectionOnDisk<T> implements BlueTimeCollection<T> {
+public class BlueTimeCollectionOnDisk<T extends Serializable> extends BlueCollectionOnDisk<T> implements BlueTimeCollection<T> {
 
-	public BlueTimeCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public BlueTimeCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 	}
 

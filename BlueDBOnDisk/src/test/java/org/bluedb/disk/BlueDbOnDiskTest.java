@@ -20,7 +20,6 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionMetaData;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.tasks.AsynchronousTestTask;
 import org.bluedb.tasks.TestTask;
@@ -701,7 +700,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getAllCollectionsFromDisk() throws Exception {
         getTimeCollection();
-        List<ReadOnlyBlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
+        List<BlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
         assertEquals(5, allCollections.size());
         db().getCollectionBuilder("string", HashGroupedKey.class, String.class).build();
         db().getCollectionBuilder("long", HashGroupedKey.class, Long.class).build();

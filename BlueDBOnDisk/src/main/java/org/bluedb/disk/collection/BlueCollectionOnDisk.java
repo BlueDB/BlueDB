@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
@@ -14,24 +16,46 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
+import org.bluedb.disk.BlueDbOnDisk;
 import org.bluedb.disk.collection.task.BatchChangeTask;
 import org.bluedb.disk.collection.task.BatchDeleteTask;
 import org.bluedb.disk.collection.task.DeleteTask;
 import org.bluedb.disk.collection.task.InsertTask;
 import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateTask;
+import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.query.BlueQueryOnDisk;
+import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
+import org.bluedb.disk.segment.rollup.RollupScheduler;
+import org.bluedb.disk.segment.rollup.RollupTarget;
+import org.bluedb.disk.segment.rollup.Rollupable;
 
-public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCollectionOnDisk<T> implements BlueCollection<T> {
+public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCollectionOnDisk<T> implements BlueCollection<T>, Rollupable {
 
-	public BlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+	private final BlueExecutor sharedExecutor;
+	private final String collectionKey;
+	private final RollupScheduler rollupScheduler;
+	private final RecoveryManager<T> recoveryManager;
+
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses);
+		sharedExecutor = db.getSharedExecutor();
+		collectionKey = getPath().toString();
+		rollupScheduler = new RollupScheduler(this);
+		rollupScheduler.start();
+		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
+		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 
-	public BlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
+		sharedExecutor = db.getSharedExecutor();
+		collectionKey = getPath().toString();
+		rollupScheduler = new RollupScheduler(this);
+		rollupScheduler.start();
+		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
+		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 	
 	@Override
@@ -85,5 +109,45 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCo
 		ensureCorrectKeyType(key);
 		Runnable deleteTask = new DeleteTask<T>(this, key);
 		executeTask(deleteTask);
+	}
+
+	public int getQueuedTaskCount() {
+		return sharedExecutor.getQueryQueueSize(collectionKey);
+	}
+
+	public BlueExecutor getSharedExecutor() {
+		return sharedExecutor;
+	}
+
+	public void submitTask(Runnable task) {
+		sharedExecutor.submitQueryTask(collectionKey, task);
+	}
+
+	public void executeTask(Runnable task) throws BlueDbException{
+		Future<?> future = sharedExecutor.submitQueryTask(collectionKey, task);
+		try {
+			future.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new BlueDbException("BlueDB task failed " + task.toString(), e);
+		}
+	}
+
+	public RecoveryManager<T> getRecoveryManager() {
+		return recoveryManager;
+	}
+
+	@Override
+	public void reportReads(List<RollupTarget> rollupTargets) {
+		rollupScheduler.reportReads(rollupTargets);
+	}
+
+	@Override
+	public void reportWrites(List<RollupTarget> rollupTargets) {
+		rollupScheduler.reportWrites(rollupTargets);
+	}
+
+	public RollupScheduler getRollupScheduler() {
+		return rollupScheduler;
 	}
 }

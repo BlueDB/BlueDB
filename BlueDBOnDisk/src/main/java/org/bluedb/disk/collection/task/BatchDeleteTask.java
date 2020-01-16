@@ -8,17 +8,17 @@ import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 
 public class BatchDeleteTask<T extends Serializable> extends QueryTask {
 
-	private final ReadOnlyBlueCollectionOnDisk<T> collection;
+	private final BlueCollectionOnDisk<T> collection;
 	private final List<IndividualChange<T>> sortedChanges;
 
-	public BatchDeleteTask(ReadOnlyBlueCollectionOnDisk<T> collection, Collection<BlueKey> keys) {
+	public BatchDeleteTask(BlueCollectionOnDisk<T> collection, Collection<BlueKey> keys) {
 		this.collection = collection;
 		sortedChanges = new ArrayList<>();
 		keys.forEach( (key) -> sortedChanges.add( IndividualChange.createDeleteChange(key)));

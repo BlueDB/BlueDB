@@ -5,17 +5,12 @@ import java.util.LinkedList;
 
 import org.bluedb.api.BlueTimeQuery;
 import org.bluedb.api.Condition;
-import org.bluedb.api.Mapper;
-import org.bluedb.api.Updater;
-import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
-import org.bluedb.disk.collection.task.DeleteMultipleTask;
-import org.bluedb.disk.collection.task.ReplaceMultipleTask;
-import org.bluedb.disk.collection.task.UpdateMultipleTask;
 
-public class BlueTimeQueryOnDisk<T extends Serializable> extends ReadOnlyBlueTimeQueryOnDisk<T> implements BlueTimeQuery<T> {
+public class BlueTimeQueryOnDisk<T extends Serializable> extends BlueQueryOnDisk<T> implements BlueTimeQuery<T> {
 
-	public BlueTimeQueryOnDisk(BlueTimeCollectionOnDisk<T> collection) {
+	public BlueTimeQueryOnDisk(BlueCollectionOnDisk<T> collection) {
 		super(collection);
 	}
 
@@ -26,52 +21,33 @@ public class BlueTimeQueryOnDisk<T extends Serializable> extends ReadOnlyBlueTim
 	}
 
 	@Override
-	public BlueTimeQuery<T> byStartTime() {
-		super.byStartTime();
-		return this;
-	}
-
-	@Override
-	public BlueTimeQuery<T> beforeTime(long time) {
-		super.beforeTime(time);
-		return this;
-	}
-
-	@Override
-	public BlueTimeQuery<T> beforeOrAtTime(long time) {
-		super.beforeOrAtTime(time);
-		return this;
-	}
-
-	@Override
-	public BlueTimeQuery<T> afterTime(long time) {
+	public BlueTimeQueryOnDisk<T> afterTime(long time) {
 		super.afterTime(time);
 		return this;
 	}
 
 	@Override
-	public BlueTimeQuery<T> afterOrAtTime(long time) {
+	public BlueTimeQueryOnDisk<T> afterOrAtTime(long time) {
 		super.afterOrAtTime(time);
 		return this;
 	}
 
-	//TODO: Remember that this is duplicated so you might want to pull of some strategy pattern shiz to share code here
 	@Override
-	public void delete() throws BlueDbException {
-		Runnable deleteAllTask = new DeleteMultipleTask<T>(collection, clone());
-		collection.executeTask(deleteAllTask);
+	public BlueTimeQueryOnDisk<T> beforeTime(long time) {
+		super.beforeTime(time);
+		return this;
 	}
 
 	@Override
-	public void update(Updater<T> updater) throws BlueDbException {
-		Runnable updateMultipleTask = new UpdateMultipleTask<T>(collection, clone(), updater);
-		collection.executeTask(updateMultipleTask);
+	public BlueTimeQueryOnDisk<T> beforeOrAtTime(long time) {
+		super.beforeOrAtTime(time);
+		return this;
 	}
 
 	@Override
-	public void replace(Mapper<T> mapper) throws BlueDbException {
-		Runnable updateMultipleTask = new ReplaceMultipleTask<T>(collection, clone(), mapper);
-		collection.executeTask(updateMultipleTask);
+	public BlueTimeQueryOnDisk<T> byStartTime() {
+		super.byStartTime();
+		return this;
 	}
 
 	public BlueTimeQueryOnDisk<T> clone() {

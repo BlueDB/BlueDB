@@ -6,12 +6,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.bluedb.api.Condition;
-import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadBlueQuery;
+import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
@@ -19,47 +17,37 @@ import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.IndexManager;
-import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.query.ReadOnlyBlueQueryOnDisk;
-import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
-import org.bluedb.disk.segment.rollup.RollupScheduler;
-import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
-public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements ReadableBlueCollection<T>, Rollupable {
+public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements ReadableBlueCollection<T> {
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
 	private final BlueSerializer serializer;
-	private final RecoveryManager<T> recoveryManager;
 	private final Path collectionPath;
-	private final String collectionKey;
 	private final FileManager fileManager;
 	private final SegmentManager<T> segmentManager;
-	private final RollupScheduler rollupScheduler;
 	private final CollectionMetaData metaData;
 	protected final IndexManager<T> indexManager;
-	private final BlueExecutor sharedExecutor;
 
 	public ReadOnlyBlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
 	public ReadOnlyBlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
-		sharedExecutor = db.getSharedExecutor();
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		boolean isNewCollection = !collectionPath.toFile().exists();
 		collectionPath.toFile().mkdirs();
-		collectionKey = collectionPath.toString();
 		metaData = new CollectionMetaData(collectionPath);
 		Class<? extends Serializable>[] classesToRegister = metaData.getAndAddToSerializedClassList(valueType, additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
@@ -67,16 +55,13 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements Rea
 		segmentSize = determineSegmentSize(metaData, requestedKeyType, segmentSize, isNewCollection);
 		keyType = determineKeyType(metaData, requestedKeyType);
 		SegmentSizeSetting segmentSizeSettings = segmentSize;
-		recoveryManager = new RecoveryManager<T>(this, fileManager, serializer);
-		rollupScheduler = new RollupScheduler(this);
-		segmentManager = new SegmentManager<T>(collectionPath, fileManager, this, segmentSizeSettings.getConfig());
+		// TODO change SegmentManager to handle read-only well
+		Rollupable rollupable = null;
+		if (this instanceof Rollupable) {
+			rollupable = (Rollupable) this;
+		}
+		segmentManager = new SegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
 		indexManager = new IndexManager<>(this, collectionPath);
-		rollupScheduler.start();
-		recoveryManager.recover();  // everything else has to be in place before running this
-	}
-
-	public int getQueuedTaskCount() {
-		return sharedExecutor.getQueryQueueSize(collectionKey);
 	}
 
 	@Override
@@ -115,24 +100,6 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements Rea
 		return results;
 	}
 
-	public BlueExecutor getSharedExecutor() {
-		return sharedExecutor;
-	}
-
-	public void submitTask(Runnable task) {
-		sharedExecutor.submitQueryTask(collectionKey, task);
-	}
-
-	public void executeTask(Runnable task) throws BlueDbException{
-		Future<?> future = sharedExecutor.submitQueryTask(collectionKey, task);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new BlueDbException("BlueDB task failed " + task.toString(), e);
-		}
-	}
-
 	public void rollup(Range timeRange) throws BlueDbException {
 		Segment<T> segment = segmentManager.getSegment(timeRange.getStart());
 		segment.rollup(timeRange);
@@ -140,10 +107,6 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements Rea
 
 	public SegmentManager<T> getSegmentManager() {
 		return segmentManager;
-	}
-
-	public RecoveryManager<T> getRecoveryManager() {
-		return recoveryManager;
 	}
 
 	public Path getPath() {
@@ -224,17 +187,4 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> implements Rea
 		return indexManager;
 	}
 
-	@Override
-	public void reportReads(List<RollupTarget> rollupTargets) {
-		rollupScheduler.reportReads(rollupTargets);
-	}
-
-	@Override
-	public void reportWrites(List<RollupTarget> rollupTargets) {
-		rollupScheduler.reportWrites(rollupTargets);
-	}
-
-	public RollupScheduler getRollupScheduler() {
-		return rollupScheduler;
-	}
 }

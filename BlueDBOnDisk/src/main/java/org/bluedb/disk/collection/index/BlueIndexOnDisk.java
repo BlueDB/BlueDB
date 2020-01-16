@@ -16,9 +16,10 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BatchUtils;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
+import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
@@ -26,6 +27,7 @@ import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
+import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -39,6 +41,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 	private final FileManager fileManager;
 	private final SegmentManager<BlueKey> segmentManager;
 	private final String indexName;
+	private final RollupScheduler rollupScheduler;
 
 	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(ReadOnlyBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
@@ -79,6 +82,11 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 		this.indexName = indexPath.toFile().getName();
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
 		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
+		if (collection instanceof BlueCollectionOnDisk) {
+			rollupScheduler = ((BlueCollectionOnDisk<T>) collection).getRollupScheduler();
+		} else {
+			rollupScheduler = null;
+		}
 	}
 
 	protected static SegmentSizeSetting determineSegmentSize(Class<? extends BlueKey> keyType) throws BlueDbException {
@@ -200,14 +208,19 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> impleme
 
 	@Override
 	public void reportReads(List<RollupTarget> rollupTargets) {
-		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
-		collection.getRollupScheduler().reportReads(indexRollupTargets);
+		if (rollupScheduler != null) {
+			List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
+			rollupScheduler.reportReads(indexRollupTargets);
+			
+		}
 	}
 
 	@Override
 	public void reportWrites(List<RollupTarget> rollupTargets) {
-		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
-		collection.getRollupScheduler().reportWrites(indexRollupTargets);
+		if (rollupScheduler != null) {
+			List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
+			rollupScheduler.reportWrites(indexRollupTargets);
+		}
 	}
 
 	@Override

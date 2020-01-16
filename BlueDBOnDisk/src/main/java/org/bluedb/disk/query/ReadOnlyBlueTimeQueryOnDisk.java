@@ -19,32 +19,32 @@ public class ReadOnlyBlueTimeQueryOnDisk<T extends Serializable> extends ReadOnl
 	}
 
 	@Override
-	public ReadBlueTimeQuery<T> afterTime(long time) {
-		min = Math.max(min, Math.max(time + 1,time)); // last part to avoid overflow errors
+	public ReadOnlyBlueTimeQueryOnDisk<T> afterTime(long time) {
+		super.afterTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadBlueTimeQuery<T> afterOrAtTime(long time) {
-		min = Math.max(min, time);
+	public ReadOnlyBlueTimeQueryOnDisk<T> afterOrAtTime(long time) {
+		super.afterOrAtTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadBlueTimeQuery<T> beforeTime(long time) {
-		max = Math.min(max, Math.min(time - 1,time)); // last part to avoid overflow errors
+	public ReadOnlyBlueTimeQueryOnDisk<T> beforeTime(long time) {
+		super.beforeTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadBlueTimeQuery<T> beforeOrAtTime(long time) {
-		max = Math.min(max, time);
+	public ReadOnlyBlueTimeQueryOnDisk<T> beforeOrAtTime(long time) {
+		super.beforeOrAtTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadBlueTimeQuery<T> byStartTime() {
-		byStartTime = true;
+	public ReadOnlyBlueTimeQueryOnDisk<T> byStartTime() {
+		super.byStartTime();
 		return this;
 	}
 

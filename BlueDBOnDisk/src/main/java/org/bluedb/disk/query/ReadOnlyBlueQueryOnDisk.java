@@ -9,8 +9,8 @@ import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionValueIterator;
+import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 
@@ -67,5 +67,30 @@ public class ReadOnlyBlueQueryOnDisk<T extends Serializable> implements ReadBlue
 
 	public Range getRange() {
 		return new Range(min, max);
+	}
+
+	protected ReadOnlyBlueQueryOnDisk<T> afterTime(long time) {
+		min = Math.max(min, Math.max(time + 1,time)); // last part to avoid overflow errors
+		return this;
+	}
+
+	protected ReadOnlyBlueQueryOnDisk<T> afterOrAtTime(long time) {
+		min = Math.max(min, time);
+		return this;
+	}
+
+	protected ReadOnlyBlueQueryOnDisk<T> beforeTime(long time) {
+		max = Math.min(max, Math.min(time - 1,time)); // last part to avoid overflow errors
+		return this;
+	}
+
+	protected ReadOnlyBlueQueryOnDisk<T> beforeOrAtTime(long time) {
+		max = Math.min(max, time);
+		return this;
+	}
+
+	protected ReadOnlyBlueQueryOnDisk<T> byStartTime() {
+		byStartTime = true;
+		return this;
 	}
 }

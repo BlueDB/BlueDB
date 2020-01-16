@@ -311,14 +311,18 @@ public class Segment <T extends Serializable> implements Comparable<Segment<T>> 
 		String fileName = path.toFile().getName();
 		Range targetRange = Range.fromUnderscoreDelmimitedString(fileName);
 		List<RollupTarget> rollupTargets = getRollupTargets(targetRange);
-		rollupable.reportWrites(rollupTargets);
+		if (rollupable != null) {
+			rollupable.reportWrites(rollupTargets);
+		}
 	}
 
 	protected void reportRead(Path path) {
 		String fileName = path.toFile().getName();
 		Range targetRange = Range.fromUnderscoreDelmimitedString(fileName);
 		List<RollupTarget> rollupTargets = getRollupTargets(targetRange);
-		rollupable.reportReads(rollupTargets);
+		if (rollupable != null) {
+			rollupable.reportReads(rollupTargets);
+		}
 	}
 
 	protected List<RollupTarget> getRollupTargets(Range currentChunkRange) {
