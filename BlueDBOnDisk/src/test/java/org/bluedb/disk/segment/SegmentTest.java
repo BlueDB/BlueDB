@@ -476,8 +476,8 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		Segment<TestValue> segment1 = getSegment(1);
 		Segment<TestValue> segment1copy = getSegment(1);
 		Segment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
-		Segment<TestValue> segmentNullPath = Segment.getTestSegment();
-		Segment<TestValue> segmentNullPathCopy = Segment.getTestSegment();
+		ReadableSegment<TestValue> segmentNullPath = Segment.getTestSegment();
+		ReadableSegment<TestValue> segmentNullPathCopy = Segment.getTestSegment();
 		assertEquals(segment1, segment1copy);
 		assertFalse(segment1.equals(segmentMax));
 		assertFalse(segment1.equals(null));
@@ -492,7 +492,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		Segment<TestValue> segment1 = getSegment(1);
 		Segment<TestValue> segment1copy = getSegment(1);
 		Segment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
-		Segment<TestValue> segmentNullPath = Segment.getTestSegment();
+		ReadableSegment<TestValue> segmentNullPath = Segment.getTestSegment();
 		assertEquals(segment1.hashCode(), segment1copy.hashCode());
 		assertTrue(segment1.hashCode() != segmentMax.hashCode());
 		assertTrue(segment1.hashCode() != segmentNullPath.hashCode());
