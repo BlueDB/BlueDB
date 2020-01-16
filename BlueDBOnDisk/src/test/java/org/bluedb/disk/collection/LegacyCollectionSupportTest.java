@@ -80,6 +80,7 @@ public class LegacyCollectionSupportTest extends TestCase {
 	
 	private List<File> filesToDelete;
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void setUp() throws Exception {
 		filesToDelete = new ArrayList<>();

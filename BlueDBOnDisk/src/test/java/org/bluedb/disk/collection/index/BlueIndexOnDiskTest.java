@@ -5,12 +5,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
+import org.bluedb.disk.BlueDbOnDiskBuilder;
+import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
@@ -137,6 +140,52 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptyList, indexOnDisk.get(integerKey1));
 		assertEquals(emptyList, indexOnDisk.get(integerKey2));
 		assertEquals(justBob, indexOnDisk.get(integerKey3));
+	}
+
+
+	@Test
+	public void test_get_readonly() throws Exception {
+		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+
+		ReadOnlyBlueDbOnDisk readOnlyDb = (ReadOnlyBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
+		BlueIndex<IntegerKey, TestValue> readOnlyIndex = readOnlyCollection.getIndex("test_index", IntegerKey.class);
+
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+
+		IntegerKey integerKey1 = new IntegerKey(1);
+		IntegerKey integerKey2 = new IntegerKey(2);
+		IntegerKey integerKey3 = new IntegerKey(3);
+
+		List<TestValue> emptyList = Arrays.asList();
+		List<TestValue> bobAndJoe = Arrays.asList(valueBob3, valueJoe3);
+		List<TestValue> justBob = Arrays.asList(valueBob3);
+		List<TestValue> justFred = Arrays.asList(valueFred1);
+
+		assertEquals(emptyList, readOnlyIndex.get(integerKey1));
+		assertEquals(emptyList, readOnlyIndex.get(integerKey2));
+		assertEquals(emptyList, readOnlyIndex.get(integerKey3));
+
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+
+		assertEquals(justFred, readOnlyIndex.get(integerKey1));
+		assertEquals(emptyList, readOnlyIndex.get(integerKey2));
+		assertEquals(bobAndJoe, readOnlyIndex.get(integerKey3));
+
+		collection.delete(timeKeyFred1);
+		collection.delete(timeKeyJoe3);
+
+		assertEquals(emptyList, readOnlyIndex.get(integerKey1));
+		assertEquals(emptyList, readOnlyIndex.get(integerKey2));
+		assertEquals(justBob, readOnlyIndex.get(integerKey3));
 	}
 
 	@Test

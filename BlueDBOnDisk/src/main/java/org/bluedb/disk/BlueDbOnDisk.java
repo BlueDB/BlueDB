@@ -79,7 +79,6 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 				assertExistingCollectionIsType(collection, BlueCollection.class);
 			}
 			
-			@SuppressWarnings("unchecked")
 			BlueCollection<T> typedCollection = (BlueCollection<T>) collection;
 			return typedCollection;
 		}

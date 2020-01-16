@@ -20,10 +20,10 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 
     @Test
     public void test_differentSegmentSizes() throws Exception {
-		BlueCollectionOnDisk<TestValue> hourCollection = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+		BlueCollectionOnDisk<TestValue> hourCollection = (BlueCollectionOnDisk<TestValue>) db.getCollectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_HOUR)
 				.build();
-		BlueCollectionOnDisk<TestValue> dayCollection = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("days", TimeKey.class, TestValue.class)
+		BlueCollectionOnDisk<TestValue> dayCollection = (BlueCollectionOnDisk<TestValue>) db.getCollectionBuilder("days", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_DAY)
 				.build();
 
@@ -46,14 +46,14 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 
     @Test
     public void test_reopeningSegmentWithDifferentSizes() throws Exception {
-		db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+		db.getCollectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_HOUR)
 				.build();
 		db.shutdown();
 		db.awaitTermination(1, TimeUnit.MINUTES);
 		db = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();  // reopen
 		
-		BlueCollectionOnDisk<TestValue> hourCollectionReopenedAsDaily = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+		BlueCollectionOnDisk<TestValue> hourCollectionReopenedAsDaily = (BlueCollectionOnDisk<TestValue>) db.getCollectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_DAY)
 				.build();
 

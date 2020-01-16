@@ -50,8 +50,10 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void test_getCollection() throws Exception {
+		// NOTE: we need at least one use of this deprecated method to maintain 100% coverage.
 		db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 
 		BlueCollection<TestValue> collection = db.getTimeCollection(getTimeCollectionName(), TestValue.class);
@@ -62,7 +64,7 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getCollection_wrong_type() throws Exception {
-		BlueCollection<TestValue> valueCollection = db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		BlueCollection<TestValue> valueCollection = db.getCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 		TimeKey testValueKey = new TimeKey(1, 1);
 		valueCollection.insert(testValueKey, new TestValue("Bob"));
 		try {
@@ -97,8 +99,8 @@ public class BlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_initializeCollection_existing_correct_type() throws Exception {
-		db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
-		assertNotNull(db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build());  // make sure it works the second time as well
+		db.getCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		assertNotNull(db.getCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build());  // make sure it works the second time as well
 	}
 
 	@SuppressWarnings({ "unchecked", "deprecation" })
