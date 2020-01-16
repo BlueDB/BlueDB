@@ -1,4 +1,4 @@
-package org.bluedb.disk.collection;
+package org.bluedb.disk.collection.metadata;
 
 import java.io.IOException;
 import java.io.Serializable;

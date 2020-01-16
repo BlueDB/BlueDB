@@ -19,7 +19,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
-import org.bluedb.disk.collection.CollectionMetaData;
+import org.bluedb.disk.collection.metadata.CollectionMetaData;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.tasks.AsynchronousTestTask;
 import org.bluedb.tasks.TestTask;

@@ -17,6 +17,7 @@ import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
 import org.bluedb.disk.collection.index.BlueIndexOnDisk;
 import org.bluedb.disk.collection.index.IndexManager;
+import org.bluedb.disk.collection.metadata.CollectionMetaData;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.query.ReadOnlyBlueQueryOnDisk;
 import org.bluedb.disk.segment.Range;

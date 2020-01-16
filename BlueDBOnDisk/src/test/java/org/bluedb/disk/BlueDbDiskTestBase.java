@@ -27,7 +27,7 @@ import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
-import org.bluedb.disk.collection.CollectionMetaData;
+import org.bluedb.disk.collection.metadata.CollectionMetaData;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.models.calls.Call;

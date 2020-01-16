@@ -1,4 +1,4 @@
-package org.bluedb.disk.collection;
+package org.bluedb.disk.collection.metadata;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -18,6 +18,7 @@ import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
 import org.bluedb.disk.TestValueSub;
+import org.bluedb.disk.collection.metadata.CollectionMetaData;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
