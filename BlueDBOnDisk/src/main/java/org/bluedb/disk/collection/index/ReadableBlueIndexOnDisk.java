@@ -3,30 +3,23 @@ package org.bluedb.disk.collection.index;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.BatchUtils;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
 import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
 import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
-import org.bluedb.disk.segment.rollup.IndexRollupTarget;
-import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -36,21 +29,9 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 	protected final static String FILE_KEY_EXTRACTOR = ".extractor";
 
 	private final ReadableBlueCollectionOnDisk<T> collection;
-	private final KeyExtractor<I, T> keyExtractor;
+	protected final KeyExtractor<I, T> keyExtractor;
 	private final FileManager fileManager;
 	private final SegmentManager<BlueKey> segmentManager;
-	private final String indexName;
-	private final RollupScheduler rollupScheduler;
-
-	protected static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableBlueCollectionOnDisk<T> collection, ReadableBlueIndexOnDisk<K, T> index) throws BlueDbException {
-		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
-			while (iterator.hasNext()) {
-				List<BlueEntity<T>> entities = iterator.next(1000);
-				index.addEntities(entities);
-			}
-		}
-	}
 
 	public Class<I> getType() {
 		return keyExtractor.getType();
@@ -60,14 +41,8 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
 		this.fileManager = collection.getFileManager();
-		this.indexName = indexPath.toFile().getName();
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
 		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
-		if (collection instanceof BlueCollectionOnDisk) {
-			rollupScheduler = ((BlueCollectionOnDisk<T>) collection).getRollupScheduler();
-		} else {
-			rollupScheduler = null;
-		}
 	}
 
 	protected static SegmentSizeSetting determineSegmentSize(Class<? extends BlueKey> keyType) throws BlueDbException {
@@ -81,37 +56,19 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 	}
 
 	public void add(BlueKey key, T newItem) throws BlueDbException {
-		if (newItem == null) {
-			return;
-		}
-		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, newItem)) {
-			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
-			segment.insert(compositeKey, key);
-		}
+		// TODO remove
 	}
 
 	public void addEntities(Collection<BlueEntity<T>> entities) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = entities.stream()
-				.map( this::toIndexChanges )
-				.flatMap(List::stream)
-				.sorted()
-				.collect(Collectors.toList());
-		BatchUtils.apply(segmentManager, sortedIndexChanges);
+		// TODO remove
 	}
 
 	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = toSortedIndexChanges(changes);
-		BatchUtils.apply(segmentManager, sortedIndexChanges);
+		// TODO remove
 	}
 
 	public void remove(BlueKey key, T oldItem) throws BlueDbException {
-		if (oldItem == null) {
-			return;
-		}
-		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, oldItem)) {
-			Segment<BlueKey> segment = segmentManager.getFirstSegment(compositeKey);
-			segment.delete(compositeKey);
-		}
+		// TODO remove
 	}
 
 	@Override
@@ -135,73 +92,21 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 	}
 
 	public void rollup(Range range) throws BlueDbException {
-		Segment<?> segment = segmentManager.getSegment(range.getStart());
-		segment.rollup(range);
+		// TODO remove
 	}
-
 
 	public SegmentManager<BlueKey> getSegmentManager() {
 		return segmentManager;
 	}
 
-	private List<IndividualChange<BlueKey>> toSortedIndexChanges(Collection<IndividualChange<T>> changes) {
-		return changes.stream()
-				.map( this::toIndexChanges )
-				.flatMap(List::stream)
-				.sorted()
-				.collect(Collectors.toList());
-	}
-
-	private List<IndividualChange<BlueKey>> toIndexChanges(BlueEntity<T> entity) {
-		BlueKey key = entity.getKey();
-		T newValue = entity.getValue();
-		List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(key, newValue);
-		return toIndexChanges(compositeKeys, key);
-	}
-
-	private List<IndividualChange<BlueKey>> toIndexChanges(IndividualChange<T> change) {
-		List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(change);
-		BlueKey underlyingKey = change.getKey();
-		return toIndexChanges(compositeKeys, underlyingKey);
-	}
-
-	private static <I extends ValueKey> List<IndividualChange<BlueKey>> toIndexChanges(List<IndexCompositeKey<I>> compositeKeys, BlueKey destinationKey) {
-		List<IndividualChange<BlueKey>> indexChanges = new ArrayList<>();
-		for (IndexCompositeKey<I> compositeKey: compositeKeys) {
-			IndividualChange<BlueKey> indexChange = IndividualChange.createInsertChange(compositeKey, destinationKey);
-			indexChanges.add(indexChange);
-		}
-		return indexChanges;
-	}
-
-	private List<IndexCompositeKey<I>> toCompositeKeys(IndividualChange<T> change) {
-		BlueKey destinationKey = change.getKey();
-		T newValue = change.getNewValue();
-		return toCompositeKeys(destinationKey, newValue);
-	}
-
-	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) {
-		List<I> indexKeys = keyExtractor.extractKeys(newItem);
-		return indexKeys.stream()
-				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
-				.collect( Collectors.toList() );
-	}
-
 	@Override
 	public void reportReads(List<RollupTarget> rollupTargets) {
-		if (rollupScheduler != null) {
-			List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
-			rollupScheduler.reportReads(indexRollupTargets);
-			
-		}
+		// TODO remove
 	}
 
 	@Override
 	public void reportWrites(List<RollupTarget> rollupTargets) {
-		if (rollupScheduler != null) {
-			List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
-			rollupScheduler.reportWrites(indexRollupTargets);
-		}
+		// TODO remove
 	}
 
 	@Override
@@ -214,15 +119,5 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 		@SuppressWarnings("unchecked")
 		IndexCompositeKey<I> lastCompositeKey = (IndexCompositeKey<I>) lastIndexEntity.getKey();
 		return lastCompositeKey.getIndexKey();
-	}
-
-	private List<IndexRollupTarget> toIndexRollupTargets(List<RollupTarget> rollupTargets) {
-		return rollupTargets.stream()
-				.map( this::toIndexRollupTarget )
-				.collect( Collectors.toList() );
-	}
-
-	private IndexRollupTarget toIndexRollupTarget(RollupTarget rollupTarget) {
-		return new IndexRollupTarget(indexName, rollupTarget.getSegmentGroupingNumber(), rollupTarget.getRange() );
 	}
 }
