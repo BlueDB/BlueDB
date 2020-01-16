@@ -17,7 +17,7 @@ public class LastEntityFinder {
 		segmentManager = index.getSegmentManager();
 	}
 
-	public LastEntityFinder(final ReadOnlyBlueCollectionOnDisk<?> collection) {
+	public LastEntityFinder(final ReadableBlueCollectionOnDisk<?> collection) {
 		segmentManager = collection.getSegmentManager();
 	}
 

@@ -20,7 +20,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.SegmentSizeSetting;
@@ -114,7 +114,7 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 	@Override
 	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
-			ReadOnlyBlueCollectionOnDisk<?> untypedCollection = collections.get(name);
+			ReadableBlueCollectionOnDisk<?> untypedCollection = collections.get(name);
 			if (untypedCollection == null) {
 				return null;
 			}
@@ -150,7 +150,7 @@ public class BlueDbOnDisk extends ReadOnlyBlueDbOnDisk implements BlueDb {
 		}
 	}
 
-	protected static void assertExistingCollectionIsType(ReadOnlyBlueCollectionOnDisk<?> collection, Class<?> klazz) throws BlueDbException {
+	protected static void assertExistingCollectionIsType(ReadableBlueCollectionOnDisk<?> collection, Class<?> klazz) throws BlueDbException {
 		if(!klazz.isAssignableFrom(collection.getClass())) {
 			String name = collection.getPath().toFile().getName();
 			throw new BlueDbException("The " + name + " collection already exists but it cannot be cast to a " + klazz.getSimpleName() + ". InvalidType=" + collection.getClass());

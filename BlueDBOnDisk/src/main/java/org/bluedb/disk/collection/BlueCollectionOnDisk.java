@@ -17,6 +17,7 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BlueDbOnDisk;
+import org.bluedb.disk.collection.metadata.CollectionMetaData;
 import org.bluedb.disk.collection.task.BatchChangeTask;
 import org.bluedb.disk.collection.task.BatchDeleteTask;
 import org.bluedb.disk.collection.task.DeleteTask;
@@ -31,7 +32,7 @@ import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
-public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCollectionOnDisk<T> implements BlueCollection<T>, Rollupable {
+public class BlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCollectionOnDisk<T> implements BlueCollection<T>, Rollupable {
 
 	private final BlueExecutor sharedExecutor;
 	private final String collectionKey;
@@ -149,5 +150,26 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCo
 
 	public RollupScheduler getRollupScheduler() {
 		return rollupScheduler;
+	}
+
+	@Override
+	public CollectionMetaData getMetaData() {
+		return metadata;
+	}
+
+	private CollectionMetaData metadata;
+
+	@Override
+	protected CollectionMetaData getOrCreateMetadata() {
+		if (metadata == null) {
+			metadata = new CollectionMetaData(getPath());
+		}
+		return metadata;
+	}
+
+	@Override
+	protected Class<? extends Serializable>[] getClassesToRegister(Class<? extends BlueKey> requestedKeyType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+		return metadata.getAndAddToSerializedClassList(getType(), additionalRegisteredClasses);
+
 	}
 }
