@@ -9,7 +9,7 @@ import org.junit.Test;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.SegmentEntityIterator;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -20,7 +20,7 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 	public void test_close() throws Exception {
         BlueKey key = createKey(1, 1);
         TestValue value = createValue("Anna");
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
         Range range = new Range(1, 1);
         Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 
@@ -123,8 +123,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getNext_multiple_time_frames() {
 		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		Segment<TestValue> firstSegment = getSegment(0);
-		Segment<TestValue> secondSegment = getSegment(segmentSize);
+		ReadWriteSegment<TestValue> firstSegment = getSegment(0);
+		ReadWriteSegment<TestValue> secondSegment = getSegment(segmentSize);
 		
 		TestValue valueInFirstSegment = new TestValue("first");
 		TestValue valueInBothSegments = new TestValue("both");

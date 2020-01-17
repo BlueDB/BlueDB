@@ -15,7 +15,7 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.Blutils.CheckedFunction;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
-import org.bluedb.disk.file.FileManager;
+import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
@@ -29,25 +29,25 @@ import org.bluedb.disk.segment.writer.StreamingWriter;
 import org.bluedb.disk.segment.writer.UpdateWriter;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class Segment <T extends Serializable> extends ReadableSegment<T> {
+public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T> {
 
 	private final Rollupable rollupable;
-	private final FileManager fileManager;
+	private final ReadWriteFileManager fileManager;
 
-	protected static <T extends Serializable> Segment<T> getTestSegment () {
-		return new Segment<T>();
+	protected static <T extends Serializable> ReadWriteSegment<T> getTestSegment () {
+		return new ReadWriteSegment<T>();
 	}
 
-	protected Segment() {super(null, null, null); fileManager = null; rollupable=null; }
+	protected ReadWriteSegment() {super(null, null, null); fileManager = null; rollupable=null; }
 
-	public Segment(Path segmentPath, Range segmentRange, Rollupable rollupable, FileManager fileManager, final List<Long> rollupLevels) {
+	public ReadWriteSegment(Path segmentPath, Range segmentRange, Rollupable rollupable, ReadWriteFileManager fileManager, final List<Long> rollupLevels) {
 		super(segmentPath, segmentRange, rollupLevels);
 		this.rollupable = rollupable;
 		this.fileManager = fileManager;
 	}
 
 	@Override
-	protected FileManager getFileManager() {
+	protected ReadWriteFileManager getFileManager() {
 		return fileManager;
 	}
 

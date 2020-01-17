@@ -12,7 +12,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -22,7 +22,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_close() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key = createKey(1, 1);
 		TestValue value = createValue("Anna");
 
@@ -38,7 +38,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_different_ranges() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -70,7 +70,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_hasNext() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -90,7 +90,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_next() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -109,7 +109,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_next_rollup_before_reads() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -133,7 +133,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_next_rollup_during_reads() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -170,7 +170,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getNextStream_file_deleted() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -200,7 +200,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getNextStream_exception() throws Exception {
-		Segment<TestValue> segment = getSegment(1);
+		ReadWriteSegment<TestValue> segment = getSegment(1);
 		BlueKey key1 = createKey(1, 1);
 		BlueKey key2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
@@ -217,7 +217,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		
 		assertEquals(2, entitiesInRealSegment.size());
 
-		Segment<TestValue> mockSegment = new Segment<TestValue>(segment.getPath(), null, null, null, null) {
+		ReadWriteSegment<TestValue> mockSegment = new ReadWriteSegment<TestValue>(segment.getPath(), null, null, null, null) {
 			@Override
 			protected BlueObjectInput<BlueEntity<TestValue>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 				throw new BlueDbException("segment fail");
@@ -232,8 +232,8 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getNext_multiple_time_frames() {
 		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		Segment<TestValue> firstSegment = getSegment(0);
-		Segment<TestValue> secondSegment = getSegment(segmentSize);
+		ReadWriteSegment<TestValue> firstSegment = getSegment(0);
+		ReadWriteSegment<TestValue> secondSegment = getSegment(segmentSize);
 		
 		TestValue valueInFirstSegment = new TestValue("first");
 		TestValue valueInBothSegments = new TestValue("both");
@@ -262,7 +262,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
+		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "longs";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -271,15 +271,15 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 			stringCollection.insert(key, value);
 		}
 		
-		List<Segment<String>> segments = stringCollection.getSegmentManager().getExistingSegments(new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		List<ReadWriteSegment<String>> segments = stringCollection.getSegmentManager().getExistingSegments(new Range(Long.MIN_VALUE, Long.MAX_VALUE));
 		assertEquals(n, segments.size());
 
-		for (Segment<String> segment: segments) {
+		for (ReadWriteSegment<String> segment: segments) {
 			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
 			List<String> strings = toValueList(iterator);
 			assertEquals(1, strings.size());
 		}
-		for (Segment<String> segment: segments) {
+		for (ReadWriteSegment<String> segment: segments) {
 			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
 			List<String> strings = toValueList(iterator);
 			if (strings.size() < 1) {

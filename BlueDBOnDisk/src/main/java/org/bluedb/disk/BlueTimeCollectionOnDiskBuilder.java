@@ -11,7 +11,7 @@ import org.bluedb.api.keys.BlueKey;
 
 public class BlueTimeCollectionOnDiskBuilder<K extends BlueKey, T extends Serializable> extends BlueCollectionOnDiskBuilder<K, T> implements BlueTimeCollectionBuilder<K, T> {
 
-	public BlueTimeCollectionOnDiskBuilder(BlueDbOnDisk db, String name, Class<K> keyType, Class<T> valueType) {
+	public BlueTimeCollectionOnDiskBuilder(ReadWriteBlueDbOnDisk db, String name, Class<K> keyType, Class<T> valueType) {
 		super(db, name, keyType, valueType);
 	}
 

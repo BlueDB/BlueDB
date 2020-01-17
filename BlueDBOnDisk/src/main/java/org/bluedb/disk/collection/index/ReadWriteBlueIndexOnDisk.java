@@ -15,14 +15,14 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BatchUtils;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
-import org.bluedb.disk.file.FileManager;
+import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
-import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.ReadWriteSegment;
+import org.bluedb.disk.segment.ReadWriteSegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
@@ -30,24 +30,24 @@ import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends ReadableBlueIndexOnDisk<I, T> implements BlueIndex<I, T>, Rollupable {
+public class ReadWriteBlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends ReadableBlueIndexOnDisk<I, T> implements BlueIndex<I, T>, Rollupable {
 
 	private final RollupScheduler rollupScheduler;
 	private final String indexName;
-	private final SegmentManager<BlueKey> segmentManager;
-	private final FileManager fileManager;
+	private final ReadWriteSegmentManager<BlueKey> segmentManager;
+	private final ReadWriteFileManager fileManager;
 
-	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> ReadWriteBlueIndexOnDisk<K, T> createNew(ReadWriteBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
-		FileManager fileManager = collection.getFileManager();
+		ReadWriteFileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		fileManager.saveObject(keyExtractorPath, keyExtractor);
-		BlueIndexOnDisk<K, T> index = new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
+		ReadWriteBlueIndexOnDisk<K, T> index = new ReadWriteBlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 		populateNewIndex(collection, index);
 		return index;
 	}
 
-	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableBlueCollectionOnDisk<T> collection, BlueIndexOnDisk<K, T> index) throws BlueDbException {
+	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableBlueCollectionOnDisk<T> collection, ReadWriteBlueIndexOnDisk<K, T> index) throws BlueDbException {
 		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
 			while (iterator.hasNext()) {
@@ -57,24 +57,24 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 		}
 	}
 
-	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(BlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
-		FileManager fileManager = collection.getFileManager();
+	public static <K extends ValueKey, T extends Serializable> ReadWriteBlueIndexOnDisk<K, T> fromExisting(ReadWriteBlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
+		ReadWriteFileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		@SuppressWarnings("unchecked")
 		KeyExtractor<K, T> keyExtractor = (KeyExtractor<K, T>) fileManager.loadObject(keyExtractorPath);
-		return new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
+		return new ReadWriteBlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 	}
 
-	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
+	private ReadWriteBlueIndexOnDisk(ReadWriteBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		super(collection, indexPath, keyExtractor);
 		this.indexName = indexPath.toFile().getName();
 		this.fileManager = collection.getFileManager();
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
-		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
-		rollupScheduler = ((BlueCollectionOnDisk<T>) collection).getRollupScheduler();
+		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
+		rollupScheduler = ((ReadWriteBlueCollectionOnDisk<T>) collection).getRollupScheduler();
 	}
 
-	public SegmentManager<BlueKey> getSegmentManager() {
+	public ReadWriteSegmentManager<BlueKey> getSegmentManager() {
 		return segmentManager;
 	}
 
@@ -110,7 +110,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 			return;
 		}
 		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, newItem)) {
-			Segment<BlueKey> segment = getSegmentManager().getFirstSegment(compositeKey);
+			ReadWriteSegment<BlueKey> segment = getSegmentManager().getFirstSegment(compositeKey);
 			segment.insert(compositeKey, key);
 		}
 	}
@@ -134,13 +134,13 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 			return;
 		}
 		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, oldItem)) {
-			Segment<BlueKey> segment = getSegmentManager().getFirstSegment(compositeKey);
+			ReadWriteSegment<BlueKey> segment = getSegmentManager().getFirstSegment(compositeKey);
 			segment.delete(compositeKey);
 		}
 	}
 
 	public void rollup(Range range) throws BlueDbException {
-		Segment<?> segment = getSegmentManager().getSegment(range.getStart());
+		ReadWriteSegment<?> segment = getSegmentManager().getSegment(range.getStart());
 		segment.rollup(range);
 	}
 

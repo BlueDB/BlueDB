@@ -8,16 +8,16 @@ import org.bluedb.api.Condition;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
 import org.bluedb.disk.collection.task.DeleteMultipleTask;
 import org.bluedb.disk.collection.task.ReplaceMultipleTask;
 import org.bluedb.disk.collection.task.UpdateMultipleTask;
 
 public class BlueQueryOnDisk<T extends Serializable> extends ReadOnlyBlueQueryOnDisk<T> implements BlueQuery<T> {
 
-	BlueCollectionOnDisk<T> writeableCollection;
+	ReadWriteBlueCollectionOnDisk<T> writeableCollection;
 
-	public BlueQueryOnDisk(BlueCollectionOnDisk<T> collection) {
+	public BlueQueryOnDisk(ReadWriteBlueCollectionOnDisk<T> collection) {
 		super(collection);
 		writeableCollection = collection;
 	}
@@ -48,7 +48,7 @@ public class BlueQueryOnDisk<T extends Serializable> extends ReadOnlyBlueQueryOn
 	}
 
 	public BlueQueryOnDisk<T> clone() {
-		BlueQueryOnDisk<T> clone = new BlueQueryOnDisk<T>((BlueCollectionOnDisk<T>)collection);
+		BlueQueryOnDisk<T> clone = new BlueQueryOnDisk<T>((ReadWriteBlueCollectionOnDisk<T>)collection);
 		clone.objectConditions = new LinkedList<>(objectConditions);
 		clone.min = min;
 		clone.max = max;

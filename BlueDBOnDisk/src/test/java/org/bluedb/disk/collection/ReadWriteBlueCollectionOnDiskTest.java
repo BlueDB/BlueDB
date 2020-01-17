@@ -26,17 +26,17 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
+import org.bluedb.disk.ReadableBlueDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
-import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.ReadWriteSegment;
+import org.bluedb.disk.segment.ReadWriteSegmentManager;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
 
-public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
+public class ReadWriteBlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_query() throws Exception {
@@ -147,7 +147,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
+		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -161,7 +161,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
+		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -272,7 +272,7 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getLastKey_readonly() throws Exception {
-        ReadOnlyBlueDbOnDisk readOnlyDb = (ReadOnlyBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+        ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
         ReadableBlueCollection<TestValue> collection = readOnlyDb.getCollection(getLongCollection().getPath().toFile().getName(), TestValue.class);
 
 		assertNull(collection.getLastKey());
@@ -407,9 +407,9 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		values = getIntCollection().query().getList();
 		assertEquals(2, values.size());
 
-		SegmentManager<TestValue> segmentManager = getIntCollection().getSegmentManager();
-		Segment<TestValue> segmentFor1 = segmentManager.getSegment(key0.getGroupingNumber());
-		Segment<TestValue> segmentFor3 = segmentManager.getSegment(key3.getGroupingNumber());
+		ReadWriteSegmentManager<TestValue> segmentManager = getIntCollection().getSegmentManager();
+		ReadWriteSegment<TestValue> segmentFor1 = segmentManager.getSegment(key0.getGroupingNumber());
+		ReadWriteSegment<TestValue> segmentFor3 = segmentManager.getSegment(key3.getGroupingNumber());
 		assertEquals(segmentFor1, segmentFor3);  // make sure they're in the same segment
 
 		File[] segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();

@@ -13,21 +13,21 @@ import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.junit.Test;
 
-public class SegmentManagerTest extends BlueDbDiskTestBase {
+public class ReadWriteSegmentManagerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getAllSegments() {
 		long segmentSize = getSegmentManager().getSegmentSize();
 		BlueKey timeFrameKey = new TimeFrameKey(1, 0, segmentSize);
 		List<Path> timeFramePaths = getSegmentManager().getPathManager().getAllPossibleSegmentPaths(timeFrameKey);
-		List<Segment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
+		List<ReadWriteSegment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
 		List<Path> timeFrameSegmentPaths = timeFrameSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
 
 		assertEquals(timeFramePaths, timeFrameSegmentPaths);
 		
 		BlueKey timeKey = new TimeKey(1, segmentSize);
 		List<Path> timePaths = getSegmentManager().getPathManager().getAllPossibleSegmentPaths(timeKey);
-		List<Segment<TestValue>> timeSegments = getSegmentManager().getAllSegments(timeKey);
+		List<ReadWriteSegment<TestValue>> timeSegments = getSegmentManager().getAllSegments(timeKey);
 		List<Path> segmentPaths = timeSegments.stream().map((s) -> s.getPath()).collect(Collectors.toList());
 		assertEquals(timePaths, segmentPaths);
 	}
@@ -41,14 +41,14 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		BlueKey timeFrameKey = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
 		TestValue value = new TestValue("Bob", 0);
 		try {
-			List<Segment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime));
+			List<ReadWriteSegment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime));
 			assertEquals(0, existingSegments.size());
 			getTimeCollection().insert(timeFrameKey, value);
 			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime));
 			assertEquals(3, existingSegments.size());
-			List<Segment<TestValue>> existingSegments0to0 = getSegmentManager().getExistingSegments(new Range(minTime, minTime));
+			List<ReadWriteSegment<TestValue>> existingSegments0to0 = getSegmentManager().getExistingSegments(new Range(minTime, minTime));
 			assertEquals(1, existingSegments0to0.size());
-			List<Segment<TestValue>> existingSegmentsOutsideRange = getSegmentManager().getExistingSegments(new Range(maxTime * 2, maxTime * 2));
+			List<ReadWriteSegment<TestValue>> existingSegmentsOutsideRange = getSegmentManager().getExistingSegments(new Range(maxTime * 2, maxTime * 2));
 			assertEquals(0, existingSegmentsOutsideRange.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
@@ -61,7 +61,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	public void test_getFirstSegment() {
 		long segmentSize = getSegmentManager().getSegmentSize();
 		BlueKey timeFrameKey = new TimeFrameKey(1, segmentSize, segmentSize * 2);
-		List<Segment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
+		List<ReadWriteSegment<TestValue>> timeFrameSegments = getSegmentManager().getAllSegments(timeFrameKey);
 		assertEquals(2, timeFrameSegments.size());
 		assertEquals(timeFrameSegments.get(0), getSegmentManager().getFirstSegment(timeFrameKey));
 	}
@@ -70,7 +70,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 	public void test_toSegment() {
 		BlueKey key = new TimeKey(5, randomTime());
 		Path path = getSegmentManager().getPathManager().getSegmentPath(key);
-		Segment<TestValue> segment = getSegmentManager().toSegment(path);
+		ReadWriteSegment<TestValue> segment = getSegmentManager().toSegment(path);
 		assertEquals(path, segment.getPath());
 	}
 
@@ -88,7 +88,7 @@ public class SegmentManagerTest extends BlueDbDiskTestBase {
 		assertEquals(firstRange.getEnd() + 1, secondRange.getStart());
 	}
 
-	private SegmentManager<TestValue> getSegmentManager() {
+	private ReadWriteSegmentManager<TestValue> getSegmentManager() {
 		return getTimeCollection().getSegmentManager();
 	}
 

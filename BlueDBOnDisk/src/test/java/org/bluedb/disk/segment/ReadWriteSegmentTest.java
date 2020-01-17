@@ -19,8 +19,8 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
-import org.bluedb.disk.file.FileManager;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.recovery.IndividualChange;
@@ -28,11 +28,11 @@ import org.bluedb.disk.recovery.PendingRollup;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
-public class SegmentTest extends BlueDbDiskTestBase {
+public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_contains() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -60,10 +60,10 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		Path segmentParentPath = createTempFolder().toPath();
 		Path segmentPath = Paths.get(segmentParentPath.toString(), "nonexistingChildFolder");
 		Range segmentRange = new Range(100, 200);
-		Rollupable rollupable = Mockito.mock(BlueCollectionOnDisk.class);
-		FileManager fileManager = getFileManager();
+		Rollupable rollupable = Mockito.mock(ReadWriteBlueCollectionOnDisk.class);
+		ReadWriteFileManager fileManager = getFileManager();
 		List<Long> rollupLevels = Arrays.asList(100L);
-		Segment<TestValue> segment = new Segment<>(segmentPath, segmentRange, rollupable, fileManager, rollupLevels);
+		ReadWriteSegment<TestValue> segment = new ReadWriteSegment<>(segmentPath, segmentRange, rollupable, fileManager, rollupLevels);
 
 		// perform read actions on nonexisting folder to make sure that deleting empty folder during rollup won't break reads.
 		segment.get(new TimeKey(1L, 1L));
@@ -76,7 +76,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -128,7 +128,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testDelete() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -171,7 +171,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_applyChanges() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -203,7 +203,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_applyChanges_preBatchRollup() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At2 = createKey(2, 2);
 		BlueKey keySegmentEnd = createKey(3, segment.getRange().getEnd());
@@ -217,28 +217,28 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		List<TestValue> list1and2and3 = Arrays.asList(value1, value2, value3);
 
 		assertEquals(listEmpty, getSegmentContents(segment));
-		assertEquals(0, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+		assertEquals(0, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 
 		segment.insert(key1At1, value1);
 		assertEquals(list1, getSegmentContents(segment));
-		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+		assertEquals(1, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 
 		IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At2, value2);
 		List<IndividualChange<TestValue>> changes = Arrays.asList(insert2At1);
 		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
 		segment.applyChanges(changesLinkedList);
 		assertEquals(list1and2, getSegmentContents(segment));
-		assertEquals(1, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+		assertEquals(1, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 
 		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.createInsertChange(keySegmentEnd, value3);
 		changes = Arrays.asList(inserinset3AtSegmentEnd);
 		changesLinkedList = new LinkedList<>(changes);
 		segment.applyChanges(changesLinkedList);
 		assertEquals(list1and2and3, getSegmentContents(segment));
-		assertEquals(2, Segment.getAllFileRangesInOrder(segment.getPath()).size());
+		assertEquals(2, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 	}
 
-	public static <T extends Serializable> List<T> getSegmentContents(Segment<T> segment) {
+	public static <T extends Serializable> List<T> getSegmentContents(ReadWriteSegment<T> segment) {
 		List<T> results = new ArrayList<>();
 		segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE).forEachRemaining((entity) -> {
 			results.add(entity.getValue());
@@ -248,7 +248,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGet() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -279,8 +279,8 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	@Test
 	public void testRange() throws Exception {
 		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		Segment<TestValue> firstSegment = getSegment(0);
-		Segment<TestValue> secondSegment = getSegment(segmentSize);
+		ReadWriteSegment<TestValue> firstSegment = getSegment(0);
+		ReadWriteSegment<TestValue> secondSegment = getSegment(segmentSize);
 		Range expectedFirstRange = new Range(0, segmentSize - 1);
 		assertEquals(expectedFirstRange, firstSegment.getRange());
 		assertEquals(firstSegment.getRange().getEnd() + 1, secondSegment.getRange().getStart());
@@ -288,7 +288,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGetAll() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At1 = createKey(2, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -322,7 +322,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_rollup_previousData() throws Exception {
 		long timeSegmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
-		Segment<TestValue> segment10 = getSegment(timeSegmentSize * 10);
+		ReadWriteSegment<TestValue> segment10 = getSegment(timeSegmentSize * 10);
 
 		BlueKey key1 = createKey(1, 1*timeSegmentSize);
 		BlueKey key2 = createKey(2, 2*timeSegmentSize);
@@ -345,7 +345,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
@@ -374,7 +374,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup_removeEmptyFiles() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 
@@ -391,7 +391,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup_removeEmptyFilesButLeaveNonEmpty() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
@@ -419,7 +419,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup_out_of_order() throws Exception {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
@@ -460,12 +460,12 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		Range range_100_101 = Range.fromUnderscoreDelmimitedString(_100_101.getName());
 		List<Range> expected = Arrays.asList(range_2_3, range_12_13, range_12_15, range_100_101);
 		
-		assertEquals(expected, Segment.getAllFileRangesInOrder(getPath()));
+		assertEquals(expected, ReadWriteSegment.getAllFileRangesInOrder(getPath()));
 	}
 
 	@Test
 	public void testToString() {
-		Segment<TestValue> segment = getSegment();
+		ReadWriteSegment<TestValue> segment = getSegment();
 		assertTrue(segment.toString().contains(segment.getPath().toString()));
 		assertTrue(segment.toString().contains(segment.getClass().getSimpleName()));
 	}
@@ -473,11 +473,11 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	@SuppressWarnings("unlikely-arg-type")
 	@Test
 	public void test_equals() {
-		Segment<TestValue> segment1 = getSegment(1);
-		Segment<TestValue> segment1copy = getSegment(1);
-		Segment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
-		ReadableSegment<TestValue> segmentNullPath = Segment.getTestSegment();
-		ReadableSegment<TestValue> segmentNullPathCopy = Segment.getTestSegment();
+		ReadWriteSegment<TestValue> segment1 = getSegment(1);
+		ReadWriteSegment<TestValue> segment1copy = getSegment(1);
+		ReadWriteSegment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
+		ReadableSegment<TestValue> segmentNullPath = ReadWriteSegment.getTestSegment();
+		ReadableSegment<TestValue> segmentNullPathCopy = ReadWriteSegment.getTestSegment();
 		assertEquals(segment1, segment1copy);
 		assertFalse(segment1.equals(segmentMax));
 		assertFalse(segment1.equals(null));
@@ -489,10 +489,10 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_hashCode() {
-		Segment<TestValue> segment1 = getSegment(1);
-		Segment<TestValue> segment1copy = getSegment(1);
-		Segment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
-		ReadableSegment<TestValue> segmentNullPath = Segment.getTestSegment();
+		ReadWriteSegment<TestValue> segment1 = getSegment(1);
+		ReadWriteSegment<TestValue> segment1copy = getSegment(1);
+		ReadWriteSegment<TestValue> segmentMax = getSegment(Long.MAX_VALUE);
+		ReadableSegment<TestValue> segmentNullPath = ReadWriteSegment.getTestSegment();
 		assertEquals(segment1.hashCode(), segment1copy.hashCode());
 		assertTrue(segment1.hashCode() != segmentMax.hashCode());
 		assertTrue(segment1.hashCode() != segmentNullPath.hashCode());
@@ -512,7 +512,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 
 		getRecoveryManager().recover();
 		List<File> remainingFiles = segment.getOrderedFilesInRange(rollupRange);
@@ -537,7 +537,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
@@ -571,7 +571,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
@@ -613,7 +613,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
 		getRecoveryManager().saveChange(pendingRollup);
 
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
 		assertEquals(2, filesToRollup.size());
 		Path rolledUpPath = Paths.get(segment.getPath().toString(), rollupRange.toUnderscoreDelimitedString());
@@ -644,10 +644,10 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_isValidRollupRange() {
-		SegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
-		SegmentManager<TestValue> valueSegmentManager = getHashGroupedCollection().getSegmentManager();
-		Segment<TestValue> timeSegment = timeSegmentManager.getSegment(0);
-		Segment<TestValue> valueSegment = valueSegmentManager.getSegment(0);
+		ReadWriteSegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
+		ReadWriteSegmentManager<TestValue> valueSegmentManager = getHashGroupedCollection().getSegmentManager();
+		ReadWriteSegment<TestValue> timeSegment = timeSegmentManager.getSegment(0);
+		ReadWriteSegment<TestValue> valueSegment = valueSegmentManager.getSegment(0);
 		long timeSegmentSize = timeSegmentManager.getSegmentSize();
 		long valueSegmentSize = valueSegmentManager.getSegmentSize();
 		Range validTimeSegmentRange = new Range(0, timeSegmentSize - 1);
@@ -674,12 +674,12 @@ public class SegmentTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_isValidRollupRange_preSegment() {
-		SegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
-		SegmentManager<TestValue> valueSegmentManager = getHashGroupedCollection().getSegmentManager();
+		ReadWriteSegmentManager<TestValue> timeSegmentManager = getTimeCollection().getSegmentManager();
+		ReadWriteSegmentManager<TestValue> valueSegmentManager = getHashGroupedCollection().getSegmentManager();
 		long timeSegmentSize = timeSegmentManager.getSegmentSize();
 		long valueSegmentSize = valueSegmentManager.getSegmentSize();
-		Segment<TestValue> timeSegment = timeSegmentManager.getSegment(timeSegmentSize * 10);
-		Segment<TestValue> valueSegment = valueSegmentManager.getSegment(valueSegmentSize * 10);
+		ReadWriteSegment<TestValue> timeSegment = timeSegmentManager.getSegment(timeSegmentSize * 10);
+		ReadWriteSegment<TestValue> valueSegment = valueSegmentManager.getSegment(valueSegmentSize * 10);
 		long timeSegmentStart = timeSegment.getRange().getStart();
 		long valueSegmentStart = timeSegment.getRange().getStart();
 		Range validTimeSegmentRange = new Range(0, timeSegmentStart - 1);
@@ -703,7 +703,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getRollupRanges() {
 		Range segmentRange = new Range(0, 99);
-		Segment<?> segment = new Segment<>(null, segmentRange, null, null, Arrays.asList(1L, 10L, 100L));
+		ReadWriteSegment<?> segment = new ReadWriteSegment<>(null, segmentRange, null, null, Arrays.asList(1L, 10L, 100L));
 		Range _10_19 = new Range(10, 19);
 		Range _0_99 = new Range(0, 99);
 		Range _0_100 = new Range(0, 100);
@@ -733,7 +733,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getRollupTargets() {
 		Range segmentRange = new Range(0, 99);
-		Segment<?> segment = new Segment<>(null, segmentRange, null, null, Arrays.asList(1L, 10L, 100L));
+		ReadWriteSegment<?> segment = new ReadWriteSegment<>(null, segmentRange, null, null, Arrays.asList(1L, 10L, 100L));
 		Range _10_19 = new Range(10, 19);
 		Range _0_99 = new Range(0, 99);
 		Range _0_100 = new Range(0, 100);
@@ -765,7 +765,7 @@ public class SegmentTest extends BlueDbDiskTestBase {
 	
 	@Test
 	public void test_calculatePossibleChunkRanges() {
-		Segment<TestValue> segment = new Segment<>(null, new Range(120, 179), null, null, Arrays.asList(5l, 10l, 30l, 60l));
+		ReadWriteSegment<TestValue> segment = new ReadWriteSegment<>(null, new Range(120, 179), null, null, Arrays.asList(5l, 10l, 30l, 60l));
 		
 		Set<Range> expectedFor120 = new HashSet<>(Arrays.asList(
 				new Range(120, 124), 

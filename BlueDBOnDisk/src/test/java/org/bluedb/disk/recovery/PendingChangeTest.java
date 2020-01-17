@@ -6,7 +6,7 @@ import org.bluedb.api.Updater;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.validation.SerializationException;
 
@@ -61,7 +61,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, getSerializer());
 
 		assertNull(getTimeCollection().get(key));
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 		change.applyChange(segment);
 		assertEquals(value, getTimeCollection().get(key));
 
@@ -77,7 +77,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		PendingChange<TestValue> change = PendingChange.createDelete(key, value);
 
 		assertEquals(value, getTimeCollection().get(key));
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 		change.applyChange(segment);
 		assertNull(getTimeCollection().get(key));
 
@@ -96,7 +96,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		PendingChange<TestValue> change = PendingChange.createUpdate(key, value, updater, getSerializer());
 
 		assertEquals(value, getTimeCollection().get(key));
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 		change.applyChange(segment);
 		assertEquals(newValue, getTimeCollection().get(key));
 
@@ -118,7 +118,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		PendingChange<TestValue> change = PendingChange.createUpdate(new BlueEntity<TestValue>(key, value), updater, getSerializer());
 
 		assertEquals(value, getTimeCollection().get(key));
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 		change.applyChange(segment);
 		assertEquals(replacementValue, getTimeCollection().get(key));
 
@@ -144,7 +144,7 @@ public class PendingChangeTest extends BlueDbDiskTestBase {
 		assertEquals(expectedAfterUpdate, change.getNewValue());
 
 		assertEquals(originalValue, getTimeCollection().get(key));
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 		change.applyChange(segment);
 		assertEquals(expectedAfterUpdate, getTimeCollection().get(key));
 

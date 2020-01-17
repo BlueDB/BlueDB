@@ -13,7 +13,7 @@ import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 
 public class BatchUtilsTest {
 
@@ -61,8 +61,8 @@ public class BatchUtilsTest {
 		assertEquals(empty, list);
 	}
 
-	private static Segment<TestValue> segmentEnding(long end) {
+	private static ReadWriteSegment<TestValue> segmentEnding(long end) {
 		Range range = new Range(end, end);
-		return new Segment<TestValue>(null, range, null, null, null);
+		return new ReadWriteSegment<TestValue>(null, range, null, null, null);
 	}
 }

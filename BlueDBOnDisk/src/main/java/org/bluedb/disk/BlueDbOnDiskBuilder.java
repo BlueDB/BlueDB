@@ -7,7 +7,7 @@ import org.bluedb.api.BlueDb;
 import org.bluedb.api.ReadableBlueDb;
 
 /**
- * A builder for the {@link ReadOnlyBlueDbOnDisk} class
+ * A builder for the {@link ReadableBlueDbOnDisk} class
  */
 public class BlueDbOnDiskBuilder {
 	private Path path = Paths.get(".", "bluedb");
@@ -27,7 +27,7 @@ public class BlueDbOnDiskBuilder {
 	 * @return the {@link BlueDb} built
 	 */
 	public BlueDb build() {
-		return new BlueDbOnDisk(path);
+		return new ReadWriteBlueDbOnDisk(path);
 	}
 
 	/**
@@ -35,7 +35,7 @@ public class BlueDbOnDiskBuilder {
 	 * @return the {@link ReadableBlueDb} built
 	 */
 	public ReadableBlueDb buildReadOnly() {
-		return new ReadOnlyBlueDbOnDisk(path);
+		return new ReadableBlueDbOnDisk(path);
 	}
 	
 	/**

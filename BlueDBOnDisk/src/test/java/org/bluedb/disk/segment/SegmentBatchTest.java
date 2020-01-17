@@ -18,7 +18,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 public class SegmentBatchTest {
 	
 	private static List<Long> ROLLUP_LEVELS = Arrays.asList(1L, 2L, 4L, 8L);
-	Segment<TestValue> segment = new Segment<>(Paths.get(""), new Range(0, 7), null, null, ROLLUP_LEVELS);
+	ReadWriteSegment<TestValue> segment = new ReadWriteSegment<>(Paths.get(""), new Range(0, 7), null, null, ROLLUP_LEVELS);
 	private static BlueKey key0At0 = createKey(0, 0);
 	private static BlueKey key1At1 = createKey(1, 1);
 	private static BlueKey key2At1 = createKey(2, 1);

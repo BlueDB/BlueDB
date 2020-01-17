@@ -7,12 +7,12 @@ import org.bluedb.api.ReadBlueTimeQuery;
 import org.bluedb.api.ReadableBlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
+import org.bluedb.disk.ReadableBlueDbOnDisk;
 import org.bluedb.disk.query.ReadOnlyBlueTimeQueryOnDisk;
 
 public class ReadOnlyBlueTimeCollectionOnDisk<T extends Serializable> extends ReadOnlyBlueCollectionOnDisk<T> implements ReadableBlueTimeCollection<T> {
 
-	public ReadOnlyBlueTimeCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+	public ReadOnlyBlueTimeCollectionOnDisk(ReadableBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses);
 	}
 

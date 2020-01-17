@@ -15,13 +15,13 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
-import org.bluedb.disk.BlueDbOnDisk;
+import org.bluedb.disk.ReadWriteBlueDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
 import org.bluedb.disk.TestValueSub;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
-import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.PendingRollup;
 import org.bluedb.disk.recovery.Recoverable;
@@ -37,14 +37,14 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
-		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
+		List<ReadWriteBlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
-		BlueDbOnDisk restoredDb = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
-		BlueTimeCollectionOnDisk<TestValue> restoredCollection = (BlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		ReadWriteBlueDbOnDisk restoredDb = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
 	}
@@ -59,13 +59,13 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
         Recoverable<TestValue> change = PendingChange.createInsert(key2At2, value2, getTimeCollection().getSerializer());
 		getRecoveryManager().saveChange(change);
 
-		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
+		List<ReadWriteBlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
-		BlueDbOnDisk restoredDb = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
-		BlueTimeCollectionOnDisk<TestValue> restoredCollection = (BlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		ReadWriteBlueDbOnDisk restoredDb = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 		assertTrue(restoredCollection.contains(key1At1));
 		assertTrue(restoredCollection.contains(key2At2));
 		assertEquals(value1, restoredCollection.get(key1At1));
@@ -82,13 +82,13 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		Recoverable<TestValue> rollup = new PendingRollup<>(rollupTarget);
 		getRecoveryManager().saveChange(rollup);
 
-		List<BlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
+		List<ReadWriteBlueCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
 
-        BlueDbOnDisk restoredDb = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
-        BlueTimeCollectionOnDisk<TestValue> restoredCollection = (BlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+        ReadWriteBlueDbOnDisk restoredDb = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
+        ReadWriteBlueTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 		Path segmentPath = restoredCollection.getSegmentManager().getSegment(1).getPath();
 		File[] filesInSegment = segmentPath.toFile().listFiles();
 		assertEquals(1, filesInSegment.length);
@@ -100,7 +100,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_restore() throws Exception {
 		String collectionName = "time_collection";
-		BlueDbOnDisk newDb = createTestRestoreDatabase();
+		ReadWriteBlueDbOnDisk newDb = createTestRestoreDatabase();
 
 		Path zipPath = getbackedUpZipPath();
 		if (!zipPath.toFile().exists()) {
@@ -112,8 +112,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueCollection<TestValue> newCollection =  newDb.getCollection(collectionName, TestValue.class);
 		List<TestValue> valuesInNewCollection = newCollection.query().getList();
 		
-		BlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
-		BlueTimeCollectionOnDisk<TestValue> restoredCollection = (BlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
+		ReadWriteBlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
 		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
 		
 		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
@@ -122,7 +122,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_restoreOfOldDomainBackup() throws Exception {
 		String collectionName = "time_collection";
-		BlueDbOnDisk newDb = createTestRestoreDatabase();
+		ReadWriteBlueDbOnDisk newDb = createTestRestoreDatabase();
 
 		Path zipPath = TestUtils.getResourcePath("oldDomainBackup.zip");
 		if (!zipPath.toFile().exists()) {
@@ -134,25 +134,25 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueCollection<TestValue> newCollection =  newDb.getCollection(collectionName, TestValue.class);
 		List<TestValue> valuesInNewCollection = newCollection.query().getList();
 		
-		BlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
-		BlueTimeCollectionOnDisk<TestValue> restoredCollection = (BlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
+		ReadWriteBlueDbOnDisk restoredDb = getRestoredDatabase(zipPath);
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
 		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
 		
 		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
 	}
 
-	private BlueDbOnDisk getRestoredDatabase(Path zipPath) throws BlueDbException, URISyntaxException, IOException {
+	private ReadWriteBlueDbOnDisk getRestoredDatabase(Path zipPath) throws BlueDbException, URISyntaxException, IOException {
 		Path restoredDirectory = createTempFolder().toPath();
 		ZipUtils.extractFiles(zipPath, restoredDirectory);
 		Path restoredDbPath = Paths.get(restoredDirectory.toString(), "bluedb");
-		BlueDbOnDisk restoredDb = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredDbPath).build();
+		ReadWriteBlueDbOnDisk restoredDb = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredDbPath).build();
 		return restoredDb;
 	}
 
-	private BlueDbOnDisk createTestRestoreDatabase() throws BlueDbException {
+	private ReadWriteBlueDbOnDisk createTestRestoreDatabase() throws BlueDbException {
 		Path newDbPath = createTempFolder().toPath();
-		BlueDbOnDisk newDb = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(newDbPath).build();
-		BlueTimeCollectionOnDisk<TestValue> newCollection = (BlueTimeCollectionOnDisk<TestValue>) newDb.getTimeCollectionBuilder("time_collection", TimeKey.class, TestValue.class)
+		ReadWriteBlueDbOnDisk newDb = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(newDbPath).build();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> newCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) newDb.getTimeCollectionBuilder("time_collection", TimeKey.class, TestValue.class)
 			.withOptimizedClasses(Arrays.asList(TestValue2.class, TestValueSub.class))
 			.build();
 

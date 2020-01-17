@@ -30,10 +30,10 @@ import org.junit.Test;
 
 import junit.framework.TestCase;
 
-public class FileManagerTest extends TestCase {
+public class ReadWriteFileManagerTest extends TestCase {
 
 	BlueSerializer serializer;
-	FileManager fileManager;
+	ReadWriteFileManager fileManager;
 	LockManager<Path> lockManager;
 	private List<File> filesToDelete;
 	private Path testPath;
@@ -41,7 +41,7 @@ public class FileManagerTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
-		fileManager = new FileManager(serializer);
+		fileManager = new ReadWriteFileManager(serializer);
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
 		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
@@ -113,7 +113,7 @@ public class FileManagerTest extends TestCase {
 		TestValue value2 = new TestValue("Michael Scott", 3);
 		fileManager.saveVersionedObject(tempDirPath, filename, value2);
 		
-		Path value2Path = FileManager.getNewestVersionPath(tempDirPath, filename);
+		Path value2Path = ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename);
 		FileTime value2LastModified = Files.getLastModifiedTime(value2Path);
 		
 		assertEquals(value1, fileManager.loadObject(value1Path));
@@ -126,7 +126,7 @@ public class FileManagerTest extends TestCase {
 		TestValue value3 = new TestValue("Leroy Jenkins", 0);
 		fileManager.saveVersionedObject(tempDirPath, filename, value3);
 		
-		Path value3Path = FileManager.getNewestVersionPath(tempDirPath, filename);
+		Path value3Path = ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename);
 		FileTime value3LastModified = Files.getLastModifiedTime(value3Path);
 		
 		assertEquals(value1, fileManager.loadObject(value1Path));
@@ -144,9 +144,9 @@ public class FileManagerTest extends TestCase {
 		String filename = "test_filename";
 		
 		Random r = new Random();
-		SimpleDateFormat sdf = new SimpleDateFormat(FileManager.TIMESTAMP_VERSION_FORMAT);
+		SimpleDateFormat sdf = new SimpleDateFormat(ReadWriteFileManager.TIMESTAMP_VERSION_FORMAT);
 		
-		assertNull(FileManager.getNewestVersionPath(tempDirPath, filename));
+		assertNull(ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename));
 		
 		List<Path> testPaths = new LinkedList<Path>();
 		
@@ -154,7 +154,7 @@ public class FileManagerTest extends TestCase {
 		Files.createFile(legacyPath);
 		testPaths.add(legacyPath);
 		
-		assertEquals(legacyPath, FileManager.getNewestVersionPath(tempDirPath, filename));
+		assertEquals(legacyPath, ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename));
 		
 		long maxTime = -1;
 		Path maxPath = null;
@@ -169,7 +169,7 @@ public class FileManagerTest extends TestCase {
 			testPaths.add(path);
 		}
 		
-		assertEquals(maxPath, FileManager.getNewestVersionPath(tempDirPath, filename));
+		assertEquals(maxPath, ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename));
 	}
 	
 	@Test
@@ -246,7 +246,7 @@ public class FileManagerTest extends TestCase {
 		assertNotNull(existingLock);
 		existingLock.release();
 		
-		FileManager mockFileManager = new FileManager(null) {
+		ReadWriteFileManager mockFileManager = new ReadWriteFileManager(null) {
 			@Override
 			public boolean exists(Path path) {
 				throw new RuntimeException();

@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
 
 public class TestRecoverable implements Recoverable<TestValue>, Serializable {
 
@@ -18,7 +18,7 @@ public class TestRecoverable implements Recoverable<TestValue>, Serializable {
 	}
 
 	@Override
-	public void apply(BlueCollectionOnDisk<TestValue> collection) throws BlueDbException {}
+	public void apply(ReadWriteBlueCollectionOnDisk<TestValue> collection) throws BlueDbException {}
 
 	@Override
 	public long getTimeCreated() {

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
 import org.bluedb.disk.query.BlueQueryOnDisk;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingBatchChange;
@@ -13,10 +13,10 @@ import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public class DeleteMultipleTask<T extends Serializable> extends QueryTask {
-	private final BlueCollectionOnDisk<T> collection;
+	private final ReadWriteBlueCollectionOnDisk<T> collection;
 	BlueQueryOnDisk<T> query;
 	
-	public DeleteMultipleTask(BlueCollectionOnDisk<T> collection, BlueQueryOnDisk<T> query) {
+	public DeleteMultipleTask(ReadWriteBlueCollectionOnDisk<T> collection, BlueQueryOnDisk<T> query) {
 		this.collection = collection;
 		this.query = query;
 	}

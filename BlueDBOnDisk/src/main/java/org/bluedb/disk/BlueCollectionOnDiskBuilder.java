@@ -13,14 +13,14 @@ import org.bluedb.disk.segment.SegmentSizeSetting;
 
 public class BlueCollectionOnDiskBuilder<K extends BlueKey, T extends Serializable> implements BlueCollectionBuilder<K, T>{
 
-	protected final BlueDbOnDisk db;
+	protected final ReadWriteBlueDbOnDisk db;
 	protected final Class<T> valueType;
 	protected final Class<? extends BlueKey> requestedKeyType;
 	protected final String name;
 	protected SegmentSizeSetting segmentSize;
 	ArrayList<Class<? extends Serializable>> registeredClasses = new ArrayList<>();
 
-	protected BlueCollectionOnDiskBuilder(BlueDbOnDisk db, String name, Class<K> keyType, Class<T> valueType) {
+	protected BlueCollectionOnDiskBuilder(ReadWriteBlueDbOnDisk db, String name, Class<K> keyType, Class<T> valueType) {
 		this.db = db;
 		this.name = name;
 		this.requestedKeyType = keyType;

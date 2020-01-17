@@ -14,23 +14,23 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
-import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
+import org.bluedb.disk.ReadableBlueDbOnDisk;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.junit.Test;
 
-public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
+public class ReadWriteBlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getKeys() throws Exception {
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
-		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) index;
 
 		TestValue valueFred1 = new TestValue("Fred", 1);
 		TestValue valueBob3 = new TestValue("Bob", 3);
@@ -70,9 +70,9 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getKeys_multi() throws Exception {
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestMultiRetrievalKeyExtractor());
-		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) index;
 
 		TestValue valueFred1 = new TestValue("Fred", 1);
 		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
@@ -103,9 +103,9 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_get() throws Exception {
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
-		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) index;
 
 		TestValue valueFred1 = new TestValue("Fred", 1);
 		TestValue valueBob3 = new TestValue("Bob", 3);
@@ -146,7 +146,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getIndex_readonly_nonExisting() throws Exception {
 		getTimeCollection().createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
-		ReadOnlyBlueDbOnDisk readOnlyDb = (ReadOnlyBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+		ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
 		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
 		try {
 			readOnlyCollection.getIndex("test_index", StringKey.class);
@@ -156,10 +156,10 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_get_readonly() throws Exception {
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 
-		ReadOnlyBlueDbOnDisk readOnlyDb = (ReadOnlyBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+		ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
 		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
 		BlueIndex<IntegerKey, TestValue> readOnlyIndex = readOnlyCollection.getIndex("test_index", IntegerKey.class);
 
@@ -201,7 +201,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_createNew_populateNewIndex() throws Exception {
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 
 		TestValue valueFred1 = new TestValue("Fred", 1);
 		TestValue valueBob3 = new TestValue("Bob", 3);
@@ -224,7 +224,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		collection.insert(timeKeyJoe3, valueJoe3);
 
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
-		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) index;
 
 		assertEquals(justFred, indexOnDisk.get(integerKey1));
 		assertEquals(emptyList, indexOnDisk.get(integerKey2));
@@ -241,9 +241,9 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_rollup() throws Exception {
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, keyExtractor);
-		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
+		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) index;
 
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -260,7 +260,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(2, values.size());
 
 		BlueKey retrievalKey1 = keyExtractor.extractKeys(value1).get(0);
-		Segment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
+		ReadWriteSegment<?> indexSegment = indexOnDisk.getSegmentManager().getSegment(retrievalKey1.getGroupingNumber());
 		File segmentFolder = indexSegment.getPath().toFile();
 		File[] segmentDirectoryContents = segmentFolder.listFiles();
 		assertEquals(2, segmentDirectoryContents.length);
@@ -288,7 +288,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 	public void test_rollup_scheduling() throws Exception {
 		String indexName = "test_index";
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		collection.createIndex(indexName, IntegerKey.class, keyExtractor);
 
 		BlueKey key1At1 = createKey(1, 1);
@@ -322,7 +322,7 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getLastKey() throws Exception {
-		BlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 //		BlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (BlueIndexOnDisk<IntegerKey, TestValue>) index;
 

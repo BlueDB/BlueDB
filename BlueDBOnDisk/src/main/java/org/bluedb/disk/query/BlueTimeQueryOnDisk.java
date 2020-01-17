@@ -5,12 +5,12 @@ import java.util.LinkedList;
 
 import org.bluedb.api.BlueTimeQuery;
 import org.bluedb.api.Condition;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
-import org.bluedb.disk.collection.BlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
 
 public class BlueTimeQueryOnDisk<T extends Serializable> extends BlueQueryOnDisk<T> implements BlueTimeQuery<T> {
 
-	public BlueTimeQueryOnDisk(BlueCollectionOnDisk<T> collection) {
+	public BlueTimeQueryOnDisk(ReadWriteBlueCollectionOnDisk<T> collection) {
 		super(collection);
 	}
 
@@ -51,7 +51,7 @@ public class BlueTimeQueryOnDisk<T extends Serializable> extends BlueQueryOnDisk
 	}
 
 	public BlueTimeQueryOnDisk<T> clone() {
-		BlueTimeQueryOnDisk<T> clone = new BlueTimeQueryOnDisk<T>((BlueTimeCollectionOnDisk<T>)collection);
+		BlueTimeQueryOnDisk<T> clone = new BlueTimeQueryOnDisk<T>((ReadWriteBlueTimeCollectionOnDisk<T>)collection);
 		clone.objectConditions = new LinkedList<>(objectConditions);
 		clone.min = min;
 		clone.max = max;

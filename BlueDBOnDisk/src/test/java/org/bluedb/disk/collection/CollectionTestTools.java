@@ -6,7 +6,7 @@ import java.util.concurrent.Future;
 
 public class CollectionTestTools {
 
-	public static void waitForExecutorToFinish(BlueCollectionOnDisk<?> collection) {
+	public static void waitForExecutorToFinish(ReadWriteBlueCollectionOnDisk<?> collection) {
 		Runnable doNothing = new Runnable() {@Override public void run() {}};
 		Future<?> future = collection.getSharedExecutor().submitQueryTask(collection.getPath().toString(), doNothing);
 		try {
@@ -17,7 +17,7 @@ public class CollectionTestTools {
 		}
 	}
 
-	public static void waitForExecutorToFinish(BlueTimeCollectionOnDisk<?> collection) {
+	public static void waitForExecutorToFinish(ReadWriteBlueTimeCollectionOnDisk<?> collection) {
 		Runnable doNothing = new Runnable() {@Override public void run() {}};
 		Future<?> future = collection.getSharedExecutor().submitQueryTask(collection.getPath().toString(), doNothing);
 		try {

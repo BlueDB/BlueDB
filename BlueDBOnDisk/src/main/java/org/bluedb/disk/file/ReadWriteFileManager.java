@@ -10,9 +10,9 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.serialization.BlueSerializer;
 
-public class FileManager extends ReadFileManager {
+public class ReadWriteFileManager extends ReadFileManager {
 
-	public FileManager(BlueSerializer serializer) {
+	public ReadWriteFileManager(BlueSerializer serializer) {
 		super(serializer);
 	}
 

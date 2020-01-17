@@ -25,7 +25,7 @@ import junit.framework.TestCase;
 public class BlueObjectOutputTest extends TestCase {
 
 	BlueSerializer serializer;
-	FileManager fileManager;
+	ReadWriteFileManager fileManager;
 	LockManager<Path> lockManager;
 	Path testingFolderPath;
 	Path targetFilePath;
@@ -37,7 +37,7 @@ public class BlueObjectOutputTest extends TestCase {
 		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
 		tempFilePath = FileUtils.createTempFilePath(targetFilePath);
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
-		fileManager = new FileManager(serializer);
+		fileManager = new ReadWriteFileManager(serializer);
 		lockManager = fileManager.getLockManager();
 	}
 

@@ -29,21 +29,21 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
-import org.bluedb.disk.BlueDbOnDisk;
+import org.bluedb.disk.ReadWriteBlueDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
-import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.ReadWriteSegment;
+import org.bluedb.disk.segment.ReadWriteSegmentManager;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
 
-public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
+public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_query() throws Exception {
@@ -169,7 +169,7 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_times() throws Exception {
-		BlueTimeCollectionOnDisk<String> stringCollection = (BlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_strings", TimeKey.class, String.class).build();
+		ReadWriteBlueTimeCollectionOnDisk<String> stringCollection = (ReadWriteBlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_strings", TimeKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -182,7 +182,7 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
+		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -196,7 +196,7 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
-		BlueCollectionOnDisk<String> stringCollection = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
+		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -404,7 +404,7 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		values = getTimeCollection().query().getList();
 		assertEquals(2, values.size());
 
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getSegment(key1At1.getGroupingNumber());
 		File[] segmentDirectoryContents = segment.getPath().toFile().listFiles();
 		assertEquals(2, segmentDirectoryContents.length);
 
@@ -505,8 +505,8 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
-		BlueTimeCollectionOnDisk<String> collectionWithTimeKeys = (BlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
-		BlueCollectionOnDisk<String> collectionWithLongKeys = (BlueCollectionOnDisk<String>) db().getCollectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
+		ReadWriteBlueTimeCollectionOnDisk<String> collectionWithTimeKeys = (ReadWriteBlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
+		ReadWriteBlueCollectionOnDisk<String> collectionWithLongKeys = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
 
 		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
 		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
@@ -526,7 +526,7 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 	public void test_determineKeyType() throws BlueDbException {
 		db().getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();  // regular instantiation approach
 
-		BlueDbOnDisk reopenedDatbase = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(db().getPath()).build();  // reopen database without collections instantiated
+		ReadWriteBlueDbOnDisk reopenedDatbase = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(db().getPath()).build();  // reopen database without collections instantiated
 
 		try {
 			reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), HashGroupedKey.class, TestValue.class).build();  // try to open with the wrong key type
@@ -534,7 +534,7 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {
 		}
 
-		BlueTimeCollectionOnDisk<?> collectionWithoutType = (BlueTimeCollectionOnDisk<?>) reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
+		ReadWriteBlueTimeCollectionOnDisk<?> collectionWithoutType = (ReadWriteBlueTimeCollectionOnDisk<?>) reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
 		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
 	}
 
@@ -618,9 +618,9 @@ public class BlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		values = getIntCollection().query().getList();
 		assertEquals(2, values.size());
 
-		SegmentManager<TestValue> segmentManager = getIntCollection().getSegmentManager();
-		Segment<TestValue> segmentFor1 = segmentManager.getSegment(key0.getGroupingNumber());
-		Segment<TestValue> segmentFor3 = segmentManager.getSegment(key3.getGroupingNumber());
+		ReadWriteSegmentManager<TestValue> segmentManager = getIntCollection().getSegmentManager();
+		ReadWriteSegment<TestValue> segmentFor1 = segmentManager.getSegment(key0.getGroupingNumber());
+		ReadWriteSegment<TestValue> segmentFor3 = segmentManager.getSegment(key3.getGroupingNumber());
 		assertEquals(segmentFor1, segmentFor3);  // make sure they're in the same segment
 
 		File[] segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();

@@ -9,15 +9,15 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.SegmentBatch;
-import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.ReadWriteSegmentManager;
 
 public class BatchUtils {
-	public static <T extends Serializable> void apply(SegmentManager<T> segmentManager, List<IndividualChange<T>> sortedChanges) throws BlueDbException {
+	public static <T extends Serializable> void apply(ReadWriteSegmentManager<T> segmentManager, List<IndividualChange<T>> sortedChanges) throws BlueDbException {
 		LinkedList<IndividualChange<T>> unqueuedChanges = new LinkedList<>(sortedChanges);
 		while (!unqueuedChanges.isEmpty()) {
-			Segment<T> nextSegment = getFirstSegmentAffected(segmentManager, unqueuedChanges);
+			ReadWriteSegment<T> nextSegment = getFirstSegmentAffected(segmentManager, unqueuedChanges);
 			LinkedList<IndividualChange<T>> queuedChanges = pollChangesInSegment(unqueuedChanges, nextSegment);
 			while (!queuedChanges.isEmpty()) {
 				nextSegment.applyChanges(queuedChanges);
@@ -28,18 +28,18 @@ public class BatchUtils {
 		}
 	}
 
-	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesInSegment(LinkedList<IndividualChange<T>> sortedChanges, Segment<T> segment) {
+	public static <T extends Serializable> LinkedList<IndividualChange<T>> pollChangesInSegment(LinkedList<IndividualChange<T>> sortedChanges, ReadWriteSegment<T> segment) {
 		long maxGroupingNumber = segment.getRange().getEnd();
 		return SegmentBatch.pollChangesBeforeOrAt(sortedChanges, maxGroupingNumber);
 	}
 
-	protected static <T extends Serializable> Segment<T> getFirstSegmentAffected(SegmentManager<T> segmentManager, LinkedList<IndividualChange<T>> sortedChanges) {
+	protected static <T extends Serializable> ReadWriteSegment<T> getFirstSegmentAffected(ReadWriteSegmentManager<T> segmentManager, LinkedList<IndividualChange<T>> sortedChanges) {
 		BlueKey firstChangeKey = sortedChanges.peek().getKey();
-		Segment<T> firstSegment = segmentManager.getFirstSegment(firstChangeKey);
+		ReadWriteSegment<T> firstSegment = segmentManager.getFirstSegment(firstChangeKey);
 		return firstSegment;
 	}
 
-	protected static <T extends Serializable> void removeChangesThatEndInOrBeforeSegment(List<IndividualChange<T>> sortedChanges, Segment<T> segment) {
+	protected static <T extends Serializable> void removeChangesThatEndInOrBeforeSegment(List<IndividualChange<T>> sortedChanges, ReadWriteSegment<T> segment) {
 		Range segmentRange = segment.getRange();
 		Range beyondSegment = new Range(segmentRange.getEnd() + 1, Long.MAX_VALUE);
 		Iterator<IndividualChange<T>> iterator = sortedChanges.iterator();

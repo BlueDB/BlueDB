@@ -13,9 +13,9 @@ import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
+import org.bluedb.disk.ReadableBlueDbOnDisk;
 import org.bluedb.disk.collection.index.ReadableBlueIndexOnDisk;
-import org.bluedb.disk.collection.metadata.CollectionMetaData;
+import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.metadata.ReadableCollectionMetadata;
 import org.bluedb.disk.file.ReadFileManager;
 import org.bluedb.disk.query.ReadOnlyBlueQueryOnDisk;
@@ -41,7 +41,7 @@ public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> imple
 	public abstract ReadableSegmentManager<T> getSegmentManager();
 	public abstract <I extends ValueKey> ReadableBlueIndexOnDisk<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
 
-	public ReadableBlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadableBlueCollectionOnDisk(ReadableBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		boolean isNewCollection = !collectionPath.toFile().exists();
@@ -124,8 +124,8 @@ public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> imple
 				return SegmentSizeSetting.getOriginalDefaultSettingsFor(keyType);
 			}
 			existingSegmentSize = (requestedSegmentSize != null) ? requestedSegmentSize : SegmentSizeSetting.getDefaultSettingsFor(keyType);
-			if (metaData instanceof CollectionMetaData) {
-				((CollectionMetaData)metaData).saveSegmentSize(existingSegmentSize);
+			if (metaData instanceof ReadWriteCollectionMetaData) {
+				((ReadWriteCollectionMetaData)metaData).saveSegmentSize(existingSegmentSize);
 			}
 		}
 		return existingSegmentSize;
@@ -134,8 +134,8 @@ public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> imple
 	protected static Class<? extends BlueKey> determineKeyType(ReadableCollectionMetadata metaData, Class<? extends BlueKey> providedKeyType) throws BlueDbException {
 		Class<? extends BlueKey> storedKeyType = metaData.getKeyType();
 		if (storedKeyType == null) {
-			if (metaData instanceof CollectionMetaData) {
-				((CollectionMetaData)metaData).saveKeyType(providedKeyType);
+			if (metaData instanceof ReadWriteCollectionMetaData) {
+				((ReadWriteCollectionMetaData)metaData).saveKeyType(providedKeyType);
 			}
 			return providedKeyType;
 		} else if (providedKeyType == null) {

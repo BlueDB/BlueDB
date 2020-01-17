@@ -18,15 +18,15 @@ import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
 import org.bluedb.disk.TestValueSub;
-import org.bluedb.disk.collection.metadata.CollectionMetaData;
-import org.bluedb.disk.file.FileManager;
+import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.junit.Test;
 
-public class CollectionMetaDataTest extends BlueDbDiskTestBase {
+public class ReadWriteCollectionMetaDataTest extends BlueDbDiskTestBase {
 
-	private CollectionMetaData metaData;
+	private ReadWriteCollectionMetaData metaData;
 	
 	@Override
 	public void setUp() throws Exception {
@@ -61,7 +61,7 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSerializedClassList_exception() throws Exception {
-		Path serializedClassesPath = FileManager.getNewestVersionPath(metaData.getPath(), CollectionMetaData.FILENAME_SERIALIZED_CLASSES);
+		Path serializedClassesPath = ReadWriteFileManager.getNewestVersionPath(metaData.getPath(), ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
 		getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 		try {
 			metaData.getSerializedClassList();  // now this should fail with BlueDbException
@@ -108,22 +108,22 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		assertNull(metaData.getSerializedClassList()); //Doesn't exist to start
 
 		Class<? extends Serializable>[] afterAdding1 = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
-		Path file1Path = FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES);
+		Path file1Path = ReadWriteFileManager.getNewestVersionPath(metaData.folderPath, ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
 		FileTime lastModifiedTime1 = Files.getLastModifiedTime(file1Path);
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1); //Now contains defaults and value 1
 
 		Class<? extends Serializable>[] afterAdding1Again = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList());
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1Again); //Shouldn't change
 		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't be overwritten
-		assertEquals(file1Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
+		assertEquals(file1Path, ReadWriteFileManager.getNewestVersionPath(metaData.folderPath, ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 
 		Class<? extends Serializable>[] afterAdding1AgainInWeirdOrder = metaData.getAndAddToSerializedClassList(TestValue.class, testValue1PlusDefaultsShuffled);
 		assertArrayEquals(testValue1PlusDefaults, afterAdding1AgainInWeirdOrder); //Shouldn't change
 		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't be overwritten
-		assertEquals(file1Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
+		assertEquals(file1Path, ReadWriteFileManager.getNewestVersionPath(metaData.folderPath, ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 
 		Class<? extends Serializable>[] afterAddingValues = metaData.getAndAddToSerializedClassList(TestValue.class, Arrays.asList(TestValue2.class, TestValueSub.class));
-		Path file2Path = FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES);
+		Path file2Path = ReadWriteFileManager.getNewestVersionPath(metaData.folderPath, ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
 		FileTime lastModifiedTime2 = Files.getLastModifiedTime(file2Path);
 		assertArrayEquals(testValuesPlusDefaults, afterAddingValues); //Contains all values now
 		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Original file shouldn't have changed
@@ -133,13 +133,13 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		assertArrayEquals(testValuesPlusDefaults, afterAddingValuesBackwards); //Shouldn't change
 		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't change
 		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(file2Path)); //Shouldn't change
-		assertEquals(file2Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
+		assertEquals(file2Path, ReadWriteFileManager.getNewestVersionPath(metaData.folderPath, ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 		
 		Class<? extends Serializable>[] afterAddingEverythingInWeirdOrder = metaData.getAndAddToSerializedClassList(TestValue.class, testValuesPlusDefaultsShuffled);
 		assertArrayEquals(testValuesPlusDefaults, afterAddingEverythingInWeirdOrder); //Shouldn't change
 		assertEquals(lastModifiedTime1, Files.getLastModifiedTime(file1Path)); //Shouldn't change
 		assertEquals(lastModifiedTime2, Files.getLastModifiedTime(file2Path)); //Shouldn't change
-		assertEquals(file2Path, FileManager.getNewestVersionPath(metaData.folderPath, CollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
+		assertEquals(file2Path, ReadWriteFileManager.getNewestVersionPath(metaData.folderPath, ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES)); //Newest file should still be the same
 	}
 
 	private Class<? extends Serializable>[] getClassesToAlwaysRegister() {
@@ -163,8 +163,8 @@ public class CollectionMetaDataTest extends BlueDbDiskTestBase {
 		return list;
 	}
 
-	private CollectionMetaData createNewMetaData() {
+	private ReadWriteCollectionMetaData createNewMetaData() {
 		Path tempPath = createTempFolder().toPath();
-		return new CollectionMetaData(tempPath);
+		return new ReadWriteCollectionMetaData(tempPath);
 	}
 }

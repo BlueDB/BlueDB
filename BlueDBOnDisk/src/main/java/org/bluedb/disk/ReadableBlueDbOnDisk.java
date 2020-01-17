@@ -16,13 +16,13 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.collection.ReadOnlyBlueTimeCollectionOnDisk;
 
-public class ReadOnlyBlueDbOnDisk implements ReadableBlueDb {
+public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 
 	protected final Path path;
 
 	private final Map<String, ReadOnlyBlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
-	ReadOnlyBlueDbOnDisk(Path path) {
+	ReadableBlueDbOnDisk(Path path) {
 		this.path = path;
 	}
 	
