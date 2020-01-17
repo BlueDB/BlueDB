@@ -22,6 +22,8 @@ import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
@@ -32,8 +34,10 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 
 	private final RollupScheduler rollupScheduler;
 	private final String indexName;
+	private final SegmentManager<BlueKey> segmentManager;
+	private final FileManager fileManager;
 
-	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(ReadableBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> createNew(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
@@ -43,7 +47,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 		return index;
 	}
 
-	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableBlueCollectionOnDisk<T> collection, ReadableBlueIndexOnDisk<K, T> index) throws BlueDbException {
+	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableBlueCollectionOnDisk<T> collection, BlueIndexOnDisk<K, T> index) throws BlueDbException {
 		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
 			while (iterator.hasNext()) {
@@ -53,7 +57,7 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 		}
 	}
 
-	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(ReadableBlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> BlueIndexOnDisk<K, T> fromExisting(BlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
 		FileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		@SuppressWarnings("unchecked")
@@ -61,14 +65,25 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 		return new BlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 	}
 
-	private BlueIndexOnDisk(ReadableBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
+	private BlueIndexOnDisk(BlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		super(collection, indexPath, keyExtractor);
 		this.indexName = indexPath.toFile().getName();
+		this.fileManager = collection.getFileManager();
+		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
+		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
 		if (collection instanceof BlueCollectionOnDisk) {
 			rollupScheduler = ((BlueCollectionOnDisk<T>) collection).getRollupScheduler();
 		} else {
 			rollupScheduler = null;
 		}
+	}
+
+	public SegmentManager<BlueKey> getSegmentManager() {
+		return segmentManager;
+	}
+
+	public FileManager getFileManager() {
+		return fileManager;
 	}
 
 	@Override

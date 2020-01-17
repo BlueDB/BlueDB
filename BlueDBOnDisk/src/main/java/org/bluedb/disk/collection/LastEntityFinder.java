@@ -5,14 +5,14 @@ import java.util.Collections;
 import java.util.List;
 
 import org.bluedb.disk.collection.index.ReadableBlueIndexOnDisk;
+import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentEntityIterator;
-import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public class LastEntityFinder {
 
-	final private SegmentManager<?> segmentManager;
+	final private ReadableSegmentManager<?> segmentManager;
 
 	public LastEntityFinder(final ReadableBlueIndexOnDisk<?, ?> index) {
 		segmentManager = index.getSegmentManager();

@@ -14,18 +14,16 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
+import org.bluedb.disk.collection.BlueCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.recovery.IndividualChange;
 
-public class IndexManager<T extends Serializable> {
+public class IndexManager<T extends Serializable> extends ReadableIndexManager<T> {
 
-	private static final String INDEXES_SUBFOLDER = ".index";
-
-	private final ReadableBlueCollectionOnDisk<T> collection;
+	private final BlueCollectionOnDisk<T> collection;
 	private Map<String, BlueIndexOnDisk<ValueKey, T>> indexesByName;
 
-	public IndexManager(ReadableBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+	public IndexManager(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		this.collection = collection;
 		indexesByName = getIndexesFromDisk(collection, collectionPath);
 	}
@@ -46,13 +44,13 @@ public class IndexManager<T extends Serializable> {
 		return indexesByName.get(indexName);
 	}
 	
-	public <K extends ValueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
-		BlueIndexOnDisk<ValueKey, T> index = indexesByName.get(indexName);
+	public <K extends ValueKey> BlueIndexOnDisk<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
+		ReadableBlueIndexOnDisk<ValueKey, T> index = indexesByName.get(indexName);
 		if (index.getType() != keyType) {
 			throw new BlueDbException("Invalid type (" + keyType.getName() + ") for index " + indexName + " of type " + index.getType());
 		}
 		@SuppressWarnings("unchecked")
-		BlueIndex<K, T> typedIndex = (BlueIndex<K, T>) index;
+		BlueIndexOnDisk<K, T> typedIndex = (BlueIndexOnDisk<K, T>) index;
 		return typedIndex;
 	}
 
@@ -74,7 +72,7 @@ public class IndexManager<T extends Serializable> {
 		}
 	}
 
-	private Map<String, BlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(ReadableBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+	private Map<String, BlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(BlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		Map<String, BlueIndexOnDisk<ValueKey, T>> map = new HashMap<>();
 		Path indexesPath = Paths.get(collectionPath.toString(), INDEXES_SUBFOLDER);
 		List<File> subfolders = FileUtils.getSubFolders(indexesPath.toFile());

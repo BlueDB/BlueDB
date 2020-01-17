@@ -17,6 +17,8 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BlueDbOnDisk;
+import org.bluedb.disk.collection.index.BlueIndexOnDisk;
+import org.bluedb.disk.collection.index.IndexManager;
 import org.bluedb.disk.collection.metadata.CollectionMetaData;
 import org.bluedb.disk.collection.task.BatchChangeTask;
 import org.bluedb.disk.collection.task.BatchDeleteTask;
@@ -25,8 +27,12 @@ import org.bluedb.disk.collection.task.InsertTask;
 import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateTask;
 import org.bluedb.disk.executors.BlueExecutor;
+import org.bluedb.disk.file.FileManager;
 import org.bluedb.disk.query.BlueQueryOnDisk;
 import org.bluedb.disk.recovery.RecoveryManager;
+import org.bluedb.disk.segment.Range;
+import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
@@ -38,15 +44,12 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCo
 	private final String collectionKey;
 	private final RollupScheduler rollupScheduler;
 	private final RecoveryManager<T> recoveryManager;
+	private final FileManager fileManager;
+	private final SegmentManager<T> segmentManager;
+	protected final IndexManager<T> indexManager;
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
-		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses);
-		sharedExecutor = db.getSharedExecutor();
-		collectionKey = getPath().toString();
-		rollupScheduler = new RollupScheduler(this);
-		rollupScheduler.start();
-		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
-		recoveryManager.recover();  // everything else has to be in place before running this
+		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
 	public BlueCollectionOnDisk(BlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
@@ -55,10 +58,30 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCo
 		collectionKey = getPath().toString();
 		rollupScheduler = new RollupScheduler(this);
 		rollupScheduler.start();
+		fileManager = new FileManager(serializer);
 		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
+		Rollupable rollupable = null;
+		rollupable = (Rollupable) this;
+		segmentManager = new SegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
+		indexManager = new IndexManager<T>(this, collectionPath);
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 	
+	@Override
+	public FileManager getFileManager() {
+		return fileManager;
+	}
+	
+	@Override
+	public IndexManager<T> getIndexManager() {
+		return indexManager;
+	}
+
+	@Override
+	public SegmentManager<T> getSegmentManager() {
+		return segmentManager;
+	}
+
 	@Override
 	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		return indexManager.getOrCreate(name, keyType, keyExtractor);
@@ -171,5 +194,22 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCo
 	protected Class<? extends Serializable>[] getClassesToRegister(Class<? extends BlueKey> requestedKeyType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		return metadata.getAndAddToSerializedClassList(getType(), additionalRegisteredClasses);
 
+	}
+
+	public void rollup(Range timeRange) throws BlueDbException {
+		Segment<T> segment = segmentManager.getSegment(timeRange.getStart());
+		segment.rollup(timeRange);
+	}
+
+
+	public void rollupIndex(String indexName, Range range) throws BlueDbException {
+		BlueIndexOnDisk<?, T> index = indexManager.getUntypedIndex(indexName);
+		index.rollup(range);
+	}
+
+	//TODO: getIndex needs to work even if they haven't called initialize or build. Return empty index object if it doesn't exist
+	@Override
+	public <I extends ValueKey> BlueIndexOnDisk<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException {
+		return indexManager.getIndex(indexName, keyType);
 	}
 }

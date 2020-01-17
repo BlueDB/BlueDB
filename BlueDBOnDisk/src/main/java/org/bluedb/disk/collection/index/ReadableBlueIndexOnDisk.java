@@ -3,7 +3,6 @@ package org.bluedb.disk.collection.index;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -15,23 +14,21 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
 import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
-import org.bluedb.disk.file.FileManager;
-import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.file.ReadFileManager;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
-import org.bluedb.disk.segment.rollup.RollupTarget;
-import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T>, Rollupable {
+public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T> {
 
 	protected final static String FILE_KEY_EXTRACTOR = ".extractor";
 
 	private final ReadableBlueCollectionOnDisk<T> collection;
 	protected final KeyExtractor<I, T> keyExtractor;
-	private final FileManager fileManager;
-	private final SegmentManager<BlueKey> segmentManager;
+
+	public abstract ReadableSegmentManager<BlueKey> getSegmentManager();
+	public abstract ReadFileManager getFileManager();
 
 	public Class<I> getType() {
 		return keyExtractor.getType();
@@ -40,9 +37,6 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 	protected ReadableBlueIndexOnDisk(ReadableBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
-		this.fileManager = collection.getFileManager();
-		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
-		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
 	}
 
 	protected static SegmentSizeSetting determineSegmentSize(Class<? extends BlueKey> keyType) throws BlueDbException {
@@ -55,22 +49,6 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 		return SegmentSizeSetting.getOriginalDefaultSettingsFor(keyType);
 	}
 
-	public void add(BlueKey key, T newItem) throws BlueDbException {
-		// TODO remove
-	}
-
-	public void addEntities(Collection<BlueEntity<T>> entities) throws BlueDbException {
-		// TODO remove
-	}
-
-	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		// TODO remove
-	}
-
-	public void remove(BlueKey key, T oldItem) throws BlueDbException {
-		// TODO remove
-	}
-
 	@Override
 	public List<T> get(I key) throws BlueDbException {
 		List<BlueKey> underlyingKeys = getKeys(key);
@@ -81,7 +59,7 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 	public List<BlueKey> getKeys(I key) {
 		Range range = new Range(key.getGroupingNumber(), key.getGroupingNumber());
 		List<BlueKey> keys = new ArrayList<>();
-		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<>(segmentManager, range, true, new ArrayList<>())) {
+		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<BlueKey>(getSegmentManager(), range, true, new ArrayList<>())) {
 			while (entityIterator.hasNext()) {
 				@SuppressWarnings("unchecked")
 				IndexCompositeKey<I> indexKey = (IndexCompositeKey<I>) entityIterator.next().getKey();
@@ -89,24 +67,6 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 			}
 		}
 		return keys;
-	}
-
-	public void rollup(Range range) throws BlueDbException {
-		// TODO remove
-	}
-
-	public SegmentManager<BlueKey> getSegmentManager() {
-		return segmentManager;
-	}
-
-	@Override
-	public void reportReads(List<RollupTarget> rollupTargets) {
-		// TODO remove
-	}
-
-	@Override
-	public void reportWrites(List<RollupTarget> rollupTargets) {
-		// TODO remove
 	}
 
 	@Override
