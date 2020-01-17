@@ -98,7 +98,6 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 		executeTask(insertTask);
 	}
 
-	//TODO: Remember that this is duplicated so you might want to pull of some strategy pattern shiz to share code here
 	@Override
 	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException {
 		ensureCorrectKeyTypes(values.keySet());
