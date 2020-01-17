@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.file.ReadFileManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
 import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 
@@ -13,14 +12,10 @@ public abstract class ReadableSegmentManager<T extends Serializable> {
 
 	protected final SegmentPathManager pathManager;
 
-	public abstract ReadFileManager getFileManager();
 	public abstract ReadableSegment<T> getFirstSegment(BlueKey key);
-	public abstract ReadableSegment<T> getSegmentAfter(Segment<T> segment);
 	public abstract ReadableSegment<T> getSegment(long groupingNumber);
-	public abstract List<? extends ReadableSegment<T>> getAllSegments(BlueKey key);
 	public abstract List<? extends ReadableSegment<T>> getAllExistingSegments();
 	public abstract List<? extends ReadableSegment<T>> getExistingSegments(Range range);
-//	protected abstract ReadableSegment<T> toSegment(Path path);
 
 
 	public ReadableSegmentManager(Path collectionPath, SegmentSizeConfiguration sizeConfig) {

@@ -37,7 +37,6 @@ public class SegmentManager<T extends Serializable> extends ReadableSegmentManag
 		return getSegment(groupingNumber);
 	}
 
-	@Override
 	public Segment<T> getSegmentAfter(Segment<T> segment) {
 		long groupingNumber = segment.getRange().getEnd() + 1;
 		return getSegment(groupingNumber);
@@ -49,7 +48,6 @@ public class SegmentManager<T extends Serializable> extends ReadableSegmentManag
 		return toSegment(segmentPath);
 	}
 
-	@Override
 	public List<Segment<T>> getAllSegments(BlueKey key) {
 		return pathManager.getAllPossibleSegmentPaths(key).stream()
 				.map((p) -> (toSegment(p)))

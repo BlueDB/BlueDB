@@ -71,19 +71,11 @@ public class BlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends
 		this.fileManager = collection.getFileManager();
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
 		segmentManager = new SegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
-		if (collection instanceof BlueCollectionOnDisk) {
-			rollupScheduler = ((BlueCollectionOnDisk<T>) collection).getRollupScheduler();
-		} else {
-			rollupScheduler = null;
-		}
+		rollupScheduler = ((BlueCollectionOnDisk<T>) collection).getRollupScheduler();
 	}
 
 	public SegmentManager<BlueKey> getSegmentManager() {
 		return segmentManager;
-	}
-
-	public FileManager getFileManager() {
-		return fileManager;
 	}
 
 	@Override

@@ -34,11 +34,6 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> extends Readab
 	}
 
 	@Override
-	public ReadOnlyCollectionMetadata getMetaData() {
-		return metadata;
-	}
-
-	@Override
 	protected ReadOnlyCollectionMetadata getOrCreateMetadata() {
 		if (metadata == null) {
 			metadata = new ReadOnlyCollectionMetadata(getPath());
@@ -58,11 +53,6 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> extends Readab
 	@Override
 	public ReadOnlyFileManager getFileManager() {
 		return fileManager;
-	}
-
-	@Override
-	public ReadOnlyIndexManager<T> getIndexManager() {
-		return indexManager;
 	}
 
 	@Override

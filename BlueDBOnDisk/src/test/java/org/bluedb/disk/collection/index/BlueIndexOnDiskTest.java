@@ -10,6 +10,7 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
+import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
@@ -142,6 +143,16 @@ public class BlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(justBob, indexOnDisk.get(integerKey3));
 	}
 
+	@Test
+	public void test_getIndex_readonly_nonExisting() throws Exception {
+		getTimeCollection().createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		ReadOnlyBlueDbOnDisk readOnlyDb = (ReadOnlyBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
+		try {
+			readOnlyCollection.getIndex("test_index", StringKey.class);
+			fail();
+		} catch (BlueDbException e) {}
+	}
 
 	@Test
 	public void test_get_readonly() throws Exception {

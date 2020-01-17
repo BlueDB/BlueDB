@@ -9,7 +9,6 @@ public abstract class ReadableIndexManager<T extends Serializable> {
 
 	protected static final String INDEXES_SUBFOLDER = ".index";
 
-	public abstract ReadableBlueIndexOnDisk<?, T> getUntypedIndex(String indexName) throws BlueDbException;
 	public abstract <K extends ValueKey> ReadableBlueIndexOnDisk<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException;
 
 }

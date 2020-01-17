@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.bluedb.disk.collection.index.ReadableBlueIndexOnDisk;
+import org.bluedb.disk.segment.ReadableSegment;
 import org.bluedb.disk.segment.ReadableSegmentManager;
-import org.bluedb.disk.segment.Segment;
 import org.bluedb.disk.segment.SegmentEntityIterator;
 import org.bluedb.disk.serialization.BlueEntity;
 
@@ -23,10 +23,10 @@ public class LastEntityFinder {
 	}
 
 	public BlueEntity<?> getLastEntity() {
-		List<Segment<Serializable>> segments = getSegmentsInReverseOrder();
+		List<ReadableSegment<Serializable>> segments = getSegmentsInReverseOrder();
 		while (!segments.isEmpty()) {
 			BlueEntity<?> last = null;
-			Segment<?> segment = segments.remove(0);
+			ReadableSegment<?> segment = segments.remove(0);
 			try (SegmentEntityIterator<?> segmentIterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
 				while(segmentIterator.hasNext()) {
 					last = segmentIterator.next();
@@ -39,10 +39,10 @@ public class LastEntityFinder {
 		return null;
 	}
 
-	public List<Segment<Serializable>> getSegmentsInReverseOrder() {
+	public List<ReadableSegment<Serializable>> getSegmentsInReverseOrder() {
 		List<?> existingSegmentsUntyped = segmentManager.getAllExistingSegments();
 		@SuppressWarnings("unchecked")
-		List<Segment<Serializable>> segments = (List<Segment<Serializable>>) existingSegmentsUntyped;
+		List<ReadableSegment<Serializable>> segments = (List<ReadableSegment<Serializable>>) existingSegmentsUntyped;
 		Collections.sort(segments);
 		Collections.reverse(segments);
 		return segments;

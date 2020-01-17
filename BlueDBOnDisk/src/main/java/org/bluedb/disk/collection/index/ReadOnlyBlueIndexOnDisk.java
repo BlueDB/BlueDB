@@ -10,7 +10,6 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
-import org.bluedb.disk.file.ReadFileManager;
 import org.bluedb.disk.file.ReadOnlyFileManager;
 import org.bluedb.disk.segment.ReadOnlySegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
@@ -38,11 +37,6 @@ public class ReadOnlyBlueIndexOnDisk<I extends ValueKey, T extends Serializable>
 	@Override
 	public ReadOnlySegmentManager<BlueKey> getSegmentManager() {
 		return segmentManager;
-	}
-
-	@Override
-	public ReadFileManager getFileManager() {
-		return fileManager;
 	}
 
 }

@@ -15,7 +15,6 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
 import org.bluedb.disk.collection.index.ReadableBlueIndexOnDisk;
-import org.bluedb.disk.collection.index.ReadableIndexManager;
 import org.bluedb.disk.collection.metadata.CollectionMetaData;
 import org.bluedb.disk.collection.metadata.ReadableCollectionMetadata;
 import org.bluedb.disk.file.ReadFileManager;
@@ -36,17 +35,11 @@ public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> imple
 	protected final Path collectionPath;
 	protected final SegmentSizeSetting segmentSizeSettings;
 
-	protected abstract ReadableCollectionMetadata getMetaData();
 	protected abstract ReadableCollectionMetadata getOrCreateMetadata();
 	protected abstract Class<? extends Serializable>[] getClassesToRegister(Class<? extends BlueKey> requestedKeyType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException;
 	public abstract ReadFileManager getFileManager();
-	public abstract ReadableIndexManager<T> getIndexManager();
 	public abstract ReadableSegmentManager<T> getSegmentManager();
 	public abstract <I extends ValueKey> ReadableBlueIndexOnDisk<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
-
-	public ReadableBlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
-		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
-	}
 
 	public ReadableBlueCollectionOnDisk(ReadOnlyBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		this.valueType = valueType;

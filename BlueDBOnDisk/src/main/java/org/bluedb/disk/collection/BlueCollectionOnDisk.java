@@ -72,7 +72,6 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCo
 		return fileManager;
 	}
 	
-	@Override
 	public IndexManager<T> getIndexManager() {
 		return indexManager;
 	}
@@ -175,7 +174,6 @@ public class BlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCo
 		return rollupScheduler;
 	}
 
-	@Override
 	public CollectionMetaData getMetaData() {
 		return metadata;
 	}

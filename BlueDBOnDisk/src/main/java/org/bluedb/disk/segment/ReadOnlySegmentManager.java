@@ -23,10 +23,6 @@ public class ReadOnlySegmentManager<T extends Serializable> extends ReadableSegm
 		return new ReadOnlySegment<T>(path, range, fileManager, pathManager.getRollupLevels());
 	}
 
-	public ReadOnlyFileManager getFileManager() {
-		return fileManager;
-	}
-
 	@Override
 	public ReadOnlySegment<T> getFirstSegment(BlueKey key) {
 		long groupingNumber = key.getGroupingNumber();
@@ -34,22 +30,9 @@ public class ReadOnlySegmentManager<T extends Serializable> extends ReadableSegm
 	}
 
 	@Override
-	public ReadOnlySegment<T> getSegmentAfter(Segment<T> segment) {
-		long groupingNumber = segment.getRange().getEnd() + 1;
-		return getSegment(groupingNumber);
-	}
-
-	@Override
 	public ReadOnlySegment<T> getSegment(long groupingNumber) {
 		Path segmentPath = pathManager.getSegmentPath(groupingNumber);
 		return toSegment(segmentPath);
-	}
-
-	@Override
-	public List<ReadOnlySegment<T>> getAllSegments(BlueKey key) {
-		return pathManager.getAllPossibleSegmentPaths(key).stream()
-				.map((p) -> (toSegment(p)))
-				.collect(Collectors.toList());
 	}
 
 	@Override

@@ -14,7 +14,6 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
 import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
-import org.bluedb.disk.file.ReadFileManager;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
@@ -28,7 +27,6 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 	protected final KeyExtractor<I, T> keyExtractor;
 
 	public abstract ReadableSegmentManager<BlueKey> getSegmentManager();
-	public abstract ReadFileManager getFileManager();
 
 	public Class<I> getType() {
 		return keyExtractor.getType();

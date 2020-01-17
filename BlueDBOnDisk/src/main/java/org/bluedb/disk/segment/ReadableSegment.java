@@ -31,10 +31,6 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 		this.preSegmentRange = (segmentRange==null) ? null : new Range(0, segmentRange.getStart() - 1);
 	}
 
-	protected List<Long> getRollupLevels() {
-		return rollupLevels;
-	}
-
 	protected abstract ReadFileManager getFileManager();
 
 	@Override

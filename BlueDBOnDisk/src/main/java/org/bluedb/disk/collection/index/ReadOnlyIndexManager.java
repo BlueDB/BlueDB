@@ -21,10 +21,6 @@ public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexM
 		indexesByName = getIndexesFromDisk(collection, collectionPath);
 	}
 
-	public ReadOnlyBlueIndexOnDisk<?, T> getUntypedIndex(String indexName) throws BlueDbException {
-		return indexesByName.get(indexName);
-	}
-
 	public <K extends ValueKey> ReadOnlyBlueIndexOnDisk<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
 		ReadOnlyBlueIndexOnDisk<ValueKey, T> index = indexesByName.get(indexName);
 		if (index.getType() != keyType) {

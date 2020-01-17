@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
@@ -23,7 +24,9 @@ import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
+import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.models.calls.Call;
@@ -265,6 +268,21 @@ public class BlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 		@SuppressWarnings("unused")
 		BlueKey key2 = insertAtLong(2, new TestValue("Fred"));
 		assertEquals(key3, getLongCollection().getLastKey());
+	}
+
+	@Test
+	public void test_getLastKey_readonly() throws Exception {
+        ReadOnlyBlueDbOnDisk readOnlyDb = (ReadOnlyBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+        ReadableBlueCollection<TestValue> collection = readOnlyDb.getCollection(getLongCollection().getPath().toFile().getName(), TestValue.class);
+
+		assertNull(collection.getLastKey());
+		BlueKey key1 = insertAtLong(1, new TestValue("Joe"));
+		assertEquals(key1, collection.getLastKey());
+		BlueKey key3 = insertAtLong(3, new TestValue("Bob"));
+		assertEquals(key3, collection.getLastKey());
+		@SuppressWarnings("unused")
+		BlueKey key2 = insertAtLong(2, new TestValue("Fred"));
+		assertEquals(key3, collection.getLastKey());
 	}
 
 	@Test
