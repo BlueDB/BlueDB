@@ -1,5 +1,15 @@
 package org.bluedb.disk;
 
+import static org.junit.Assert.*;
+
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -10,12 +20,67 @@ import org.bluedb.api.BlueCollection;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadableBlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
+import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.index.TestMultiRetrievalKeyExtractor;
+import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.recovery.PendingChange;
+import org.bluedb.disk.serialization.BlueSerializer;
+import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.IsNot;
 import org.junit.Test;
 
 public class ReadOnlyBlueDbOnDiskTest extends BlueDbDiskTestBase {
 
+	@Test
+	public void test_noWriting() throws BlueDbException, NoSuchAlgorithmException, IOException {
+		String collectionName = "test_no_writes";
+		ReadWriteBlueTimeCollectionOnDisk<TestValue> readWriteCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class)
+				.withOptimizedClasses(Arrays.asList(TestMultiRetrievalKeyExtractor.class)) // add a registered class
+				.build();
+		byte[] digest = hashDirectory(readWriteCollection.getPath());
+
+		// add an index
+		readWriteCollection.createIndex("index_name", IntegerKey.class, new TestRetrievalKeyExtractor());
+		byte[] newDigest = hashDirectory(readWriteCollection.getPath());
+		assertThat(newDigest, IsNot.not(IsEqual.equalTo(digest)));
+		digest = newDigest;
+
+		// insert a value
+		TimeKey key1 = new TimeKey(1L, 1L);
+		TestValue valueJoe = createValue("Joe");
+		readWriteCollection.insert(key1, valueJoe);
+		newDigest = hashDirectory(readWriteCollection.getPath());
+		assertThat(newDigest, IsNot.not(IsEqual.equalTo(digest)));
+		digest = newDigest;
+
+		// shut down to prevent more writes
+		db.shutdownNow();
+
+		// add a recoverable
+		TimeKey key2 = new TimeKey(2L, 2L);
+		TestValue valueBob = createValue("Bob");
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
+		PendingChange<TestValue> change = PendingChange.createInsert(key2, valueBob, serializer);
+		readWriteCollection.getRecoveryManager().saveChange(change);
+		newDigest = hashDirectory(readWriteCollection.getPath());
+		assertThat(newDigest, IsNot.not(IsEqual.equalTo(digest)));
+		digest = newDigest;
+
+		ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db.getPath()).buildReadOnly();
+		@SuppressWarnings("unchecked")
+		ReadOnlyBlueCollectionOnDisk<TestValue> readOnlyCollection = (ReadOnlyBlueCollectionOnDisk<TestValue>) readOnlyDb.getTimeCollection(collectionName, TestValue.class);
+
+		assertEquals(valueJoe, readOnlyCollection.get(key1));  // make sure we really did get the right collection
+		readWriteCollection.getPath();
+		newDigest = hashDirectory(readOnlyCollection.getPath());
+		assertThat(newDigest, IsEqual.equalTo(digest));
+	}
+	
 	@Test
 	public void test_getCollection() throws Exception {
 		ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db.getPath()).buildReadOnly();
@@ -498,4 +563,18 @@ public class ReadOnlyBlueDbOnDiskTest extends BlueDbDiskTestBase {
         readOnlyDb.awaitTermination(1, TimeUnit.MICROSECONDS);
 	}
 	
+	private byte[] hashDirectory(Path path) throws IOException, NoSuchAlgorithmException {
+		MessageDigest digest = MessageDigest.getInstance("MD5");
+		SimpleFileVisitor<Path> simpleFileVisitor = new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path visitedFile,BasicFileAttributes fileAttributes) throws IOException {
+				System.out.println("FILE NAME: "+ visitedFile.getFileName());
+				digest.update(visitedFile.toAbsolutePath().toString().getBytes());
+				digest.update(Files.readAllBytes(visitedFile));
+				return FileVisitResult.CONTINUE;
+			}
+		};
+		Files.walkFileTree(path, simpleFileVisitor);
+		return digest.digest();
+	}
 }
