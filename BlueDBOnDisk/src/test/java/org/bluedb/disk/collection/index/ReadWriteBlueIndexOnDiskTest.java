@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.bluedb.api.BlueCollection;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -144,10 +145,30 @@ public class ReadWriteBlueIndexOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getIndex_readonly_nonExisting() throws Exception {
+	public void test_getIndex_readonly_wrongType() throws Exception {
 		getTimeCollection().createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 		ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
 		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
+		try {
+			readOnlyCollection.getIndex("test_index", StringKey.class);
+			fail();
+		} catch (BlueDbException e) {}
+	}
+
+	@Test
+	public void test_getIndex_readonly_nonExisting() throws Exception {
+		ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
+		try {
+			readOnlyCollection.getIndex("test_index", StringKey.class);
+			fail();
+		} catch (BlueDbException e) {}
+	}
+
+
+	@Test
+	public void test_getIndex_nonExisting() throws Exception {
+		BlueCollection<TestValue> readOnlyCollection = db().getTimeCollection(getTimeCollectionName(), TestValue.class);
 		try {
 			readOnlyCollection.getIndex("test_index", StringKey.class);
 			fail();

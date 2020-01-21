@@ -23,7 +23,9 @@ public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexM
 
 	public <K extends ValueKey> ReadOnlyBlueIndexOnDisk<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
 		ReadOnlyBlueIndexOnDisk<ValueKey, T> index = indexesByName.get(indexName);
-		if (index.getType() != keyType) {
+		if (index == null) {
+			throw new BlueDbException("No such index: " + indexName);
+		} else if (index.getType() != keyType) {
 			throw new BlueDbException("Invalid type (" + keyType.getName() + ") for index " + indexName + " of type " + index.getType());
 		}
 		@SuppressWarnings("unchecked")
