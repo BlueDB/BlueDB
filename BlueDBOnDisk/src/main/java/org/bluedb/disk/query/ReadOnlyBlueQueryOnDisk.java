@@ -69,27 +69,27 @@ public class ReadOnlyBlueQueryOnDisk<T extends Serializable> implements ReadBlue
 		return new Range(min, max);
 	}
 
-	protected ReadOnlyBlueQueryOnDisk<T> afterTime(long time) {
+	protected ReadBlueQuery<T> afterTime(long time) {
 		min = Math.max(min, Math.max(time + 1,time)); // last part to avoid overflow errors
 		return this;
 	}
 
-	protected ReadOnlyBlueQueryOnDisk<T> afterOrAtTime(long time) {
+	protected ReadBlueQuery<T> afterOrAtTime(long time) {
 		min = Math.max(min, time);
 		return this;
 	}
 
-	protected ReadOnlyBlueQueryOnDisk<T> beforeTime(long time) {
+	protected ReadBlueQuery<T> beforeTime(long time) {
 		max = Math.min(max, Math.min(time - 1,time)); // last part to avoid overflow errors
 		return this;
 	}
 
-	protected ReadOnlyBlueQueryOnDisk<T> beforeOrAtTime(long time) {
+	protected ReadBlueQuery<T> beforeOrAtTime(long time) {
 		max = Math.min(max, time);
 		return this;
 	}
 
-	protected ReadOnlyBlueQueryOnDisk<T> byStartTime() {
+	protected ReadBlueQuery<T> byStartTime() {
 		byStartTime = true;
 		return this;
 	}

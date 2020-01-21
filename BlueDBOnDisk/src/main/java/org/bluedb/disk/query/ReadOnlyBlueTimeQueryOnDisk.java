@@ -19,31 +19,31 @@ public class ReadOnlyBlueTimeQueryOnDisk<T extends Serializable> extends ReadOnl
 	}
 
 	@Override
-	public ReadOnlyBlueTimeQueryOnDisk<T> afterTime(long time) {
+	public ReadBlueTimeQuery<T> afterTime(long time) {
 		super.afterTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadOnlyBlueTimeQueryOnDisk<T> afterOrAtTime(long time) {
+	public ReadBlueTimeQuery<T> afterOrAtTime(long time) {
 		super.afterOrAtTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadOnlyBlueTimeQueryOnDisk<T> beforeTime(long time) {
+	public ReadBlueTimeQuery<T> beforeTime(long time) {
 		super.beforeTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadOnlyBlueTimeQueryOnDisk<T> beforeOrAtTime(long time) {
+	public ReadBlueTimeQuery<T> beforeOrAtTime(long time) {
 		super.beforeOrAtTime(time);
 		return this;
 	}
 
 	@Override
-	public ReadOnlyBlueTimeQueryOnDisk<T> byStartTime() {
+	public ReadBlueTimeQuery<T> byStartTime() {
 		super.byStartTime();
 		return this;
 	}
