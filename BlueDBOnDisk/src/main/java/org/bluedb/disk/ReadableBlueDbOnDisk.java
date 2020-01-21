@@ -2,6 +2,7 @@ package org.bluedb.disk;
 
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +14,8 @@ import org.bluedb.api.ReadableBlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
+import org.bluedb.disk.collection.FacadeCollection;
+import org.bluedb.disk.collection.FacadeTimeCollection;
 import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.collection.ReadOnlyBlueTimeCollectionOnDisk;
 
@@ -26,14 +29,22 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 		this.path = path;
 	}
 	
-	//TODO: getCollection and getTimeCollection need to work even if they haven't called initialize or build. Return empty collection object if it doesn't exist
-	//TODO: Should getTimeCollection throw an exception if the key ove the collection isn't a TimeKey?
-
 	@Override
 	public <T extends Serializable> ReadableBlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
+		ReadableBlueCollection<T> collection = getCollectionIfExists(name, valueType);
+		if (collection == null) {
+			return new FacadeCollection<>(this, name, valueType);
+		} else  {
+			return collection;
+		}
+	}
+
+	private <T extends Serializable> ReadableBlueCollection<T> getCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
 			ReadOnlyBlueCollectionOnDisk<?> untypedCollection = collections.get(name);
-			if (untypedCollection == null) {
+			if (untypedCollection == null && !collectionFolderExists(name)) {
+				return null;
+			} else if (untypedCollection == null) {
 				ReadOnlyBlueCollectionOnDisk<T> collection = new ReadOnlyBlueCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
 				if (TimeKey.class.isAssignableFrom(collection.getKeyType())) {
 					Class<? extends BlueKey> keyType = collection.getKeyType();
@@ -50,16 +61,23 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 				throw new BlueDbException("Cannot cast BlueCollection<" + untypedCollection.getType() + "> to BlueCollection<" + valueType + ">");
 			}
 		}
+
 	}
 
 	@Override
 	public <V extends Serializable> ReadableBlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException {
-		ReadableBlueCollection<V> collection = getCollection(name, valueType);
-		if(collection instanceof ReadableBlueTimeCollection) {
+		ReadableBlueCollection<V> collection = getCollectionIfExists(name, valueType);
+		if (collection == null) {
+			return new FacadeTimeCollection<V>(this, name, valueType);
+		} else if(collection instanceof ReadableBlueTimeCollection) {
 			return (ReadableBlueTimeCollection<V>) collection;
 		} else {
 			throw new BlueDbException("Cannot cast " + collection.getClass() + " to " + ReadableBlueTimeCollection.class);
 		}
+	}
+
+	public boolean collectionFolderExists(String name) {
+		return Paths.get(path.toString(), name).toFile().exists();
 	}
 
 	@Override
