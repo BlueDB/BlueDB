@@ -15,22 +15,38 @@ import org.bluedb.disk.file.FileUtils;
 
 public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexManager<T> {
 
-	private Map<String, ReadOnlyBlueIndexOnDisk<ValueKey, T>> indexesByName;
+	private final Map<String, ReadOnlyBlueIndexOnDisk<ValueKey, T>> indexesByName;
+	private final ReadOnlyBlueCollectionOnDisk<T> collection;
 
 	public ReadOnlyIndexManager(ReadOnlyBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
-		indexesByName = getIndexesFromDisk(collection, collectionPath);
+		this.collection = collection;
+		this.indexesByName = getIndexesFromDisk(collection, collectionPath);
 	}
 
 	public <K extends ValueKey> ReadOnlyBlueIndexOnDisk<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
 		ReadOnlyBlueIndexOnDisk<ValueKey, T> index = indexesByName.get(indexName);
 		if (index == null) {
-			throw new BlueDbException("No such index: " + indexName);
+			index = getIndexFromDisk(indexName);
+		}
+		if (index == null) {
+			throw new NoSuchIndexException("No such index: " + indexName);
 		} else if (index.getType() != keyType) {
 			throw new BlueDbException("Invalid type (" + keyType.getName() + ") for index " + indexName + " of type " + index.getType());
 		}
 		@SuppressWarnings("unchecked")
 		ReadOnlyBlueIndexOnDisk<K, T> typedIndex = (ReadOnlyBlueIndexOnDisk<K, T>) index;
 		return typedIndex;
+	}
+
+	private ReadOnlyBlueIndexOnDisk<ValueKey, T> getIndexFromDisk(String indexName) {
+		Path indexPath = Paths.get(collection.getPath().toString(), ".index", indexName);
+		if (indexPath.toFile().exists()) {
+			try {
+				ReadOnlyBlueIndexOnDisk<ValueKey, T> index = ReadOnlyBlueIndexOnDisk.fromExisting(collection, indexPath);
+				indexesByName.put(indexName, index);
+			} catch (BlueDbException e) {}
+		}
+		return indexesByName.get(indexName);
 	}
 
 	private Map<String, ReadOnlyBlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(ReadOnlyBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {

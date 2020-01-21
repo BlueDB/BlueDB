@@ -4,10 +4,12 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadableBlueDbOnDisk;
-import org.bluedb.disk.collection.index.ReadOnlyBlueIndexOnDisk;
+import org.bluedb.disk.collection.index.FacadeBlueIndexOnDisk;
+import org.bluedb.disk.collection.index.NoSuchIndexException;
 import org.bluedb.disk.collection.index.ReadOnlyIndexManager;
 import org.bluedb.disk.collection.metadata.ReadOnlyCollectionMetadata;
 import org.bluedb.disk.file.ReadOnlyFileManager;
@@ -61,8 +63,18 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> extends Readab
 	}
 
 	@Override
-	public <I extends ValueKey> ReadOnlyBlueIndexOnDisk<I, T> getIndex(String indexName, Class<I> keyType)
+	public <I extends ValueKey> BlueIndex<I, T> getIndex(String indexName, Class<I> keyType)
 			throws BlueDbException {
-		return indexManager.getIndex(indexName, keyType);
+		try {
+			return indexManager.getIndex(indexName, keyType);
+		} catch (NoSuchIndexException e1) {
+			return new FacadeBlueIndexOnDisk<I, T>(() -> {
+				try {
+					return indexManager.getIndex(indexName, keyType);
+				} catch (BlueDbException e2) {
+					return null;
+				}
+			});
+		}
 	}
 }

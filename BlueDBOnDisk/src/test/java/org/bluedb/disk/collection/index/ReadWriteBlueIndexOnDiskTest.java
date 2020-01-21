@@ -157,12 +157,24 @@ public class ReadWriteBlueIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getIndex_readonly_nonExisting() throws Exception {
+		TestValue value = new TestValue("Joe", 3);
+		TimeKey key = createTimeKey(1, value);
+		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
+		IntegerKey indexKey = keyExtractor.extractKeys(value).get(0);
+		String indexName = "test_index";
+
 		ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
 		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
-		try {
-			readOnlyCollection.getIndex("test_index", StringKey.class);
-			fail();
-		} catch (BlueDbException e) {}
+		BlueIndex<IntegerKey, TestValue> facadeIndex = readOnlyCollection.getIndex(indexName, IntegerKey.class);
+
+		assertNull(facadeIndex.get(indexKey));
+		assertNull(facadeIndex.getLastKey());
+
+		getTimeCollection().createIndex(indexName, IntegerKey.class, keyExtractor);
+		getTimeCollection().insert(key, value);
+
+		assertEquals(Arrays.asList(value), facadeIndex.get(indexKey));
+		assertEquals(indexKey, facadeIndex.getLastKey());
 	}
 
 

@@ -11,10 +11,10 @@ import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadableBlueDbOnDisk;
-import org.bluedb.disk.collection.index.ReadableBlueIndexOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.metadata.ReadableCollectionMetadata;
 import org.bluedb.disk.file.ReadFileManager;
@@ -39,7 +39,7 @@ public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> imple
 	protected abstract Class<? extends Serializable>[] getClassesToRegister(Class<? extends BlueKey> requestedKeyType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException;
 	public abstract ReadFileManager getFileManager();
 	public abstract ReadableSegmentManager<T> getSegmentManager();
-	public abstract <I extends ValueKey> ReadableBlueIndexOnDisk<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
+	public abstract <I extends ValueKey> BlueIndex<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
 
 	public ReadableBlueCollectionOnDisk(ReadableBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		this.valueType = valueType;
