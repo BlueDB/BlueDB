@@ -39,29 +39,41 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 		}
 	}
 
-	private <T extends Serializable> ReadableBlueCollection<T> getCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
+	private <T extends Serializable> ReadOnlyBlueCollectionOnDisk<?> getUntypedCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
-			ReadOnlyBlueCollectionOnDisk<?> untypedCollection = collections.get(name);
-			if (untypedCollection == null && !collectionFolderExists(name)) {
-				return null;
-			} else if (untypedCollection == null) {
-				ReadOnlyBlueCollectionOnDisk<T> collection = new ReadOnlyBlueCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
-				if (TimeKey.class.isAssignableFrom(collection.getKeyType())) {
-					Class<? extends BlueKey> keyType = collection.getKeyType();
-					collection = new ReadOnlyBlueTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
-				}
-				collections.put(name, collection);
+			ReadOnlyBlueCollectionOnDisk<?> collection = collections.get(name);
+			if (collection != null) {
 				return collection;
-			}
-			if (untypedCollection.getType().equals(valueType)) {
-				@SuppressWarnings("unchecked")
-				ReadableBlueCollection<T> typedCollection = (ReadableBlueCollection<T>) untypedCollection;
-				return typedCollection;
+			} else if (collectionFolderExists(name)) {
+				ReadOnlyBlueCollectionOnDisk<T> newCollection = instantiateCollectionFromExistingOnDisk(name, valueType);
+				collections.put(name, newCollection);
+				return newCollection;
 			} else {
-				throw new BlueDbException("Cannot cast BlueCollection<" + untypedCollection.getType() + "> to BlueCollection<" + valueType + ">");
+				return null;
 			}
 		}
+	}
 
+	private <T extends Serializable> ReadableBlueCollection<T> getCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
+		ReadOnlyBlueCollectionOnDisk<?> untypedCollection = getUntypedCollectionIfExists(name, valueType);
+		if (untypedCollection == null) {
+			return null;
+		} else if (untypedCollection.getType().equals(valueType)) {
+			@SuppressWarnings("unchecked")
+			ReadableBlueCollection<T> typedCollection = (ReadableBlueCollection<T>) untypedCollection;
+			return typedCollection;
+		} else {
+			throw new BlueDbException("Cannot cast BlueCollection<" + untypedCollection.getType() + "> to BlueCollection<" + valueType + ">");
+		}
+	}
+
+	private <T extends Serializable> ReadOnlyBlueCollectionOnDisk<T> instantiateCollectionFromExistingOnDisk(String name, Class<T> valueType) throws BlueDbException {
+		ReadOnlyBlueCollectionOnDisk<T> collection = new ReadOnlyBlueCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
+		if (TimeKey.class.isAssignableFrom(collection.getKeyType())) {
+			Class<? extends BlueKey> keyType = collection.getKeyType();
+			collection = new ReadOnlyBlueTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
+		}
+		return collection;
 	}
 
 	@Override
