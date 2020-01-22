@@ -28,9 +28,7 @@ public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexM
 		if (index == null) {
 			index = getIndexFromDisk(indexName);
 		}
-		if (index == null) {
-			throw new NoSuchIndexException("No such index: " + indexName);
-		} else if (index.getType() != keyType) {
+		if (index.getType() != keyType) {
 			throw new BlueDbException("Invalid type (" + keyType.getName() + ") for index " + indexName + " of type " + index.getType());
 		}
 		@SuppressWarnings("unchecked")
@@ -38,13 +36,13 @@ public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexM
 		return typedIndex;
 	}
 
-	private ReadOnlyBlueIndexOnDisk<ValueKey, T> getIndexFromDisk(String indexName) {
+	private ReadOnlyBlueIndexOnDisk<ValueKey, T> getIndexFromDisk(String indexName) throws BlueDbException {
 		Path indexPath = Paths.get(collection.getPath().toString(), ".index", indexName);
-		if (indexPath.toFile().exists()) {
-			try {
-				ReadOnlyBlueIndexOnDisk<ValueKey, T> index = ReadOnlyBlueIndexOnDisk.fromExisting(collection, indexPath);
-				indexesByName.put(indexName, index);
-			} catch (BlueDbException e) {}
+		if(indexPath.toFile().exists()) {
+			ReadOnlyBlueIndexOnDisk<ValueKey, T> index = ReadOnlyBlueIndexOnDisk.fromExisting(collection, indexPath);
+			indexesByName.put(indexName, index);
+		} else {
+			throw new NoSuchIndexException("No such index: " + indexName);
 		}
 		return indexesByName.get(indexName);
 	}
