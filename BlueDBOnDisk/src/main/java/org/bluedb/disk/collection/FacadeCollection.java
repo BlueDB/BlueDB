@@ -12,10 +12,10 @@ import org.bluedb.disk.ReadableBlueDbOnDisk;
 
 public class FacadeCollection<T extends Serializable> implements ReadableBlueCollection<T> {
 
-	private final ReadableBlueDbOnDisk db;
-	private final Class<T> valueType;
-	private final String name;
-	private final DummyReadOnlyBlueCollectionOnDisk<T> dummyCollection;
+	protected final ReadableBlueDbOnDisk db;
+	protected final Class<T> valueType;
+	protected final String name;
+	protected final DummyReadOnlyBlueCollectionOnDisk<T> dummyCollection;
 
 	public FacadeCollection(ReadableBlueDbOnDisk db, String name, Class<T> valueType) {
 		this.db = db;
@@ -24,7 +24,8 @@ public class FacadeCollection<T extends Serializable> implements ReadableBlueCol
 		this.dummyCollection = new DummyReadOnlyBlueCollectionOnDisk<T>();
 	}
 
-	private ReadableBlueCollection<T> getCollection() {
+	
+	protected ReadableBlueCollection<T> getCollection() {
 		if (db.collectionFolderExists(name)) {
 			try {
 				return db.getCollection(name, valueType);
