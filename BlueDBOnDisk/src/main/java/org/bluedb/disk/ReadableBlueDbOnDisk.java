@@ -54,7 +54,7 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 		}
 	}
 
-	private <T extends Serializable> ReadableBlueCollection<T> getCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
+	public <T extends Serializable> ReadableBlueCollection<T> getCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
 		ReadOnlyBlueCollectionOnDisk<?> untypedCollection = getUntypedCollectionIfExists(name, valueType);
 		if (untypedCollection == null) {
 			return null;

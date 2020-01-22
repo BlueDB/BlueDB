@@ -9,6 +9,7 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadableBlueDbOnDisk;
+import org.bluedb.disk.collection.index.FacadeBlueIndexOnDisk;
 
 public class FacadeCollection<T extends Serializable> implements ReadableBlueCollection<T> {
 
@@ -38,8 +39,19 @@ public class FacadeCollection<T extends Serializable> implements ReadableBlueCol
 	}
 
 	@Override
-	public <K extends ValueKey> BlueIndex<K, T> getIndex(String name, Class<K> keyType) throws BlueDbException {
-		return getCollection().getIndex(name, keyType);
+	public <K extends ValueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> indexKeyType) throws BlueDbException {
+		return new FacadeBlueIndexOnDisk<K, T>(() -> {
+			ReadableBlueCollection<T> collection = getCollection();
+			if (collection instanceof DummyReadOnlyBlueCollectionOnDisk) {
+				return null;
+			} else {
+				try {
+					return db.getCollection(name, valueType).getIndex(indexName, indexKeyType);
+				} catch (BlueDbException e) {
+					return null;
+				}
+			}
+		});
 	}
 
 	@Override
