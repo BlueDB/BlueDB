@@ -60,8 +60,7 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 		rollupScheduler.start();
 		fileManager = new ReadWriteFileManager(serializer);
 		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
-		Rollupable rollupable = null;
-		rollupable = (Rollupable) this;
+		Rollupable rollupable = this;
 		segmentManager = new ReadWriteSegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
 		indexManager = new ReadWriteIndexManager<T>(this, collectionPath);
 		recoveryManager.recover();  // everything else has to be in place before running this

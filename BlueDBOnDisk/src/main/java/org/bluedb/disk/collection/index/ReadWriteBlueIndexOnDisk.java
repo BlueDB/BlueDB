@@ -71,7 +71,7 @@ public class ReadWriteBlueIndexOnDisk<I extends ValueKey, T extends Serializable
 		this.fileManager = collection.getFileManager();
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
 		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
-		rollupScheduler = ((ReadWriteBlueCollectionOnDisk<T>) collection).getRollupScheduler();
+		rollupScheduler = collection.getRollupScheduler();
 	}
 
 	public ReadWriteSegmentManager<BlueKey> getSegmentManager() {
@@ -80,19 +80,14 @@ public class ReadWriteBlueIndexOnDisk<I extends ValueKey, T extends Serializable
 
 	@Override
 	public void reportReads(List<RollupTarget> rollupTargets) {
-		if (rollupScheduler != null) {
-			List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
-			rollupScheduler.reportReads(indexRollupTargets);
-			
-		}
+		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
+		rollupScheduler.reportReads(indexRollupTargets);
 	}
 
 	@Override
 	public void reportWrites(List<RollupTarget> rollupTargets) {
-		if (rollupScheduler != null) {
-			List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
-			rollupScheduler.reportWrites(indexRollupTargets);
-		}
+		List<IndexRollupTarget> indexRollupTargets = toIndexRollupTargets(rollupTargets);
+		rollupScheduler.reportWrites(indexRollupTargets);
 	}
 
 	private List<IndexRollupTarget> toIndexRollupTargets(List<RollupTarget> rollupTargets) {
