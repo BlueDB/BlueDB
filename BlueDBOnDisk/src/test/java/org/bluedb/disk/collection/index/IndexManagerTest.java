@@ -58,7 +58,7 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 		List<BlueKey> justFred = Arrays.asList(timeKeyFred1);
 
 		@SuppressWarnings({"rawtypes", "unchecked"})
-		IndexManager<TestValue> restoredIndexManager = new IndexManager(collection, collection.getPath());
+		ReadWriteIndexManager<TestValue> restoredIndexManager = new ReadWriteIndexManager(collection, collection.getPath());
 		BlueIndex<IntegerKey, TestValue> restoredIndex = restoredIndexManager.getIndex(indexName, IntegerKey.class);
 		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> restoredIndexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) restoredIndex;
 

@@ -8,7 +8,7 @@ import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
-import org.bluedb.disk.collection.index.IndexManager;
+import org.bluedb.disk.collection.index.ReadWriteIndexManager;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -61,7 +61,7 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 
 	@Override
 	public void apply(ReadWriteBlueCollectionOnDisk<T> collection) throws BlueDbException {
-		IndexManager<T> indexManager = collection.getIndexManager();
+		ReadWriteIndexManager<T> indexManager = collection.getIndexManager();
 		indexManager.removeFromAllIndexes(key, oldValue);
 		List<ReadWriteSegment<T>> segments = collection.getSegmentManager().getAllSegments(key);
 		for (ReadWriteSegment<T> segment: segments) {

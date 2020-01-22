@@ -18,7 +18,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadWriteBlueDbOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteBlueIndexOnDisk;
-import org.bluedb.disk.collection.index.IndexManager;
+import org.bluedb.disk.collection.index.ReadWriteIndexManager;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.task.BatchChangeTask;
 import org.bluedb.disk.collection.task.BatchDeleteTask;
@@ -46,7 +46,7 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 	private final RecoveryManager<T> recoveryManager;
 	private final ReadWriteFileManager fileManager;
 	private final ReadWriteSegmentManager<T> segmentManager;
-	protected final IndexManager<T> indexManager;
+	protected final ReadWriteIndexManager<T> indexManager;
 
 	public ReadWriteBlueCollectionOnDisk(ReadWriteBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
@@ -63,7 +63,7 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 		Rollupable rollupable = null;
 		rollupable = (Rollupable) this;
 		segmentManager = new ReadWriteSegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
-		indexManager = new IndexManager<T>(this, collectionPath);
+		indexManager = new ReadWriteIndexManager<T>(this, collectionPath);
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 	
@@ -72,7 +72,7 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 		return fileManager;
 	}
 	
-	public IndexManager<T> getIndexManager() {
+	public ReadWriteIndexManager<T> getIndexManager() {
 		return indexManager;
 	}
 

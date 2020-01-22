@@ -18,12 +18,12 @@ import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.recovery.IndividualChange;
 
-public class IndexManager<T extends Serializable> extends ReadableIndexManager<T> {
+public class ReadWriteIndexManager<T extends Serializable> extends ReadableIndexManager<T> {
 
 	private final ReadWriteBlueCollectionOnDisk<T> collection;
 	private Map<String, ReadWriteBlueIndexOnDisk<ValueKey, T>> indexesByName;
 
-	public IndexManager(ReadWriteBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+	public ReadWriteIndexManager(ReadWriteBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		this.collection = collection;
 		indexesByName = getIndexesFromDisk(collection, collectionPath);
 	}
