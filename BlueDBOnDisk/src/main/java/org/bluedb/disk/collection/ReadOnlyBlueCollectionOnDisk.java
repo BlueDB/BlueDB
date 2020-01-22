@@ -66,7 +66,7 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> extends Readab
 	public <I extends ValueKey> BlueIndex<I, T> getIndex(String indexName, Class<I> keyType)
 			throws BlueDbException {
 		try {
-			return indexManager.getIndex(indexName, keyType);
+			return getExistingIndex(indexName, keyType);
 		} catch (NoSuchIndexException e1) {
 			return new FacadeBlueIndexOnDisk<I, T>(() -> {
 				try {
@@ -76,5 +76,9 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> extends Readab
 				}
 			});
 		}
+	}
+
+	public <I extends ValueKey> BlueIndex<I, T> getExistingIndex(String indexName, Class<I> keyType) throws BlueDbException {
+		return indexManager.getIndex(indexName, keyType);
 	}
 }

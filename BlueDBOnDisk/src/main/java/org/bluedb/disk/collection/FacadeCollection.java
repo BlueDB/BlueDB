@@ -41,15 +41,11 @@ public class FacadeCollection<T extends Serializable> implements ReadableBlueCol
 	@Override
 	public <K extends ValueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> indexKeyType) throws BlueDbException {
 		return new FacadeBlueIndexOnDisk<K, T>(() -> {
-			ReadableBlueCollection<T> collection = getCollection();
-			if (collection instanceof DummyReadOnlyBlueCollectionOnDisk) {
+			try {
+				ReadOnlyBlueCollectionOnDisk<T> collection = (ReadOnlyBlueCollectionOnDisk<T>) db.getExistingCollection(name, valueType);
+				return collection.getExistingIndex(indexName, indexKeyType);
+			} catch (BlueDbException e) {
 				return null;
-			} else {
-				try {
-					return db.getCollection(name, valueType).getIndex(indexName, indexKeyType);
-				} catch (BlueDbException e) {
-					return null;
-				}
 			}
 		});
 	}
