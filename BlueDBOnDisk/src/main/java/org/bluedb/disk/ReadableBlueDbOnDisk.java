@@ -16,6 +16,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.FacadeCollection;
 import org.bluedb.disk.collection.FacadeTimeCollection;
+import org.bluedb.disk.collection.NoSuchCollectionException;
 import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
 import org.bluedb.disk.collection.ReadOnlyBlueTimeCollectionOnDisk;
 
@@ -31,11 +32,10 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 	
 	@Override
 	public <T extends Serializable> ReadableBlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
-		ReadableBlueCollection<T> collection = getCollectionIfExists(name, valueType);
-		if (collection == null) {
+		try {
+			return getExistingCollection(name, valueType);
+		} catch (NoSuchCollectionException e) {
 			return new FacadeCollection<>(this, name, valueType);
-		} else  {
-			return collection;
 		}
 	}
 
@@ -54,10 +54,10 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 		}
 	}
 
-	public <T extends Serializable> ReadableBlueCollection<T> getCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
+	public <T extends Serializable> ReadableBlueCollection<T> getExistingCollection(String name, Class<T> valueType) throws BlueDbException {
 		ReadOnlyBlueCollectionOnDisk<?> untypedCollection = getUntypedCollectionIfExists(name, valueType);
 		if (untypedCollection == null) {
-			return null;
+			throw new NoSuchCollectionException("no such collection: " + name);
 		} else if (untypedCollection.getType().equals(valueType)) {
 			@SuppressWarnings("unchecked")
 			ReadableBlueCollection<T> typedCollection = (ReadableBlueCollection<T>) untypedCollection;
@@ -78,13 +78,15 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 
 	@Override
 	public <V extends Serializable> ReadableBlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException {
-		ReadableBlueCollection<V> collection = getCollectionIfExists(name, valueType);
-		if (collection == null) {
+		try {
+			ReadableBlueCollection<V> collection = getExistingCollection(name, valueType);
+			if(collection instanceof ReadableBlueTimeCollection) {
+				return (ReadableBlueTimeCollection<V>) collection;
+			} else {
+				throw new BlueDbException("Cannot cast " + collection.getClass() + " to " + ReadableBlueTimeCollection.class);
+			}
+		} catch (NoSuchCollectionException e) {
 			return new FacadeTimeCollection<V>(this, name, valueType);
-		} else if(collection instanceof ReadableBlueTimeCollection) {
-			return (ReadableBlueTimeCollection<V>) collection;
-		} else {
-			throw new BlueDbException("Cannot cast " + collection.getClass() + " to " + ReadableBlueTimeCollection.class);
 		}
 	}
 
