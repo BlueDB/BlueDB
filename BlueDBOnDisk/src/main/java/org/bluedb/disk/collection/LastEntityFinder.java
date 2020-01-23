@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
-import org.bluedb.disk.collection.index.ReadableBlueIndexOnDisk;
+import org.bluedb.disk.collection.index.ReadableIndexOnDisk;
 import org.bluedb.disk.segment.ReadableSegment;
 import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.SegmentEntityIterator;
@@ -14,11 +14,11 @@ public class LastEntityFinder {
 
 	final private ReadableSegmentManager<?> segmentManager;
 
-	public LastEntityFinder(final ReadableBlueIndexOnDisk<?, ?> index) {
+	public LastEntityFinder(final ReadableIndexOnDisk<?, ?> index) {
 		segmentManager = index.getSegmentManager();
 	}
 
-	public LastEntityFinder(final ReadableBlueCollectionOnDisk<?> collection) {
+	public LastEntityFinder(final ReadableCollectionOnDisk<?> collection) {
 		segmentManager = collection.getSegmentManager();
 	}
 

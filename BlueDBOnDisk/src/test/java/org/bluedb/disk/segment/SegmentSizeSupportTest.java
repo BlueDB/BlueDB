@@ -27,25 +27,25 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
-import org.bluedb.disk.ReadWriteBlueDbOnDisk;
+import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.IndexableTestValue;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
-import org.bluedb.disk.collection.index.ReadWriteBlueIndexOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 
 public class SegmentSizeSupportTest {
 	private Path dbPath;
 	
-	private ReadWriteBlueDbOnDisk db;
+	private ReadWriteDbOnDisk db;
 	
 	private SegmentSizeSetting segmentSize;
-	private ReadWriteBlueCollectionOnDisk<IndexableTestValue> collection;
+	private ReadWriteCollectionOnDisk<IndexableTestValue> collection;
 	
-	private ReadWriteBlueIndexOnDisk<LongKey, IndexableTestValue> longIndex;
-	private ReadWriteBlueIndexOnDisk<IntegerKey, IndexableTestValue> intIndex;
-	private ReadWriteBlueIndexOnDisk<StringKey, IndexableTestValue> stringIndex;
-	private ReadWriteBlueIndexOnDisk<UUIDKey, IndexableTestValue> uuidIndex;
+	private ReadWriteIndexOnDisk<LongKey, IndexableTestValue> longIndex;
+	private ReadWriteIndexOnDisk<IntegerKey, IndexableTestValue> intIndex;
+	private ReadWriteIndexOnDisk<StringKey, IndexableTestValue> stringIndex;
+	private ReadWriteIndexOnDisk<UUIDKey, IndexableTestValue> uuidIndex;
 	
 	private List<Long> valuesToTest = Arrays.asList(
 		0L,
@@ -74,12 +74,12 @@ public class SegmentSizeSupportTest {
 		
 		keySupplier = createKeySupplier(segmentSize.getKeyType());
 		
-		db = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder()
+		db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder()
 				.withPath(dbPath)
 				.build();
 		
 		this.segmentSize = segmentSize;
-		collection = new ReadWriteBlueCollectionOnDisk<>(db, "seg-size-support-test-collection", segmentSize.getKeyType(), IndexableTestValue.class, 
+		collection = new ReadWriteCollectionOnDisk<>(db, "seg-size-support-test-collection", segmentSize.getKeyType(), IndexableTestValue.class, 
 				Arrays.asList(UUID.class, IndexableTestValue.class), segmentSize);
 		
 		LongIndexKeyExtractor<IndexableTestValue> longExtractor = value -> Arrays.asList(value.getLongValue());
@@ -87,10 +87,10 @@ public class SegmentSizeSupportTest {
 		StringIndexKeyExtractor<IndexableTestValue> stringExtractor = value -> Arrays.asList(value.getStringValue());
 		UUIDIndexKeyExtractor<IndexableTestValue> uuidExtractor = value -> Arrays.asList(value.getId());
 		
-		longIndex = (ReadWriteBlueIndexOnDisk<LongKey, IndexableTestValue>) collection.createIndex("long-index", LongKey.class, longExtractor);
-		intIndex = (ReadWriteBlueIndexOnDisk<IntegerKey, IndexableTestValue>) collection.createIndex("int-index", IntegerKey.class, intExtractor);
-		stringIndex = (ReadWriteBlueIndexOnDisk<StringKey, IndexableTestValue>) collection.createIndex("string-index", StringKey.class, stringExtractor);
-		uuidIndex = (ReadWriteBlueIndexOnDisk<UUIDKey, IndexableTestValue>) collection.createIndex("uuid-index", UUIDKey.class, uuidExtractor);
+		longIndex = (ReadWriteIndexOnDisk<LongKey, IndexableTestValue>) collection.createIndex("long-index", LongKey.class, longExtractor);
+		intIndex = (ReadWriteIndexOnDisk<IntegerKey, IndexableTestValue>) collection.createIndex("int-index", IntegerKey.class, intExtractor);
+		stringIndex = (ReadWriteIndexOnDisk<StringKey, IndexableTestValue>) collection.createIndex("string-index", StringKey.class, stringExtractor);
+		uuidIndex = (ReadWriteIndexOnDisk<UUIDKey, IndexableTestValue>) collection.createIndex("uuid-index", UUIDKey.class, uuidExtractor);
 		
 		insertValues(valuesToTest);
 	}

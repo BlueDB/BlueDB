@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.BatchUtils;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.segment.ReadWriteSegmentManager;
 
 public class PendingBatchChange<T extends Serializable> implements Serializable, Recoverable<T> {
@@ -26,7 +26,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 	}
 
 	@Override
-	public void apply(ReadWriteBlueCollectionOnDisk<T> collection) throws BlueDbException {
+	public void apply(ReadWriteCollectionOnDisk<T> collection) throws BlueDbException {
 		ReadWriteSegmentManager<T> segmentManager = collection.getSegmentManager();
 		BatchUtils.apply(segmentManager, sortedChanges);
 		collection.getIndexManager().addToAllIndexes(sortedChanges);

@@ -11,7 +11,7 @@ import org.bluedb.disk.collection.task.ReplaceMultipleTask;
 import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateMultipleTask;
 import org.bluedb.disk.collection.task.UpdateTask;
-import org.bluedb.disk.query.BlueTimeQueryOnDisk;
+import org.bluedb.disk.query.TimeQueryOnDisk;
 import org.junit.Test;
 
 import junit.framework.TestCase;
@@ -22,7 +22,7 @@ public class TaskTest extends TestCase {
 	public void test_DeleteMultipleTask_toString() {
 		long min = 37;
 		long max = 101;
-		BlueTimeQueryOnDisk<?> query = new BlueTimeQueryOnDisk<TestValue>(null);
+		TimeQueryOnDisk<?> query = new TimeQueryOnDisk<TestValue>(null);
 		query.afterOrAtTime(min).beforeOrAtTime(max);		
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		Runnable task = new DeleteMultipleTask(null, query);
@@ -46,7 +46,7 @@ public class TaskTest extends TestCase {
 	public void test_UpdateMultipleTask_toString() {
 		long min = 37;
 		long max = 101;
-		BlueTimeQueryOnDisk<?> query = new BlueTimeQueryOnDisk<TestValue>(null);
+		TimeQueryOnDisk<?> query = new TimeQueryOnDisk<TestValue>(null);
 		query.afterOrAtTime(min).beforeOrAtTime(max);		
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		Runnable task = new UpdateMultipleTask(null, query, null);
@@ -60,7 +60,7 @@ public class TaskTest extends TestCase {
 	public void test_ReplaceMultipleTask_toString() {
 		long min = 37;
 		long max = 101;
-		BlueTimeQueryOnDisk<?> query = new BlueTimeQueryOnDisk<TestValue>(null);
+		TimeQueryOnDisk<?> query = new TimeQueryOnDisk<TestValue>(null);
 		query.afterOrAtTime(min).beforeOrAtTime(max);		
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		Runnable task = new ReplaceMultipleTask(null, query, null);

@@ -17,16 +17,16 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.FacadeCollection;
 import org.bluedb.disk.collection.FacadeTimeCollection;
 import org.bluedb.disk.collection.NoSuchCollectionException;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
-import org.bluedb.disk.collection.ReadOnlyBlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyTimeCollectionOnDisk;
 
-public class ReadableBlueDbOnDisk implements ReadableBlueDb {
+public class ReadableDbOnDisk implements ReadableBlueDb {
 
 	protected final Path path;
 
-	private final Map<String, ReadOnlyBlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
+	private final Map<String, ReadOnlyCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
-	ReadableBlueDbOnDisk(Path path) {
+	ReadableDbOnDisk(Path path) {
 		this.path = path;
 	}
 	
@@ -39,13 +39,13 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 		}
 	}
 
-	private <T extends Serializable> ReadOnlyBlueCollectionOnDisk<?> getUntypedCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
+	private <T extends Serializable> ReadOnlyCollectionOnDisk<?> getUntypedCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
-			ReadOnlyBlueCollectionOnDisk<?> collection = collections.get(name);
+			ReadOnlyCollectionOnDisk<?> collection = collections.get(name);
 			if (collection != null) {
 				return collection;
 			} else if (collectionFolderExists(name)) {
-				ReadOnlyBlueCollectionOnDisk<T> newCollection = instantiateCollectionFromExistingOnDisk(name, valueType);
+				ReadOnlyCollectionOnDisk<T> newCollection = instantiateCollectionFromExistingOnDisk(name, valueType);
 				collections.put(name, newCollection);
 				return newCollection;
 			} else {
@@ -55,7 +55,7 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 	}
 
 	public <T extends Serializable> ReadableBlueCollection<T> getExistingCollection(String name, Class<T> valueType) throws BlueDbException {
-		ReadOnlyBlueCollectionOnDisk<?> untypedCollection = getUntypedCollectionIfExists(name, valueType);
+		ReadOnlyCollectionOnDisk<?> untypedCollection = getUntypedCollectionIfExists(name, valueType);
 		if (untypedCollection == null) {
 			throw new NoSuchCollectionException("no such collection: " + name);
 		} else if (untypedCollection.getType().equals(valueType)) {
@@ -67,11 +67,11 @@ public class ReadableBlueDbOnDisk implements ReadableBlueDb {
 		}
 	}
 
-	private <T extends Serializable> ReadOnlyBlueCollectionOnDisk<T> instantiateCollectionFromExistingOnDisk(String name, Class<T> valueType) throws BlueDbException {
-		ReadOnlyBlueCollectionOnDisk<T> collection = new ReadOnlyBlueCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
+	private <T extends Serializable> ReadOnlyCollectionOnDisk<T> instantiateCollectionFromExistingOnDisk(String name, Class<T> valueType) throws BlueDbException {
+		ReadOnlyCollectionOnDisk<T> collection = new ReadOnlyCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
 		if (TimeKey.class.isAssignableFrom(collection.getKeyType())) {
 			Class<? extends BlueKey> keyType = collection.getKeyType();
-			collection = new ReadOnlyBlueTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
+			collection = new ReadOnlyTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
 		}
 		return collection;
 	}

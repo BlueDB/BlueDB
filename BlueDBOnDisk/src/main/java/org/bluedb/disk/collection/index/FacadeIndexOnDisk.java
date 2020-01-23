@@ -8,11 +8,11 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.ValueKey;
 
-public class FacadeBlueIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T> {
+public class FacadeIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T> {
 
 	private final Supplier<BlueIndex<I, T>> source;
 
-	public FacadeBlueIndexOnDisk(Supplier<BlueIndex<I, T>> source) {
+	public FacadeIndexOnDisk(Supplier<BlueIndex<I, T>> source) {
 		this.source = source;
 	}
 
@@ -21,7 +21,7 @@ public class FacadeBlueIndexOnDisk<I extends ValueKey, T extends Serializable> i
 		if (index != null) {
 			return index;
 		} else {
-			return new DummyBlueIndexOnDisk<>();
+			return new DummyIndexOnDisk<>();
 		}
 	}
 

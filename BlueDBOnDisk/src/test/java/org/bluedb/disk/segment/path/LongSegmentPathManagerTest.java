@@ -13,7 +13,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.junit.Test;
 
@@ -21,12 +21,12 @@ public class LongSegmentPathManagerTest extends BlueDbDiskTestBase {
 
 	private static String LONG_COLLECTION_NAME = "testing_long";
 
-	ReadWriteBlueCollectionOnDisk<TestValue> longCollection;
+	ReadWriteCollectionOnDisk<TestValue> longCollection;
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		longCollection = (ReadWriteBlueCollectionOnDisk<TestValue>) db().getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db().getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
 	}
 
 	@Test

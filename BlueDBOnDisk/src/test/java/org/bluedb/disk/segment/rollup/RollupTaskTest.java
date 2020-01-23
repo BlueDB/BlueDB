@@ -9,7 +9,7 @@ import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.ReadWriteSegmentManager;
@@ -19,7 +19,7 @@ public class RollupTaskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup() throws BlueDbException {
-		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
 		TestValue value1 = createValue("Anna");
@@ -61,7 +61,7 @@ public class RollupTaskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_rollup_cross_segment() throws BlueDbException {
-		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		ReadWriteSegmentManager<TestValue> segmentManager = collection.getSegmentManager();
 		
 		ReadWriteSegment<TestValue> segment0 = segmentManager.getSegment(0);

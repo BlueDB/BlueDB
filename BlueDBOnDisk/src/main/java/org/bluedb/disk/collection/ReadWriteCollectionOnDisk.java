@@ -16,8 +16,8 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadWriteBlueDbOnDisk;
-import org.bluedb.disk.collection.index.ReadWriteBlueIndexOnDisk;
+import org.bluedb.disk.ReadWriteDbOnDisk;
+import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteIndexManager;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.task.BatchChangeTask;
@@ -28,7 +28,7 @@ import org.bluedb.disk.collection.task.ReplaceTask;
 import org.bluedb.disk.collection.task.UpdateTask;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.ReadWriteFileManager;
-import org.bluedb.disk.query.BlueQueryOnDisk;
+import org.bluedb.disk.query.QueryOnDisk;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
@@ -38,7 +38,7 @@ import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
-public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCollectionOnDisk<T> implements BlueCollection<T>, Rollupable {
+public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableCollectionOnDisk<T> implements BlueCollection<T>, Rollupable {
 
 	private final BlueExecutor sharedExecutor;
 	private final String collectionKey;
@@ -48,11 +48,11 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 	private final ReadWriteSegmentManager<T> segmentManager;
 	protected final ReadWriteIndexManager<T> indexManager;
 
-	public ReadWriteBlueCollectionOnDisk(ReadWriteBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
-	public ReadWriteBlueCollectionOnDisk(ReadWriteBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		sharedExecutor = db.getSharedExecutor();
 		collectionKey = getPath().toString();
@@ -87,7 +87,7 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 
 	@Override
 	public BlueQuery<T> query() {
-		return new BlueQueryOnDisk<T>(this);
+		return new QueryOnDisk<T>(this);
 	}
 
 	@Override
@@ -199,13 +199,13 @@ public class ReadWriteBlueCollectionOnDisk<T extends Serializable> extends Reada
 
 
 	public void rollupIndex(String indexName, Range range) throws BlueDbException {
-		ReadWriteBlueIndexOnDisk<?, T> index = indexManager.getUntypedIndex(indexName);
+		ReadWriteIndexOnDisk<?, T> index = indexManager.getUntypedIndex(indexName);
 		index.rollup(range);
 	}
 
 	//TODO: getIndex needs to work even if they haven't called initialize or build. Return empty index object if it doesn't exist
 	@Override
-	public <I extends ValueKey> ReadWriteBlueIndexOnDisk<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException {
+	public <I extends ValueKey> ReadWriteIndexOnDisk<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException {
 		return indexManager.getIndex(indexName, keyType);
 	}
 }

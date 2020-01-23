@@ -13,17 +13,17 @@ import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
-import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T> {
+public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializable> implements BlueIndex<I, T> {
 
 	protected final static String FILE_KEY_EXTRACTOR = ".extractor";
 
-	private final ReadableBlueCollectionOnDisk<T> collection;
+	private final ReadableCollectionOnDisk<T> collection;
 	protected final KeyExtractor<I, T> keyExtractor;
 
 	public abstract ReadableSegmentManager<BlueKey> getSegmentManager();
@@ -32,7 +32,7 @@ public abstract class ReadableBlueIndexOnDisk<I extends ValueKey, T extends Seri
 		return keyExtractor.getType();
 	}
 
-	protected ReadableBlueIndexOnDisk(ReadableBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
+	protected ReadableIndexOnDisk(ReadableCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		this.collection = collection;
 		this.keyExtractor = keyExtractor;
 	}

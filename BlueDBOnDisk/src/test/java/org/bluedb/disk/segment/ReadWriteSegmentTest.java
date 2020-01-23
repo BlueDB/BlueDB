@@ -19,7 +19,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueWriteLock;
@@ -60,7 +60,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Path segmentParentPath = createTempFolder().toPath();
 		Path segmentPath = Paths.get(segmentParentPath.toString(), "nonexistingChildFolder");
 		Range segmentRange = new Range(100, 200);
-		Rollupable rollupable = Mockito.mock(ReadWriteBlueCollectionOnDisk.class);
+		Rollupable rollupable = Mockito.mock(ReadWriteCollectionOnDisk.class);
 		ReadWriteFileManager fileManager = getFileManager();
 		List<Long> rollupLevels = Arrays.asList(100L);
 		ReadWriteSegment<TestValue> segment = new ReadWriteSegment<>(segmentPath, segmentRange, rollupable, fileManager, rollupLevels);

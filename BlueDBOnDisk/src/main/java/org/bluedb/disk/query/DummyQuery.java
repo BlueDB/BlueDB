@@ -9,7 +9,7 @@ import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class DummyQuery<T extends Serializable> extends ReadOnlyBlueTimeQueryOnDisk<T> {
+public class DummyQuery<T extends Serializable> extends ReadOnlyTimeQueryOnDisk<T> {
 
 	public DummyQuery() {
 		super(null);

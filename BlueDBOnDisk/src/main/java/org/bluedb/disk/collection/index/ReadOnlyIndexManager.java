@@ -10,21 +10,21 @@ import java.util.Map;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
 
 public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexManager<T> {
 
-	private final Map<String, ReadOnlyBlueIndexOnDisk<ValueKey, T>> indexesByName;
-	private final ReadOnlyBlueCollectionOnDisk<T> collection;
+	private final Map<String, ReadOnlyIndexOnDisk<ValueKey, T>> indexesByName;
+	private final ReadOnlyCollectionOnDisk<T> collection;
 
-	public ReadOnlyIndexManager(ReadOnlyBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+	public ReadOnlyIndexManager(ReadOnlyCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
 		this.collection = collection;
 		this.indexesByName = getIndexesFromDisk(collection, collectionPath);
 	}
 
-	public <K extends ValueKey> ReadOnlyBlueIndexOnDisk<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
-		ReadOnlyBlueIndexOnDisk<ValueKey, T> index = indexesByName.get(indexName);
+	public <K extends ValueKey> ReadOnlyIndexOnDisk<K, T> getIndex(String indexName, Class<K> keyType) throws BlueDbException {
+		ReadOnlyIndexOnDisk<ValueKey, T> index = indexesByName.get(indexName);
 		if (index == null) {
 			index = getIndexFromDisk(indexName);
 		}
@@ -32,14 +32,14 @@ public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexM
 			throw new BlueDbException("Invalid type (" + keyType.getName() + ") for index " + indexName + " of type " + index.getType());
 		}
 		@SuppressWarnings("unchecked")
-		ReadOnlyBlueIndexOnDisk<K, T> typedIndex = (ReadOnlyBlueIndexOnDisk<K, T>) index;
+		ReadOnlyIndexOnDisk<K, T> typedIndex = (ReadOnlyIndexOnDisk<K, T>) index;
 		return typedIndex;
 	}
 
-	private ReadOnlyBlueIndexOnDisk<ValueKey, T> getIndexFromDisk(String indexName) throws BlueDbException {
+	private ReadOnlyIndexOnDisk<ValueKey, T> getIndexFromDisk(String indexName) throws BlueDbException {
 		Path indexPath = Paths.get(collection.getPath().toString(), ".index", indexName);
 		if(indexPath.toFile().exists()) {
-			ReadOnlyBlueIndexOnDisk<ValueKey, T> index = ReadOnlyBlueIndexOnDisk.fromExisting(collection, indexPath);
+			ReadOnlyIndexOnDisk<ValueKey, T> index = ReadOnlyIndexOnDisk.fromExisting(collection, indexPath);
 			indexesByName.put(indexName, index);
 		} else {
 			throw new NoSuchIndexException("No such index: " + indexName);
@@ -47,12 +47,12 @@ public class ReadOnlyIndexManager<T extends Serializable> extends ReadableIndexM
 		return indexesByName.get(indexName);
 	}
 
-	private Map<String, ReadOnlyBlueIndexOnDisk<ValueKey, T>> getIndexesFromDisk(ReadOnlyBlueCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
-		Map<String, ReadOnlyBlueIndexOnDisk<ValueKey, T>> map = new HashMap<>();
+	private Map<String, ReadOnlyIndexOnDisk<ValueKey, T>> getIndexesFromDisk(ReadOnlyCollectionOnDisk<T> collection, Path collectionPath) throws BlueDbException {
+		Map<String, ReadOnlyIndexOnDisk<ValueKey, T>> map = new HashMap<>();
 		Path indexesPath = Paths.get(collectionPath.toString(), INDEXES_SUBFOLDER);
 		List<File> subfolders = FileUtils.getSubFolders(indexesPath.toFile());
 		for (File folder: subfolders) {
-			ReadOnlyBlueIndexOnDisk<ValueKey, T> index = ReadOnlyBlueIndexOnDisk.fromExisting(collection, folder.toPath());
+			ReadOnlyIndexOnDisk<ValueKey, T> index = ReadOnlyIndexOnDisk.fromExisting(collection, folder.toPath());
 			String indexName = folder.getName();
 			map.put(indexName, index);
 		}

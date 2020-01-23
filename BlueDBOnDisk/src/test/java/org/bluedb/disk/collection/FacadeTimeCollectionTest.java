@@ -11,7 +11,7 @@ import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.junit.Test;
@@ -24,7 +24,7 @@ public class FacadeTimeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testFacadeTimeCollection() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueTimeCollection<TestValue> facadeCollection = readOnlyDb.getTimeCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeTimeCollection);
 
@@ -37,7 +37,7 @@ public class FacadeTimeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGetIndex() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueTimeCollection<TestValue> facadeCollection = readOnlyDb.getTimeCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeTimeCollection);
 		String indexName = "dummy_index";
@@ -51,7 +51,7 @@ public class FacadeTimeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testContains() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueTimeCollection<TestValue> facadeCollection = readOnlyDb.getTimeCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeTimeCollection);
 
@@ -63,7 +63,7 @@ public class FacadeTimeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGet() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueTimeCollection<TestValue> facadeCollection = readOnlyDb.getTimeCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeTimeCollection);
 
@@ -75,7 +75,7 @@ public class FacadeTimeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGetLastKey() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueTimeCollection<TestValue> facadeCollection = readOnlyDb.getTimeCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeTimeCollection);
 
@@ -87,7 +87,7 @@ public class FacadeTimeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testQuery() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueTimeCollection<TestValue> facadeCollection = readOnlyDb.getTimeCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeTimeCollection);
 
@@ -102,7 +102,7 @@ public class FacadeTimeCollectionTest extends BlueDbDiskTestBase {
 		return db().getTimeCollectionBuilder(COLLECTION_NAME, TimeFrameKey.class, TestValue.class).build();
 	}
 
-	private ReadableBlueDbOnDisk buildReadOnlyBlueDb() throws BlueDbException {
-		return (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+	private ReadableDbOnDisk buildReadOnlyBlueDb() throws BlueDbException {
+		return (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
 	}
 }

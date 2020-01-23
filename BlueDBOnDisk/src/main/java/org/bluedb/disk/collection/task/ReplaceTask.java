@@ -6,17 +6,17 @@ import java.util.NoSuchElementException;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class ReplaceTask<T extends Serializable> extends QueryTask {
-	private final ReadWriteBlueCollectionOnDisk<T> collection;
+	private final ReadWriteCollectionOnDisk<T> collection;
 	private final BlueKey key;
 	private final Mapper<T> mapper;
 
-	public ReplaceTask(ReadWriteBlueCollectionOnDisk<T> collection, BlueKey key, Mapper<T> updater) {
+	public ReplaceTask(ReadWriteCollectionOnDisk<T> collection, BlueKey key, Mapper<T> updater) {
 		this.collection = collection;
 		this.key = key;
 		this.mapper = updater;

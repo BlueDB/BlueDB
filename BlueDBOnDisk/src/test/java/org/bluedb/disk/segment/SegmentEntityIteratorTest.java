@@ -12,7 +12,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -262,7 +262,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
+		ReadWriteCollectionOnDisk<String> stringCollection = (ReadWriteCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "longs";
 		int n = 100;
 		for (int i = 0; i < n; i++) {

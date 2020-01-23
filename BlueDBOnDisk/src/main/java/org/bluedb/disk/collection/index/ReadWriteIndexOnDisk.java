@@ -15,9 +15,9 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BatchUtils;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionEntityIterator;
-import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
@@ -30,24 +30,24 @@ import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class ReadWriteBlueIndexOnDisk<I extends ValueKey, T extends Serializable> extends ReadableBlueIndexOnDisk<I, T> implements BlueIndex<I, T>, Rollupable {
+public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> extends ReadableIndexOnDisk<I, T> implements BlueIndex<I, T>, Rollupable {
 
 	private final RollupScheduler rollupScheduler;
 	private final String indexName;
 	private final ReadWriteSegmentManager<BlueKey> segmentManager;
 	private final ReadWriteFileManager fileManager;
 
-	public static <K extends ValueKey, T extends Serializable> ReadWriteBlueIndexOnDisk<K, T> createNew(ReadWriteBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> ReadWriteIndexOnDisk<K, T> createNew(ReadWriteCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
 		ReadWriteFileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		fileManager.saveObject(keyExtractorPath, keyExtractor);
-		ReadWriteBlueIndexOnDisk<K, T> index = new ReadWriteBlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
+		ReadWriteIndexOnDisk<K, T> index = new ReadWriteIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 		populateNewIndex(collection, index);
 		return index;
 	}
 
-	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableBlueCollectionOnDisk<T> collection, ReadWriteBlueIndexOnDisk<K, T> index) throws BlueDbException {
+	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableCollectionOnDisk<T> collection, ReadWriteIndexOnDisk<K, T> index) throws BlueDbException {
 		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
 			while (iterator.hasNext()) {
@@ -57,15 +57,15 @@ public class ReadWriteBlueIndexOnDisk<I extends ValueKey, T extends Serializable
 		}
 	}
 
-	public static <K extends ValueKey, T extends Serializable> ReadWriteBlueIndexOnDisk<K, T> fromExisting(ReadWriteBlueCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
+	public static <K extends ValueKey, T extends Serializable> ReadWriteIndexOnDisk<K, T> fromExisting(ReadWriteCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
 		ReadWriteFileManager fileManager = collection.getFileManager();
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		@SuppressWarnings("unchecked")
 		KeyExtractor<K, T> keyExtractor = (KeyExtractor<K, T>) fileManager.loadObject(keyExtractorPath);
-		return new ReadWriteBlueIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
+		return new ReadWriteIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
 	}
 
-	private ReadWriteBlueIndexOnDisk(ReadWriteBlueCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
+	private ReadWriteIndexOnDisk(ReadWriteCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		super(collection, indexPath, keyExtractor);
 		this.indexName = indexPath.toFile().getName();
 		this.fileManager = collection.getFileManager();

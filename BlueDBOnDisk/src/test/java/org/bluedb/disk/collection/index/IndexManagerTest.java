@@ -11,7 +11,7 @@ import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.junit.Test;
 
 public class IndexManagerTest extends BlueDbDiskTestBase {
@@ -19,7 +19,7 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getIndex() throws Exception {
 		String indexName = "test_index";
-		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
 
 		assertEquals(index, collection.getIndex(indexName, IntegerKey.class));
@@ -37,7 +37,7 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getIndexesFromDisk() throws Exception {
 		String indexName = "test_index";
-		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		collection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
 
 		TestValue valueFred1 = new TestValue("Fred", 1);
@@ -60,7 +60,7 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		ReadWriteIndexManager<TestValue> restoredIndexManager = new ReadWriteIndexManager(collection, collection.getPath());
 		BlueIndex<IntegerKey, TestValue> restoredIndex = restoredIndexManager.getIndex(indexName, IntegerKey.class);
-		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> restoredIndexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) restoredIndex;
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> restoredIndexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) restoredIndex;
 
 		assertEquals(justFred, restoredIndexOnDisk.getKeys(integerKey1));
 		assertEquals(emptyList, restoredIndexOnDisk.getKeys(integerKey2));

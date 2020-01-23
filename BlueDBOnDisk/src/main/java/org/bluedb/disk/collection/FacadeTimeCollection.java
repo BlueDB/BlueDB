@@ -5,11 +5,11 @@ import java.io.Serializable;
 import org.bluedb.api.ReadBlueTimeQuery;
 import org.bluedb.api.ReadableBlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
 
 public class FacadeTimeCollection<T extends Serializable> extends FacadeCollection<T> implements ReadableBlueTimeCollection<T> {
 
-	public FacadeTimeCollection(ReadableBlueDbOnDisk db, String name, Class<T> valueType) {
+	public FacadeTimeCollection(ReadableDbOnDisk db, String name, Class<T> valueType) {
 		super(db, name, valueType);
 	}
 

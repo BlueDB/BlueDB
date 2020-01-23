@@ -10,13 +10,13 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadWriteBlueDbOnDisk;
-import org.bluedb.disk.query.BlueTimeQueryOnDisk;
+import org.bluedb.disk.ReadWriteDbOnDisk;
+import org.bluedb.disk.query.TimeQueryOnDisk;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 
-public class ReadWriteBlueTimeCollectionOnDisk<T extends Serializable> extends ReadWriteBlueCollectionOnDisk<T> implements BlueTimeCollection<T> {
+public class ReadWriteTimeCollectionOnDisk<T extends Serializable> extends ReadWriteCollectionOnDisk<T> implements BlueTimeCollection<T> {
 
-	public ReadWriteBlueTimeCollectionOnDisk(ReadWriteBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadWriteTimeCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 	}
 
@@ -27,7 +27,7 @@ public class ReadWriteBlueTimeCollectionOnDisk<T extends Serializable> extends R
 
 	@Override
 	public BlueTimeQuery<T> query() {
-		return new BlueTimeQueryOnDisk<T>(this);
+		return new TimeQueryOnDisk<T>(this);
 	}
 
 }

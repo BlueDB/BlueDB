@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -24,14 +24,14 @@ public class RecoveryManager<T extends Serializable> {
 	protected static String SUFFIX_PENDING = ".pending.chg";
 	protected static String SUFFIX_COMPLETE = ".complete.chg";
 
-	private final ReadWriteBlueCollectionOnDisk<T> collection;
+	private final ReadWriteCollectionOnDisk<T> collection;
 	private final Path recoveryPath;
 	private final Path historyFolderPath;
 	private final ReadWriteFileManager fileManager;
 	private final AtomicLong lastRecoverableId;
 	private final ChangeHistoryCleaner cleaner;
 
-	public RecoveryManager(ReadWriteBlueCollectionOnDisk<T> collection, ReadWriteFileManager fileManager, BlueSerializer serializer) {
+	public RecoveryManager(ReadWriteCollectionOnDisk<T> collection, ReadWriteFileManager fileManager, BlueSerializer serializer) {
 		this.collection = collection;
 		this.fileManager = fileManager;
 		this.recoveryPath = Paths.get(collection.getPath().toString(), RECOVERY_FOLDER);
@@ -51,7 +51,7 @@ public class RecoveryManager<T extends Serializable> {
 		return historyFolderPath;
 	}
 
-	public ReadWriteBlueCollectionOnDisk<T> getCollection() {
+	public ReadWriteCollectionOnDisk<T> getCollection() {
 		return collection;
 	}
 

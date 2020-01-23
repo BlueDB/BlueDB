@@ -8,8 +8,8 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
-import org.bluedb.disk.collection.index.ReadWriteBlueIndexOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.index.IndexRollupTask;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.segment.Range;
@@ -21,10 +21,10 @@ public class IndexRollupTaskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_rollup() throws Exception {
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
-		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		String indexName = "test_index";
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, keyExtractor);
-		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) index;
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
 
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);

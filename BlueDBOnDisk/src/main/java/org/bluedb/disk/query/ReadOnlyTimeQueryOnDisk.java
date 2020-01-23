@@ -4,11 +4,11 @@ import java.io.Serializable;
 
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueTimeQuery;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 
-public class ReadOnlyBlueTimeQueryOnDisk<T extends Serializable> extends ReadOnlyBlueQueryOnDisk<T> implements ReadBlueTimeQuery<T> {
+public class ReadOnlyTimeQueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> implements ReadBlueTimeQuery<T> {
 
-	public ReadOnlyBlueTimeQueryOnDisk(ReadOnlyBlueCollectionOnDisk<T> collection) {
+	public ReadOnlyTimeQueryOnDisk(ReadOnlyCollectionOnDisk<T> collection) {
 		super(collection);
 	}
 

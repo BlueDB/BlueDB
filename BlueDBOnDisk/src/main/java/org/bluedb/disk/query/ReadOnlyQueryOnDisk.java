@@ -10,19 +10,19 @@ import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.CollectionValueIterator;
-import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class ReadOnlyBlueQueryOnDisk<T extends Serializable> implements ReadBlueQuery<T> {
+public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuery<T> {
 
-	protected ReadableBlueCollectionOnDisk<T> collection;
+	protected ReadableCollectionOnDisk<T> collection;
 	protected List<Condition<T>> objectConditions = new LinkedList<>();
 	protected long max = Long.MAX_VALUE;
 	protected long min = Long.MIN_VALUE;
 	protected boolean byStartTime = false;
 
-	public ReadOnlyBlueQueryOnDisk(ReadableBlueCollectionOnDisk<T> collection) {
+	public ReadOnlyQueryOnDisk(ReadableCollectionOnDisk<T> collection) {
 		this.collection = collection;
 	}
 

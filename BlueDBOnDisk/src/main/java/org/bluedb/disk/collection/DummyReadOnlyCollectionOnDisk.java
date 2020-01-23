@@ -8,16 +8,16 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.collection.index.DummyBlueIndexOnDisk;
+import org.bluedb.disk.collection.index.DummyIndexOnDisk;
 import org.bluedb.disk.query.DummyQuery;
 
-public class DummyReadOnlyBlueCollectionOnDisk<T extends Serializable> implements ReadableBlueTimeCollection<T> {
+public class DummyReadOnlyCollectionOnDisk<T extends Serializable> implements ReadableBlueTimeCollection<T> {
 
-	public DummyReadOnlyBlueCollectionOnDisk() {}
+	public DummyReadOnlyCollectionOnDisk() {}
 
 	@Override
 	public <K extends ValueKey> BlueIndex<K, T> getIndex(String name, Class<K> keyType) throws BlueDbException {
-		return new DummyBlueIndexOnDisk<>();
+		return new DummyIndexOnDisk<>();
 	}
 
 	@Override

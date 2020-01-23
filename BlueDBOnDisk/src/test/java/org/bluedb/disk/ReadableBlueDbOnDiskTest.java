@@ -17,8 +17,8 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
-import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.tasks.AsynchronousTestTask;
@@ -31,7 +31,7 @@ public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
     public void test_getUntypedCollectionForBackup() throws Exception {
         String timeCollectionName = getTimeCollectionName();
-		ReadWriteBlueCollectionOnDisk<String> newCollection = (ReadWriteBlueCollectionOnDisk<String>) db.getCollectionBuilder("new_collection", TimeKey.class, String.class).build();
+		ReadWriteCollectionOnDisk<String> newCollection = (ReadWriteCollectionOnDisk<String>) db.getCollectionBuilder("new_collection", TimeKey.class, String.class).build();
         assertNotNull(db.getUntypedCollectionForBackup(timeCollectionName));
         assertNotNull(db.getUntypedCollectionForBackup("new_collection"));
 
@@ -41,7 +41,7 @@ public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
         getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 
 
-        ReadWriteBlueDbOnDisk reopenedDatbase = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
+        ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
         assertNotNull(reopenedDatbase.getUntypedCollectionForBackup(timeCollectionName));  // this one isn't broken
 		try {
 			reopenedDatbase.getUntypedCollectionForBackup("new_collection"); // we broke it above
@@ -702,7 +702,7 @@ public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_getAllCollectionsFromDisk() throws Exception {
         getTimeCollection();
-        List<ReadWriteBlueCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
+        List<ReadWriteCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
         assertEquals(5, allCollections.size());
         db().getCollectionBuilder("string", HashGroupedKey.class, String.class).build();
         db().getCollectionBuilder("long", HashGroupedKey.class, Long.class).build();
@@ -716,7 +716,7 @@ public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
         TestValue value1 = createValue("Anna");
         getTimeCollection().insert(key1At1, value1);
 
-        ReadWriteBlueTimeCollectionOnDisk<TestValue2> secondCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue2>) db.getTimeCollectionBuilder("testing_2", TimeKey.class, TestValue2.class).build();
+        ReadWriteTimeCollectionOnDisk<TestValue2> secondCollection = (ReadWriteTimeCollectionOnDisk<TestValue2>) db.getTimeCollectionBuilder("testing_2", TimeKey.class, TestValue2.class).build();
         TestValue2 valueInSecondCollection = new TestValue2("Joe", 3);
         secondCollection.insert(key1At1, valueInSecondCollection);
 
@@ -729,13 +729,13 @@ public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
 		ZipUtils.extractFiles(backedUpPath, restoredPath);
 		Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
 
-		ReadWriteBlueDbOnDisk restoredDb = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredBlueDbPath).build();
-        ReadWriteBlueTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteBlueTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredBlueDbPath).build();
+        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 //        BlueCollectionOnDisk<TestValue> restoredCollection = (BlueCollectionOnDisk<TestValue>) restoredDb.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class);
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
 
-		ReadWriteBlueTimeCollectionOnDisk<TestValue2> secondCollectionRestored = (ReadWriteBlueTimeCollectionOnDisk<TestValue2>) restoredDb.getTimeCollectionBuilder("testing_2", TimeKey.class, TestValue2.class).build();
+		ReadWriteTimeCollectionOnDisk<TestValue2> secondCollectionRestored = (ReadWriteTimeCollectionOnDisk<TestValue2>) restoredDb.getTimeCollectionBuilder("testing_2", TimeKey.class, TestValue2.class).build();
 		assertTrue(secondCollectionRestored.contains(key1At1));
 		assertEquals(valueInSecondCollection, secondCollectionRestored.get(key1At1));
 	}
@@ -743,14 +743,14 @@ public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_backup_fail() throws Exception {
 		@SuppressWarnings("rawtypes")
-		ReadWriteBlueTimeCollectionOnDisk newUntypedCollection = (ReadWriteBlueTimeCollectionOnDisk) db.getUntypedCollectionForBackup(getTimeCollectionName());
+		ReadWriteTimeCollectionOnDisk newUntypedCollection = (ReadWriteTimeCollectionOnDisk) db.getUntypedCollectionForBackup(getTimeCollectionName());
         Path serializedClassesPath = ReadWriteFileManager.getNewestVersionPath(newUntypedCollection.getPath().resolve(".meta"), ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
         getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 
         Path tempFolder = createTempFolder().toPath();
         tempFolder.toFile().deleteOnExit();
         Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
-        ReadWriteBlueDbOnDisk reopenedDatbase = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
+        ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
         try {
             reopenedDatbase.backup(backedUpPath);
             fail();  // because the "test2" collection was broken, the backup should error out;
@@ -800,9 +800,9 @@ public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_assertExistingCollectionIsType() throws BlueDbException {
-		ReadWriteBlueDbOnDisk.assertExistingCollectionIsType(getTimeCollection(), ReadWriteBlueTimeCollectionOnDisk.class);
+		ReadWriteDbOnDisk.assertExistingCollectionIsType(getTimeCollection(), ReadWriteTimeCollectionOnDisk.class);
 		try {
-			ReadWriteBlueDbOnDisk.assertExistingCollectionIsType(getLongCollection(), ReadWriteBlueTimeCollectionOnDisk.class);
+			ReadWriteDbOnDisk.assertExistingCollectionIsType(getLongCollection(), ReadWriteTimeCollectionOnDisk.class);
 			fail();
 		} catch (BlueDbException e) {
 		}

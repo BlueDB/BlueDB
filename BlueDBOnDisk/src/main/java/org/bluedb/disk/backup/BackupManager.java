@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.recovery.RecoveryManager;
@@ -22,11 +22,11 @@ public class BackupManager {
 	
 	private final Path dbPath;
 
-	public BackupManager(ReadableBlueDbOnDisk db) {
+	public BackupManager(ReadableDbOnDisk db) {
 		this.dbPath = db.getPath();
 	}
 
-	public void backup(List<ReadWriteBlueCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
+	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
 		try {
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().placeHoldOnHistoryCleanup());
 			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
@@ -40,25 +40,25 @@ public class BackupManager {
 		}
 	}
 
-	public void backupToTempDirectory(List<ReadWriteBlueCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {
+	public void backupToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {
 		long backupStartTime = System.currentTimeMillis();
-		for (ReadWriteBlueCollectionOnDisk<?> collection: collectionsToBackup) {
+		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
 			copyMetaData(collection, tempFolder);
 			copyDataFolders(collection, tempFolder);
 		}
 		long backupEndTime = System.currentTimeMillis();
-		for (ReadWriteBlueCollectionOnDisk<?> collection: collectionsToBackup) {
+		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
 			copyChanges(collection, backupStartTime, backupEndTime, tempFolder);
 		}
 	}
 
-	private void copyMetaData(ReadWriteBlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
+	private void copyMetaData(ReadWriteCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
 		Path srcPath = collection.getMetaData().getPath();
 		Path dstPath = translatePath(dbPath, tempFolder, srcPath);
 		FileUtils.copyDirectoryWithoutLock(srcPath, dstPath);
 	}
 
-	private void copyDataFolders(ReadWriteBlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
+	private void copyDataFolders(ReadWriteCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
 		for (ReadWriteSegment<?> segment: collection.getSegmentManager().getAllExistingSegments()) {
 			copyDataFolders(segment, tempFolder);
 		}
@@ -78,7 +78,7 @@ public class BackupManager {
 		}
 	}
 
-	private void copyChanges(ReadWriteBlueCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime, Path tempFolder) throws BlueDbException {
+	private void copyChanges(ReadWriteCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime, Path tempFolder) throws BlueDbException {
 		RecoveryManager<?> recoveryManager = collection.getRecoveryManager();
 		List<File> changesToCopy = recoveryManager.getChangeHistory(backupStartTime, backupEndTime);
 		Path historyFolderPath = recoveryManager.getHistoryFolder();

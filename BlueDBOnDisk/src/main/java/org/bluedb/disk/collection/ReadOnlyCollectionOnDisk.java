@@ -7,8 +7,8 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
-import org.bluedb.disk.collection.index.FacadeBlueIndexOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
+import org.bluedb.disk.collection.index.FacadeIndexOnDisk;
 import org.bluedb.disk.collection.index.NoSuchIndexException;
 import org.bluedb.disk.collection.index.ReadOnlyIndexManager;
 import org.bluedb.disk.collection.metadata.ReadOnlyCollectionMetadata;
@@ -16,18 +16,18 @@ import org.bluedb.disk.file.ReadOnlyFileManager;
 import org.bluedb.disk.segment.ReadOnlySegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 
-public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> extends ReadableBlueCollectionOnDisk<T> {
+public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCollectionOnDisk<T> {
 
 	private ReadOnlyCollectionMetadata metadata;
 	private final ReadOnlyFileManager fileManager;
 	private final ReadOnlySegmentManager<T> segmentManager;
 	protected final ReadOnlyIndexManager<T> indexManager;
 
-	public ReadOnlyBlueCollectionOnDisk(ReadableBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
-	public ReadOnlyBlueCollectionOnDisk(ReadableBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		metadata = getOrCreateMetadata();
 		fileManager = new ReadOnlyFileManager(serializer);
@@ -68,7 +68,7 @@ public class ReadOnlyBlueCollectionOnDisk<T extends Serializable> extends Readab
 		try {
 			return getExistingIndex(indexName, keyType);
 		} catch (NoSuchIndexException e1) {
-			return new FacadeBlueIndexOnDisk<I, T>(() -> {
+			return new FacadeIndexOnDisk<I, T>(() -> {
 				try {
 					return indexManager.getIndex(indexName, keyType);
 				} catch (BlueDbException e2) {

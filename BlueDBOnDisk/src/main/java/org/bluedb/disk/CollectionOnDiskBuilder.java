@@ -11,16 +11,16 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 
-public class BlueCollectionOnDiskBuilder<K extends BlueKey, T extends Serializable> implements BlueCollectionBuilder<K, T>{
+public class CollectionOnDiskBuilder<K extends BlueKey, T extends Serializable> implements BlueCollectionBuilder<K, T>{
 
-	protected final ReadWriteBlueDbOnDisk db;
+	protected final ReadWriteDbOnDisk db;
 	protected final Class<T> valueType;
 	protected final Class<? extends BlueKey> requestedKeyType;
 	protected final String name;
 	protected SegmentSizeSetting segmentSize;
 	ArrayList<Class<? extends Serializable>> registeredClasses = new ArrayList<>();
 
-	protected BlueCollectionOnDiskBuilder(ReadWriteBlueDbOnDisk db, String name, Class<K> keyType, Class<T> valueType) {
+	protected CollectionOnDiskBuilder(ReadWriteDbOnDisk db, String name, Class<K> keyType, Class<T> valueType) {
 		this.db = db;
 		this.name = name;
 		this.requestedKeyType = keyType;

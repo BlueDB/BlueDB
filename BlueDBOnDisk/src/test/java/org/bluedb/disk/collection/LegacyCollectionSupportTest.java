@@ -21,7 +21,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
-import org.bluedb.disk.ReadWriteBlueDbOnDisk;
+import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.IndexableTestValue;
@@ -29,7 +29,7 @@ import org.bluedb.disk.IndexableTestValue.IndexableTestValueIntIndexExtractor;
 import org.bluedb.disk.IndexableTestValue.IndexableTestValueLongIndexExtractor;
 import org.bluedb.disk.IndexableTestValue.IndexableTestValueStringIndexExtractor;
 import org.bluedb.disk.IndexableTestValue.IndexableTestValueUUIDIndexExtractor;
-import org.bluedb.disk.collection.index.ReadWriteBlueIndexOnDisk;
+import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
@@ -43,20 +43,20 @@ public class LegacyCollectionSupportTest extends TestCase {
 	private Path tmpDirPath;
 	private Path dbPath;
 	
-	private ReadWriteBlueDbOnDisk db;
+	private ReadWriteDbOnDisk db;
 	
 	private List<BlueCollection<IndexableTestValue>> allCollections;
-	private ReadWriteBlueTimeCollectionOnDisk<IndexableTestValue> timeframeCollection;
-	private ReadWriteBlueTimeCollectionOnDisk<IndexableTestValue> timeCollection;
-	private ReadWriteBlueCollectionOnDisk<IndexableTestValue> intCollection;
-	private ReadWriteBlueCollectionOnDisk<IndexableTestValue> longCollection;
-	private ReadWriteBlueCollectionOnDisk<IndexableTestValue> stringCollection;
-	private ReadWriteBlueCollectionOnDisk<IndexableTestValue> uuidCollection;
+	private ReadWriteTimeCollectionOnDisk<IndexableTestValue> timeframeCollection;
+	private ReadWriteTimeCollectionOnDisk<IndexableTestValue> timeCollection;
+	private ReadWriteCollectionOnDisk<IndexableTestValue> intCollection;
+	private ReadWriteCollectionOnDisk<IndexableTestValue> longCollection;
+	private ReadWriteCollectionOnDisk<IndexableTestValue> stringCollection;
+	private ReadWriteCollectionOnDisk<IndexableTestValue> uuidCollection;
 	
-	private ReadWriteBlueIndexOnDisk<LongKey, IndexableTestValue> longIndex;
-	private ReadWriteBlueIndexOnDisk<IntegerKey, IndexableTestValue> intIndex;
-	private ReadWriteBlueIndexOnDisk<StringKey, IndexableTestValue> stringIndex;
-	private ReadWriteBlueIndexOnDisk<UUIDKey, IndexableTestValue> uuidIndex;
+	private ReadWriteIndexOnDisk<LongKey, IndexableTestValue> longIndex;
+	private ReadWriteIndexOnDisk<IntegerKey, IndexableTestValue> intIndex;
+	private ReadWriteIndexOnDisk<StringKey, IndexableTestValue> stringIndex;
+	private ReadWriteIndexOnDisk<UUIDKey, IndexableTestValue> uuidIndex;
 	
 	private List<Long> existingValuesToTest = Arrays.asList(
 			0L,
@@ -93,46 +93,46 @@ public class LegacyCollectionSupportTest extends TestCase {
 			ZipUtils.extractFiles(backupPath, tmpDirPath);
 		}
 		
-		db = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder()
+		db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder()
 				.setPath(dbPath)
 				.build();
 		
-		timeframeCollection = (ReadWriteBlueTimeCollectionOnDisk<IndexableTestValue>) db.getTimeCollectionBuilder("timeframe-collection", TimeFrameKey.class, IndexableTestValue.class)
+		timeframeCollection = (ReadWriteTimeCollectionOnDisk<IndexableTestValue>) db.getTimeCollectionBuilder("timeframe-collection", TimeFrameKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
 				.withSegmentSize(SegmentSize.TIME_FRAME_1_MONTH)
 				.build();
 		
-		timeCollection = (ReadWriteBlueTimeCollectionOnDisk<IndexableTestValue>) db.getTimeCollectionBuilder("time-collection", TimeKey.class, IndexableTestValue.class)
+		timeCollection = (ReadWriteTimeCollectionOnDisk<IndexableTestValue>) db.getTimeCollectionBuilder("time-collection", TimeKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
 				.withSegmentSize(SegmentSize.TIME_1_MONTH)
 				.build();
 		
-		intCollection = (ReadWriteBlueCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("int-collection", IntegerKey.class, IndexableTestValue.class)
+		intCollection = (ReadWriteCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("int-collection", IntegerKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
 				.withSegmentSize(SegmentSize.INT_1K)
 				.build();
 		
-		longCollection = (ReadWriteBlueCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("long-collection", LongKey.class, IndexableTestValue.class)
+		longCollection = (ReadWriteCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("long-collection", LongKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
 				.withSegmentSize(SegmentSize.LONG_1K)
 				.build();
 		
-		stringCollection = (ReadWriteBlueCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("string-collection", StringKey.class, IndexableTestValue.class)
+		stringCollection = (ReadWriteCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("string-collection", StringKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
 				.withSegmentSize(SegmentSize.STRING_4M)
 				.build();
 		
-		uuidCollection = (ReadWriteBlueCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("uuid-collection", UUIDKey.class, IndexableTestValue.class)
+		uuidCollection = (ReadWriteCollectionOnDisk<IndexableTestValue>) db.getCollectionBuilder("uuid-collection", UUIDKey.class, IndexableTestValue.class)
 				.withOptimizedClasses(Arrays.asList(UUID.class, IndexableTestValue.class))
 				.withSegmentSize(SegmentSize.UUID_4M)
 				.build();
 		
 		allCollections = Arrays.asList(timeframeCollection, timeCollection, intCollection, longCollection, stringCollection, uuidCollection);
 		
-		longIndex = (ReadWriteBlueIndexOnDisk<LongKey, IndexableTestValue>) timeCollection.createIndex("long-index", LongKey.class, new IndexableTestValueLongIndexExtractor());
-		intIndex = (ReadWriteBlueIndexOnDisk<IntegerKey, IndexableTestValue>) timeCollection.createIndex("int-index", IntegerKey.class, new IndexableTestValueIntIndexExtractor());
-		stringIndex = (ReadWriteBlueIndexOnDisk<StringKey, IndexableTestValue>) timeCollection.createIndex("string-index", StringKey.class, new IndexableTestValueStringIndexExtractor());
-		uuidIndex =(ReadWriteBlueIndexOnDisk<UUIDKey, IndexableTestValue>) timeCollection.createIndex("uuid-index", UUIDKey.class, new IndexableTestValueUUIDIndexExtractor());
+		longIndex = (ReadWriteIndexOnDisk<LongKey, IndexableTestValue>) timeCollection.createIndex("long-index", LongKey.class, new IndexableTestValueLongIndexExtractor());
+		intIndex = (ReadWriteIndexOnDisk<IntegerKey, IndexableTestValue>) timeCollection.createIndex("int-index", IntegerKey.class, new IndexableTestValueIntIndexExtractor());
+		stringIndex = (ReadWriteIndexOnDisk<StringKey, IndexableTestValue>) timeCollection.createIndex("string-index", StringKey.class, new IndexableTestValueStringIndexExtractor());
+		uuidIndex =(ReadWriteIndexOnDisk<UUIDKey, IndexableTestValue>) timeCollection.createIndex("uuid-index", UUIDKey.class, new IndexableTestValueUUIDIndexExtractor());
 		
 		newValuesToTest = existingValuesToTest.stream()
 				.map(l -> l+1)

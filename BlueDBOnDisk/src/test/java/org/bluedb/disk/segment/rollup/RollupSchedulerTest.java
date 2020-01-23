@@ -11,10 +11,10 @@ import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
-import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.CollectionTestTools;
-import org.bluedb.disk.collection.index.ReadWriteBlueIndexOnDisk;
+import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
@@ -93,7 +93,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_scheduleReadyRollups() throws Exception {
 		List<RollupTarget> rollupsRequested = new ArrayList<>();
-		ReadWriteBlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		ReadWriteCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
 		Range timeRange = new Range(0, 1);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
@@ -111,7 +111,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_reportRead_limit() {
-		ReadWriteBlueCollectionOnDisk<?> busyCollection = Mockito.mock(ReadWriteBlueCollectionOnDisk.class);
+		ReadWriteCollectionOnDisk<?> busyCollection = Mockito.mock(ReadWriteCollectionOnDisk.class);
 		RollupScheduler rollupScheduler = new RollupScheduler(busyCollection);
 		Mockito.doReturn(30).when(busyCollection).getQueuedTaskCount();
 		for (int i=0; i<30; i++) {
@@ -119,7 +119,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		}
 		rollupScheduler.scheduleLimitedReadyRollups();
 
-		ReadWriteBlueCollectionOnDisk<?> nonBusyCollection = Mockito.mock(ReadWriteBlueCollectionOnDisk.class);
+		ReadWriteCollectionOnDisk<?> nonBusyCollection = Mockito.mock(ReadWriteCollectionOnDisk.class);
 		Mockito.doReturn(0).when(nonBusyCollection).getQueuedTaskCount();
 		RollupScheduler nonBusyRollupScheduler = new RollupScheduler(nonBusyCollection);
 		for (int i=0; i<30; i++) {
@@ -162,10 +162,10 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_scheduleRollup_index() throws Exception {
 		TestRetrievalKeyExtractor keyExtractor = new TestRetrievalKeyExtractor();
-		ReadWriteBlueTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
 		String indexName = "test_index";
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex(indexName, IntegerKey.class, keyExtractor);
-		ReadWriteBlueIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteBlueIndexOnDisk<IntegerKey, TestValue>) index;
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
 
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key3At3 = createKey(3, 3);
@@ -203,7 +203,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_forceScheduleRollups() throws Exception {
 		List<RollupTarget> rollupsRequested = new ArrayList<>();
-		ReadWriteBlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		ReadWriteCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
 		Range timeRange = new Range(0, 1);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
@@ -224,7 +224,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_scheduleLimitedReadyRollups() throws Exception {
 		List<RollupTarget> rollupsRequested = new ArrayList<>();
-		ReadWriteBlueCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
+		ReadWriteCollectionOnDisk<TestValue> mockCollection = createMockCollection(rollupsRequested);
 		RollupScheduler mockRollupScheduler = new RollupScheduler(mockCollection);
 		Range timeRange = new Range(0, 1);
 		RollupTarget rollupTarget = new RollupTarget(0, timeRange);
@@ -244,9 +244,9 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		assertTrue(rollupsRequested.contains(rollupTarget));
 	}
 
-	private ReadWriteBlueCollectionOnDisk<TestValue> createMockCollection(List<RollupTarget> rollupsRequested) throws Exception {
+	private ReadWriteCollectionOnDisk<TestValue> createMockCollection(List<RollupTarget> rollupsRequested) throws Exception {
 		@SuppressWarnings("unchecked")
-		ReadWriteBlueCollectionOnDisk<TestValue> collection = new ReadWriteBlueCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class, Arrays.asList()) {
+		ReadWriteCollectionOnDisk<TestValue> collection = new ReadWriteCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class, Arrays.asList()) {
             @Override
             public void submitTask(Runnable r) {
             	RollupTask<TestValue> rollupTask = (RollupTask<TestValue>) r;

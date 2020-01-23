@@ -18,21 +18,21 @@ import org.bluedb.api.BlueTimeCollectionBuilder;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
-import org.bluedb.disk.collection.ReadWriteBlueTimeCollectionOnDisk;
-import org.bluedb.disk.collection.ReadableBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 
-public class ReadWriteBlueDbOnDisk extends ReadableBlueDbOnDisk implements BlueDb {
+public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 
 	protected final BackupManager backupManager;
 	protected final BlueExecutor sharedExecutor;
-	private final Map<String, ReadWriteBlueCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
+	private final Map<String, ReadWriteCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
 
-	public ReadWriteBlueDbOnDisk(Path path) {
+	public ReadWriteDbOnDisk(Path path) {
 		super(path);
 		this.backupManager = new BackupManager(this);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
@@ -46,12 +46,12 @@ public class ReadWriteBlueDbOnDisk extends ReadableBlueDbOnDisk implements BlueD
 
 	@Override
 	public <K extends BlueKey, V extends Serializable> BlueCollectionBuilder<K, V> getCollectionBuilder(String name, Class<K> keyType, Class<V> valueType) {
-		return new BlueCollectionOnDiskBuilder<>(this, name, keyType, valueType);
+		return new CollectionOnDiskBuilder<>(this, name, keyType, valueType);
 	}
 
 	@Override
 	public <K extends BlueKey, V extends Serializable> BlueTimeCollectionBuilder<K, V> getTimeCollectionBuilder(String name, Class<K> keyType, Class<V> valueType) {
-		return new BlueTimeCollectionOnDiskBuilder<>(this, name, keyType, valueType); //TODO: Should this restrict key type to only TimeKey and/or throw exception if it isn't a TimeKey?
+		return new TimeCollectionOnDiskBuilder<>(this, name, keyType, valueType); //TODO: Should this restrict key type to only TimeKey and/or throw exception if it isn't a TimeKey?
 	}
 
 	@Deprecated
@@ -67,9 +67,9 @@ public class ReadWriteBlueDbOnDisk extends ReadableBlueDbOnDisk implements BlueD
 	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
-			ReadWriteBlueCollectionOnDisk<T> collection = (ReadWriteBlueCollectionOnDisk<T>) collections.get(name);
+			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new ReadWriteBlueCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
+				collection = new ReadWriteCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
@@ -87,9 +87,9 @@ public class ReadWriteBlueDbOnDisk extends ReadableBlueDbOnDisk implements BlueD
 	protected <T extends Serializable> BlueTimeCollection<T> initializeTimeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
-			ReadWriteBlueCollectionOnDisk<T> collection = (ReadWriteBlueCollectionOnDisk<T>) collections.get(name);
+			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new ReadWriteBlueTimeCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
+				collection = new ReadWriteTimeCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
@@ -114,7 +114,7 @@ public class ReadWriteBlueDbOnDisk extends ReadableBlueDbOnDisk implements BlueD
 	@Override
 	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
 		synchronized(collections) {
-			ReadableBlueCollectionOnDisk<?> untypedCollection = collections.get(name);
+			ReadableCollectionOnDisk<?> untypedCollection = collections.get(name);
 			if (untypedCollection == null) {
 				return null;
 			}
@@ -143,14 +143,14 @@ public class ReadWriteBlueDbOnDisk extends ReadableBlueDbOnDisk implements BlueD
 	@Override
 	public void backup(Path zipPath) throws BlueDbException {
 		try {
-			List<ReadWriteBlueCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
+			List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
 			backupManager.backup(collectionsToBackup, zipPath);
 		} catch (IOException | BlueDbException e) {
 			throw new BlueDbException("BlueDB backup failed", e);
 		}
 	}
 
-	protected static void assertExistingCollectionIsType(ReadableBlueCollectionOnDisk<?> collection, Class<?> klazz) throws BlueDbException {
+	protected static void assertExistingCollectionIsType(ReadableCollectionOnDisk<?> collection, Class<?> klazz) throws BlueDbException {
 		if(!klazz.isAssignableFrom(collection.getClass())) {
 			String name = collection.getPath().toFile().getName();
 			throw new BlueDbException("The " + name + " collection already exists but it cannot be cast to a " + klazz.getSimpleName() + ". InvalidType=" + collection.getClass());
@@ -158,20 +158,20 @@ public class ReadWriteBlueDbOnDisk extends ReadableBlueDbOnDisk implements BlueD
 	}
 
 
-	protected List<ReadWriteBlueCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
+	protected List<ReadWriteCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
 		List<File> subfolders = FileUtils.getSubFolders(path.toFile());
-		List<ReadWriteBlueCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getUntypedCollectionForBackup(folder.getName()));
+		List<ReadWriteCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getUntypedCollectionForBackup(folder.getName()));
 		return collections;
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	protected ReadWriteBlueCollectionOnDisk getUntypedCollectionForBackup(String folderName) throws BlueDbException {
-		ReadWriteBlueCollectionOnDisk collection;
+	protected ReadWriteCollectionOnDisk getUntypedCollectionForBackup(String folderName) throws BlueDbException {
+		ReadWriteCollectionOnDisk collection;
 		synchronized (collections) {
 			collection = collections.get(folderName);
 		}
 		if (collection == null) {
-			collection = new ReadWriteBlueCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
+			collection = new ReadWriteCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
 		}
 		return collection;
 	}

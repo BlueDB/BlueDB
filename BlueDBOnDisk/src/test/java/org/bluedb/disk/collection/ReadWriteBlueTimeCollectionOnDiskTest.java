@@ -29,7 +29,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
-import org.bluedb.disk.ReadWriteBlueDbOnDisk;
+import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
@@ -169,7 +169,7 @@ public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_times() throws Exception {
-		ReadWriteBlueTimeCollectionOnDisk<String> stringCollection = (ReadWriteBlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_strings", TimeKey.class, String.class).build();
+		ReadWriteTimeCollectionOnDisk<String> stringCollection = (ReadWriteTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_strings", TimeKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -182,7 +182,7 @@ public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
+		ReadWriteCollectionOnDisk<String> stringCollection = (ReadWriteCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -196,7 +196,7 @@ public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
-		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
+		ReadWriteCollectionOnDisk<String> stringCollection = (ReadWriteCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -505,8 +505,8 @@ public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_ensureCorrectKeyType() throws BlueDbException {
-		ReadWriteBlueTimeCollectionOnDisk<String> collectionWithTimeKeys = (ReadWriteBlueTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
-		ReadWriteBlueCollectionOnDisk<String> collectionWithLongKeys = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
+		ReadWriteTimeCollectionOnDisk<String> collectionWithTimeKeys = (ReadWriteTimeCollectionOnDisk<String>) db().getTimeCollectionBuilder("test_collection_TimeKey", TimeKey.class, String.class).build();
+		ReadWriteCollectionOnDisk<String> collectionWithLongKeys = (ReadWriteCollectionOnDisk<String>) db().getCollectionBuilder("test_collection_LongKey", LongKey.class, String.class).build();
 
 		collectionWithTimeKeys.get(new TimeKey(1, 1));  // should not throw an Exception
 		collectionWithTimeKeys.get(new TimeFrameKey(1, 1, 1));  // should not throw an Exception
@@ -526,7 +526,7 @@ public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 	public void test_determineKeyType() throws BlueDbException {
 		db().getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();  // regular instantiation approach
 
-		ReadWriteBlueDbOnDisk reopenedDatbase = (ReadWriteBlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(db().getPath()).build();  // reopen database without collections instantiated
+		ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(db().getPath()).build();  // reopen database without collections instantiated
 
 		try {
 			reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), HashGroupedKey.class, TestValue.class).build();  // try to open with the wrong key type
@@ -534,7 +534,7 @@ public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		} catch (BlueDbException e) {
 		}
 
-		ReadWriteBlueTimeCollectionOnDisk<?> collectionWithoutType = (ReadWriteBlueTimeCollectionOnDisk<?>) reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
+		ReadWriteTimeCollectionOnDisk<?> collectionWithoutType = (ReadWriteTimeCollectionOnDisk<?>) reopenedDatbase.getTimeCollectionBuilder(getTimeCollectionName(), null, TestValue.class).build();  // open without specifying key type
 		assertEquals(TimeKey.class, collectionWithoutType.getKeyType());
 	}
 

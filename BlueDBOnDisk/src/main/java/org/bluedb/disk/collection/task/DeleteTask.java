@@ -4,15 +4,15 @@ import java.io.Serializable;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.collection.ReadWriteBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 
 public class DeleteTask<T extends Serializable> extends QueryTask {
-	private final ReadWriteBlueCollectionOnDisk<T> collection;
+	private final ReadWriteCollectionOnDisk<T> collection;
 	private final BlueKey key;
 	
-	public DeleteTask(ReadWriteBlueCollectionOnDisk<T> collection, BlueKey key) {
+	public DeleteTask(ReadWriteCollectionOnDisk<T> collection, BlueKey key) {
 		this.collection = collection;
 		this.key = key;
 	}

@@ -8,21 +8,21 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
-import org.bluedb.disk.collection.index.FacadeBlueIndexOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
+import org.bluedb.disk.collection.index.FacadeIndexOnDisk;
 
 public class FacadeCollection<T extends Serializable> implements ReadableBlueCollection<T> {
 
-	protected final ReadableBlueDbOnDisk db;
+	protected final ReadableDbOnDisk db;
 	protected final Class<T> valueType;
 	protected final String name;
-	protected final DummyReadOnlyBlueCollectionOnDisk<T> dummyCollection;
+	protected final DummyReadOnlyCollectionOnDisk<T> dummyCollection;
 
-	public FacadeCollection(ReadableBlueDbOnDisk db, String name, Class<T> valueType) {
+	public FacadeCollection(ReadableDbOnDisk db, String name, Class<T> valueType) {
 		this.db = db;
 		this.valueType = valueType;
 		this.name = name;
-		this.dummyCollection = new DummyReadOnlyBlueCollectionOnDisk<T>();
+		this.dummyCollection = new DummyReadOnlyCollectionOnDisk<T>();
 	}
 
 	
@@ -40,9 +40,9 @@ public class FacadeCollection<T extends Serializable> implements ReadableBlueCol
 
 	@Override
 	public <K extends ValueKey> BlueIndex<K, T> getIndex(String indexName, Class<K> indexKeyType) throws BlueDbException {
-		return new FacadeBlueIndexOnDisk<K, T>(() -> {
+		return new FacadeIndexOnDisk<K, T>(() -> {
 			try {
-				ReadOnlyBlueCollectionOnDisk<T> collection = (ReadOnlyBlueCollectionOnDisk<T>) db.getExistingCollection(name, valueType);
+				ReadOnlyCollectionOnDisk<T> collection = (ReadOnlyCollectionOnDisk<T>) db.getExistingCollection(name, valueType);
 				return collection.getExistingIndex(indexName, indexKeyType);
 			} catch (BlueDbException e) {
 				return null;

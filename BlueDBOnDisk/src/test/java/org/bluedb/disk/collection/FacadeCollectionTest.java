@@ -9,9 +9,9 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.index.FacadeBlueIndexOnDisk;
+import org.bluedb.disk.collection.index.FacadeIndexOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.junit.Test;
 
@@ -23,7 +23,7 @@ public class FacadeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testFacadeCollection() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueCollection<TestValue> facadeCollection = readOnlyDb.getCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeCollection);
 
@@ -37,12 +37,12 @@ public class FacadeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGetIndex() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueCollection<TestValue> facadeCollection = readOnlyDb.getCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeCollection);
 		String indexName = "dummy_index";
 		BlueIndex<IntegerKey, TestValue> facadeIndex = facadeCollection.getIndex(indexName, IntegerKey.class);
-		assertTrue(facadeIndex instanceof FacadeBlueIndexOnDisk);
+		assertTrue(facadeIndex instanceof FacadeIndexOnDisk);
 
 		assertNull(facadeCollection.getIndex(indexName, IntegerKey.class).getLastKey());
 		assertNull(facadeIndex.getLastKey());
@@ -58,7 +58,7 @@ public class FacadeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testContains() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueCollection<TestValue> facadeCollection = readOnlyDb.getCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeCollection);
 
@@ -70,7 +70,7 @@ public class FacadeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGet() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueCollection<TestValue> facadeCollection = readOnlyDb.getCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeCollection);
 
@@ -82,7 +82,7 @@ public class FacadeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testGetLastKey() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueCollection<TestValue> facadeCollection = readOnlyDb.getCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeCollection);
 
@@ -94,7 +94,7 @@ public class FacadeCollectionTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void testQuery() throws BlueDbException {
-		ReadableBlueDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
+		ReadableDbOnDisk readOnlyDb = buildReadOnlyBlueDb();
 		ReadableBlueCollection<TestValue> facadeCollection = readOnlyDb.getCollection(COLLECTION_NAME, TestValue.class);
 		assertTrue(facadeCollection instanceof FacadeCollection);
 
@@ -109,7 +109,7 @@ public class FacadeCollectionTest extends BlueDbDiskTestBase {
 		return db().getCollectionBuilder(COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
 	}
 
-	private ReadableBlueDbOnDisk buildReadOnlyBlueDb() throws BlueDbException {
-		return (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+	private ReadableDbOnDisk buildReadOnlyBlueDb() throws BlueDbException {
+		return (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
 	}
 }

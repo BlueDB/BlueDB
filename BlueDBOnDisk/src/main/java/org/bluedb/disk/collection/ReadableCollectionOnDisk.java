@@ -14,11 +14,11 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.metadata.ReadableCollectionMetadata;
 import org.bluedb.disk.file.ReadFileManager;
-import org.bluedb.disk.query.ReadOnlyBlueQueryOnDisk;
+import org.bluedb.disk.query.ReadOnlyQueryOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegment;
 import org.bluedb.disk.segment.ReadableSegmentManager;
@@ -27,7 +27,7 @@ import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
-public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> implements ReadableBlueCollection<T> {
+public abstract class ReadableCollectionOnDisk<T extends Serializable> implements ReadableBlueCollection<T> {
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
@@ -41,7 +41,7 @@ public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> imple
 	public abstract ReadableSegmentManager<T> getSegmentManager();
 	public abstract <I extends ValueKey> BlueIndex<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
 
-	public ReadableBlueCollectionOnDisk(ReadableBlueDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadableCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		boolean isNewCollection = !collectionPath.toFile().exists();
@@ -55,7 +55,7 @@ public abstract class ReadableBlueCollectionOnDisk<T extends Serializable> imple
 
 	@Override
 	public ReadBlueQuery<T> query() {
-		return new ReadOnlyBlueQueryOnDisk<T>(this);
+		return new ReadOnlyQueryOnDisk<T>(this);
 	}
 	
 	@Override

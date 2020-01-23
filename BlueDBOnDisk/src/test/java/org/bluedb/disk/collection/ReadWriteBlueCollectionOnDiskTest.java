@@ -26,7 +26,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.ReadableBlueDbOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.models.calls.Call;
@@ -147,7 +147,7 @@ public class ReadWriteBlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_longs() throws Exception {
-		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
+		ReadWriteCollectionOnDisk<String> stringCollection = (ReadWriteCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", LongKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -161,7 +161,7 @@ public class ReadWriteBlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_long_strings() throws Exception {
-		ReadWriteBlueCollectionOnDisk<String> stringCollection = (ReadWriteBlueCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
+		ReadWriteCollectionOnDisk<String> stringCollection = (ReadWriteCollectionOnDisk<String>) db().getCollectionBuilder("test_strings", StringKey.class, String.class).build();
 		String value = "string";
 		int n = 100;
 		for (int i = 0; i < n; i++) {
@@ -272,7 +272,7 @@ public class ReadWriteBlueCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getLastKey_readonly() throws Exception {
-        ReadableBlueDbOnDisk readOnlyDb = (ReadableBlueDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+        ReadableDbOnDisk readOnlyDb = (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
         ReadableBlueCollection<TestValue> collection = readOnlyDb.getCollection(getLongCollection().getPath().toFile().getName(), TestValue.class);
 
 		assertNull(collection.getLastKey());
