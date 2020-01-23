@@ -3,17 +3,17 @@ package org.bluedb.disk.segment.rollup;
 import java.io.Serializable;
 
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.recovery.PendingRollup;
 import org.bluedb.disk.recovery.Recoverable;
 import org.bluedb.disk.recovery.RecoveryManager;
 
 public class RollupTask<T extends Serializable> implements Runnable {
 
-	private final ReadOnlyBlueCollectionOnDisk<T> collection;
+	private final ReadWriteCollectionOnDisk<T> collection;
 	private final RollupTarget rollupTarget;
 	
-	public RollupTask(ReadOnlyBlueCollectionOnDisk<T> collection, RollupTarget rollupTarget) {
+	public RollupTask(ReadWriteCollectionOnDisk<T> collection, RollupTarget rollupTarget) {
 		this.collection = collection;
 		this.rollupTarget = rollupTarget;
 	}

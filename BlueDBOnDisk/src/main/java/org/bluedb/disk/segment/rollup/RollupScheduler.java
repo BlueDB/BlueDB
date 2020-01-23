@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.index.IndexRollupTask;
 
 public class RollupScheduler {
@@ -17,10 +17,10 @@ public class RollupScheduler {
 	private static final long WAIT_BETWEEN_REVIEWS_DEFAULT = 30_000;
 
 	private long waitBetweenReviews = WAIT_BETWEEN_REVIEWS_DEFAULT;
-	private final ReadOnlyBlueCollectionOnDisk<?> collection;
+	private final ReadWriteCollectionOnDisk<?> collection;
 	private final Map<RollupTarget, Long> rollupTimes;
 
-	public RollupScheduler(ReadOnlyBlueCollectionOnDisk<?> collection) {
+	public RollupScheduler(ReadWriteCollectionOnDisk<?> collection) {
 		rollupTimes = new ConcurrentHashMap<>();
 		this.collection = collection;
 	}

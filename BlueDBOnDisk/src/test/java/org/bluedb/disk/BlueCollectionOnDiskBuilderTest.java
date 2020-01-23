@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import org.bluedb.api.SegmentSize;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.junit.Test;
@@ -20,10 +20,10 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 
     @Test
     public void test_differentSegmentSizes() throws Exception {
-		BlueCollectionOnDisk<TestValue> hourCollection = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+		ReadWriteCollectionOnDisk<TestValue> hourCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_HOUR)
 				.build();
-		BlueCollectionOnDisk<TestValue> dayCollection = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("days", TimeKey.class, TestValue.class)
+		ReadWriteCollectionOnDisk<TestValue> dayCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder("days", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_DAY)
 				.build();
 
@@ -46,14 +46,14 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 
     @Test
     public void test_reopeningSegmentWithDifferentSizes() throws Exception {
-		db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+		db.getCollectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_HOUR)
 				.build();
 		db.shutdown();
 		db.awaitTermination(1, TimeUnit.MINUTES);
-		db = (BlueDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();  // reopen
+		db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();  // reopen
 		
-		BlueCollectionOnDisk<TestValue> hourCollectionReopenedAsDaily = (BlueCollectionOnDisk<TestValue>) db.collectionBuilder("hours", TimeKey.class, TestValue.class)
+		ReadWriteCollectionOnDisk<TestValue> hourCollectionReopenedAsDaily = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder("hours", TimeKey.class, TestValue.class)
 				.withSegmentSize(SegmentSize.TIME_1_DAY)
 				.build();
 
@@ -68,7 +68,7 @@ public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 		assertEquals(expectedDataFoldersForHourly, dataFoldersForHourly);
     }
     
-    private static List<File> getFiles(BlueCollectionOnDisk<?> collection) {
+    private static List<File> getFiles(ReadWriteCollectionOnDisk<?> collection) {
     	Path collectionPath = collection.getPath();
     	List<File> results = new ArrayList<>();
     	LinkedList<File> queue = new LinkedList<>();

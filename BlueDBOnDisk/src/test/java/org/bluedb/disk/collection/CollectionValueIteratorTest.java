@@ -11,7 +11,7 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.lock.LockManager;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.Range;
 
 public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
@@ -30,7 +30,7 @@ public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 	public void test_close() throws Exception {
 		BlueKey key = createKey(1, 1);
 		TestValue value = createValue("Anna");
-		Segment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
+		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key);
 		Range range = new Range(1, 1);
 		Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 

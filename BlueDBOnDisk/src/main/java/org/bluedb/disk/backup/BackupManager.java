@@ -6,26 +6,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.disk.ReadOnlyBlueDbOnDisk;
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
+import org.bluedb.disk.ReadableDbOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.zip.ZipUtils;
 
 public class BackupManager {
 	
 	private final Path dbPath;
 
-	public BackupManager(ReadOnlyBlueDbOnDisk db) {
+	public BackupManager(ReadableDbOnDisk db) {
 		this.dbPath = db.getPath();
 	}
 
-	public void backup(List<ReadOnlyBlueCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
+	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
 		try {
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().placeHoldOnHistoryCleanup());
 			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
@@ -39,31 +40,31 @@ public class BackupManager {
 		}
 	}
 
-	public void backupToTempDirectory(List<ReadOnlyBlueCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {
+	public void backupToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder) throws BlueDbException {
 		long backupStartTime = System.currentTimeMillis();
-		for (ReadOnlyBlueCollectionOnDisk<?> collection: collectionsToBackup) {
+		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
 			copyMetaData(collection, tempFolder);
 			copyDataFolders(collection, tempFolder);
 		}
 		long backupEndTime = System.currentTimeMillis();
-		for (ReadOnlyBlueCollectionOnDisk<?> collection: collectionsToBackup) {
+		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
 			copyChanges(collection, backupStartTime, backupEndTime, tempFolder);
 		}
 	}
 
-	private void copyMetaData(ReadOnlyBlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
+	private void copyMetaData(ReadWriteCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
 		Path srcPath = collection.getMetaData().getPath();
 		Path dstPath = translatePath(dbPath, tempFolder, srcPath);
 		FileUtils.copyDirectoryWithoutLock(srcPath, dstPath);
 	}
 
-	private void copyDataFolders(ReadOnlyBlueCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
-		for (Segment<?> segment: collection.getSegmentManager().getAllExistingSegments()) {
+	private void copyDataFolders(ReadWriteCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
+		for (ReadWriteSegment<?> segment: collection.getSegmentManager().getAllExistingSegments()) {
 			copyDataFolders(segment, tempFolder);
 		}
 	}
 
-	private void copyDataFolders(Segment<?> segment, Path tempFolder) throws BlueDbException {
+	private void copyDataFolders(ReadWriteSegment<?> segment, Path tempFolder) throws BlueDbException {
 		Range range = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		List<File> files = segment.getOrderedFilesInRange(range);
 		for (File file: files) {
@@ -77,7 +78,7 @@ public class BackupManager {
 		}
 	}
 
-	private void copyChanges(ReadOnlyBlueCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime, Path tempFolder) throws BlueDbException {
+	private void copyChanges(ReadWriteCollectionOnDisk<?> collection, long backupStartTime, long backupEndTime, Path tempFolder) throws BlueDbException {
 		RecoveryManager<?> recoveryManager = collection.getRecoveryManager();
 		List<File> changesToCopy = recoveryManager.getChangeHistory(backupStartTime, backupEndTime);
 		Path historyFolderPath = recoveryManager.getHistoryFolder();

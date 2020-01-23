@@ -21,7 +21,7 @@ public class SegmentBatch<T extends Serializable> {
 		changeQueue = new LinkedList<IndividualChange<T>>(changes);
 	}
 
-	public List<ChunkBatch<T>> breakIntoChunks(List<Range> existingChunkRanges, Segment<T> segment) {
+	public List<ChunkBatch<T>> breakIntoChunks(List<Range> existingChunkRanges, ReadableSegment<T> segment) {
 		Set<Range> existingChunkRangesSet = new HashSet<>(existingChunkRanges);
 		LinkedList<IndividualChange<T>> sortedQueue = new LinkedList<>(changeQueue);
 		List<ChunkBatch<T>> results = new ArrayList<>();
@@ -34,7 +34,7 @@ public class SegmentBatch<T extends Serializable> {
 		return results;
 	}
 
-	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, Set<Range> existingChunkRanges, Segment<T> segment) {
+	protected static <T extends Serializable> Range getNextRangeToUse(LinkedList<IndividualChange<T>> changeQueue, Set<Range> existingChunkRanges, ReadableSegment<T> segment) {
 		changeQueue = new LinkedList<>(changeQueue);  // to avoid mutation later
 		long firstChangeGroupingNumber = changeQueue.peekFirst().getGroupingNumber();
 		List<Range> possibleNextRanges = segment.calculatePossibleChunkRanges(firstChangeGroupingNumber);

@@ -8,8 +8,8 @@ import java.util.List;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.collection.ReadOnlyBlueCollectionOnDisk;
-import org.bluedb.disk.query.ReadOnlyBlueQueryOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.query.QueryOnDisk;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.RecoveryManager;
@@ -18,12 +18,12 @@ import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.validation.SerializationException;
 
 public class ReplaceMultipleTask<T extends Serializable> extends QueryTask {
-	private final ReadOnlyBlueCollectionOnDisk<T> collection;
-	private final ReadOnlyBlueQueryOnDisk<T> query;
+	private final ReadWriteCollectionOnDisk<T> collection;
+	private final QueryOnDisk<T> query;
 	private final Mapper<T> mapper;
 
 
-	public ReplaceMultipleTask(ReadOnlyBlueCollectionOnDisk<T> collection, ReadOnlyBlueQueryOnDisk<T> query, Mapper<T> mapper) {
+	public ReplaceMultipleTask(ReadWriteCollectionOnDisk<T> collection, QueryOnDisk<T> query, Mapper<T> mapper) {
 		this.collection = collection;
 		this.query = query;
 		this.mapper = mapper;
