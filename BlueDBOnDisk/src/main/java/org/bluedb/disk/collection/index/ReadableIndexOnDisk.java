@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -51,7 +52,14 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 	public List<T> get(I key) throws BlueDbException {
 		List<BlueKey> underlyingKeys = getKeys(key);
 		List<T> values = Blutils.map(underlyingKeys, (k) -> collection.get(k));
-		return values;
+		return values.stream()
+				.filter(value -> valueContainsIndexKey(value, key))
+				.collect(Collectors.toCollection(ArrayList::new));
+	}
+	
+	private boolean valueContainsIndexKey(T value, I indexKey) {
+		List<I> indexKeys = keyExtractor.extractKeys(value);
+		return indexKeys != null && indexKeys.contains(indexKey);	
 	}
 
 	public List<BlueKey> getKeys(I key) {

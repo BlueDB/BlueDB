@@ -177,8 +177,12 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 
 	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) {
 		List<I> indexKeys = keyExtractor.extractKeys(newItem);
-		return indexKeys.stream()
-				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
-				.collect( Collectors.toList() );
+		if(indexKeys != null) {
+			return indexKeys.stream()
+					.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
+					.collect( Collectors.toList() );
+		} else {
+			return new ArrayList<>();
+		}
 	}
 }

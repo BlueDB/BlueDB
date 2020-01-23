@@ -118,6 +118,7 @@ public class ReadWriteBlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		IntegerKey integerKey1 = new IntegerKey(1);
 		IntegerKey integerKey2 = new IntegerKey(2);
 		IntegerKey integerKey3 = new IntegerKey(3);
+		IntegerKey integerKey4 = new IntegerKey(4);
 
 		List<TestValue> emptyList = Arrays.asList();
 		List<TestValue> bobAndJoe = Arrays.asList(valueBob3, valueJoe3);
@@ -142,6 +143,28 @@ public class ReadWriteBlueIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptyList, indexOnDisk.get(integerKey1));
 		assertEquals(emptyList, indexOnDisk.get(integerKey2));
 		assertEquals(justBob, indexOnDisk.get(integerKey3));
+		
+		
+		collection.update(timeKeyBob3, value -> value.addCupcake());
+		collection.getIndexManager().addToAllIndexes(timeKeyBob3, valueBob3); //Should make index 3 point to this value even though the indexed value was just changed to 4
+		valueBob3.addCupcake();
+		
+		assertEquals(emptyList, indexOnDisk.get(integerKey3)); //3 should point to the value, but since the value doesn't contain 3 it shouldn't return it.
+		assertEquals(justBob, indexOnDisk.get(integerKey4));
+	}
+	
+	@Test
+	public void test_indexKeyExtractorReturningNull() throws BlueDbException {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new NullReturningKeyExtractor());
+		
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		collection.getIndexManager().addToAllIndexes(timeKeyFred1, valueFred1);
+		List<TestValue> emptyList = Arrays.asList();
+		
+		assertEquals(emptyList, index.get(new IntegerKey(1)));
 	}
 
 	@Test
