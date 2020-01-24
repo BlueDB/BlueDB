@@ -16,7 +16,7 @@ import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.TestValue;
 import org.junit.Test;
 
-public class DummyReadOnlyBlueCollectionOnDiskTest {
+public class DummyReadOnlyCollectionOnDiskTest {
 
 	@Test
 	public void test_get() throws BlueDbException {

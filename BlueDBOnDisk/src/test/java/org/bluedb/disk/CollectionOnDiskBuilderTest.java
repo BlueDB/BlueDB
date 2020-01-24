@@ -16,7 +16,7 @@ import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.junit.Test;
 
-public class BlueCollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
+public class CollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
 
     @Test
     public void test_differentSegmentSizes() throws Exception {

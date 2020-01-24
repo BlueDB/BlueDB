@@ -34,7 +34,7 @@ import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.IsNot;
 import org.junit.Test;
 
-public class ReadOnlyBlueDbOnDiskTest extends BlueDbDiskTestBase {
+public class ReadOnlyDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_noWriting() throws BlueDbException, NoSuchAlgorithmException, IOException {

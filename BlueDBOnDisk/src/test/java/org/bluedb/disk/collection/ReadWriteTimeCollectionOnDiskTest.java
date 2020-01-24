@@ -43,7 +43,7 @@ import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
 
-public class ReadWriteBlueTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
+public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_query() throws Exception {

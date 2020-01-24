@@ -36,7 +36,7 @@ import org.bluedb.disk.segment.ReadWriteSegmentManager;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
 
-public class ReadWriteBlueCollectionOnDiskTest extends BlueDbDiskTestBase {
+public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_query() throws Exception {

@@ -26,7 +26,7 @@ import org.bluedb.tasks.TestTask;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
 
-public class ReadableBlueDbOnDiskTest extends BlueDbDiskTestBase {
+public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
     public void test_getUntypedCollectionForBackup() throws Exception {

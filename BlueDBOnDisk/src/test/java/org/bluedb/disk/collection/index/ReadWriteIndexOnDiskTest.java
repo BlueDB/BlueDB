@@ -25,7 +25,7 @@ import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.junit.Test;
 
-public class ReadWriteBlueIndexOnDiskTest extends BlueDbDiskTestBase {
+public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getKeys() throws Exception {
