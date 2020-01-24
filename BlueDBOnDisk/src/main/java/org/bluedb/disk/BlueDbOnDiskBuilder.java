@@ -3,8 +3,11 @@ package org.bluedb.disk;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.bluedb.api.BlueDb;
+import org.bluedb.api.ReadableBlueDb;
+
 /**
- * A builder for the {@link BlueDbOnDisk} class
+ * A builder for the {@link ReadableDbOnDisk} class
  */
 public class BlueDbOnDiskBuilder {
 	private Path path = Paths.get(".", "bluedb");
@@ -20,11 +23,19 @@ public class BlueDbOnDiskBuilder {
 	}
 
 	/**
-	 * Builds the {@link BlueDbOnDisk} object
-	 * @return the {@link BlueDbOnDisk} built
+	 * Builds the {@link BlueDb} object
+	 * @return the {@link BlueDb} built
 	 */
-	public BlueDbOnDisk build() {
-		return new BlueDbOnDisk(path);
+	public BlueDb build() {
+		return new ReadWriteDbOnDisk(path);
+	}
+
+	/**
+	 * Builds the {@link ReadableBlueDb} object
+	 * @return the {@link ReadableBlueDb} built
+	 */
+	public ReadableBlueDb buildReadOnly() {
+		return new ReadableDbOnDisk(path);
 	}
 	
 	/**

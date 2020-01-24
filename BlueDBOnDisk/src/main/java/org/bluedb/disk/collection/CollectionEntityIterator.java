@@ -9,21 +9,21 @@ import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.segment.Range;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadableSegment;
+import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.SegmentEntityIterator;
-import org.bluedb.disk.segment.SegmentManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionEntityIterator<T extends Serializable> implements CloseableIterator<BlueEntity<T>> {
 
-	final private List<Segment<T>> segments;
+	final private List<? extends ReadableSegment<T>> segments;
 	final private Range range;
 	private long endGroupingValueOfCompletedSegments;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 	private final List<Condition<T>> conditions;
 
-	public CollectionEntityIterator(final SegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
+	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
 		this.range = range;
 		this.endGroupingValueOfCompletedSegments = calculateEndGroupingValueOfCompletedSegments(range, byStartTime);
 		segments = segmentManager.getExistingSegments(range);
@@ -106,7 +106,7 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 			long endOfLastSegment =  segmentIterator.getSegment().getRange().getEnd();
 			endGroupingValueOfCompletedSegments = endOfLastSegment;
 		}
-		Segment<T> segment = segments.remove(0);
+		ReadableSegment<T> segment = segments.remove(0);
 		return segment.getIterator(endGroupingValueOfCompletedSegments, range);
 	}
 }

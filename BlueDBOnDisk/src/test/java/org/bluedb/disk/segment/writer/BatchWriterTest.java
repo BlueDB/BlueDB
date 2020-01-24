@@ -202,6 +202,7 @@ public class BatchWriterTest {
 		assertEquals("testChange3", resultingCall2.getValue().getCallingParty()); //Update should still happen
 	}
 
+	@SuppressWarnings("deprecation")
 	private static <T extends Serializable> BlueObjectInput<T> createMockInput(ThreadLocalFstSerializer serializer, List<T> values) throws BlueDbException {
 		final LinkedList<T> inputValues = new LinkedList<>(values);
 		@SuppressWarnings("unchecked")
@@ -231,7 +232,7 @@ public class BatchWriterTest {
 		};
 		
 		Answer<T> writeBytesMethod = new Answer<T>() {
-			@SuppressWarnings("unchecked")
+			@SuppressWarnings({ "unchecked", "deprecation" })
 			@Override
 			public T answer(InvocationOnMock invocation) throws Throwable {
 				byte[] outputValueBytes = (byte[]) invocation.getArguments()[0];

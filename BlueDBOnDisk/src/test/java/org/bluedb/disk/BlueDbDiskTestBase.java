@@ -22,18 +22,19 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
-import org.bluedb.disk.BlueDbOnDisk;
+import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
-import org.bluedb.disk.collection.CollectionMetaData;
-import org.bluedb.disk.file.FileManager;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.recovery.RecoveryManager;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.SegmentEntityIterator;
-import org.bluedb.disk.segment.SegmentManager;
+import org.bluedb.disk.segment.ReadWriteSegmentManager;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -46,29 +47,29 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	private static String LONG_COLLECTION_NAME = "long_value";
 	private static String INT_COLLECTION_NAME = "int_value";
 	private static String CALL_COLLECTION_NAME = "call_collection";
-	BlueDbOnDisk db;
-	BlueCollectionOnDisk<TestValue> timeCollection;
-	BlueCollectionOnDisk<TestValue> hashGroupedCollection;
-	BlueCollectionOnDisk<TestValue> intCollection;
-	BlueCollectionOnDisk<TestValue> longCollection;
-	BlueCollectionOnDisk<Call> callCollection;
+	ReadWriteDbOnDisk db;
+	ReadWriteTimeCollectionOnDisk<TestValue> timeCollection;
+	ReadWriteCollectionOnDisk<TestValue> hashGroupedCollection;
+	ReadWriteCollectionOnDisk<TestValue> intCollection;
+	ReadWriteCollectionOnDisk<TestValue> longCollection;
+	ReadWriteCollectionOnDisk<Call> callCollection;
 	Path dbPath;
 	LockManager<Path> lockManager;
 	RollupScheduler rollupScheduler;
-	CollectionMetaData metaData;
+	ReadWriteCollectionMetaData metaData;
 	List<File> filesToDelete;
-	CollectionMetaData timeCollectionMetaData;
+	ReadWriteCollectionMetaData timeCollectionMetaData;
 
 	@Override
 	protected void setUp() throws Exception {
 		filesToDelete = new ArrayList<>();
 		dbPath = createTempFolder().toPath();
-		db = new BlueDbOnDiskBuilder().setPath(dbPath).build();
-		timeCollection = db.collectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
-		hashGroupedCollection = db.collectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
-		longCollection = db.collectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
-		callCollection = db.collectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
-		intCollection = db.collectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
+		db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();
+		timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
+		hashGroupedCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
+		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		callCollection = (ReadWriteCollectionOnDisk<Call>) db.getCollectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
+		intCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
 		dbPath = db.getPath();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
@@ -86,27 +87,27 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public BlueCollectionOnDisk<TestValue> getTimeCollection() {
+	public ReadWriteTimeCollectionOnDisk<TestValue> getTimeCollection() {
 		return timeCollection;
 	}
 
-	public SegmentManager<TestValue> getTimeSegmentManager() {
+	public ReadWriteSegmentManager<TestValue> getTimeSegmentManager() {
 		return timeCollection.getSegmentManager();
 	}
 
-	public BlueCollectionOnDisk<TestValue> getHashGroupedCollection() {
+	public ReadWriteCollectionOnDisk<TestValue> getHashGroupedCollection() {
 		return hashGroupedCollection;
 	}
 
-	public BlueCollectionOnDisk<TestValue> getLongCollection() {
+	public ReadWriteCollectionOnDisk<TestValue> getLongCollection() {
 		return longCollection;
 	}
 	
-	public BlueCollectionOnDisk<Call> getCallCollection() {
+	public ReadWriteCollectionOnDisk<Call> getCallCollection() {
 		return callCollection;
 	}
 	
-	public BlueCollectionOnDisk<TestValue> getIntCollection() {
+	public ReadWriteCollectionOnDisk<TestValue> getIntCollection() {
 		return intCollection;
 	}
 
@@ -122,11 +123,11 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return new TimeKey(keyId, time);
 	}
 
-	public Segment<TestValue> getSegment() {
+	public ReadWriteSegment<TestValue> getSegment() {
 		return getSegment(42);
 	}
 
-	public Segment<TestValue> getSegment(long groupingId) {
+	public ReadWriteSegment<TestValue> getSegment(long groupingId) {
 		BlueKey keyInSegment = new TimeKey(1, groupingId);
 		return timeCollection.getSegmentManager().getFirstSegment(keyInSegment);
 	}
@@ -139,11 +140,11 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return values;
 	}
 	
-	public int countItems(Segment<TestValue> segment) {
+	public int countItems(ReadWriteSegment<TestValue> segment) {
 		return getAll(segment).size();
 	}
 
-	public int countFiles(Segment<TestValue> segment) {
+	public int countFiles(ReadWriteSegment<TestValue> segment) {
 		File[] files = segment.getPath().toFile().listFiles();
 		if (files == null) {
 			return 0;
@@ -152,7 +153,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public List<TestValue> getAll(Segment<TestValue> segment) {
+	public List<TestValue> getAll(ReadWriteSegment<TestValue> segment) {
 		List<TestValue> results = new ArrayList<>();
 		try (SegmentEntityIterator<TestValue> iterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
 			while (iterator.hasNext()) {
@@ -320,11 +321,11 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		}
 	}
 
-	public BlueDbOnDisk db() {
+	public ReadWriteDbOnDisk db() {
 		return db;
 	}
 
-	public FileManager getFileManager() {
+	public ReadWriteFileManager getFileManager() {
 		return timeCollection.getFileManager();
 	}
 
@@ -336,7 +337,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return getTimeCollection().getSerializer();
 	}
 
-	public CollectionMetaData getTimeCollectionMetaData() {
+	public ReadWriteCollectionMetaData getTimeCollectionMetaData() {
 		return timeCollectionMetaData;
 	}
 

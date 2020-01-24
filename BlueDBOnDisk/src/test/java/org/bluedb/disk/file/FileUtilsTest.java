@@ -28,7 +28,7 @@ public class FileUtilsTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
-		FileManager fileManager = new FileManager(serializer);
+		ReadWriteFileManager fileManager = new ReadWriteFileManager(serializer);
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
 		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());

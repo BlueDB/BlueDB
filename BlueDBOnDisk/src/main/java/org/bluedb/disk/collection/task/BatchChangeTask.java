@@ -7,17 +7,17 @@ import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.RecoveryManager;
 
 public class BatchChangeTask<T extends Serializable> extends QueryTask {
 
-	private final BlueCollectionOnDisk<T> collection;
+	private final ReadWriteCollectionOnDisk<T> collection;
 	private final List<IndividualChange<T>> sortedChanges;
 
-	public BatchChangeTask(BlueCollectionOnDisk<T> collection, Map<BlueKey, T> values) {
+	public BatchChangeTask(ReadWriteCollectionOnDisk<T> collection, Map<BlueKey, T> values) {
 		this.collection = collection;
 		sortedChanges = toSortedChangeList(values);
 	}

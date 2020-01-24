@@ -14,7 +14,8 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.IndexableTestValue;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
@@ -48,7 +49,7 @@ public class TestUtils {
 		}
 	}
 
-	public static void assertCollectionAndValue(BlueCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+	public static void assertCollectionAndValue(ReadWriteTimeCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
 		assertGet(collection, key, value);
 		assertUpdate(collection, key, value);
 		assertDeleteAndInsert(collection, key, value);
@@ -62,11 +63,11 @@ public class TestUtils {
 		}
 	}
 
-	private static void assertGet(BlueCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+	private static void assertGet(ReadWriteTimeCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
 		assertEquals(value, collection.get(key));
 	}
 
-	private static void assertUpdate(BlueCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+	private static void assertUpdate(ReadWriteTimeCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
 		String originalStringValue = value.getStringValue();
 		String newStringValue = "changed";
 		
@@ -83,7 +84,7 @@ public class TestUtils {
 		assertEquals(originalStringValue, collection.get(key).getStringValue());
 	}
 
-	private static void assertDeleteAndInsert(BlueCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+	private static void assertDeleteAndInsert(ReadWriteTimeCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
 		assertEquals(true, collection.contains(key));
 		collection.delete(key);
 		assertEquals(false, collection.contains(key));
@@ -91,11 +92,11 @@ public class TestUtils {
 		assertEquals(true, collection.contains(key));
 	}
 
-	private static void assertWhere(BlueCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+	private static void assertWhere(ReadWriteTimeCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
 		assertEquals(true, collection.query().where(iterValue -> value.getId().equals(iterValue.getId())).getList().contains(value));
 	}
 
-	private static void assertTimeCases(BlueCollectionOnDisk<IndexableTestValue> collection, TimeKey key, IndexableTestValue value) throws BlueDbException {
+	private static void assertTimeCases(ReadWriteTimeCollectionOnDisk<IndexableTestValue> collection, TimeKey key, IndexableTestValue value) throws BlueDbException {
 		assertEquals(false, collection.query().beforeTime(key.getTime()).getList().contains(value));
 		assertEquals(true, collection.query().beforeTime(key.getTime()+1).getList().contains(value));
 		assertEquals(true, collection.query().beforeOrAtTime(key.getTime()).getList().contains(value));
@@ -105,7 +106,7 @@ public class TestUtils {
 		assertEquals(true, collection.query().afterOrAtTime(key.getTime()).getList().contains(value));
 	}
 
-	private static void assertTimeFrameCases(BlueCollectionOnDisk<IndexableTestValue> collection, TimeFrameKey key, IndexableTestValue value) throws BlueDbException {
+	private static void assertTimeFrameCases(ReadWriteTimeCollectionOnDisk<IndexableTestValue> collection, TimeFrameKey key, IndexableTestValue value) throws BlueDbException {
 		assertEquals(false, collection.query().beforeTime(key.getStartTime()).getList().contains(value));
 		assertEquals(true, collection.query().beforeTime(key.getStartTime()+1).getList().contains(value));
 		assertEquals(true, collection.query().beforeTime(key.getEndTime()).getList().contains(value));
@@ -134,4 +135,46 @@ public class TestUtils {
 		assertEquals(true, collection.query().byStartTime().afterTime(key.getStartTime()-1).getList().contains(value));
 		assertEquals(true, collection.query().byStartTime().afterOrAtTime(key.getStartTime()).getList().contains(value));
 	}
+
+
+	public static void assertCollectionAndValue(ReadWriteCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+		assertGet(collection, key, value);
+		assertUpdate(collection, key, value);
+		assertDeleteAndInsert(collection, key, value);
+		assertWhere(collection, key, value);
+	}
+
+	private static void assertGet(ReadWriteCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+		assertEquals(value, collection.get(key));
+	}
+
+	private static void assertUpdate(ReadWriteCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+		String originalStringValue = value.getStringValue();
+		String newStringValue = "changed";
+		
+		collection.update(key, valueToUpdate -> {
+			valueToUpdate.setStringValue(newStringValue);
+		});
+		
+		assertEquals(newStringValue, collection.get(key).getStringValue());
+		
+		collection.update(key, valueToUpdate -> {
+			valueToUpdate.setStringValue(originalStringValue);
+		});
+		
+		assertEquals(originalStringValue, collection.get(key).getStringValue());
+	}
+
+	private static void assertDeleteAndInsert(ReadWriteCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+		assertEquals(true, collection.contains(key));
+		collection.delete(key);
+		assertEquals(false, collection.contains(key));
+		collection.insert(key, value);
+		assertEquals(true, collection.contains(key));
+	}
+
+	private static void assertWhere(ReadWriteCollectionOnDisk<IndexableTestValue> collection, BlueKey key, IndexableTestValue value) throws BlueDbException {
+		assertEquals(true, collection.query().where(iterValue -> value.getId().equals(iterValue.getId())).getList().contains(value));
+	}
+
 }

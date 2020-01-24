@@ -86,6 +86,7 @@ public class ThreadLocalFstSerializerTest {
 		} catch(SerializationException e) {
 		}
 		
+		@SuppressWarnings("deprecation")
 		byte[] invalidBytes = serializer.serializeObjectToByteArrayWithoutChecks(invalidObject);
 		try {
 			serializer.validateBytesAfterSerialization(invalidBytes);
@@ -125,6 +126,7 @@ public class ThreadLocalFstSerializerTest {
 				
 				mutateCall((Call) ((BlueEntity<?>) originalObject).getValue(), random);
 				
+				@SuppressWarnings("deprecation")
 				byte[] mutatedBytes = serializer.serializeObjectToByteArrayWithoutChecks(originalObject);
 				
 				mutatedCallsAsBytes.add(mutatedBytes);
@@ -135,6 +137,7 @@ public class ThreadLocalFstSerializerTest {
 		}
 	}
 	
+	@SuppressWarnings("deprecation")
 	private List<byte[]> generateTestCallsAsBytes(int callCountPerTest, ThreadLocalFstSerializer serializer) throws SerializationException {
 		List<byte[]> testCallsAsBytes = new LinkedList<>();
 		for(int i = 0; i < callCountPerTest; i++) {

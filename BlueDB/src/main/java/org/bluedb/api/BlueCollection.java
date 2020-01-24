@@ -24,7 +24,7 @@ import org.bluedb.api.keys.ValueKey;
  * A collection has a name (to distinguish between collections in a {@link BlueDb} instance), a key type, and a value type.
  * @param <V> the object type of values to be serialized into the collection
  */
-public interface BlueCollection<V extends Serializable> {
+public interface BlueCollection<V extends Serializable> extends ReadableBlueCollection<V> {
 
 	/**
 	 * Creates (or returns existing) {@link BlueIndex} that maps objects of type {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link IntegerKey}, {@link LongKey}) to values in the collection.
@@ -44,29 +44,6 @@ public interface BlueCollection<V extends Serializable> {
 	public <K extends ValueKey> BlueIndex<K, V> createIndex(String name, Class<K> keyType, KeyExtractor<K, V> keyExtractor) throws BlueDbException;
 
 	/**
-	 * Returns existing BlueIndex that maps objects of type keyType to values in the collection.
-	 * 
-	 * @param <K> the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
-	 * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}).
-	 * 
-	 * @param name index name (one index per name per each collection)
-	 * @param keyType the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)
-	 * 
-	 * @return a {@link BlueIndex} with the same name if it exists and has the same keyType
-	 * 
-	 * @throws BlueDbException if index doesn't exist or has a different keyType
-	 */
-	public <K extends ValueKey> BlueIndex<K, V> getIndex(String name, Class<K> keyType) throws BlueDbException;
-
-	/**
-	 * Returns true if the collection contains a value for the given key.
-	 * @param key the key that may or may not be in collection
-	 * @return true if the collection contains a value for the given key, else false
-	 * @throws BlueDbException if the type of key was not the type specified when the collection was created
-	 */
-	public boolean contains(BlueKey key) throws BlueDbException;
-
-	/**
 	 * Inserts the given key value pair
 	 * @param key key where value should be saved (must match the keyType specified when the collection was created)
 	 * @param value value to be saved for the key
@@ -80,14 +57,6 @@ public interface BlueCollection<V extends Serializable> {
 	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
 	 */
 	public void batchUpsert(Map<BlueKey, V> values) throws BlueDbException;
-
-	/**
-	 * Returns the value to which the specified key is mapped, or null if this map contains no mapping for the key
-	 * @param key the key for the desired value
-	 * @return the value to which the specified key is mapped, or null if this map contains no mapping for the key
-	 * @throws BlueDbException if the key is not the same type specified when the collection was created
-	 */
-	public V get(BlueKey key) throws BlueDbException;
 
 	/**
 	 * Mutates the value for the given key by passing it to the given updater
@@ -123,11 +92,7 @@ public interface BlueCollection<V extends Serializable> {
 	 * Creates a {@link BlueQuery} object which can be used to build and execute a query against this collection.
 	 * @return a {@link BlueQuery} object which can be used to build and execute a query against this collection.
 	 */
+	@Override
 	public BlueQuery<V> query();
 
-	/**
-	 * Returns the key with the highest grouping number that exists in this collection
-	 * @return the key with the highest grouping number that exists in this collection
-	 */
-	public BlueKey getLastKey();
 }

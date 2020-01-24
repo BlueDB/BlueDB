@@ -15,14 +15,14 @@ import org.bluedb.disk.serialization.BlueEntity;
 public class SegmentEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
 
 	long highestGroupingNumberCompleted;
-	final Segment<T> segment;
+	final ReadableSegment<T> segment;
 	final long rangeMin;
 	final long rangeMax;
 	final List<Range> timeRanges;
 	BlueObjectInput<BlueEntity<T>> currentInput;
 	BlueEntity<T> next = null;
 	
-	public SegmentEntityIterator(final Segment<T> segment, final long highestGroupingNumberCompleted, final long rangeMin, final long rangeMax) {
+	public SegmentEntityIterator(final ReadableSegment<T> segment, final long highestGroupingNumberCompleted, final long rangeMin, final long rangeMax) {
 		this.highestGroupingNumberCompleted =highestGroupingNumberCompleted;
 		this.segment = segment;
 		this.rangeMin = rangeMin;
@@ -32,7 +32,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 		timeRanges = filesToRanges(relevantFiles);
 	}
 
-	public SegmentEntityIterator(final Segment<T> segment, final long rangeMin, final long rangeMax) {
+	public SegmentEntityIterator(final ReadableSegment<T> segment, final long rangeMin, final long rangeMax) {
 		this(segment, Long.MIN_VALUE, rangeMin, rangeMax);
 	}
 
@@ -61,7 +61,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 		return response;
 	}
 
-	public Segment<T> getSegment() {
+	public ReadableSegment<T> getSegment() {
 		return segment;
 	}
 

@@ -11,7 +11,7 @@ import java.util.List;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -35,7 +35,7 @@ public class UpdateMultipleTaskTest {
 		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
 		
 		@SuppressWarnings("unchecked")
-		BlueCollectionOnDisk<Call> collectionMock = Mockito.mock(BlueCollectionOnDisk.class);
+		ReadWriteCollectionOnDisk<Call> collectionMock = Mockito.mock(ReadWriteCollectionOnDisk.class);
 		Mockito.when(collectionMock.getSerializer()).thenReturn(serializer);
 		
 		UpdateMultipleTask<Call> task = new UpdateMultipleTask<>(collectionMock, null, null);

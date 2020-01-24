@@ -7,9 +7,9 @@ import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
-import org.bluedb.disk.collection.BlueCollectionOnDisk;
-import org.bluedb.disk.collection.index.IndexManager;
-import org.bluedb.disk.segment.Segment;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.index.ReadWriteIndexManager;
+import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.validation.SerializationException;
@@ -60,17 +60,17 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 	}
 
 	@Override
-	public void apply(BlueCollectionOnDisk<T> collection) throws BlueDbException {
-		IndexManager<T> indexManager = collection.getIndexManager();
+	public void apply(ReadWriteCollectionOnDisk<T> collection) throws BlueDbException {
+		ReadWriteIndexManager<T> indexManager = collection.getIndexManager();
 		indexManager.removeFromAllIndexes(key, oldValue);
-		List<Segment<T>> segments = collection.getSegmentManager().getAllSegments(key);
-		for (Segment<T> segment: segments) {
+		List<ReadWriteSegment<T>> segments = collection.getSegmentManager().getAllSegments(key);
+		for (ReadWriteSegment<T> segment: segments) {
 			applyChange(segment);
 		}
 		indexManager.addToAllIndexes(key, newValue);
 	}
 
-	public void applyChange(Segment<T> segment) throws BlueDbException {
+	public void applyChange(ReadWriteSegment<T> segment) throws BlueDbException {
 		if (isInsert()) {
 			segment.insert(key, newValue);
 		} else if (isDelete()) {
