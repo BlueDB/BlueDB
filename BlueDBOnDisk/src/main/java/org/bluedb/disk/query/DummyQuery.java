@@ -37,6 +37,11 @@ public class DummyQuery<T extends Serializable> extends ReadOnlyTimeQueryOnDisk<
 			public T peek() {
 				return null;
 			}
+
+			@Override
+			public void keepAlive() {
+				
+			}
 			
 		};
 	}

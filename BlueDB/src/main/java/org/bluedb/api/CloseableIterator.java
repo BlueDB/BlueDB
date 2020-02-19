@@ -9,4 +9,6 @@ import java.util.Iterator;
  */
 public interface CloseableIterator<V> extends Closeable, Iterator<V> {
 	public V peek();
+	
+	public void keepAlive();
 }
