@@ -73,6 +73,7 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
         getTimeCollection().insert(key2, value2);
         CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>());
     	assertNull(iterator.peek());
+    	iterator.keepAlive();
         iterator.close();
 
         iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>());
