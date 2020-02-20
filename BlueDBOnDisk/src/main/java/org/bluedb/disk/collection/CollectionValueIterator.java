@@ -65,4 +65,9 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 		timeoutCloser.snooze();
 		return entityIterator.next().getValue();
 	}
+	
+	@Override
+	public void keepAlive() {
+		timeoutCloser.snooze();
+	}
 }

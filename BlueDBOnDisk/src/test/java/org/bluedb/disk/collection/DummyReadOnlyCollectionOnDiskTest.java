@@ -46,6 +46,7 @@ public class DummyReadOnlyCollectionOnDiskTest {
 		assertFalse(dummyIterator.hasNext());
 		assertEquals(null, dummyIterator.next());
 		assertEquals(null, dummyIterator.peek());
+		dummyIterator.keepAlive();
 		dummyIterator.close();
 	}
 }

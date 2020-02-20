@@ -109,4 +109,9 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 		ReadableSegment<T> segment = segments.remove(0);
 		return segment.getIterator(endGroupingValueOfCompletedSegments, range);
 	}
+
+	@Override
+	public void keepAlive() {
+		
+	}
 }
