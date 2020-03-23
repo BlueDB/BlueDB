@@ -91,12 +91,16 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 		}
 	}
 
-	protected void reportRead(Path path) {
-		String fileName = path.toFile().getName();
-		Range targetRange = Range.fromUnderscoreDelmimitedString(fileName);
-		List<RollupTarget> rollupTargets = getRollupTargets(targetRange);
-		if (rollupable != null) {
-			rollupable.reportReads(rollupTargets);
+	protected void tryReportRead(Path path) {
+		try {
+			String fileName = path.toFile().getName();
+			Range targetRange = Range.fromUnderscoreDelmimitedString(fileName);
+			List<RollupTarget> rollupTargets = getRollupTargets(targetRange);
+			if (rollupable != null) {
+				rollupable.reportReads(rollupTargets);
+			}
+		} catch(Throwable t) {
+			t.printStackTrace();
 		}
 	}
 
@@ -236,7 +240,7 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 	@Override
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
-		reportRead(lock.getKey());
+		tryReportRead(lock.getKey());
 		return fileManager.getBlueInputStream(lock);
 	}
 

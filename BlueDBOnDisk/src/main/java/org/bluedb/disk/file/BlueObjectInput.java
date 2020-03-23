@@ -28,13 +28,22 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	private byte[] lastBytes = null;
 
 	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
-		this.readLock = readLock;
-		this.path = readLock.getKey();
-		this.serializer = serializer;
-		if (path.toFile().exists()) {
-			dataInputStream = openDataInputStream(path.toFile());
-		} else {
-			dataInputStream = null;
+		try {
+			this.readLock = readLock;
+			this.path = readLock.getKey();
+			this.serializer = serializer;
+		
+			if (path.toFile().exists()) {
+				dataInputStream = openDataInputStream(path.toFile());
+			} else {
+				dataInputStream = null;
+			}
+		} catch(BlueDbException e) {
+			close();
+			throw e;
+		} catch(Throwable t) {
+			close();
+			throw new BlueDbException(t.getMessage(), t);
 		}
 	}
 
@@ -63,7 +72,10 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 				e.printStackTrace();
 			}
 		}
-		readLock.close();
+		
+		if(readLock != null) {
+			readLock.close();
+		}
 	}
 
 	@Override

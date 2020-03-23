@@ -22,12 +22,20 @@ public class BlueObjectOutput<T> implements Closeable {
 	private final DataOutputStream dataOutputStream;
 
 	public BlueObjectOutput(BlueWriteLock<Path> writeLock, BlueSerializer serializer) throws BlueDbException {
-		lock = writeLock;
-		path = lock.getKey();
-		this.serializer = serializer;
-		File file = path.toFile();
-		FileUtils.ensureDirectoryExists(file);
-		dataOutputStream = openDataOutputStream(file);
+		try {
+			lock = writeLock;
+			path = lock.getKey();
+			this.serializer = serializer;
+			File file = path.toFile();
+			FileUtils.ensureDirectoryExists(file);
+			dataOutputStream = openDataOutputStream(file);
+		} catch(BlueDbException e) {
+			close();
+			throw e;
+		} catch(Throwable t) {
+			close();
+			throw new BlueDbException(t.getMessage(), t);
+		}
 	}
 
 	protected static <T> BlueObjectOutput<T> getTestOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
@@ -82,12 +90,17 @@ public class BlueObjectOutput<T> implements Closeable {
 
 	@Override
 	public void close() {
-		try {
-			dataOutputStream.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if(dataOutputStream != null) {
+			try {
+				dataOutputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
-		lock.close();
+		
+		if(lock != null) {
+			lock.close();
+		}
 	}
 
 	protected static DataOutputStream openDataOutputStream(File file) throws BlueDbException {
