@@ -46,7 +46,7 @@ public class ZipUtils {
 		if (fileToZip.isDirectory()) {
 			File[] children = fileToZip.listFiles();
 			for (File childFile : children) {
-				zipFile(childFile, fileName + File.separator + childFile.getName(), zipOut);
+				zipFile(childFile, fileName + "/" + childFile.getName(), zipOut);
 			}
 			return;
 		}
