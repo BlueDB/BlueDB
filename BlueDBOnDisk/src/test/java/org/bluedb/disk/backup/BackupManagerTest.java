@@ -12,6 +12,7 @@ import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
@@ -22,10 +23,13 @@ import org.bluedb.disk.TestValue2;
 import org.bluedb.disk.TestValueSub;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.recovery.PendingChange;
+import org.bluedb.disk.recovery.PendingIndexRollup;
 import org.bluedb.disk.recovery.PendingRollup;
 import org.bluedb.disk.recovery.Recoverable;
 import org.bluedb.disk.segment.Range;
+import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
@@ -95,6 +99,33 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		assertEquals(1, restoredCollection.query().getList().size());
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
+	}
+
+	@Test
+	public void test_backupToTempDirectory_index_rollup_pending() throws Exception {
+		// create the collection and index
+		String collectionName = "test_time_collection";
+		String indexName = "test_index";
+		ReadWriteTimeCollectionOnDisk<TestValue> timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db()
+				.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class)
+				.build();
+		timeCollection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
+
+		// save a PendingIndexRollup
+		Range range = new Range(0, timeCollection.getSegmentManager().getSegmentSize() -1);
+        IndexRollupTarget rollupTarget = new IndexRollupTarget(indexName, 0, range);
+		Recoverable<TestValue> indexRollup = new PendingIndexRollup<>(indexName, rollupTarget);
+		timeCollection.getRecoveryManager().saveChange(indexRollup);
+
+		// backup
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(timeCollection);
+		Path backedUpPath = createTempFolder().toPath();
+		BackupManager backupTask = db().getBackupManager();
+		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
+
+		// restore (this failed before we ignored PendingIndexRollup when index doesn't exist.
+        ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
+        restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
 	}
 
 	@Test

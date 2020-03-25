@@ -200,7 +200,9 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 
 	public void rollupIndex(String indexName, Range range) throws BlueDbException {
 		ReadWriteIndexOnDisk<?, T> index = indexManager.getUntypedIndex(indexName);
-		index.rollup(range);
+		if (index != null) {
+			index.rollup(range);
+		}
 	}
 
 	//TODO: getIndex needs to work even if they haven't called initialize or build. Return empty index object if it doesn't exist
