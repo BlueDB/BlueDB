@@ -5,8 +5,6 @@ import java.util.Map;
 
 public class LockManager <T> {
 
-	private final Map<T, StampedLock> locks;
-	
 	private final Map<T, Lock<T>> locks;
 
 	public LockManager() {
