@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-
+import org.mockito.Mockito;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
@@ -78,8 +78,7 @@ public class BlueObjectOutputTest extends TestCase {
 		try {
 			BlueObjectOutput.openDataOutputStream(missingFile);
 			fail();
-		}  catch (BlueDbException e) {
-		}
+		}  catch (IOException e) {}
 	}
 
 
@@ -183,6 +182,17 @@ public class BlueObjectOutputTest extends TestCase {
 		}
 	}
 
+	@Test
+	public void test_constructor_exception() throws Exception {
+		@SuppressWarnings("unchecked")
+		BlueWriteLock<Path> lock = Mockito.mock(BlueWriteLock.class);
+		Mockito.verify(lock, Mockito.times(0)).close();
+		try {
+			@SuppressWarnings({ "unused", "resource" })
+			BlueObjectOutput<TestValue> stream = new BlueObjectOutput<>(lock, null);
+		} catch (BlueDbException e) {}
+		Mockito.verify(lock, Mockito.times(1)).close();
+	}
 	
 	
 	private static DataOutputStream createDataOutputStreamThatThrowsExceptionOnClose(File file, AtomicBoolean dataOutputClosed) throws BlueDbException {

@@ -4,7 +4,6 @@ import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,9 +28,6 @@ public class BlueObjectOutput<T> implements Closeable {
 			File file = path.toFile();
 			FileUtils.ensureDirectoryExists(file);
 			dataOutputStream = openDataOutputStream(file);
-		} catch(BlueDbException e) {
-			close();
-			throw e;
 		} catch(Throwable t) {
 			close();
 			throw new BlueDbException(t.getMessage(), t);
@@ -103,12 +99,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	protected static DataOutputStream openDataOutputStream(File file) throws BlueDbException {
-		try {
-			return new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			throw new BlueDbException("cannot open write to file " + file.toPath(), e);
-		}
+	protected static DataOutputStream openDataOutputStream(File file) throws IOException {
+		return new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
 	}
 }
