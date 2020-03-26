@@ -832,4 +832,13 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		assertEquals(6, getTimeCollection().query().where(value -> "Ben".equals(value.getName())).getList().get(0).getCupcakes());
 		assertEquals(5, getTimeCollection().query().where(value -> "Weston".equals(value.getName())).getList().get(0).getCupcakes());
 	}
+
+	@Test
+	public void test_tryReportRead() {
+		ReadWriteSegment<TestValue> segment = new ReadWriteSegment<>(null, new Range(0, 1), null, null, Arrays.asList());
+		segment.tryReportRead(null);  // make sure we catch exception instead so lock doesn't get created and not released
+		
+		segment.tryReportRead(Paths.get("0_1"));
+	}
+
 }

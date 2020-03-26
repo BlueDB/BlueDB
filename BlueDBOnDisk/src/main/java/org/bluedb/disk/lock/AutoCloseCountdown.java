@@ -74,7 +74,7 @@ public class AutoCloseCountdown {
 		if (remainingTime == 0) {
 			closeTarget();
 		} else {
-			timer = new Timer();
+			timer = new Timer("BlueDB-Query-Iterator-Timeout-Thread", true);
 			timer.schedule(newExpirationTask, remainingTime);
 		}
 	}

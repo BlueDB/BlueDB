@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.bluedb.TestUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
@@ -72,8 +73,7 @@ public class BlueObjectInputTest extends TestCase {
 		try {
 			BlueObjectInput.openDataInputStream(nonExistentFile);
 			fail();
-		} catch (BlueDbException e) {
-		}
+		} catch (IOException e) {}
 	}
 
 	@Test
@@ -252,6 +252,19 @@ public class BlueObjectInputTest extends TestCase {
 		assertEquals(2, count);
 		inStream.close();
 	}
+
+	@Test
+	public void test_constructor_exception() throws Exception {
+		@SuppressWarnings("unchecked")
+		BlueReadLock<Path> lock = Mockito.mock(BlueReadLock.class);
+		Mockito.verify(lock, Mockito.times(0)).close();
+		try {
+			@SuppressWarnings({ "unused", "resource" })
+			BlueObjectInput<TestValue> stream = new BlueObjectInput<>(lock, null);
+		} catch (BlueDbException e) {}
+		Mockito.verify(lock, Mockito.times(1)).close();
+	}
+
 
 	private File createEmptyFile(String filename) throws IOException {
 		File file = Paths.get(testingFolderPath.toString(), filename).toFile();

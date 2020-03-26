@@ -6,10 +6,10 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
@@ -28,13 +28,19 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	private byte[] lastBytes = null;
 
 	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
-		this.readLock = readLock;
-		this.path = readLock.getKey();
-		this.serializer = serializer;
-		if (path.toFile().exists()) {
-			dataInputStream = openDataInputStream(path.toFile());
-		} else {
-			dataInputStream = null;
+		try {
+			this.readLock = readLock;
+			this.path = readLock.getKey();
+			this.serializer = serializer;
+		
+			if (path.toFile().exists()) {
+				dataInputStream = openDataInputStream(path.toFile());
+			} else {
+				dataInputStream = null;
+			}
+		} catch(Throwable t) {
+			close();
+			throw new BlueDbException(t.getMessage(), t);
 		}
 	}
 
@@ -63,7 +69,10 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 				e.printStackTrace();
 			}
 		}
-		readLock.close();
+		
+		if(readLock != null) {
+			readLock.close();
+		}
 	}
 
 	@Override
@@ -143,12 +152,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		}
 	}
 
-	protected static DataInputStream openDataInputStream(File file) throws BlueDbException {
-		try {
-			return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			throw new BlueDbException("cannot open input stream on file " + file.toPath(), e);
-		}
+	protected static DataInputStream openDataInputStream(File file) throws IOException {
+		return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
 	}
 }
