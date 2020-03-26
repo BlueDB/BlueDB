@@ -3,14 +3,10 @@ package org.bluedb.disk.lock;
 import java.util.concurrent.locks.StampedLock;
 
 public class Lock<T> {
-	private T key;
 	private StampedLock lock;
-	private String threadName;
 	
 	public Lock(T key) {
-		this.key = key;
 		this.lock = new StampedLock();
-		this.threadName = Thread.currentThread().getName();
 	}
 
 	public boolean tryToLockForRead() {
