@@ -47,16 +47,8 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 
 	@Override
 	public int count() throws BlueDbException {
-		try(CloseableIterator<T> iter = getIterator()) {
-			int count = 0;
-			while (iter.hasNext()) {
-				count++;
-				iter.next();
-			}
-			return count;
-		} catch (Throwable t) {
-			throw new BlueDbException(t.getMessage(), t);
-		}
+		CloseableIterator<T> iter = getIterator();
+		return iter.countRemainderAndClose();
 	}
 
 	public List<BlueEntity<T>> getEntities() throws BlueDbException {
