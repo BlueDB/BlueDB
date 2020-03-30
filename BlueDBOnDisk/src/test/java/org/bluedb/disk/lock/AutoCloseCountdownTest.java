@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.lock.AutoCloseCountdown;
 
 public class AutoCloseCountdownTest {
 
@@ -27,7 +26,11 @@ public class AutoCloseCountdownTest {
 		assertTrue(closeable.isClosed());
 
 		closeable = new TestingCloseable(); 
-		new AutoCloseCountdown(closeable, 1);
+		AutoCloseCountdown countdown = new AutoCloseCountdown(closeable, 50);
+		for(int i = 0; i < 10; i++) {
+			countdown.snooze();
+			Blutils.trySleep(40);
+		}
 		assertTrue(successfullyCloses(closeable, 2000));
 
 		closeable = new TestingCloseable(); 

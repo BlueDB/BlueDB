@@ -2,6 +2,8 @@ package org.bluedb.disk.collection;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.disk.lock.AutoCloseCountdown;
@@ -10,11 +12,13 @@ import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public class CollectionValueIterator<T extends Serializable> implements CloseableIterator<T> {
-
+	
 	private final static long TIMEOUT_DEFAULT_MILLIS = 15_000;
-	private CollectionEntityIterator<T> entityIterator;
-	private AutoCloseCountdown timeoutCloser;
-
+	private final CollectionEntityIterator<T> entityIterator;
+	private final AutoCloseCountdown timeoutCloser;
+	
+	private AtomicBoolean hasClosed = new AtomicBoolean(false);
+	
 	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
 		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, objectConditions);
 		timeoutCloser = new AutoCloseCountdown(this, TIMEOUT_DEFAULT_MILLIS);
@@ -27,16 +31,15 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 
 	@Override
 	public void close() {
-		if (entityIterator != null) {
+		if(!hasClosed.getAndSet(true)) {
 			entityIterator.close();
-			entityIterator = null;
+			timeoutCloser.cancel();
 		}
-		timeoutCloser.cancel();
 	}
 
 	@Override
 	public boolean hasNext() {
-		if (entityIterator == null) {
+		if (hasClosed.get()) {
 			throw new RuntimeException("CollectionValueIterator has already been closed");
 		}
 		timeoutCloser.snooze();
@@ -45,7 +48,7 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 
 	@Override
 	public T peek() {
-		if (entityIterator == null) {
+		if (hasClosed.get()) {
 			throw new RuntimeException("CollectionValueIterator has already been closed");
 		}
 		timeoutCloser.snooze();
@@ -59,7 +62,7 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 
 	@Override
 	public T next() {
-		if (entityIterator == null) {
+		if (hasClosed.get()) {
 			throw new RuntimeException("CollectionValueIterator has already been closed");
 		}
 		timeoutCloser.snooze();

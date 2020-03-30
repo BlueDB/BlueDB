@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
@@ -22,6 +23,8 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 	private final List<Condition<T>> conditions;
+	
+	private AtomicBoolean hasClosed = new AtomicBoolean(false);
 
 	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
 		this.range = range;
@@ -40,14 +43,18 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	}
 
 	@Override
-	public void close() {
-		if (segmentIterator != null) {
+	public synchronized void close() {
+		if(!hasClosed.getAndSet(true) && segmentIterator != null) {
 			segmentIterator.close();
 		}
 	}
 
 	@Override
-	public boolean hasNext() {
+	public synchronized boolean hasNext() {
+		if (hasClosed.get()) {
+			throw new RuntimeException("CollectionEntityIterator has already been closed");
+		}
+		
 		if (next == null) {
 			next = nextFromSegment();
 		}
@@ -55,7 +62,11 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	}
 
 	@Override
-	public BlueEntity<T> peek() {
+	public synchronized BlueEntity<T> peek() {
+		if (hasClosed.get()) {
+			throw new RuntimeException("CollectionEntityIterator has already been closed");
+		}
+		
 		if (next == null) {
 			next = nextFromSegment();
 		}
@@ -63,7 +74,11 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	}
 
 	@Override
-	public BlueEntity<T> next() {
+	public synchronized BlueEntity<T> next() {
+		if (hasClosed.get()) {
+			throw new RuntimeException("CollectionEntityIterator has already been closed");
+		}
+		
 		if (next == null) {
 			next = nextFromSegment();
 		}

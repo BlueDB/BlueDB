@@ -7,13 +7,15 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public class SegmentEntityIterator<T extends Serializable> implements Iterator<BlueEntity<T>>, Closeable {
-
+	
 	long highestGroupingNumberCompleted;
 	final ReadableSegment<T> segment;
 	final long rangeMin;
@@ -21,6 +23,8 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 	final List<Range> timeRanges;
 	BlueObjectInput<BlueEntity<T>> currentInput;
 	BlueEntity<T> next = null;
+	
+	private AtomicBoolean hasClosed = new AtomicBoolean(false);
 	
 	public SegmentEntityIterator(final ReadableSegment<T> segment, final long highestGroupingNumberCompleted, final long rangeMin, final long rangeMax) {
 		this.highestGroupingNumberCompleted =highestGroupingNumberCompleted;
@@ -37,14 +41,18 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 	}
 
 	@Override
-	public void close() {
-		if (currentInput != null) {
+	public synchronized void close() {
+		if (!hasClosed.getAndSet(true) && currentInput != null) {
 			currentInput.close();
 		}
 	}
 
 	@Override
-	public boolean hasNext() {
+	public synchronized boolean hasNext() {
+		if (hasClosed.get()) {
+			throw new RuntimeException("SegmentEntityIterator has already been closed");
+		}
+		
 		if (next == null) {
 			next = nextFromFile();
 		}
@@ -52,7 +60,11 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 	}
 
 	@Override
-	public BlueEntity<T> next() {
+	public synchronized BlueEntity<T> next() {
+		if (hasClosed.get()) {
+			throw new RuntimeException("SegmentEntityIterator has already been closed");
+		}
+		
 		if (next == null) {
 			next = nextFromFile();
 		}

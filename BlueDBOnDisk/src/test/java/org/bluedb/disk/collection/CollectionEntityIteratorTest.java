@@ -31,6 +31,27 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
         assertTrue(getLockManager().isLocked(chunkPath));
         iterator.close();
         assertFalse(getLockManager().isLocked(chunkPath));
+        
+		try {
+			iterator.hasNext();
+			fail();
+		} catch(RuntimeException e) {
+			//Should be thrown
+		}
+        
+		try {
+			iterator.peek();
+			fail();
+		} catch(RuntimeException e) {
+			//Should be thrown
+		}
+        
+		try {
+			iterator.next();
+			fail();
+		} catch(RuntimeException e) {
+			//Should be thrown
+		}
 	}
 
 	@Test
