@@ -18,7 +18,7 @@ public class AutoCloseCountdown {
 	private final long startTime;
 	private final AtomicLong expiration;
 	private final long duration;
-	private final String stackTrace;
+	private final String constructionStackTrace;
 	
 	private ScheduledFuture<?> autoCloseTask;
 	
@@ -32,7 +32,7 @@ public class AutoCloseCountdown {
 		duration = countdownDuration;
 		startTime = System.currentTimeMillis();
 		expiration = new AtomicLong(startTime + duration);
-		stackTrace = Blutils.getStackTraceAsString();
+		constructionStackTrace = Blutils.getStackTraceAsString();
 		
 		if(countdownDuration <= 0) {
 			onExpiration();
@@ -65,11 +65,11 @@ public class AutoCloseCountdown {
 		float totalActiveTimeInSeconds = (now - startTime) * .001f;
 		
 		if (now >= expiration.get()) {
-			Blutils.log("[BlueDb Warning] - Auto closing a BlueDb iterator that has been active for " + totalActiveTimeInSeconds + " seconds. Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Stack Trace:" + System.lineSeparator() + stackTrace);
+			Blutils.log("[BlueDb Warning] - Auto closing a BlueDb iterator that has been active for " + totalActiveTimeInSeconds + " seconds. Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Query Stack Trace:" + System.lineSeparator() + constructionStackTrace);
 			closeTarget();
 			cancel();
 		} else if(runCount % 10 == 0) {
-			Blutils.log("[BlueDb Warning] - A BlueDb iterator has been active for " + totalActiveTimeInSeconds + " seconds.  Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Stack Trace:" + System.lineSeparator() + stackTrace);
+			Blutils.log("[BlueDb Warning] - A BlueDb iterator has been active for " + totalActiveTimeInSeconds + " seconds.  Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Query Stack Trace:" + System.lineSeparator() + constructionStackTrace);
 		}
 		
 		runCount++;
