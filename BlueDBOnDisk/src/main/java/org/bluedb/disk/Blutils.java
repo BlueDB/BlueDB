@@ -172,13 +172,13 @@ public class Blutils {
 	
 	public static String getStackTraceAsString() {
 		StringBuilder sb = new StringBuilder();
-		
+
 		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-	    for(int i = 1; i < stackTrace.length; i++) {
-	        sb.append(stackTrace[i].toString());
-	        sb.append(System.lineSeparator());
-	    }
-	    
-	    return sb.toString();
+		for(int i = 1; i < stackTrace.length; i++) {
+			sb.append(stackTrace[i].toString());
+			sb.append(System.lineSeparator());
+		}
+
+		return sb.toString();
 	}
 }
