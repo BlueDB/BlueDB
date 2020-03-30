@@ -4,15 +4,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Test;
+
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.lock.LockManager;
-import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.Range;
+import org.bluedb.disk.segment.ReadWriteSegment;
+import org.junit.Test;
 
 public class CollectionValueIteratorTest extends BlueDbDiskTestBase {
 

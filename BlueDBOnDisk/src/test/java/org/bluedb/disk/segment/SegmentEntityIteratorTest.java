@@ -34,6 +34,20 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		assertTrue(getLockManager().isLocked(iterator.getCurrentPath()));
 		iterator.close();
 		assertFalse(getLockManager().isLocked(iterator.getCurrentPath()));
+		
+		try {
+			iterator.hasNext();
+			fail();
+		} catch(RuntimeException e) {
+			//Should be thrown
+		}
+		
+		try {
+			iterator.next();
+			fail();
+		} catch(RuntimeException e) {
+			//Should be thrown
+		}
 	}
 
 	@Test
