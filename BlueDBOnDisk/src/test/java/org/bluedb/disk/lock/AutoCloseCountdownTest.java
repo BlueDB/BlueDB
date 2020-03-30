@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 
 import org.bluedb.disk.Blutils;
-import org.bluedb.disk.lock.AutoCloseCountdown;
 
 public class AutoCloseCountdownTest {
 

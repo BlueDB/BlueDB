@@ -2,16 +2,27 @@ package org.bluedb.disk.lock;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class AutoCloseCountdown {
+import org.bluedb.disk.Blutils;
+import org.bluedb.disk.executors.NamedThreadFactory;
 
+public class AutoCloseCountdown {
+	private final static ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, new NamedThreadFactory("bluedb-auto-closer"));
+	
 	private Closeable target;
-	private Timer timer;
+	private final long startTime;
 	private final AtomicLong expiration;
 	private final long duration;
+	private final String stackTrace;
+	
+	private ScheduledFuture<?> autoCloseTask;
+	
+	private int runCount = 1;
 
 	public AutoCloseCountdown(Closeable closeable, long countdownDuration) {
 		if (closeable == null) {
@@ -19,8 +30,16 @@ public class AutoCloseCountdown {
 		}
 		target = closeable;
 		duration = countdownDuration;
-		expiration = new AtomicLong(System.currentTimeMillis() + duration);
-		startCountdown();
+		startTime = System.currentTimeMillis();
+		expiration = new AtomicLong(startTime + duration);
+		stackTrace = Blutils.getStackTraceAsString();
+		
+		if(countdownDuration <= 0) {
+			onExpiration();
+		} else {
+			long delay = Math.max(10, countdownDuration / 3);
+			autoCloseTask = executor.scheduleWithFixedDelay(Blutils.surroundTaskWithTryCatch(this::onExpiration), delay, delay, TimeUnit.MILLISECONDS);
+		}
 	}
 	
 	public void snooze() {
@@ -29,7 +48,9 @@ public class AutoCloseCountdown {
 	}
 
 	public void cancel() {
-		clearTimer();
+		if(autoCloseTask != null) {
+			autoCloseTask.cancel(false);
+		}
 	}
 
 	public long remainingTime() {
@@ -39,20 +60,19 @@ public class AutoCloseCountdown {
 		return remainingTime;
 	}
 
-	private void clearTimer() {
-		if (timer != null) {
-			timer.cancel();
-			timer = null;
-		}
-	}
-
 	private void onExpiration() {
 		long now = System.currentTimeMillis();
+		long totalActiveTimeInSeconds = (long) ((now - startTime) * .001);
+		
 		if (now >= expiration.get()) {
+			Blutils.log("[BlueDb Warning] - Auto closing a BlueDb iterator that has been active for " + totalActiveTimeInSeconds + " seconds. Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Stack Trace:" + System.lineSeparator() + stackTrace);
 			closeTarget();
-		} else {
-			startCountdown();
+			cancel();
+		} else if(runCount % 10 == 0) {
+			Blutils.log("[BlueDb Warning] - A BlueDb iterator has been active for " + totalActiveTimeInSeconds + " seconds.  Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Stack Trace:" + System.lineSeparator() + stackTrace);
 		}
+		
+		runCount++;
 	}
 
 	private void closeTarget() {
@@ -63,19 +83,4 @@ public class AutoCloseCountdown {
 		}
 	}
 
-	private void startCountdown() {
-		clearTimer();
-		TimerTask newExpirationTask = new TimerTask() {
-			@Override public void run() {
-				onExpiration();
-			}
-		};
-		long remainingTime = remainingTime();
-		if (remainingTime == 0) {
-			closeTarget();
-		} else {
-			timer = new Timer("BlueDB-Query-Iterator-Timeout-Thread", true);
-			timer.schedule(newExpirationTask, remainingTime);
-		}
-	}
 }

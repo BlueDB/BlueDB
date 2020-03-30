@@ -165,4 +165,20 @@ public class Blutils {
 			}
 		};
 	}
+	
+	public static void log(String message) {
+		System.out.println(String.format("%1$TF %1$TT.%1$TL %2$s", System.currentTimeMillis(), message));
+	}
+	
+	public static String getStackTraceAsString() {
+		StringBuilder sb = new StringBuilder();
+		
+		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+	    for(int i = 1; i < stackTrace.length; i++) {
+	        sb.append(stackTrace[i].toString());
+	        sb.append(System.lineSeparator());
+	    }
+	    
+	    return sb.toString();
+	}
 }
