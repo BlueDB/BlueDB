@@ -62,7 +62,7 @@ public class AutoCloseCountdown {
 
 	private void onExpiration() {
 		long now = System.currentTimeMillis();
-		long totalActiveTimeInSeconds = (long) ((now - startTime) * .001);
+		float totalActiveTimeInSeconds = (now - startTime) * .001f;
 		
 		if (now >= expiration.get()) {
 			Blutils.log("[BlueDb Warning] - Auto closing a BlueDb iterator that has been active for " + totalActiveTimeInSeconds + " seconds. Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Stack Trace:" + System.lineSeparator() + stackTrace);
