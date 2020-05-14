@@ -89,6 +89,19 @@ public class ReadOnlyDbOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(collection, readOnlyDb.getCollection(getTimeCollectionName(), TestValue.class));
 		assertNull(db.getCollection("non-existing", TestValue.class));
 	}
+	
+	@Test
+	public void test_getCollection_noSegmentSizeMetaData() throws Exception {
+		Path segmentSizePath = db.getPath().resolve("testing_time/.meta/segment_size");
+		Files.delete(db.getPath().resolve(segmentSizePath));
+		
+		ReadableDbOnDisk readOnlyDb = (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db.getPath()).buildReadOnly();
+		ReadableBlueCollection<TestValue> collection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
+		assertNotNull(collection);
+		assertEquals(collection, readOnlyDb.getCollection(getTimeCollectionName(), TestValue.class));
+		assertNull(db.getCollection("non-existing", TestValue.class));
+		assertFalse(Files.exists(segmentSizePath));
+	}
 
 	@Test
 	public void test_getCollection_wrong_type() throws Exception {

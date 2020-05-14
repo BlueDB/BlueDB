@@ -1,5 +1,6 @@
 package org.bluedb.disk;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -60,6 +61,16 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		assertNotNull(collection);
 		assertEquals(collection, db.getCollection(getTimeCollectionName(), TestValue.class));
 		assertNull(db.getCollection("non-existing", TestValue.class));
+	}
+
+	@Test
+	public void test_getCollection_noSegmentSizeMetaData() throws Exception {
+		Path segmentSizePath = db.getPath().resolve("testing_time/.meta/segment_size");
+		Files.delete(segmentSizePath);
+		
+		ReadWriteDbOnDisk newDb = (ReadWriteDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db.getPath()).build();
+		newDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		assertTrue(Files.exists(segmentSizePath));
 	}
 
 	@Test
