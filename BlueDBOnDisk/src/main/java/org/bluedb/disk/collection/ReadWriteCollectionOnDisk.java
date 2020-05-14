@@ -187,7 +187,7 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	}
 
 	@Override
-	protected Class<? extends Serializable>[] getClassesToRegister(Class<? extends BlueKey> requestedKeyType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+	protected Class<? extends Serializable>[] getClassesToRegister(List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		return metadata.getAndAddToSerializedClassList(getType(), additionalRegisteredClasses);
 
 	}

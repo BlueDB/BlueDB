@@ -44,7 +44,7 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 	}
 
 	@Override
-	protected Class<? extends Serializable>[] getClassesToRegister(Class<? extends BlueKey> requestedKeyType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+	protected Class<? extends Serializable>[] getClassesToRegister(List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		// NOTE: don't need additionalRegisteredClasses since we only care about already serialized classes.
 		List<Class<? extends Serializable>> classesToRegister = metadata.getSerializedClassList();
 		@SuppressWarnings("unchecked")
