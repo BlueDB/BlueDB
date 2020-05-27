@@ -6,6 +6,31 @@ BlueDB subproject has classes for external use: interfaces, key classes, etc.  B
 
 We've so far kept unit test coverage at 100%.  This makes it so that any time we write untested code, it stands out.
 
+# Quick Overview
+
+1. A BlueDbOnDiskBuilder creates a BlueDb.
+2. The BlueDb gives you a BlueCollectionBuilder which creates a BlueCollection.
+3. The BlueCollection lets you create an index, create a query that does read or writes or directly do a read(get) or a write(insert/update/delete), or .
+4. A BlueQuery creates a CollectionEntityIterator that finds all the matching entities (value + key where it's stored).
+5. The CollectionEntityIterator abstracts out all the details of iterating through the collection:
+    * it is constructed with a SegmentManager from the Collection
+    * it asks that SegmentManager which Segments to read from, and then
+    * constructs a SegmentEntityIterator
+    * which then iterates through relevant chunks in the Segment and reads them with a BlueObjectInput.
+6. When doing a write,
+    * a QueryTask is created and submitted to the collection's executor,
+    * which saves the change so it can be recovered on crash,
+         - by creating a Recoverable (a serializable record of the change),
+         - and saving the Recoverable to the .recovery folder in a timestamped file,
+    * then gets the relevant Segment(s) and applies the changes
+         - by getting the relevant chunk(s) in the Segment
+         - getting a BlueObjectInput for the existing chunk if applicable,
+         - getting a BlueObjectOutput for the temp file,
+         - creating a BlueObjectInpStreamingWriter and feeding it the BlueObjectInput and BlueObjectOutput,
+         - and then replacing the existing file with the temp file by an OS-supported atomic swap,
+     * and finally marking the change complete in the .recovery folder.
+
+
 # ReadOnly vs ReadWrite
 
 Many implementation classes are broken up into ReadOnly and ReadWrite.  This is to prevent it from even being possible to write from a ReadOnly database.
@@ -56,6 +81,8 @@ If a failure occurs during a write, there's a timestamped Recoverable object sav
 
 # Locks and Concurrency
 
+Locks are at the chunk/file level.
+
 Locks are handled by the LockManager.
 
 No file system locks are used.
@@ -69,6 +96,8 @@ Each segment is represented by a folder.  Within each folder, there can be many 
 Each chunk represents a range of grouping numbers.  When a new object is written, it is written to the existing chunk if one exists.  If an appropriate chunk doesn't exist, a new chunk of size 1 is created.
 
 Small chunks that haven't been touched for a while get rolled up.  Writes and reads are reported to the RollupScheduler which schedules the rollups when needed.
+
+Rollups happen at multiple levels so that the number of files in one folder doesn't get too large (Windows struggles as the number of files in the folder gets large).
 
 Rollups are treated like any other write.
 
