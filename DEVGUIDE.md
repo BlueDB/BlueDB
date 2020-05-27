@@ -26,7 +26,17 @@ Each collection has its own root folder.  In that root folder is:
 - .recovery : copies of the last several changes made, to recover the collection to a consistent state
 - numbered data folders : these represent the contents of the collection, are organized into a hierarchy
 
-The numbered data folders are organized into a hierarchy.  At the smallest folder level, each folder represents a segment and the directory names are the segment ids.  The SegmentPathManager classes figure out the hierarchal structure of the data folders.
+The numbered data folders are organized into a hierarchy.  At the smallest folder level, each folder represents a segment and the directory names are the segment ids.  The SegmentPathManager classes figure out the hierarchical structure of the data folders.
+
+![Image of File Layout](bluedb_file_layout.png)
+
+# Metadata, FST, Serialized Classes
+
+When we serialize an object, we need to know what class is the serialized object in order to deserialize it.
+
+We could store the canonical name (e.g. "java.util.LinkedList").  But to save space and time, FST maps the canonical names to a number.
+
+This mapping can vary from one bluedb to another for the same application, as the order that classes are added might be different.  So it's important that this not get deleted or corrupted.
 
 # Writes, Recovery
 
@@ -63,6 +73,14 @@ Small chunks that haven't been touched for a while get rolled up.  Writes and re
 Rollups are treated like any other write.
 
 Rollups must be idempotent so that BlueDB can recover if there is a crash in the middle of a rollup.
+
+# Iterators
+
+BlueDB uses iterators a lot.
+
+The iterators handle all of the complexity of figuring out which segments to read/write to and which chunks in those segments to read, and reading and deserializing the objects in that chunk.
+
+A StreamingWriter or a Query can lean on those iterators to do all that and just focus on their own job.
 
 # Temporary Files
 
