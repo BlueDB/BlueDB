@@ -47,10 +47,8 @@ public class BlueObjectOutput<T> implements Closeable {
 	}
 
 	public void writeBytes(byte[] bytes) throws BlueDbException {
-		if (bytes == null) {
-			throw new BlueDbException("cannot write null to " + this.getClass().getSimpleName());
-		}
 		try {
+			FileUtils.validateBytes(bytes);
 			int len = bytes.length;
 			dataOutputStream.writeInt(len);
 			dataOutputStream.write(bytes);

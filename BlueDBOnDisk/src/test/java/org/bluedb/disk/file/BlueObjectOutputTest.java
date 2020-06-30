@@ -139,6 +139,22 @@ public class BlueObjectOutputTest extends TestCase {
 		} catch (BlueDbException e) {
 		}
 
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			try (BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock)) {
+				outStream.writeBytes(new byte[] { });
+				fail();
+			}
+		} catch (BlueDbException e) {
+		}
+
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
+			try (BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock)) {
+				outStream.writeBytes(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00 });
+				fail();
+			}
+		} catch (BlueDbException e) {
+		}
+
 		try {
 			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null);
 			invalidOut.writeBytes(valueBytes);
