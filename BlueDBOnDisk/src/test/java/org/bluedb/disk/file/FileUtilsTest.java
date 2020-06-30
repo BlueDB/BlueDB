@@ -8,14 +8,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.junit.Test;
+
 import junit.framework.TestCase;
 
 public class FileUtilsTest extends TestCase {
@@ -272,6 +272,74 @@ public class FileUtilsTest extends TestCase {
 			fail();
 		} catch (BlueDbException e) {
 		}
+	}
+	
+	@Test
+	public void test_validateFileBytes() throws BlueDbException, IOException {
+		testValidateFileBytes(new byte[] { }, true);
+		testValidateFileBytes(new byte[] { 0x4F }, true);
+		testValidateFileBytes(new byte[] { 0x00, 0x00, 0x4F, 0x00 }, true);
+		testValidateFileBytes(new byte[] { 0x00, 0x00, 0x00, 0x00 }, false);
+	}
+	
+	private void testValidateFileBytes(byte[] bytes, boolean expectedToBeValid) throws IOException {
+		Path file = Files.createTempFile("testValidateFileBytes", ".bin");
+		Files.write(file, bytes);
+		file.toFile().deleteOnExit();
+		try {
+			FileUtils.validateFileBytes(file);
+			if(!expectedToBeValid) {
+				fail();
+			}
+		} catch (BlueDbException e) {
+			if(expectedToBeValid) {
+				fail();
+			}
+		} finally {
+			Files.delete(file);
+		}
+	}
+
+	@Test
+	public void test_validateBytes() throws BlueDbException, IOException {
+		testValidateBytes(null, false);
+		testValidateBytes(new byte[] { }, false);
+		testValidateBytes(new byte[] { 0x4F }, true);
+		testValidateBytes(new byte[] { 0x00, 0x00, 0x4F, 0x00 }, true);
+		testValidateBytes(new byte[] { 0x00, 0x00, 0x00, 0x00 }, false);
+	}
+	
+	private void testValidateBytes(byte[] bytes, boolean expectedToBeValid) throws IOException {
+		try {
+			FileUtils.validateBytes(bytes);
+			if(!expectedToBeValid) {
+				fail();
+			}
+		} catch (BlueDbException e) {
+			if(expectedToBeValid) {
+				fail();
+			}
+		}
+	}
+	
+	@Test
+	public void test_areAllBytesZeros() {
+		assertFalse(FileUtils.areAllBytesZeros(null));
+		assertFalse(FileUtils.areAllBytesZeros(null, 5));
+		
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { }));
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { }, 5));
+		
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { 0x4F }));
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { 0x4F }, 1));
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { 0x4F }, 5));
+		
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { 0x00, 0x00, 0x4F, 0x00 }));
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { 0x00, 0x00, 0x4F, 0x00 }, 3));
+		assertFalse(FileUtils.areAllBytesZeros(new byte[] { 0x00, 0x00, 0x4F, 0x00 }, 4));
+		
+		assertTrue(FileUtils.areAllBytesZeros(new byte[] { 0x00, 0x00, 0x00, 0x00 }));
+		assertTrue(FileUtils.areAllBytesZeros(new byte[] { 0x00, 0x00, 0x4F, 0x00 }, 2));
 	}
 
 

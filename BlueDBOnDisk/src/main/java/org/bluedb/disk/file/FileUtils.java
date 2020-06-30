@@ -2,6 +2,7 @@ package org.bluedb.disk.file;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,7 +88,12 @@ public class FileUtils {
 	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
 		Path dst = lock.getKey();
 		try {
-			Blutils.tryMultipleTimes(5, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
+			Blutils.tryMultipleTimes(5, () -> {
+				validateFileBytes(src);
+				Blutils.tryMultipleTimes(5, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
+				validateFileBytes(dst);
+				return true;
+			});
 		} catch (Throwable e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
@@ -97,7 +103,12 @@ public class FileUtils {
 	public static void moveWithoutLock(Path src, Path dst) throws BlueDbException {
 		try {
 			ensureDirectoryExists(dst.toFile());
-			Blutils.tryMultipleTimes(5, () -> Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE));
+			Blutils.tryMultipleTimes(5, () -> { 
+				validateFileBytes(src);
+				Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
+				validateFileBytes(dst);
+				return true;
+			});
 		} catch (Throwable e) {
 			e.printStackTrace();
 			throw new BlueDbException("trouble moving file from "  + src.toString() + " to " + dst.toString() , e);
@@ -142,5 +153,61 @@ public class FileUtils {
 			return new ArrayList<>();
 		}
 		return Arrays.asList(files);
+	}
+	
+	public static void validateFileBytes(Path file) throws BlueDbException {
+		try(FileInputStream fis = new FileInputStream(file.toFile())) {
+			byte[] buffer = new byte[1024];
+			
+			int length = fis.read(buffer);
+			if(length < 0) {
+				return; //An empty file is valid
+			}
+			
+			while(length > 0) {
+				if(!areAllBytesZeros(buffer, length)) {
+					return;
+				}
+				length = fis.read(buffer);
+			}
+			throw new BlueDbException("Invalid File Bytes: Files must contain non zero values.");
+		} catch (Throwable t) {
+			throw new BlueDbException("Validation of file bytes failed. File: " + file, t);
+		}
+	}
+	
+	public static boolean validateBytes(byte[] bytes) throws BlueDbException {
+		if(bytes == null) {
+			throw new BlueDbException("Invalid bytes: Cannot save a null byte array");
+		} else if(bytes.length <= 0) {
+			throw new BlueDbException("Invalid bytes: Cannot save an empty byte array");
+		}
+		
+		if(areAllBytesZeros(bytes)) {
+			throw new BlueDbException("Invalid bytes: Cannot save bytes that only contain zeros");
+		}
+		
+		return true;
+	}
+	
+	public static boolean areAllBytesZeros(byte[] bytes) {
+		if(bytes == null || bytes.length == 0) {
+			return false;
+		}
+		
+		return areAllBytesZeros(bytes, bytes.length);
+	}
+
+	public static boolean areAllBytesZeros(byte[] bytes, int length) {
+		if(bytes == null || bytes.length == 0) {
+			return false;
+		}
+		
+		for(int i = 0; i < bytes.length && i < length; i++) {
+			if(bytes[i] != 0) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
