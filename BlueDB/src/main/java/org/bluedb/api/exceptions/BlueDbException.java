@@ -22,11 +22,4 @@ public class BlueDbException extends Exception {
 	public BlueDbException(String message) {
 		super(message);
 	}
-	
-	public static BlueDbException from(String message, Throwable t) {
-		if(t instanceof BlueDbException) {
-			return (BlueDbException) t;
-		}
-		return new BlueDbException(message, t);
-	}
 }
