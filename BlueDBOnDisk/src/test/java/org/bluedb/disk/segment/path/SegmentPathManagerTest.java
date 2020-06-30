@@ -14,18 +14,20 @@ import org.bluedb.disk.segment.SegmentSizeSetting;
 
 public class SegmentPathManagerTest {
 	public static void main(String[] args) {
-		SegmentSizeSetting segmentSizeSetting = SegmentSizeSetting.TIME_1_HOUR;
-		LocalDateTime dateTime = LocalDateTime.of(LocalDate.of(2018, 12, 31), LocalTime.of(23, 59, 59));
+		SegmentSizeSetting segmentSizeSetting = SegmentSizeSetting.HASH_32M;
 		
-		printPathInformationForTime(segmentSizeSetting, dateTime);
-	}
-
-	private static void printPathInformationForTime(SegmentSizeSetting segmentSizeSetting, LocalDateTime dateTime) {
+		LocalDateTime dateTime = LocalDateTime.of(LocalDate.of(2018, 12, 31), LocalTime.of(23, 59, 59));
 		ZonedDateTime zonedDateTime = dateTime.atZone(ZoneId.systemDefault());
 		long groupingNumber = zonedDateTime.toInstant().toEpochMilli();
 		DateTimeFormatter localizedDateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG);
 		System.out.println("Grouping number for datetime: [dateTime]" + localizedDateTimeFormatter.format(zonedDateTime) + " [groupingNumber]" + groupingNumber);
 		
+//		long groupingNumber = 649503301;
+		
+		printPathInformationForTime(segmentSizeSetting, groupingNumber);
+	}
+
+	private static void printPathInformationForTime(SegmentSizeSetting segmentSizeSetting, long groupingNumber) {
 		SegmentSizeConfiguration segmentSizeConfig = segmentSizeSetting.getConfig();
 		System.out.println(segmentSizeSetting + " Folder Sizes: " + segmentSizeConfig.getFolderSizesTopToBottom());
 		
