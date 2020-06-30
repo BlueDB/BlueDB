@@ -141,6 +141,10 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		}
 		try {
 			int objectLength = dataInputStream.readInt();
+			if(objectLength <= 0) {
+				System.out.println("BlueDB Error: We just read in an object size of " + objectLength + " which doesn't make sense. We will skip this file since it must be corrupt: " + path);
+				return null;
+			}
 			byte[] nextBytes = new byte[objectLength];
 			dataInputStream.readFully(nextBytes, 0, objectLength);
 			return nextBytes;
