@@ -280,6 +280,16 @@ public class FileUtilsTest extends TestCase {
 		testValidateFileBytes(new byte[] { 0x4F }, true);
 		testValidateFileBytes(new byte[] { 0x00, 0x00, 0x4F, 0x00 }, true);
 		testValidateFileBytes(new byte[] { 0x00, 0x00, 0x00, 0x00 }, false);
+		
+		byte[] largeArrayWithAllZeros = new byte[3073];
+		byte[] largeArrayWithOneNonZeroAtTheBeginning = new byte[3073];
+		largeArrayWithOneNonZeroAtTheBeginning[0] = 15;
+		byte[] largeArrayWithOneNonZeroAtTheEnd = new byte[3073];
+		largeArrayWithOneNonZeroAtTheEnd[3072] = 15;
+		
+		testValidateFileBytes(largeArrayWithAllZeros, false);
+		testValidateFileBytes(largeArrayWithOneNonZeroAtTheBeginning, true);
+		testValidateFileBytes(largeArrayWithOneNonZeroAtTheEnd, true);
 	}
 	
 	private void testValidateFileBytes(byte[] bytes, boolean expectedToBeValid) throws IOException {
