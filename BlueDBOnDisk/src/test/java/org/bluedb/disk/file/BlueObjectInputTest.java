@@ -212,6 +212,25 @@ public class BlueObjectInputTest extends TestCase {
 		}
 	}
 
+	@Test
+	public void test_nextFromFileWithAllZeros() throws Exception {
+		File corruptedFile = createEmptyFile("test_nextFromFileWithAllZeros");
+		
+		try(DataOutputStream outStream = new DataOutputStream(new FileOutputStream(corruptedFile))) {
+			outStream.writeInt(0);
+			byte[] zeros = new byte[]{0, 0, 0};
+			outStream.write(zeros);
+			outStream.close();
+		}
+
+		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(corruptedFile.toPath())) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertNull(inStream.next());
+				inStream.close();
+			}
+		}
+	}
+
 
 	@Test
 	public void test_nextFromFile_IOException() {

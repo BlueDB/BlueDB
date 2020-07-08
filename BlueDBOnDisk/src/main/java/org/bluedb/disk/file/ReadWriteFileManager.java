@@ -2,7 +2,6 @@ package org.bluedb.disk.file;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 
@@ -56,11 +55,12 @@ public class ReadWriteFileManager extends ReadFileManager {
 		Path path = writeLock.getKey();
 		File file = path.toFile();
 		try (FileOutputStream fos = new FileOutputStream(file)) {
+			FileUtils.validateBytes(bytes);
 			fos.write(bytes);
 			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new BlueDbException("error writing to file " + path, e);
+		} catch (Throwable t) {
+			t.printStackTrace();
+			throw new BlueDbException("error writing to file " + path, t);
 		}
 	}
 }
