@@ -56,21 +56,15 @@ public class ReadWriteIndexManager<T extends Serializable> extends ReadableIndex
 		return typedIndex;
 	}
 
-	public void removeFromAllIndexes(BlueKey key, T value) throws BlueDbException {
+	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
 		for (ReadWriteIndexOnDisk<ValueKey, T> index: indexesByName.values()) {
-			index.remove(key, value);
+			index.indexChange(key, oldValue, newValue);
 		}
 	}
 
-	public void addToAllIndexes(BlueKey key, T value) throws BlueDbException {
+	public void indexChanges(Collection<IndividualChange<T>> changes) throws BlueDbException {
 		for (ReadWriteIndexOnDisk<ValueKey, T> index: indexesByName.values()) {
-			index.add(key,  value);
-		}
-	}
-
-	public void addToAllIndexes(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		for (ReadWriteIndexOnDisk<ValueKey, T> index: indexesByName.values()) {
-			index.add(changes);
+			index.indexChanges(changes);
 		}
 	}
 

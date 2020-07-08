@@ -6,8 +6,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -15,8 +18,9 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BatchUtils;
-import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
+import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.recovery.IndividualChange;
@@ -52,7 +56,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
 			while (iterator.hasNext()) {
 				List<BlueEntity<T>> entities = iterator.next(1000);
-				index.addEntities(entities);
+				index.indexNewValues(entities);
 			}
 		}
 	}
@@ -100,38 +104,49 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		return new IndexRollupTarget(indexName, rollupTarget.getSegmentGroupingNumber(), rollupTarget.getRange() );
 	}
 
-	public void add(BlueKey key, T newItem) throws BlueDbException {
-		if (newItem == null) {
-			return;
-		}
-		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, newItem)) {
-			ReadWriteSegment<BlueKey> segment = getSegmentManager().getFirstSegment(compositeKey);
-			segment.insert(compositeKey, key);
-		}
+	public void indexNewValues(Collection<BlueEntity<T>> values) throws BlueDbException {
+		List<IndividualChange<BlueKey>> sortedIndexChanges = StreamUtils.stream(values)
+			.flatMap(value -> StreamUtils.stream(getSortedIndexChangesForValueUpdate(value.getKey(), null, value.getValue())))
+			.sorted()
+			.collect(Collectors.toList());
+		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
 	}
 
-	public void addEntities(Collection<BlueEntity<T>> entities) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = entities.stream()
-				.map( this::toIndexChanges )
-				.flatMap(List::stream)
+	public void indexChanges(Collection<IndividualChange<T>> changes) throws BlueDbException {
+		List<IndividualChange<BlueKey>> sortedIndexChanges = StreamUtils.stream(changes)
+			.flatMap(change -> StreamUtils.stream(getSortedIndexChangesForValueUpdate(change.getKey(), change.getOldValue(), change.getNewValue())))
+			.sorted()
+			.collect(Collectors.toList());
+		/*
+		 * Note that a batch delete passes in null for the old value and the new value. In that case we won't 
+		 * be able to calculate the proper index changes. However, this should be functioning better than it was
+		 * before. It wasn't ever removing any indices, it was only adding the ones for the new values.
+		 */
+		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
+	}
+
+	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
+		BatchUtils.apply(getSegmentManager(), getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+	}
+
+	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueUpdate(BlueKey valueKey, T oldValue, T newValue) {
+		Set<IndexCompositeKey<I>> oldCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, oldValue))
+				.collect(Collectors.toCollection(HashSet::new));
+		
+		Set<IndexCompositeKey<I>> newCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, newValue))
+				.collect(Collectors.toCollection(HashSet::new));
+		
+		Stream<IndividualChange<BlueKey>> deleteChanges = StreamUtils.stream(oldCompositeKeys)
+			.filter(oldKey -> !newCompositeKeys.contains(oldKey))
+			.map(oldKey -> new IndividualChange<>(oldKey, valueKey, null));
+		
+		Stream<IndividualChange<BlueKey>> insertChanges = StreamUtils.stream(newCompositeKeys)
+				.filter(newKey -> !oldCompositeKeys.contains(newKey))
+				.map(newKey -> IndividualChange.createInsertChange(newKey, valueKey));
+		
+		return StreamUtils.concat(deleteChanges, insertChanges)
 				.sorted()
 				.collect(Collectors.toList());
-		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
-	}
-
-	public void add(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = toSortedIndexChanges(changes);
-		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
-	}
-
-	public void remove(BlueKey key, T oldItem) throws BlueDbException {
-		if (oldItem == null) {
-			return;
-		}
-		for (IndexCompositeKey<I> compositeKey: toCompositeKeys(key, oldItem)) {
-			ReadWriteSegment<BlueKey> segment = getSegmentManager().getFirstSegment(compositeKey);
-			segment.delete(compositeKey);
-		}
 	}
 
 	public void rollup(Range range) throws BlueDbException {
@@ -139,50 +154,13 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		segment.rollup(range);
 	}
 
-	private List<IndividualChange<BlueKey>> toSortedIndexChanges(Collection<IndividualChange<T>> changes) {
-		return changes.stream()
-				.map( this::toIndexChanges )
-				.flatMap(List::stream)
-				.sorted()
-				.collect(Collectors.toList());
-	}
-
-	private List<IndividualChange<BlueKey>> toIndexChanges(BlueEntity<T> entity) {
-		BlueKey key = entity.getKey();
-		T newValue = entity.getValue();
-		List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(key, newValue);
-		return toIndexChanges(compositeKeys, key);
-	}
-
-	private List<IndividualChange<BlueKey>> toIndexChanges(IndividualChange<T> change) {
-		List<IndexCompositeKey<I>> compositeKeys = toCompositeKeys(change);
-		BlueKey underlyingKey = change.getKey();
-		return toIndexChanges(compositeKeys, underlyingKey);
-	}
-
-	private static <I extends ValueKey> List<IndividualChange<BlueKey>> toIndexChanges(List<IndexCompositeKey<I>> compositeKeys, BlueKey destinationKey) {
-		List<IndividualChange<BlueKey>> indexChanges = new ArrayList<>();
-		for (IndexCompositeKey<I> compositeKey: compositeKeys) {
-			IndividualChange<BlueKey> indexChange = IndividualChange.createInsertChange(compositeKey, destinationKey);
-			indexChanges.add(indexChange);
-		}
-		return indexChanges;
-	}
-
-	private List<IndexCompositeKey<I>> toCompositeKeys(IndividualChange<T> change) {
-		BlueKey destinationKey = change.getKey();
-		T newValue = change.getNewValue();
-		return toCompositeKeys(destinationKey, newValue);
-	}
-
-	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T newItem) {
-		List<I> indexKeys = keyExtractor.extractKeys(newItem);
-		if(indexKeys != null) {
-			return indexKeys.stream()
-					.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
-					.collect( Collectors.toList() );
-		} else {
+	private List<IndexCompositeKey<I>> toCompositeKeys(BlueKey destination, T value) {
+		if(value == null) {
 			return new ArrayList<>();
 		}
+		
+		return StreamUtils.stream(keyExtractor.extractKeys(value))
+				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
+				.collect( Collectors.toList() );
 	}
 }

@@ -62,12 +62,11 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 	@Override
 	public void apply(ReadWriteCollectionOnDisk<T> collection) throws BlueDbException {
 		ReadWriteIndexManager<T> indexManager = collection.getIndexManager();
-		indexManager.removeFromAllIndexes(key, oldValue);
 		List<ReadWriteSegment<T>> segments = collection.getSegmentManager().getAllSegments(key);
 		for (ReadWriteSegment<T> segment: segments) {
 			applyChange(segment);
 		}
-		indexManager.addToAllIndexes(key, newValue);
+		indexManager.indexChange(key, oldValue, newValue);
 	}
 
 	public void applyChange(ReadWriteSegment<T> segment) throws BlueDbException {

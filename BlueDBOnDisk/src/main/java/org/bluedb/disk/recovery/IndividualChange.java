@@ -1,6 +1,7 @@
 package org.bluedb.disk.recovery;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.segment.Range;
@@ -60,4 +61,31 @@ public class IndividualChange <T extends Serializable> implements Serializable, 
 	public int compareTo(IndividualChange<T> otherChange) {
 		return getKey().compareTo(otherChange.getKey());
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(key, oldValue, newValue);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+            return true;
+		}
+		
+        if (obj instanceof IndividualChange) {
+			IndividualChange<?> other = (IndividualChange<?>) obj;
+			return Objects.equals(key, other.key) &&
+					Objects.equals(oldValue, other.oldValue) &&
+					Objects.equals(newValue, other.newValue);
+        }
+        
+        return false;
+	}
+
+	@Override
+	public String toString() {
+		return "IndividualChange [key=" + key + ", oldValue=" + oldValue + ", newValue=" + newValue + "]";
+	}
+	
 }
