@@ -206,15 +206,17 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		ReadWriteSegment<TestValue> segment = getSegment();
 		BlueKey key1At1 = createKey(1, 1);
 		BlueKey key2At2 = createKey(2, 2);
-		BlueKey keySegmentEnd = createKey(3, segment.getRange().getEnd());
+		BlueKey key3At3 = createKey(3, 3);
+		BlueKey keySegmentEnd = createKey(4, segment.getRange().getEnd());
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
 		TestValue value3 = createValue("Charlie");
+		TestValue value4 = createValue("Daryl");
 
 		List<TestValue> listEmpty = Arrays.asList();
 		List<TestValue> list1 = Arrays.asList(value1);
-		List<TestValue> list1and2 = Arrays.asList(value1, value2);
-		List<TestValue> list1and2and3 = Arrays.asList(value1, value2, value3);
+		List<TestValue> list12And3 = Arrays.asList(value1, value2, value3);
+		List<TestValue> list123And4 = Arrays.asList(value1, value2, value3, value4);
 
 		assertEquals(listEmpty, getSegmentContents(segment));
 		assertEquals(0, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
@@ -223,18 +225,19 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		assertEquals(list1, getSegmentContents(segment));
 		assertEquals(1, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 
-		IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At2, value2);
-		List<IndividualChange<TestValue>> changes = Arrays.asList(insert2At1);
+		IndividualChange<TestValue> insert2At2 = IndividualChange.createInsertChange(key2At2, value2);
+		IndividualChange<TestValue> insert4At4 = IndividualChange.createInsertChange(key3At3, value3);
+		List<IndividualChange<TestValue>> changes = Arrays.asList(insert2At2, insert4At4);
 		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
 		segment.applyChanges(changesLinkedList);
-		assertEquals(list1and2, getSegmentContents(segment));
+		assertEquals(list12And3, getSegmentContents(segment));
 		assertEquals(1, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 
-		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.createInsertChange(keySegmentEnd, value3);
+		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.createInsertChange(keySegmentEnd, value4);
 		changes = Arrays.asList(inserinset3AtSegmentEnd);
 		changesLinkedList = new LinkedList<>(changes);
 		segment.applyChanges(changesLinkedList);
-		assertEquals(list1and2and3, getSegmentContents(segment));
+		assertEquals(list123And4, getSegmentContents(segment));
 		assertEquals(2, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 	}
 

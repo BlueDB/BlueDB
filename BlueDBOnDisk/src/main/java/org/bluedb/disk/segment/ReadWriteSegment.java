@@ -106,7 +106,9 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 
 
 	public void applyChanges(LinkedList<IndividualChange<T>> changeQueueForSegment) throws BlueDbException {
-		performPreBatchRollups();
+		if(changeQueueForSegment.size() > 1) {
+			performPreBatchRollups(); //If we're inserting many items into the segment then lets rollup at least one level first
+		}
 		SegmentBatch<T> segmentBatch = new SegmentBatch<>(changeQueueForSegment);
 		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
 		List<ChunkBatch<T>> chunkBatches = segmentBatch.breakIntoChunks(existingChunkRanges, this);
