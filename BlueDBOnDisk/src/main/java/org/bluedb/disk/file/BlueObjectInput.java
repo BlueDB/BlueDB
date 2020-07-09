@@ -140,7 +140,10 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			return null;
 		}
 		try {
-			int objectLength = dataInputStream.readInt();
+			Integer objectLength = readInt();
+			if(objectLength == null) {
+				return null; //This means that we've reached the end of the file
+			}
 			if(objectLength <= 0) {
 				System.out.println("BlueDB Error: We just read in an object size of " + objectLength + " which doesn't make sense. We will skip this file since it must be corrupt: " + path);
 				return null;
@@ -155,6 +158,24 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			return null;
 		}
 	}
+	
+	/*
+	 * This is a copy of DataInputStream.readInt except that it returns null if the end of the file was reached
+	 * instead of throwing an exception. We noticed that reading through so many files in BlueDB was resulting
+	 * in TONS of EOFExceptions being thrown and caught which is a bit heavy. We could return an optional or
+	 * something but this is a really low level method that is going to be called a TON so I figured that
+	 * it is probably worth just handling a null return rather than creating a new object every time we
+	 * call it.
+	 */
+	private Integer readInt() throws IOException {
+        int ch1 = dataInputStream.read();
+        int ch2 = dataInputStream.read();
+        int ch3 = dataInputStream.read();
+        int ch4 = dataInputStream.read();
+        if ((ch1 | ch2 | ch3 | ch4) < 0)
+            return null;
+        return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
+    }
 
 	protected static DataInputStream openDataInputStream(File file) throws IOException {
 		return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
