@@ -23,6 +23,7 @@ import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 
 public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
@@ -145,6 +146,16 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		try {
 			List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
 			backupManager.backup(collectionsToBackup, zipPath);
+		} catch (IOException | BlueDbException e) {
+			throw new BlueDbException("BlueDB backup failed", e);
+		}
+	}
+	
+	@Override
+	public void backupTimeFrame(Path zipPath, long startTime, long endTime) throws BlueDbException {
+		try {
+			List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = getAllCollectionsFromDisk();
+			backupManager.backup(collectionsToBackup, zipPath, new Range(startTime, endTime));
 		} catch (IOException | BlueDbException e) {
 			throw new BlueDbException("BlueDB backup failed", e);
 		}
