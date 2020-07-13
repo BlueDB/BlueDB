@@ -273,7 +273,43 @@ public class FileUtilsTest extends TestCase {
 		} catch (BlueDbException e) {
 		}
 	}
+	
+	@Test
+	public void test_deleteIfExistsWithoutLock() throws IOException {
+		Path tempFile = Files.createTempFile("FileUtilsTest-test_deleteIfExistsWithoutLock1", ".bin");
+		tempFile.toFile().deleteOnExit();
+		assertTrue(Files.exists(tempFile));
+		
+		tempFile.toFile().setReadOnly(); //Makes it so that a delete will fail
+		try {
+			FileUtils.deleteIfExistsWithoutLock(tempFile);
+			fail();
+		} catch (BlueDbException e) {
+			//Expect it to fail
+		}
+		assertTrue(Files.exists(tempFile)); //File should still exist
+		
+		tempFile.toFile().setWritable(true); //Make it so that delete can succeed again
+		try {
+			FileUtils.deleteIfExistsWithoutLock(tempFile);
+		} catch (BlueDbException e) {
+			fail(); //Should not throw exception
+		}
+		assertFalse(Files.exists(tempFile)); //File should be gone
+	}
 
+	@Test
+	public void test_openDataOutputStream() throws IOException {
+		File testFolder = createTempFolder("test_openDataOutputStream");
+		
+		File missingFile = testFolder.toPath().resolve("far away").resolve("not_home").toFile();
+		try {
+			FileUtils.openDataOutputStream(missingFile);
+			fail();
+		}  catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	private File createTempFile(File parentFolder, String fileName) throws IOException {
 		File targetFile = Paths.get(parentFolder.toPath().toString(), fileName).toFile();

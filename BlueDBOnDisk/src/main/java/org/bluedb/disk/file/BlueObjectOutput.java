@@ -1,10 +1,8 @@
 package org.bluedb.disk.file;
 
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -27,7 +25,7 @@ public class BlueObjectOutput<T> implements Closeable {
 			this.serializer = serializer;
 			File file = path.toFile();
 			FileUtils.ensureDirectoryExists(file);
-			dataOutputStream = openDataOutputStream(file);
+			dataOutputStream = FileUtils.openDataOutputStream(file);
 		} catch(Throwable t) {
 			close();
 			throw new BlueDbException(t.getMessage(), t);
@@ -99,7 +97,4 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	protected static DataOutputStream openDataOutputStream(File file) throws IOException {
-		return new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
-	}
 }

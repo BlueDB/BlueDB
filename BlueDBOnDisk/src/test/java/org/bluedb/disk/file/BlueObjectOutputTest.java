@@ -73,16 +73,6 @@ public class BlueObjectOutputTest extends TestCase {
 	}
 
 	@Test
-	public void test_openDataOutputStream() {
-		File missingFile = Paths.get(testingFolderPath.toString(), "far away", "not_home").toFile();
-		try {
-			BlueObjectOutput.openDataOutputStream(missingFile);
-			fail();
-		}  catch (IOException e) {}
-	}
-
-
-	@Test
 	public void test_write() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
