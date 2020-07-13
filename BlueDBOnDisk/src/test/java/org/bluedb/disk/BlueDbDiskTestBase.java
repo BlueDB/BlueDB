@@ -119,7 +119,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return new TestValue(name);
 	}
 
-	public BlueKey createKey(long keyId, long time){
+	public TimeKey createKey(long keyId, long time){
 		return new TimeKey(keyId, time);
 	}
 
@@ -172,7 +172,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		return results;
 	}
 
-	public TimeKey createTimeFrameKey(long start, long end, TestValue obj) {
+	public TimeFrameKey createTimeFrameKey(long start, long end, TestValue obj) {
 		StringKey stringKey = new StringKey(obj.getName());
 		return new TimeFrameKey(stringKey, start, end);
 	}

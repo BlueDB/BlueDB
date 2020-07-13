@@ -22,6 +22,10 @@ public class IndividualChange <T extends Serializable> implements Serializable, 
 		return new IndividualChange<T>(key, null, null);
 	}
 
+	public static <T extends Serializable> IndividualChange<T> createUpdateChange(BlueKey key, T oldValue, T newValue) {
+		return new IndividualChange<T>(key, oldValue, newValue);
+	}
+
 	public IndividualChange(BlueKey key, T oldValue, T newValue) {
 		this.key = key;
 		this.oldValue = oldValue;

@@ -89,7 +89,7 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 		return getFileManager().getBlueInputStream(lock);
 	}
 
-	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
+	public BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
 		return getFileManager().getBlueInputStream(lock);
 	}
