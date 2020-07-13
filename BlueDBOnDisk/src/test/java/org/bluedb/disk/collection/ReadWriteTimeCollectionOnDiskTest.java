@@ -643,4 +643,13 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(1, segmentDirectoryContents.length);
 
 	}
+	
+	@Test
+	public void test_isTimeBased() {
+		assertFalse(getIntCollection().isTimeBased());
+		assertFalse(getLongCollection().isTimeBased());
+		assertFalse(getHashGroupedCollection().isTimeBased());
+		assertTrue(getCallCollection().isTimeBased());
+		assertTrue(getTimeCollection().isTimeBased());
+	}
 }

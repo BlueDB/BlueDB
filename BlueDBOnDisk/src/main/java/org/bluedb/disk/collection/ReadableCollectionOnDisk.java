@@ -13,6 +13,7 @@ import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
@@ -103,6 +104,10 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 
 	public Class<? extends BlueKey> getKeyType() {
 		return keyType;
+	}
+	
+	public boolean isTimeBased() {
+		return TimeKey.class.isAssignableFrom(getKeyType());
 	}
 
 	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
