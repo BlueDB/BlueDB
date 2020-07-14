@@ -37,28 +37,42 @@ public class BackupManager {
 	}
 	
 	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath, Range includedTimeRange) throws BlueDbException, IOException {
+		backup(collectionsToBackup, backupPath, includedTimeRange, false);
+	}
+	
+	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath, Range includedTimeRange, boolean acceptAllPendingChanges) throws BlueDbException, IOException {
 		try {
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().placeHoldOnHistoryCleanup());
 			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
 			tempDirectoryPath.toFile().deleteOnExit();
 			Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
-			backupToTempDirectory(collectionsToBackup, unzippedBackupPath, includedTimeRange);
+			backupToTempDirectory(collectionsToBackup, unzippedBackupPath, includedTimeRange, acceptAllPendingChanges);
 			ZipUtils.zipFile(unzippedBackupPath, backupPath);
 			Blutils.recursiveDelete(tempDirectoryPath.toFile());
 		} finally {
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().removeHoldOnHistoryCleanup());
 		}
 	}
+	
+	protected void backupToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange, boolean acceptAllPendingChanges) throws BlueDbException {
+		Range dataBackupRuntime = backupDataToTempDirectory(collectionsToBackup, tempFolder, includedTimeRange);
+		Range includedChangeTimes = acceptAllPendingChanges ? Range.createMaxRange() : dataBackupRuntime;
+		backupNewChangesToTempDirectory(collectionsToBackup, tempFolder, includedTimeRange, includedChangeTimes);
+	}
 
-	protected void backupToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange) throws BlueDbException {
-		long backupStartTime = System.currentTimeMillis();
+	protected Range backupDataToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange) throws BlueDbException {
+		long dataBackupStartTime = System.currentTimeMillis();
 		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
 			copyMetaData(collection, tempFolder);
 			copyDataFolders(collection, tempFolder, includedTimeRange);
 		}
-		long backupEndTime = System.currentTimeMillis();
+		long dataBackupEndTime = System.currentTimeMillis();
+		return new Range(dataBackupStartTime, dataBackupEndTime);
+	}
+
+	protected void backupNewChangesToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange, Range includedChangeTimes) throws BlueDbException {
 		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
-			copyChanges(collection, includedTimeRange, new Range(backupStartTime, backupEndTime), tempFolder);
+			copyChanges(collection, includedTimeRange, includedChangeTimes, tempFolder);
 		}
 	}
 
@@ -135,9 +149,9 @@ public class BackupManager {
 		}
 	}
 
-	private void copyChanges(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, Range backupRuntime, Path tempFolder) throws BlueDbException {
+	private void copyChanges(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, Range includedChangeTimes, Path tempFolder) throws BlueDbException {
 		RecoveryManager<?> recoveryManager = collection.getRecoveryManager();
-		List<File> changesToCopy = recoveryManager.getChangeHistory(backupRuntime.getStart(), backupRuntime.getEnd());
+		List<File> changesToCopy = recoveryManager.getChangeHistory(includedChangeTimes.getStart(), includedChangeTimes.getEnd());
 		Path historyFolderPath = recoveryManager.getHistoryFolder();
 		Path destinationFolderPath = translatePath(dbPath, tempFolder, historyFolderPath);
 		destinationFolderPath.toFile().mkdirs();

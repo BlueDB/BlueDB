@@ -1,5 +1,6 @@
 package org.bluedb.disk;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +32,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.PendingRollup;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.tasks.AsynchronousTestTask;
@@ -943,42 +945,10 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		
 		Path tempFolder = createTempFolder().toPath();
 		tempFolder.toFile().deleteOnExit();
-		Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
 		
-		Thread thread = new Thread(() -> {
-			try {
-				db().backupTimeFrame(backedUpPath, backupStart, backupEnd);
-			} catch (BlueDbException e) {
-				e.printStackTrace();
-			}
-		});
-		thread.start();
+		backupRestoreAndValidateResults(timeFrameCollectionName, backupStart, backupEnd, timeItems, timeFrameItems, tempFolder);
 		
-		//The pending change files need to be created while the backup is running
-		createPendingChangeFiles(timeCollection, timeItems);
-		createPendingChangeBatchFile(secondCollection, timeFrameItems);
-		createPendingChangeBatchFile(secondCollection, excludedTimeFrameItems);
-		createPendingRollupFile();
-		
-		thread.join();
-
-		Path restoredPath = Paths.get(tempFolder.toString(), "restore_test");
-		ZipUtils.extractFiles(backedUpPath, restoredPath);
-		Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
-
-		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredBlueDbPath).build();
-        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection1 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
-        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection2 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(timeFrameCollectionName, TimeFrameKey.class, TestValue.class).build();
-        
-        /*
-         * Set the expected cupcake counts one higher since the pending changes which add one cupcake should
-         * be executed on startup. 
-         */
-        timeItems.stream().forEach(item -> item.getValue().addCupcake());
-        timeFrameItems.stream().forEach(item -> item.getValue().addCupcake());
-        
-        validateItems(timeItems, restoredCollection1);
-        validateItems(timeFrameItems, restoredCollection2);
+		backupRestoreAndValidateWithPendingChangesIncluded(timeFrameCollectionName, backupStart, backupEnd, timeItems, secondCollection, timeFrameItems, excludedTimeFrameItems, tempFolder);
 	}
 
 	private List<SelectiveBackupItem> createTimeItems(long a1, long b1, long b2, long b3, long b5, long b6, long c1) {
@@ -1071,6 +1041,57 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		for(SelectiveBackupItem item : timeItems) {
 			collection.insert(item.getKey(), item.getValue());
         }
+	}
+
+	private void backupRestoreAndValidateResults(String timeFrameCollectionName, long backupStart, long backupEnd, List<SelectiveBackupItem> timeItems, List<SelectiveBackupItem> timeFrameItems, Path tempFolder) throws BlueDbException, IOException {
+		Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test1.zip");
+		backedUpPath.toFile().deleteOnExit();
+		db().backupTimeFrame(backedUpPath, backupStart, backupEnd);
+		
+		Path restoredPath = Paths.get(tempFolder.toString(), "restore_test1");
+		ZipUtils.extractFiles(backedUpPath, restoredPath);
+		Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
+
+		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredBlueDbPath).build();
+        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection1 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection2 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(timeFrameCollectionName, TimeFrameKey.class, TestValue.class).build();
+        
+        validateItems(timeItems, restoredCollection1);
+        validateItems(timeFrameItems, restoredCollection2);
+	}
+
+	private void backupRestoreAndValidateWithPendingChangesIncluded(String timeFrameCollectionName, long backupStart,
+			long backupEnd, List<SelectiveBackupItem> timeItems,
+			ReadWriteTimeCollectionOnDisk<TestValue> secondCollection, List<SelectiveBackupItem> timeFrameItems,
+			List<SelectiveBackupItem> excludedTimeFrameItems, Path tempFolder) throws BlueDbException, IOException {
+		Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test2.zip");
+		backedUpPath.toFile().deleteOnExit();
+		
+		createPendingChangeFiles(timeCollection, timeItems);
+		createPendingChangeBatchFile(secondCollection, timeFrameItems);
+		createPendingChangeBatchFile(secondCollection, excludedTimeFrameItems);
+		createPendingRollupFile();
+		
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = db().getAllCollectionsFromDisk();
+		db().backupManager.backup(collectionsToBackup, backedUpPath, new Range(backupStart, backupEnd), true);
+
+		Path restoredPath = Paths.get(tempFolder.toString(), "restore_test2");
+		ZipUtils.extractFiles(backedUpPath, restoredPath);
+		Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
+
+		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredBlueDbPath).build();
+        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection1 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection2 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(timeFrameCollectionName, TimeFrameKey.class, TestValue.class).build();
+        
+        /*
+         * Set the expected cupcake counts one higher since the pending changes which add one cupcake should
+         * be executed on startup. 
+         */
+        timeItems.stream().forEach(item -> item.getValue().addCupcake());
+        timeFrameItems.stream().forEach(item -> item.getValue().addCupcake());
+        
+        validateItems(timeItems, restoredCollection1);
+        validateItems(timeFrameItems, restoredCollection2);
 	}
 
 	private void createPendingChangeFiles(ReadWriteTimeCollectionOnDisk<TestValue> collection, List<SelectiveBackupItem> items) throws BlueDbException {
