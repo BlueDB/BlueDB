@@ -32,7 +32,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 	public void apply(ReadWriteCollectionOnDisk<T> collection) throws BlueDbException {
 		ReadWriteSegmentManager<T> segmentManager = collection.getSegmentManager();
 		BatchUtils.apply(segmentManager, sortedChanges);
-		collection.getIndexManager().addToAllIndexes(sortedChanges);
+		collection.getIndexManager().indexChanges(sortedChanges);
 	}
 
 	@Override

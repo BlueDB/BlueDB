@@ -317,9 +317,22 @@ public class ReadWriteFileManagerTest extends TestCase {
 	@Test
 	public void test_writeBytes_invalid() throws Exception {
 		Path nonExistingFile = Paths.get(testPath.toString(), "test_move_non_existing");
+		
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
 			byte[] bytes = new byte[] {1, 2, 3};
 			fileManager.writeBytes(lock, bytes);
+			fail();
+		} catch (BlueDbException e) {
+		}
+		
+		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
+			fileManager.writeBytes(lock, new byte[] { });
+			fail();
+		} catch (BlueDbException e) {
+		}
+		
+		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
+			fileManager.writeBytes(lock, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
 			fail();
 		} catch (BlueDbException e) {
 		}

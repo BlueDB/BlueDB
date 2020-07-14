@@ -18,6 +18,7 @@ import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
@@ -146,7 +147,7 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		
 		
 		collection.update(timeKeyBob3, value -> value.addCupcake());
-		collection.getIndexManager().addToAllIndexes(timeKeyBob3, valueBob3); //Should make index 3 point to this value even though the indexed value was just changed to 4
+		collection.getIndexManager().indexChange(timeKeyBob3, null, valueBob3); //Should make index 3 point to this value even though the indexed value was just changed to 4
 		valueBob3.addCupcake();
 		
 		assertEquals(emptyList, indexOnDisk.get(integerKey3)); //3 should point to the value, but since the value doesn't contain 3 it shouldn't return it.
@@ -161,7 +162,7 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		
 		TestValue valueFred1 = new TestValue("Fred", 1);
 		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
-		collection.getIndexManager().addToAllIndexes(timeKeyFred1, valueFred1);
+		collection.getIndexManager().indexChange(timeKeyFred1, null, valueFred1);
 		List<TestValue> emptyList = Arrays.asList();
 		
 		assertEquals(emptyList, index.get(new IntegerKey(1)));
@@ -409,5 +410,58 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		// make sure duplicates at the max don't break anything
 		insertAtTime(7, value3B);
 		assertEquals(integerKey3, index.getLastKey());
+	}
+	
+	@Test
+	public void test_getSortedIndexChangesForValueUpdate() throws BlueDbException {
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> index = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) getTimeCollection().createIndex("test_index", IntegerKey.class, new TestMultiKeyExtractor());
+		
+		TimeKey key = new TimeKey(1, 1);
+		
+		IndividualChange<BlueKey> add0 = createIndexChange(0, key, true);
+		IndividualChange<BlueKey> add1 = createIndexChange(1, key, true);
+		IndividualChange<BlueKey> add2 = createIndexChange(2, key, true);
+		IndividualChange<BlueKey> add3 = createIndexChange(3, key, true);
+		IndividualChange<BlueKey> add4 = createIndexChange(4, key, true);
+		IndividualChange<BlueKey> add5 = createIndexChange(5, key, true);
+		
+		IndividualChange<BlueKey> remove1 = createIndexChange(1, key, false);
+		IndividualChange<BlueKey> remove2 = createIndexChange(2, key, false);
+		IndividualChange<BlueKey> remove3 = createIndexChange(3, key, false);
+		IndividualChange<BlueKey> remove4 = createIndexChange(4, key, false);
+		IndividualChange<BlueKey> remove5 = createIndexChange(5, key, false);
+		
+		TestValue oldValue = null;
+		TestValue newValue = new TestValue("Fred", 5);
+		
+		assertEquals(Arrays.asList(add1, add3, add5), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		
+		oldValue = newValue;
+		newValue = new TestValue("Fred", 4);
+		assertEquals(Arrays.asList(add0, remove1, add2, remove3, add4, remove5), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		
+		oldValue = newValue;
+		newValue = new TestValue("Fred", 4);
+		assertEquals(Arrays.asList(), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		
+		oldValue = newValue;
+		newValue = new TestValue("Fred", 2);
+		assertEquals(Arrays.asList(remove4), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		
+		oldValue = newValue;
+		newValue = new TestValue("Fred", 4);
+		assertEquals(Arrays.asList(add4), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		
+		oldValue = newValue;
+		newValue = new TestValue("Fred", 0);
+		assertEquals(Arrays.asList(remove2, remove4), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+	}
+
+	private IndividualChange<BlueKey> createIndexChange(int indexKey, BlueKey valueKey, boolean isAdd) {
+		if(isAdd) {
+			return new IndividualChange<BlueKey>(new IndexCompositeKey<BlueKey>(new IntegerKey(indexKey), valueKey), null, valueKey);
+		} else {
+			return new IndividualChange<BlueKey>(new IndexCompositeKey<BlueKey>(new IntegerKey(indexKey), valueKey), valueKey, null);
+		}
 	}
 }
