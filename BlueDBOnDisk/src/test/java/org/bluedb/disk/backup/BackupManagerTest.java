@@ -45,7 +45,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
-		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
+		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange());
 
 		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
 		ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
@@ -66,7 +66,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
-		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
+		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange());
 
 		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
 		ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
@@ -89,7 +89,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
-		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
+		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange());
 
         ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
         ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
@@ -121,7 +121,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(timeCollection);
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
-		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath);
+		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange());
 
 		// restore (this failed before we ignored PendingIndexRollup when index doesn't exist.
         ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();

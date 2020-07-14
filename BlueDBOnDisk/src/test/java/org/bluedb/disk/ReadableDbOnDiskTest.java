@@ -5,23 +5,34 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
+import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.StringKey;
+import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.PendingBatchChange;
+import org.bluedb.disk.recovery.PendingChange;
+import org.bluedb.disk.recovery.PendingRollup;
+import org.bluedb.disk.segment.rollup.RollupTarget;
+import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.tasks.AsynchronousTestTask;
 import org.bluedb.tasks.TestTask;
 import org.bluedb.zip.ZipUtils;
@@ -860,5 +871,273 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 	
 		TestUtils.assertThrowable(RejectedExecutionException.class, scheduledTask.getError());
 		TestUtils.assertThrowable(RejectedExecutionException.class, queryTask.getError());
+	}
+
+	@Test
+	public void test_backupTimeFrame_fail() throws Exception {
+		@SuppressWarnings("rawtypes")
+		ReadWriteTimeCollectionOnDisk newUntypedCollection = (ReadWriteTimeCollectionOnDisk) db.getUntypedCollectionForBackup(getTimeCollectionName());
+        Path serializedClassesPath = ReadWriteFileManager.getNewestVersionPath(newUntypedCollection.getPath().resolve(".meta"), ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
+        getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
+
+        Path tempFolder = createTempFolder().toPath();
+        tempFolder.toFile().deleteOnExit();
+        Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
+        ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
+        try {
+            reopenedDatbase.backupTimeFrame(backedUpPath, Long.MIN_VALUE, Long.MAX_VALUE);
+            fail();  // because the "test2" collection was broken, the backup should error out;
+
+        } catch (BlueDbException e) {
+        }
+
+	}
+
+	@Test
+	public void test_backupTimeFrame() throws Exception {
+		String timeFrameCollectionName = "testing_2";
+		
+		long millisInSegment = getTimeCollectionMetaData().getSegmentSize().getSegmentSize();
+		
+		//Segment A Times
+		long a1 = 1_000;
+		long a2 = millisInSegment - 1_000;
+		
+		//Segment B Times
+		long b1 = millisInSegment + 1_000;
+		long b2 = b1 + (10_000 * 2);
+		long b3 = b1 + (10_000 * 3);
+		long b4 = (millisInSegment * 2) - (10_000 * 3);
+		long b5 = (millisInSegment * 2) - (10_000 * 2);
+		long b6 = (millisInSegment * 2) - 1_000;
+		
+		//Segment C Times
+		long c1 = (millisInSegment * 2) + 1_000;
+		long c2 = (millisInSegment * 3) - 1_000;
+		
+		long backupStart = b2;
+		long backupEnd = b5;
+		
+		List<SelectiveBackupItem> timeItems = createTimeItems(a1, b1, b2, b3, b5, b6, c1);
+		insertItems(timeItems, timeCollection);
+		
+		ReadWriteTimeCollectionOnDisk<TestValue> secondCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(timeFrameCollectionName, TimeFrameKey.class, TestValue.class).build();
+		List<SelectiveBackupItem> timeFrameItems = createTimeFrameItems(a1, a2, b1, b3, b4, b6, c1, c2);
+		List<SelectiveBackupItem> excludedTimeFrameItems = timeFrameItems.stream()
+				.filter(value -> !value.shouldBeIncluded)
+				.collect(Collectors.toList());
+				
+		insertItems(timeFrameItems, secondCollection);
+		
+		//Force rollups so that we can test the querying of chunks that contain multiple items.
+		timeCollection.getRollupScheduler().forceScheduleRollups();
+		secondCollection.getRollupScheduler().forceScheduleRollups();
+		
+		/*
+		 * Run updates on each collection in order to wait until rollups are done. These both update the cupcake
+		 * count of a single excluded value so it shouldn't affect our expectations when it is time to assert
+		 * the restored data.
+		 */
+		timeCollection.update(timeItems.get(timeItems.size()-1).getKey(), value -> value.addCupcake());
+		secondCollection.update(timeFrameItems.get(timeFrameItems.size()-1).getKey(), value -> value.addCupcake());
+		
+		Path tempFolder = createTempFolder().toPath();
+		tempFolder.toFile().deleteOnExit();
+		Path backedUpPath = Paths.get(tempFolder.toString(), "backup_test.zip");
+		
+		Thread thread = new Thread(() -> {
+			try {
+				db().backupTimeFrame(backedUpPath, backupStart, backupEnd);
+			} catch (BlueDbException e) {
+				e.printStackTrace();
+			}
+		});
+		thread.start();
+		
+		//The pending change files need to be created while the backup is running
+		createPendingChangeFiles(timeCollection, timeItems);
+		createPendingChangeBatchFile(secondCollection, timeFrameItems);
+		createPendingChangeBatchFile(secondCollection, excludedTimeFrameItems);
+		createPendingRollupFile();
+		
+		thread.join();
+
+		Path restoredPath = Paths.get(tempFolder.toString(), "restore_test");
+		ZipUtils.extractFiles(backedUpPath, restoredPath);
+		Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
+
+		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(restoredBlueDbPath).build();
+        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection1 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection2 = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(timeFrameCollectionName, TimeFrameKey.class, TestValue.class).build();
+        
+        /*
+         * Set the expected cupcake counts one higher since the pending changes which add one cupcake should
+         * be executed on startup. 
+         */
+        timeItems.stream().forEach(item -> item.getValue().addCupcake());
+        timeFrameItems.stream().forEach(item -> item.getValue().addCupcake());
+        
+        validateItems(timeItems, restoredCollection1);
+        validateItems(timeFrameItems, restoredCollection2);
+	}
+
+	private List<SelectiveBackupItem> createTimeItems(long a1, long b1, long b2, long b3, long b5, long b6, long c1) {
+		List<SelectiveBackupItem> timeItems = new LinkedList<>();
+		
+		TimeKey excludedValue1Key = createKey(1, a1);
+		TestValue excludedValue1 = new TestValue("excludedValue1");
+		timeItems.add(new SelectiveBackupItem(excludedValue1Key, excludedValue1, false));
+		
+		TimeKey excludedValue2Key = createKey(2, b1);
+		TestValue excludedValue2 = new TestValue("excludedValue2");
+		timeItems.add(new SelectiveBackupItem(excludedValue2Key, excludedValue2, false));
+		
+		TimeKey includedValue1Key = createKey(3, b2);
+		TestValue includedValue1 = new TestValue("includedValue1");
+		timeItems.add(new SelectiveBackupItem(includedValue1Key, includedValue1, true));
+		
+		TimeKey includedValue2Key = createKey(4, b3);
+		TestValue includedValue2 = new TestValue("includedValue2");
+		timeItems.add(new SelectiveBackupItem(includedValue2Key, includedValue2, true));
+		
+		TimeKey includedValue3Key = createKey(5, b5);
+		TestValue includedValue3 = new TestValue("includedValue3");
+		timeItems.add(new SelectiveBackupItem(includedValue3Key, includedValue3, true));
+		
+		TimeKey excludedValue3Key = createKey(6, b6);
+		TestValue excludedValue3 = new TestValue("excludedValue3");
+		timeItems.add(new SelectiveBackupItem(excludedValue3Key, excludedValue3, false));
+		
+		TimeKey excludedValue4Key = createKey(7, c1);
+		TestValue excludedValue4 = new TestValue("excludedValue4");
+		timeItems.add(new SelectiveBackupItem(excludedValue4Key, excludedValue4, false));
+		return timeItems;
+	}
+
+	private List<SelectiveBackupItem> createTimeFrameItems(long a1, long a2, long b1, long b3, long b4, long b6, long c1, long c2) {
+		List<SelectiveBackupItem> timeFrameItems = new LinkedList<>();
+		
+		TestValue excludedFrameValue1 = new TestValue("excludedFrameValue1");
+		TimeFrameKey excludedFrameValue1Key = createTimeFrameKey(a1, a2, excludedFrameValue1);
+		timeFrameItems.add(new SelectiveBackupItem(excludedFrameValue1Key, excludedFrameValue1, false));
+		
+		TestValue excludedFrameValue2 = new TestValue("excludedFrameValue2");
+		TimeFrameKey excludedFrameValue2Key = createTimeFrameKey(a2, b1, excludedFrameValue2);
+		timeFrameItems.add(new SelectiveBackupItem(excludedFrameValue2Key, excludedFrameValue2, false));
+		
+		TestValue includedFrameValue1 = new TestValue("includedFrameValue1");
+		TimeFrameKey includedFrameValue1Key = createTimeFrameKey(a2, b3, includedFrameValue1);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue1Key, includedFrameValue1, true));
+		
+		TestValue includedFrameValue2 = new TestValue("includedFrameValue2");
+		TimeFrameKey includedFrameValue2Key = createTimeFrameKey(a2, b6, includedFrameValue2);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue2Key, includedFrameValue2, true));
+		
+		TestValue includedFrameValue3 = new TestValue("includedFrameValue3");
+		TimeFrameKey includedFrameValue3Key = createTimeFrameKey(a2, c1, includedFrameValue3);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue3Key, includedFrameValue3, true));
+		
+		TestValue includedFrameValue4 = new TestValue("includedFrameValue4");
+		TimeFrameKey includedFrameValue4Key = createTimeFrameKey(b1, b4, includedFrameValue4);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue4Key, includedFrameValue4, true));
+		
+		TestValue includedFrameValue5 = new TestValue("includedFrameValue5");
+		TimeFrameKey includedFrameValue5Key = createTimeFrameKey(b1, b6, includedFrameValue5);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue5Key, includedFrameValue5, true));
+		
+		TestValue includedFrameValue6 = new TestValue("includedFrameValue6");
+		TimeFrameKey includedFrameValue6Key = createTimeFrameKey(b3, b4, includedFrameValue6);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue6Key, includedFrameValue6, true));
+		
+		TestValue includedFrameValue7 = new TestValue("includedFrameValue7");
+		TimeFrameKey includedFrameValue7Key = createTimeFrameKey(b3, b6, includedFrameValue7);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue7Key, includedFrameValue7, true));
+		
+		TestValue includedFrameValue8 = new TestValue("includedFrameValue8");
+		TimeFrameKey includedFrameValue8Key = createTimeFrameKey(b3, c1, includedFrameValue8);
+		timeFrameItems.add(new SelectiveBackupItem(includedFrameValue8Key, includedFrameValue8, true));
+		
+		TestValue excludedFrameValue3 = new TestValue("excludedFrameValue3");
+		TimeFrameKey excludedFrameValue3Key = createTimeFrameKey(b6, c1, excludedFrameValue3);
+		timeFrameItems.add(new SelectiveBackupItem(excludedFrameValue3Key, excludedFrameValue3, false));
+		
+		TestValue excludedFrameValue4 = new TestValue("excludedFrameValue4");
+		TimeFrameKey excludedFrameValue4Key = createTimeFrameKey(c1, c2, excludedFrameValue4);
+		timeFrameItems.add(new SelectiveBackupItem(excludedFrameValue4Key, excludedFrameValue4, false));
+		return timeFrameItems;
+	}
+
+	private void insertItems(List<SelectiveBackupItem> timeItems, ReadWriteTimeCollectionOnDisk<TestValue> collection) throws BlueDbException {
+		for(SelectiveBackupItem item : timeItems) {
+			collection.insert(item.getKey(), item.getValue());
+        }
+	}
+
+	private void createPendingChangeFiles(ReadWriteTimeCollectionOnDisk<TestValue> collection, List<SelectiveBackupItem> items) throws BlueDbException {
+		BlueSerializer serializer = collection.getSerializer();
+		
+		for(SelectiveBackupItem item : items) {
+			Updater<TestValue> updater = value -> value.addCupcake();
+			PendingChange<TestValue> change = PendingChange.createUpdate(item.getKey(), item.getValue(), updater, serializer);
+			collection.getRecoveryManager().saveChange(change);
+        }
+	}
+
+	private void createPendingChangeBatchFile(ReadWriteTimeCollectionOnDisk<TestValue> collection, List<SelectiveBackupItem> items) throws BlueDbException {
+		BlueSerializer serializer = collection.getSerializer();
+		
+		List<IndividualChange<TestValue>> changesForBatch = new LinkedList<>();
+		
+		for(SelectiveBackupItem item : items) {
+			TestValue updatedValue = serializer.clone(item.getValue());
+			updatedValue.addCupcake();
+			changesForBatch.add(IndividualChange.createUpdateChange(item.getKey(), item.getValue(), updatedValue));
+        }
+		Collections.sort(changesForBatch);
+		
+		PendingBatchChange<TestValue> batchChange = PendingBatchChange.createBatchChange(changesForBatch);
+		collection.getRecoveryManager().saveChange(batchChange);
+	}
+
+	private void createPendingRollupFile() throws BlueDbException {
+		RollupTarget rollupTarget = new RollupTarget(0, timeCollection.getSegmentManager().getSegment(0).getRange());
+		PendingRollup<TestValue> rollupTask = new PendingRollup<>(rollupTarget);
+		timeCollection.getRecoveryManager().saveChange(rollupTask);
+	}
+
+	private void validateItems(List<SelectiveBackupItem> items, ReadWriteTimeCollectionOnDisk<TestValue> collection) throws BlueDbException {
+		for(SelectiveBackupItem item : items) {
+			String errorMessage1 = "Unexpected Contains " + item.key;
+			assertEquals(errorMessage1, item.shouldBeIncluded(), collection.contains(item.getKey()));
+        	if(item.shouldBeIncluded()) {
+        		TestValue restoredValue = collection.get(item.getKey());
+				String errorMessage2 = "Original Value does NOT equal restored value [original]" + item.getValue() + " [restored]" + restoredValue;
+				assertEquals(errorMessage2, item.getValue(), restoredValue);
+        	}
+        }
+	}
+	
+	private static class SelectiveBackupItem {
+		private BlueKey key;
+		private TestValue value;
+		private boolean shouldBeIncluded;
+		
+		public SelectiveBackupItem(BlueKey key, TestValue value, boolean shouldBeIncluded) {
+			this.key = key;
+			this.value = value;
+			this.shouldBeIncluded = shouldBeIncluded;
+		}
+		
+		public BlueKey getKey() {
+			return key;
+		}
+		
+		public TestValue getValue() {
+			return value;
+		}
+		
+		public boolean shouldBeIncluded() {
+			return shouldBeIncluded;
+		}
 	}
 }
