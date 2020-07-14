@@ -43,6 +43,25 @@ public class BlueObjectOutput<T> implements Closeable {
 		this.serializer = serializer;
 		this.dataOutputStream = dataOutputStream;
 	}
+	
+	public static <T> BlueObjectOutput<T> createWithoutLockOrSerializer(Path path) throws BlueDbException {
+		return createWithoutLock(path, null);
+	}
+	
+	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer) throws BlueDbException {
+		return new BlueObjectOutput<>(path, serializer);
+	}
+
+	private BlueObjectOutput(Path path, BlueSerializer serializer) throws BlueDbException {
+		try {
+			this.lock = null;
+			this.path = path;
+			this.serializer = serializer;
+			this.dataOutputStream = FileUtils.openDataOutputStream(path.toFile());
+		} catch (IOException e) {
+			throw new BlueDbException("Failed to create BlueObjectOutput for path " + path, e);
+		}
+	}
 
 	public void writeBytes(byte[] bytes) throws BlueDbException {
 		if (bytes == null) {
