@@ -201,4 +201,18 @@ public class RangeTest {
 		assertTrue(minLongRange.getEnd() > minLongRange.getStart());
 		assertEquals(Long.MIN_VALUE, minLongRange.getStart());
 	}
+	
+	@Test
+	public void test_maxRange() {
+		Range maxRange = Range.createMaxRange();
+		assertEquals(Long.MIN_VALUE, maxRange.getStart());
+		assertEquals(Long.MAX_VALUE, maxRange.getEnd());
+		assertTrue(maxRange.isMaxRange());
+		
+		Arrays.asList(new Range(Long.MIN_VALUE, 10), new Range(Long.MAX_VALUE, Long.MIN_VALUE), 
+				new Range(0, Long.MAX_VALUE), new Range(-10, 10)).stream()
+			.forEach(range -> {
+				assertFalse(range.isMaxRange());
+			});
+	}
 }

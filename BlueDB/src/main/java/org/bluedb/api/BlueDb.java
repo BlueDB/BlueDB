@@ -106,5 +106,15 @@ public interface BlueDb extends ReadableBlueDb {
 	 * @throws BlueDbException if any issues encountered, such as file system problems
 	 */
 	public void backup(Path path) throws BlueDbException;
+	
+	/**
+	 * Creates a partial backup of the database. All non-time based data will be included. Time based data will only be included
+	 * if it overlaps with the time frame that is passed in via the startTime and endTime arguments.
+	 * @param path where the backup will be created
+	 * @param startTime The start of the timeframe that should be included in the backup
+	 * @param endTime The end of the timeframe that should be included in the backup
+	 * @throws BlueDbException if any issues encountered, such as file system problems
+	 */
+	public void backupTimeFrame(Path path, long startTime, long endTime) throws BlueDbException;
 
 }

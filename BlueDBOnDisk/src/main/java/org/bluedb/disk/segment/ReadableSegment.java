@@ -2,6 +2,7 @@ package org.bluedb.disk.segment;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -89,28 +90,30 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 		return getFileManager().getBlueInputStream(lock);
 	}
 
-	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
+	public BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
 		return getFileManager().getBlueInputStream(lock);
 	}
 
 	public BlueReadLock<Path> getReadLockFor(long groupingNumber) throws BlueDbException {
+		Path path = getPathFor(groupingNumber);
+		return acquireReadLock(path);
+	}
+	
+	public Path getPathFor(long groupingNumber) throws BlueDbException {
 		for (long rollupLevel: rollupLevels) {
 			Path path = getPathFor(groupingNumber, rollupLevel);
-			BlueReadLock<Path> lock = getFileManager().getReadLockIfFileExists(path);
-			if (lock != null) {
-				return lock;
+			if(Files.exists(path)) {
+				return path;
 			}
 		}
 		if (groupingNumber < segmentRange.getStart()) {
 			Path path = getPathFor(preSegmentRange);
-			BlueReadLock<Path> lock = getFileManager().getReadLockIfFileExists(path);
-			if (lock != null) {
-				return lock;
+			if(Files.exists(path)) {
+				return path;
 			}
 		}
-		Path path = getPathFor(groupingNumber, 1);
-		return acquireReadLock(path);
+		return getPathFor(groupingNumber, 1);
 	}
 
 	public Path getPath() {

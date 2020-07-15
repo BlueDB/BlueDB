@@ -233,7 +233,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 
 		ReadWriteSegment<TestValue> mockSegment = new ReadWriteSegment<TestValue>(segment.getPath(), null, null, null, null) {
 			@Override
-			protected BlueObjectInput<BlueEntity<TestValue>> getObjectInputFor(long groupingNumber) throws BlueDbException {
+			public BlueObjectInput<BlueEntity<TestValue>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 				throw new BlueDbException("segment fail");
 			}
 		};

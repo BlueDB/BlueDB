@@ -1,10 +1,8 @@
 package org.bluedb.disk.file;
 
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -27,7 +25,7 @@ public class BlueObjectOutput<T> implements Closeable {
 			this.serializer = serializer;
 			File file = path.toFile();
 			FileUtils.ensureDirectoryExists(file);
-			dataOutputStream = openDataOutputStream(file);
+			dataOutputStream = FileUtils.openDataOutputStream(file);
 		} catch(Throwable t) {
 			close();
 			throw new BlueDbException(t.getMessage(), t);
@@ -44,6 +42,25 @@ public class BlueObjectOutput<T> implements Closeable {
 		this.path = path;
 		this.serializer = serializer;
 		this.dataOutputStream = dataOutputStream;
+	}
+	
+	public static <T> BlueObjectOutput<T> createWithoutLockOrSerializer(Path path) throws BlueDbException {
+		return createWithoutLock(path, null);
+	}
+	
+	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer) throws BlueDbException {
+		return new BlueObjectOutput<>(path, serializer);
+	}
+
+	private BlueObjectOutput(Path path, BlueSerializer serializer) throws BlueDbException {
+		try {
+			this.lock = null;
+			this.path = path;
+			this.serializer = serializer;
+			this.dataOutputStream = FileUtils.openDataOutputStream(path.toFile());
+		} catch (IOException e) {
+			throw new BlueDbException("Failed to create BlueObjectOutput for path " + path, e);
+		}
 	}
 
 	public void writeBytes(byte[] bytes) throws BlueDbException {
@@ -97,7 +114,4 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	protected static DataOutputStream openDataOutputStream(File file) throws IOException {
-		return new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
-	}
 }

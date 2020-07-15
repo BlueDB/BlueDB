@@ -51,6 +51,10 @@ public final class Range implements Comparable<Range> {
 	public String toUnderscoreDelimitedString() {
 		return start + "_" + end;
 	}
+	
+	public boolean isMaxRange() {
+		return start == Long.MIN_VALUE && end == Long.MAX_VALUE;
+	}
 
 	public static Range fromFileWithUnderscoreDelmimitedName(File file) {
 		String fileName = file.getName();
@@ -72,6 +76,10 @@ public final class Range implements Comparable<Range> {
 		long low = Blutils.roundDownToMultiple(value, rangeSize);
 		long high = Math.min(Long.MAX_VALUE - rangeSize + 1, low) + rangeSize - 1;  // prevent overflow
 		return new Range(low, high);
+	}
+	
+	public static Range createMaxRange() {
+		return new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 	}
 
 	@Override

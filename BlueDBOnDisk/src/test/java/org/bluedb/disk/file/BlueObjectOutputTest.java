@@ -18,6 +18,7 @@ import org.bluedb.disk.TestValue;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
+import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import junit.framework.TestCase;
@@ -71,16 +72,6 @@ public class BlueObjectOutputTest extends TestCase {
 			assertTrue(targetFilePath.toFile().exists());
 		}
 	}
-
-	@Test
-	public void test_openDataOutputStream() {
-		File missingFile = Paths.get(testingFolderPath.toString(), "far away", "not_home").toFile();
-		try {
-			BlueObjectOutput.openDataOutputStream(missingFile);
-			fail();
-		}  catch (IOException e) {}
-	}
-
 
 	@Test
 	public void test_write() throws Exception {
@@ -208,6 +199,16 @@ public class BlueObjectOutputTest extends TestCase {
 			BlueObjectOutput<TestValue> stream = new BlueObjectOutput<>(lock, null);
 		} catch (BlueDbException e) {}
 		Mockito.verify(lock, Mockito.times(1)).close();
+	}
+	
+	@Test
+	public void test_createWithoutLock_exception() {
+		Path missingFile = testingFolderPath.resolve("far away").resolve("not_home");
+		try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(missingFile)) {
+			fail();
+		}  catch (BlueDbException e) {
+			e.printStackTrace(); //Expect exception
+		}
 	}
 	
 	

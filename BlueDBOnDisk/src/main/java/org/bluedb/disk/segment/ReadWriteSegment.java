@@ -240,7 +240,7 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 	}
 
 	@Override
-	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
+	public BlueObjectInput<BlueEntity<T>> getObjectInputFor(long groupingNumber) throws BlueDbException {
 		BlueReadLock<Path> lock = getReadLockFor(groupingNumber);
 		tryReportRead(lock.getKey());
 		return fileManager.getBlueInputStream(lock);
