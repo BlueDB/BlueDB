@@ -110,12 +110,16 @@ public class BackupManager {
 			Range fileRange = Range.fromUnderscoreDelmimitedString(file.getName());
 			long groupingNumber = fileRange.getStart();
 			
-			if(isTimeBased && !includedTimeRange.isMaxRange()) {
+			if(shouldFilterDataBasedOnTime(isTimeBased, includedTimeRange)) {
 				copyDataFileAfterFilteringBasedOnTime(segment, tempFolder, includedTimeRange, groupingNumber);
 			} else {
 				copyDataFileStraightOver(segment, tempFolder, groupingNumber);
 			}
 		}
+	}
+	
+	private boolean shouldFilterDataBasedOnTime(boolean isCollectionTimeBased, Range includedTimeRange) {
+		return isCollectionTimeBased && !includedTimeRange.isMaxRange();
 	}
 
 	private void copyDataFileAfterFilteringBasedOnTime(ReadWriteSegment<?> segment, Path tempFolder, Range includedTimeRange, long groupingNumber) throws BlueDbException {
@@ -157,7 +161,7 @@ public class BackupManager {
 		destinationFolderPath.toFile().mkdirs();
 		for (File file: changesToCopy) {
 			Path destinationPath = Paths.get(destinationFolderPath.toString(), file.getName());
-			if(!includedTimeRange.isMaxRange() && collection.isTimeBased()) {
+			if(shouldFilterDataBasedOnTime(collection.isTimeBased(), includedTimeRange)) {
 				copyChangeAfterFilteringBasedOnTime(collection, includedTimeRange, recoveryManager, file, destinationPath);
 			} else {
 				copyChangeStraightOver(recoveryManager, file, destinationPath);
@@ -185,11 +189,7 @@ public class BackupManager {
 		if(change instanceof PendingBatchChange) {
 			PendingBatchChange<?> batchChange = (PendingBatchChange<?>) change;
 			batchChange.removeChangesOutsideRange(includedTimeRange);
-			if(!batchChange.isEmpty()) {
-				return true;
-			} else {
-				return false;
-			}
+			return !batchChange.isEmpty();
 		}
 		
 		return true; //We don't need to check rollups
