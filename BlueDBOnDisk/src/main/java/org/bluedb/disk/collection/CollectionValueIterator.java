@@ -42,8 +42,13 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 		if (hasClosed.get()) {
 			throw new RuntimeException("CollectionValueIterator has already been closed");
 		}
-		timeoutCloser.snooze();
-		return entityIterator.hasNext();
+		
+		try {
+			timeoutCloser.setToWaitingOnBlueDb();
+			return entityIterator.hasNext();
+		} finally {
+			timeoutCloser.setToWaitingOnClient();
+		}
 	}
 
 	@Override
@@ -51,12 +56,17 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 		if (hasClosed.get()) {
 			throw new RuntimeException("CollectionValueIterator has already been closed");
 		}
-		timeoutCloser.snooze();
-		BlueEntity<T> peekedEntity = entityIterator.peek();
-		if (peekedEntity == null) {
-			return null;
-		} else {
-			return peekedEntity.getValue();
+		
+		try {
+			timeoutCloser.setToWaitingOnBlueDb();
+			BlueEntity<T> peekedEntity = entityIterator.peek();
+			if (peekedEntity == null) {
+				return null;
+			} else {
+				return peekedEntity.getValue();
+			}
+		} finally {
+			timeoutCloser.setToWaitingOnClient();
 		}
 	}
 
@@ -65,8 +75,13 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 		if (hasClosed.get()) {
 			throw new RuntimeException("CollectionValueIterator has already been closed");
 		}
-		timeoutCloser.snooze();
-		return entityIterator.next().getValue();
+		
+		try {
+			timeoutCloser.setToWaitingOnBlueDb();
+			return entityIterator.next().getValue();
+		} finally {
+			timeoutCloser.setToWaitingOnClient();
+		}
 	}
 	
 	@Override
