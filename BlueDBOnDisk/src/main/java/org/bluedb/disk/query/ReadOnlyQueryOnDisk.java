@@ -3,6 +3,7 @@ package org.bluedb.disk.query;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
@@ -43,6 +44,13 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	public CloseableIterator<T> getIterator() throws BlueDbException {
 		Range range = new Range(min, max);
 		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions);
+	}
+
+	@Override
+	public CloseableIterator<T> getIterator(long timeout, TimeUnit timeUnit) throws BlueDbException {
+		Range range = new Range(min, max);
+		long timeoutInMillis = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, timeoutInMillis, byStartTime, objectConditions);
 	}
 
 	@Override

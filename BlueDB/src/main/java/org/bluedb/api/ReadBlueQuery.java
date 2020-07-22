@@ -2,6 +2,7 @@ package org.bluedb.api;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.exceptions.BlueDbException;
 
@@ -41,6 +42,22 @@ public interface ReadBlueQuery<V extends Serializable> {
 	 * @throws BlueDbException 
 	 */
 	CloseableIterator<V> getIterator() throws BlueDbException;
+
+	/**
+	 * Begins executing the query and returns an iterator for processing the results. BlueDB will iterate over
+	 * the collection on disk as you iterate over it in memory. This makes the iterator an extremely memory efficient
+	 * way to read large collections. 
+	 * 
+	 * <br><br>
+	 * 
+	 * <b>Important: </b>Use within a try-with-resources statement and iterate through as quickly as possible
+	 * in order to ensure that you don't block other BlueDB tasks. If you fail to call next for the given timeout period then
+	 * the iterator will timeout and release resources.
+	 * 
+	 * @return an iterator for the query results
+	 * @throws BlueDbException 
+	 */
+	CloseableIterator<V> getIterator(long timeout, TimeUnit timeUnit) throws BlueDbException;
 
 	/**
 	 * Executes the query and returns the number of values matching the query

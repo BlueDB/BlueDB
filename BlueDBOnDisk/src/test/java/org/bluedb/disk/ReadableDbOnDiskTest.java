@@ -585,6 +585,25 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
         assertEquals(1, onlyBob.size());
         assertFalse(onlyBob.contains(valueJoe));
         assertTrue(onlyBob.contains(valueBob));
+
+        final Iterator<TestValue> autoCloseFastIterator = getTimeCollection().query().where((v) -> v.getName().equals("Bob")).getIterator(10, TimeUnit.MILLISECONDS);
+        Blutils.trySleep(15);
+        TestTask useIteratorAfterAutoClosedTask = new TestTask(() -> {
+        	autoCloseFastIterator.hasNext();
+        });
+        useIteratorAfterAutoClosedTask.run();
+        TestUtils.assertThrowable(RuntimeException.class, useIteratorAfterAutoClosedTask.getError());
+        
+        final Iterator<TestValue> autoCloseAfterOneSecondIterator = getTimeCollection().query().getIterator(1, TimeUnit.SECONDS);
+        assertTrue(autoCloseAfterOneSecondIterator.hasNext());
+        Blutils.trySleep(750);
+        assertTrue(autoCloseAfterOneSecondIterator.hasNext());
+        Blutils.trySleep(1500);
+        useIteratorAfterAutoClosedTask = new TestTask(() -> {
+        	autoCloseAfterOneSecondIterator.hasNext();
+        });
+        useIteratorAfterAutoClosedTask.run();
+        TestUtils.assertThrowable(RuntimeException.class, useIteratorAfterAutoClosedTask.getError());
 	}
 	
 	@Test
