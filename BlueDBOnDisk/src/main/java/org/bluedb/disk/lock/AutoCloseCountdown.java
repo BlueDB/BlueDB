@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.bluedb.disk.Blutils;
@@ -23,6 +24,8 @@ public class AutoCloseCountdown {
 	private ScheduledFuture<?> autoCloseTask;
 	
 	private int runCount = 1;
+	
+	private AtomicBoolean isWaitingOnClient = new AtomicBoolean(true);
 
 	public AutoCloseCountdown(Closeable closeable, long countdownDuration) {
 		if (closeable == null) {
@@ -40,6 +43,15 @@ public class AutoCloseCountdown {
 			long delay = Math.max(10, countdownDuration / 3);
 			autoCloseTask = executor.scheduleWithFixedDelay(Blutils.surroundTaskWithTryCatch(this::onExpiration), delay, delay, TimeUnit.MILLISECONDS);
 		}
+	}
+	
+	public void setToWaitingOnBlueDb() {
+		isWaitingOnClient.set(false);
+	}
+	
+	public void setToWaitingOnClient() {
+		snooze();
+		isWaitingOnClient.set(true);
 	}
 	
 	public void snooze() {
@@ -64,7 +76,7 @@ public class AutoCloseCountdown {
 		long now = System.currentTimeMillis();
 		float totalActiveTimeInSeconds = (now - startTime) * .001f;
 		
-		if (now >= expiration.get()) {
+		if (isWaitingOnClient.get() && now >= expiration.get()) {
 			Blutils.log("[BlueDb Warning] - Auto closing a BlueDb iterator that has been active for " + totalActiveTimeInSeconds + " seconds. Remember to suround BlueDb iterators in a try with resource to ensure that they are closed when you are done. Query Stack Trace:" + System.lineSeparator() + constructionStackTrace);
 			closeTarget();
 			cancel();

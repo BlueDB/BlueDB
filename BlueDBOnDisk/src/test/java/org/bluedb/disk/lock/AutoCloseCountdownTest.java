@@ -34,6 +34,14 @@ public class AutoCloseCountdownTest {
 		assertTrue(successfullyCloses(closeable, 2000));
 
 		closeable = new TestingCloseable(); 
+		countdown = new AutoCloseCountdown(closeable, 50);
+		countdown.setToWaitingOnBlueDb();
+		assertFalse(successfullyCloses(closeable, 200));
+		countdown.setToWaitingOnClient();
+		assertTrue(countdown.remainingTime() > 15);
+		assertTrue(successfullyCloses(closeable, 2000));
+
+		closeable = new TestingCloseable(); 
 		new AutoCloseCountdown(closeable, 3000);
 		assertFalse(successfullyCloses(closeable, 100));
 	}
