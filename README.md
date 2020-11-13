@@ -1,6 +1,6 @@
 # BlueDB
 
-### BlueDB is an on-disk, special-purpose datastore optimized for time-based reporting using small amounts of memory.
+### BlueDB is an on-disk, special-purpose datastore optimized for time-based data retrieval using small amounts of memory.
 
 [Developer Quickstart Guide](https://www.bluedb.org/quick-start.html)
 
