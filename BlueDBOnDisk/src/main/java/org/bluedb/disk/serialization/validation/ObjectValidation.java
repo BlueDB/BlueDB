@@ -6,6 +6,9 @@ import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 public class ObjectValidation {
@@ -23,8 +26,12 @@ public class ObjectValidation {
 		
 		if(obj.getClass().isArray()) {
 			handleArray(obj, previouslyValidatedObjects);
+		} else if(obj instanceof Iterable) { 
+			handleIterable((Iterable<?>)obj, previouslyValidatedObjects);
+		} else if(obj instanceof Map<?, ?>) {
+			handleMap((Map<?, ?>)obj, previouslyValidatedObjects);
 		} else {
-			handleObject(obj, previouslyValidatedObjects);
+			handleObject(obj, previouslyValidatedObjects, true);
 		}
 	}
 
@@ -38,7 +45,37 @@ public class ObjectValidation {
 		}
 	}
 
-	private static void handleObject(Object obj, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
+	private static void handleIterable(Iterable<?> iterable, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
+		Iterator<?> it = iterable.iterator();
+		while(it.hasNext()) {
+			Object obj = it.next();
+			if(obj != null && !previouslyValidatedObjects.contains(obj)) {
+				previouslyValidatedObjects.add(obj);
+				validateFieldValueTypesForObject(obj, previouslyValidatedObjects);
+			}
+		}
+		handleObject(iterable, previouslyValidatedObjects, false); //Make sure that primitives are valid
+	}
+
+	private static void handleMap(Map<?,?> map, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
+		Iterator<?> it = map.entrySet().iterator();
+		while(it.hasNext()) {
+			Entry<?, ?> entry = (Entry<?, ?>) it.next();
+			if(entry != null) {
+				if(entry.getKey() != null && !previouslyValidatedObjects.contains(entry.getKey())) {
+					previouslyValidatedObjects.add(entry.getKey());
+					validateFieldValueTypesForObject(entry.getKey(), previouslyValidatedObjects);
+				}
+				if(entry.getValue() != null && !previouslyValidatedObjects.contains(entry.getValue())) {
+					previouslyValidatedObjects.add(entry.getValue());
+					validateFieldValueTypesForObject(entry.getValue(), previouslyValidatedObjects);
+				}
+			}
+		}
+		handleObject(map, previouslyValidatedObjects, false); //Make sure that primitives are valid
+	}
+
+	private static void handleObject(Object obj, Set<Object> previouslyValidatedObjects, boolean delveIntoObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {
 		Class<?> currentClass = obj.getClass();
 		while(currentClass != Object.class && currentClass != null) {
 			Field[] fields = currentClass.getDeclaredFields();
@@ -50,7 +87,7 @@ public class ObjectValidation {
 						if(fieldValue != null) {
 							validateFieldValueType(field, fieldValue);
 							
-							if(shouldDelveIntoObject(field, fieldValue, previouslyValidatedObjects)) {
+							if(delveIntoObjects && shouldDelveIntoObject(field, fieldValue, previouslyValidatedObjects)) {
 								previouslyValidatedObjects.add(fieldValue);
 								validateFieldValueTypesForObject(fieldValue, previouslyValidatedObjects);
 							}
