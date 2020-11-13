@@ -24,6 +24,8 @@ public class ObjectValidation {
 			return;
 		}
 		
+		previouslyValidatedObjects.add(obj);
+		
 		if(obj.getClass().isArray()) {
 			handleArray(obj, previouslyValidatedObjects);
 		} else if(obj instanceof Iterable) { 
@@ -39,7 +41,6 @@ public class ObjectValidation {
 		for(int i = 0; i < Array.getLength(objArray); i++) {
 			Object obj = Array.get(objArray, i);
 			if(obj != null && !previouslyValidatedObjects.contains(obj)) {
-				previouslyValidatedObjects.add(obj);
 				validateFieldValueTypesForObject(obj, previouslyValidatedObjects);
 			}
 		}
@@ -50,7 +51,6 @@ public class ObjectValidation {
 		while(it.hasNext()) {
 			Object obj = it.next();
 			if(obj != null && !previouslyValidatedObjects.contains(obj)) {
-				previouslyValidatedObjects.add(obj);
 				validateFieldValueTypesForObject(obj, previouslyValidatedObjects);
 			}
 		}
@@ -63,11 +63,9 @@ public class ObjectValidation {
 			Entry<?, ?> entry = (Entry<?, ?>) it.next();
 			if(entry != null) {
 				if(entry.getKey() != null && !previouslyValidatedObjects.contains(entry.getKey())) {
-					previouslyValidatedObjects.add(entry.getKey());
 					validateFieldValueTypesForObject(entry.getKey(), previouslyValidatedObjects);
 				}
 				if(entry.getValue() != null && !previouslyValidatedObjects.contains(entry.getValue())) {
-					previouslyValidatedObjects.add(entry.getValue());
 					validateFieldValueTypesForObject(entry.getValue(), previouslyValidatedObjects);
 				}
 			}
@@ -88,7 +86,6 @@ public class ObjectValidation {
 							validateFieldValueType(field, fieldValue);
 							
 							if(delveIntoObjects && shouldDelveIntoObject(field, fieldValue, previouslyValidatedObjects)) {
-								previouslyValidatedObjects.add(fieldValue);
 								validateFieldValueTypesForObject(fieldValue, previouslyValidatedObjects);
 							}
 						}
