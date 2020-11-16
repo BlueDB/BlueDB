@@ -11,13 +11,16 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bluedb.TestUtils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.models.calls.Call;
+import org.bluedb.disk.models.calls.CallV2;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.junit.Assert;
@@ -133,6 +136,33 @@ public class ObjectValidationTest {
 			e.printStackTrace();
 			fail();
 		}
+	}
+	
+	@Test
+	public void testMassiveArrayOfValidCalls() throws IllegalArgumentException, IllegalAccessException, SerializationException {
+		CallV2[] calls = new CallV2[100000];
+		for(int i = 0; i < 100000; i++) {
+			calls[i] = CallV2.generateBasicTestCall();
+		}
+		ObjectValidation.validateFieldValueTypesForObject(calls);
+	}
+	
+	@Test
+	public void testMassiveIterableOfValidCalls() throws IllegalArgumentException, IllegalAccessException, SerializationException {
+		List<CallV2> calls = new LinkedList<>();
+		for(int i = 0; i < 100000; i++) {
+			calls.add(CallV2.generateBasicTestCall());
+		}
+		ObjectValidation.validateFieldValueTypesForObject(calls);
+	}
+	
+	@Test
+	public void testMassiveMapOfValidCalls() throws IllegalArgumentException, IllegalAccessException, SerializationException {
+		Map<UUID, CallV2> calls = new HashMap<>();
+		for(int i = 0; i < 100000; i++) {
+			calls.put(UUID.randomUUID(), CallV2.generateBasicTestCall());
+		}
+		ObjectValidation.validateFieldValueTypesForObject(calls);
 	}
 
 	@Test
