@@ -291,6 +291,34 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		getRecoveryManager().recover();
 	}
 
+	@Test
+	public void test_recover_emptyChange() throws Exception {
+		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.RECOVERY_FOLDER, RecoveryManager.HISTORY_SUBFOLDER, "empty" + RecoveryManager.SUFFIX);
+		pathForGarbage.getParent().toFile().mkdirs();
+		byte[] bytes = new byte[]{};
+
+		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
+			fos.write(bytes);
+			fos.close();
+		}
+
+		getRecoveryManager().recover();
+	}
+
+	@Test
+	public void test_recover_emptyPendingChange() throws Exception {
+		Path pathForGarbage = Paths.get(getTimeCollection().getPath().toString(), RecoveryManager.RECOVERY_FOLDER, RecoveryManager.HISTORY_SUBFOLDER, "empty" + RecoveryManager.SUFFIX_PENDING);
+		pathForGarbage.getParent().toFile().mkdirs();
+		byte[] bytes = new byte[]{};
+
+		try (FileOutputStream fos = new FileOutputStream(pathForGarbage.toFile())) {
+			fos.write(bytes);
+			fos.close();
+		}
+
+		getRecoveryManager().recover();
+	}
+
 	private Recoverable<TestValue> createRecoverable(long time){
 		return new TestRecoverable(time);
 	}
