@@ -91,7 +91,11 @@ public class RecoveryManager<T extends Serializable> {
 			try {
 				@SuppressWarnings("unchecked")
 				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
-				changes.add(change);
+				if(change != null) {
+					changes.add(change);
+				} else {
+					System.out.println("BlueDB ignoring empty or missing recovery file: " + file.getAbsolutePath());
+				}
 			} catch (Throwable t) {
 				System.out.println("BlueDB ignoring corrupt recovery file: " + file.getAbsolutePath());
 			}
