@@ -27,6 +27,7 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingBatchChange;
@@ -83,7 +84,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		
 		ReadWriteDbOnDisk newDb = (ReadWriteDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db.getPath()).build();
 		newDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
-		assertTrue(Files.exists(segmentSizePath));
+		assertTrue(FileUtils.exists(segmentSizePath));
 	}
 
 	@Test

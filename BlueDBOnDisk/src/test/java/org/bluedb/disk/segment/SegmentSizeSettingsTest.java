@@ -39,6 +39,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
+import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
@@ -209,7 +210,7 @@ public class SegmentSizeSettingsTest {
 		List<SegmentSizeSetting> allValuesInCodeInAlphabeticalOrder = Arrays.asList(SegmentSizeSetting.values());
 		Collections.sort(allValuesInCodeInAlphabeticalOrder, Comparator.comparing(SegmentSizeSetting::name));
 		
-		if(Files.exists(serializedSettingsPath)) {
+		if(FileUtils.exists(serializedSettingsPath)) {
 			@SuppressWarnings("unchecked")
 			List<SegmentSizeSetting> allSerializedValues = (List<SegmentSizeSetting>) serializer.deserializeObjectFromByteArray(Files.readAllBytes(serializedSettingsPath));
 			

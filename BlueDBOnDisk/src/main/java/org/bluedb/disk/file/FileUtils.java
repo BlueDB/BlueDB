@@ -87,6 +87,13 @@ public class FileUtils {
 		String fileName = file.getName();
 		return fileName.startsWith(TEMP_FILE_PREFIX);
 	}
+	
+	public static boolean exists(Path path) {
+		if(path == null) {
+			return false;
+		}
+		return path.toFile().exists();
+	}
 
 	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
 		Path dst = lock.getKey();

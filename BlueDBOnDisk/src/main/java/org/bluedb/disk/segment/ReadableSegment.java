@@ -2,7 +2,6 @@ package org.bluedb.disk.segment;
 
 import java.io.File;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -103,13 +102,13 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 	public Path getPathFor(long groupingNumber) throws BlueDbException {
 		for (long rollupLevel: rollupLevels) {
 			Path path = getPathFor(groupingNumber, rollupLevel);
-			if(Files.exists(path)) {
+			if(FileUtils.exists(path)) {
 				return path;
 			}
 		}
 		if (groupingNumber < segmentRange.getStart()) {
 			Path path = getPathFor(preSegmentRange);
-			if(Files.exists(path)) {
+			if(FileUtils.exists(path)) {
 				return path;
 			}
 		}
