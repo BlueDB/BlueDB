@@ -21,7 +21,6 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
-import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.IndexableTestValue;
@@ -29,7 +28,9 @@ import org.bluedb.disk.IndexableTestValue.IndexableTestValueIntIndexExtractor;
 import org.bluedb.disk.IndexableTestValue.IndexableTestValueLongIndexExtractor;
 import org.bluedb.disk.IndexableTestValue.IndexableTestValueStringIndexExtractor;
 import org.bluedb.disk.IndexableTestValue.IndexableTestValueUUIDIndexExtractor;
+import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
+import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
@@ -89,7 +90,7 @@ public class LegacyCollectionSupportTest extends TestCase {
 		tmpDirPath = createTempFolder().toPath();
 		dbPath = tmpDirPath.resolve(DB_NAME);
 		
-		if(Files.exists(backupPath)) {
+		if(FileUtils.exists(backupPath)) {
 			ZipUtils.extractFiles(backupPath, tmpDirPath);
 		}
 		
@@ -141,7 +142,7 @@ public class LegacyCollectionSupportTest extends TestCase {
 		allValuesToTest = new ArrayList<>(existingValuesToTest);
 		allValuesToTest.addAll(newValuesToTest);
 		
-		if(!Files.exists(backupPath)) {
+		if(!FileUtils.exists(backupPath)) {
 			insertValues(existingValuesToTest);
 			createBackup();
 		}

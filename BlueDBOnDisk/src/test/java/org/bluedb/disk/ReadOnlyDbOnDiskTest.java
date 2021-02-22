@@ -27,6 +27,7 @@ import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.index.TestMultiRetrievalKeyExtractor;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
@@ -100,7 +101,7 @@ public class ReadOnlyDbOnDiskTest extends BlueDbDiskTestBase {
 		assertNotNull(collection);
 		assertEquals(collection, readOnlyDb.getCollection(getTimeCollectionName(), TestValue.class));
 		assertNull(db.getCollection("non-existing", TestValue.class));
-		assertFalse(Files.exists(segmentSizePath));
+		assertFalse(FileUtils.exists(segmentSizePath));
 	}
 
 	@Test

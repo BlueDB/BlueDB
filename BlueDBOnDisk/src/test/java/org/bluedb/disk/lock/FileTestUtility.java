@@ -9,6 +9,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.bluedb.disk.file.FileUtils;
+
 public class FileTestUtility {
 	public static void main(String[] args) throws IOException {
 		String action = args[0];
@@ -43,7 +45,7 @@ public class FileTestUtility {
 		byte[] bytes = new byte[(int)testFileSize]; 
 		new Random().nextBytes(bytes);
 		Files.write(testFile, bytes);
-		boolean success = Files.exists(testFile) && Files.size(testFile) == testFileSize;
+		boolean success = FileUtils.exists(testFile) && Files.size(testFile) == testFileSize;
 		System.out.println("Create Complete [success]" + success);
 	}
 
@@ -65,7 +67,7 @@ public class FileTestUtility {
 	private static void deleteTestFile(Path testFile) throws IOException {
 		System.out.println("Deleting test file " + testFile);
 		Files.delete(testFile);
-		boolean success = !Files.exists(testFile);
+		boolean success = !FileUtils.exists(testFile);
 		System.out.println("Delete Complete [success]" + success);
 	}
 

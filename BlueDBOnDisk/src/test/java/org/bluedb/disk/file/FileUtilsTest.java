@@ -132,6 +132,14 @@ public class FileUtilsTest extends TestCase {
 			FileUtils.ensureDirectoryExists(targetFilePath.toFile()); // make sure a second one doesn't error out
 		}
 	}
+	
+	@Test
+	public void test_exists() throws BlueDbException {
+		assertFalse(FileUtils.exists(null));
+		assertFalse(FileUtils.exists(testPath));
+		FileUtils.ensureFileExists(testPath);
+		assertTrue(FileUtils.exists(testPath));
+	}
 
 	@Test
 	public void test_createTempFilePath() {
@@ -278,7 +286,7 @@ public class FileUtilsTest extends TestCase {
 	public void test_deleteIfExistsWithoutLock() throws IOException {
 		Path tempFile = Files.createTempFile("FileUtilsTest-test_deleteIfExistsWithoutLock1", ".bin");
 		tempFile.toFile().deleteOnExit();
-		assertTrue(Files.exists(tempFile));
+		assertTrue(FileUtils.exists(tempFile));
 		
 		tempFile.toFile().setReadOnly(); //Makes it so that a delete will fail
 		try {
@@ -287,7 +295,7 @@ public class FileUtilsTest extends TestCase {
 		} catch (BlueDbException e) {
 			//Expect it to fail
 		}
-		assertTrue(Files.exists(tempFile)); //File should still exist
+		assertTrue(FileUtils.exists(tempFile)); //File should still exist
 		
 		tempFile.toFile().setWritable(true); //Make it so that delete can succeed again
 		try {
@@ -295,7 +303,7 @@ public class FileUtilsTest extends TestCase {
 		} catch (BlueDbException e) {
 			fail(); //Should not throw exception
 		}
-		assertFalse(Files.exists(tempFile)); //File should be gone
+		assertFalse(FileUtils.exists(tempFile)); //File should be gone
 	}
 	
 	@Test
