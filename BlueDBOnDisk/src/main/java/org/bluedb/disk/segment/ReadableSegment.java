@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -21,14 +22,23 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 
 	protected final Path segmentPath;
 	protected final Range segmentRange;
-	protected final Range preSegmentRange;
+	protected final List<Range> preSegmentRanges;
 	protected final List<Long> rollupLevels;
 
 	public ReadableSegment(Path segmentPath, Range segmentRange, final List<Long> rollupLevels) {
 		this.segmentPath = segmentPath;
 		this.segmentRange = segmentRange;
 		this.rollupLevels = rollupLevels;
-		this.preSegmentRange = (segmentRange==null) ? null : new Range(0, segmentRange.getStart() - 1);
+		
+		this.preSegmentRanges = new LinkedList<>();
+		if(segmentRange != null) {
+			long preSegmentEnd = segmentRange.getStart() - 1;
+			if(preSegmentEnd > 0) {
+				this.preSegmentRanges.add(new Range(Long.MIN_VALUE, -1)); //Negative values before segment
+				this.preSegmentRanges.add(new Range(0, preSegmentEnd)); //Positive values before segment
+			}
+			this.preSegmentRanges.add(new Range(Long.MIN_VALUE, preSegmentEnd)); //Always want a range that covers the entire pre-segment
+		}
 	}
 
 	protected abstract ReadFileManager getFileManager();
@@ -106,12 +116,16 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 				return path;
 			}
 		}
-		if (groupingNumber < segmentRange.getStart()) {
-			Path path = getPathFor(preSegmentRange);
-			if(FileUtils.exists(path)) {
-				return path;
+		
+		for(Range preSegmentRange : preSegmentRanges) {
+			if(preSegmentRange.containsInclusive(groupingNumber)) {
+				Path path = getPathFor(preSegmentRange);
+				if(FileUtils.exists(path)) {
+					return path;
+				}
 			}
 		}
+		
 		return getPathFor(groupingNumber, 1);
 	}
 
@@ -124,8 +138,10 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 				.map( (rangeSize) -> Range.forValueAndRangeSize(groupingNumber, rangeSize))
 				.collect(Collectors.toList());
 		
-		if(groupingNumber < segmentRange.getStart()) {
-			chunkRanges.add(preSegmentRange);
+		for(Range preSegmentRange : preSegmentRanges) {
+			if(preSegmentRange.containsInclusive(groupingNumber)) {
+				chunkRanges.add(preSegmentRange);
+			}
 		}
 		
 		return chunkRanges;
@@ -152,6 +168,15 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 			}
 		}
 		return null;
+	}
+	
+	public boolean isValidPreSegmentRange(Range range) {
+		for(Range preSegmentRange : preSegmentRanges) {
+			if(preSegmentRange.equals(range)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override

@@ -796,7 +796,8 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 				new Range(70, 79), 
 				new Range(60, 89), 
 				new Range(60, 119),
-				new Range(0, 119) //Pre segment chunk range
+				new Range(0, 119), //Pre segment positive
+				new Range(Long.MIN_VALUE, 119) //Pre segment total
 		));
 		
 		assertEquals(expectedFor120, new HashSet<>(segment.calculatePossibleChunkRanges(120)));

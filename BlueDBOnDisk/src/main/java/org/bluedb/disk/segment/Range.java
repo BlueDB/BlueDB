@@ -24,7 +24,12 @@ public final class Range implements Comparable<Range> {
 	}
 
 	public long length() {
-		return getEnd() - getStart() + 1;
+		long length = getEnd() - getStart() + 1;
+		if(length > 0) {
+			return length;
+		} else {
+			return Long.MAX_VALUE; //It overflowed, so just return the max value
+		}
 	}
 
 	public boolean containsInclusive(long point) {

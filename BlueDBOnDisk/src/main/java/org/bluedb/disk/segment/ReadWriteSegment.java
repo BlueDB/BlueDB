@@ -194,10 +194,10 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 	}
 
 	public boolean isValidRollupRange(Range timeRange) {
-		if (preSegmentRange.equals(timeRange)) {
+		if (isValidPreSegmentRange(timeRange)) {
 			return true;
 		}
-		long rollupSize = timeRange.getEnd() - timeRange.getStart() + 1;  // Note: can overflow
+		long rollupSize = timeRange.length();
 		boolean isValidSize = rollupLevels.contains(rollupSize);
 		boolean isValidStartPoint = timeRange.getStart() % rollupSize == 0;
 		return isValidSize && isValidStartPoint;
@@ -270,8 +270,13 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 		CheckedFunction<Long, Range> toRange = (l) -> Range.forValueAndRangeSize(currentChunkRange.getStart(), l);
 		List<Range> possibleRollupRanges = Blutils.mapIgnoringExceptions(rollupLevelsLargerThanChunk, toRange);
 		List<Range> rollupRangesEnclosingChunk = Blutils.filter(possibleRollupRanges, (r) -> r.encloses(currentChunkRange));
+		
 		if (currentChunkRange.getEnd() < segmentRange.getStart()) {
-			rollupRangesEnclosingChunk.add(preSegmentRange);
+			for(Range preSegmentRange : preSegmentRanges) {
+				if(preSegmentRange.encloses(currentChunkRange)) {
+					rollupRangesEnclosingChunk.add(preSegmentRange);
+				}
+			}
 		}
 		return rollupRangesEnclosingChunk;
 	}
