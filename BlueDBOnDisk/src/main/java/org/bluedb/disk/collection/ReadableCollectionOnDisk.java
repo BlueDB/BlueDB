@@ -130,7 +130,9 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 			} else {
 				segmentSize = (requestedSegmentSize != null) ? requestedSegmentSize : SegmentSizeSetting.getDefaultSettingsFor(keyType);
 			}
-			
+			if (segmentSize == null) {
+				return null;
+			}
 			if (metaData instanceof ReadWriteCollectionMetaData) {
 				((ReadWriteCollectionMetaData)metaData).saveSegmentSize(segmentSize);
 			}

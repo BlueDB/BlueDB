@@ -136,6 +136,9 @@ public enum SegmentSizeSetting {
 	}
 
 	public static SegmentSizeSetting getDefaultSettingsFor(Class<? extends BlueKey> keyType) throws BlueDbException {
+		if (keyType == null) {
+			return null;
+		}
 		if (TimeKey.class.isAssignableFrom(keyType)) {
 			return TIME_1_HOUR;
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
@@ -150,7 +153,9 @@ public enum SegmentSizeSetting {
 	}
 
 	public static SegmentSizeSetting getOriginalDefaultSettingsFor(Class<? extends BlueKey> keyType) throws BlueDbException {
-		if (TimeKey.class.isAssignableFrom(keyType)) {
+		if (keyType == null) {
+			return null;
+		} else if (TimeKey.class.isAssignableFrom(keyType)) {
 			return TIME_1_HOUR;
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
 			return LONG_128;

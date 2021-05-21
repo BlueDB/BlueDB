@@ -172,6 +172,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	protected List<ReadWriteCollectionOnDisk<?>> getAllCollectionsFromDisk() throws BlueDbException {
 		List<File> subfolders = FileUtils.getSubFolders(path.toFile());
 		List<ReadWriteCollectionOnDisk<?>> collections = Blutils.map(subfolders, (folder) -> getUntypedCollectionForBackup(folder.getName()));
+		collections.removeIf(readWriteCollectionOnDisk -> readWriteCollectionOnDisk == null);
 		return collections;
 	}
 
@@ -183,6 +184,9 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		}
 		if (collection == null) {
 			collection = new ReadWriteCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
+		}
+		if (collection.getKeyType() == null) {
+			return null;
 		}
 		return collection;
 	}

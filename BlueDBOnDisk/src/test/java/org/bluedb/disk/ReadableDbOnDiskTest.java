@@ -64,6 +64,12 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		} catch (Throwable e) {
 		}
 	}
+    //This test we want to pass into getUntypedCollectionForBackup a string for a filename which does not contain a .meta key_type file
+    //Currently it is causing a null pointer when this happens
+	@Test
+    public void test_getUntypedCollectionForBackup_withInvalidPath() throws BlueDbException {
+        assertNull(db.getUntypedCollectionForBackup("bad_folder"));
+    }
 
 	@SuppressWarnings("deprecation")
 	@Test
@@ -753,6 +759,16 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
         allCollections = db().getAllCollectionsFromDisk();
         assertEquals(7, allCollections.size());
 	}
+
+	@Test
+    public void test_getAllCollectionsFromDiskWithNullKeyType() throws Exception {
+	    getTimeCollection();
+        List<ReadWriteCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
+        assertEquals(5, allCollections.size());
+        db().getCollectionBuilder("null_key", null, String.class).build();
+        allCollections = db().getAllCollectionsFromDisk();
+        assertEquals(5, allCollections.size());
+    }
 
 	@Test
 	public void test_backup() throws Exception {

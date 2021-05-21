@@ -61,8 +61,12 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 		fileManager = new ReadWriteFileManager(serializer);
 		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
 		Rollupable rollupable = this;
-		segmentManager = new ReadWriteSegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
 		indexManager = new ReadWriteIndexManager<T>(this, collectionPath);
+		if (segmentSizeSettings == null) {
+			segmentManager = null;
+			return;
+		}
+		segmentManager = new ReadWriteSegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
 	
