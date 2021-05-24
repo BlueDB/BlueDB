@@ -11,6 +11,7 @@ import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
@@ -42,7 +43,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	public abstract ReadableSegmentManager<T> getSegmentManager();
 	public abstract <I extends ValueKey> BlueIndex<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
 
-	public ReadableCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadableCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException, InvalidKeyTypeException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		boolean isNewCollection = !collectionPath.toFile().exists();
@@ -51,6 +52,9 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		Class<? extends Serializable>[] classesToRegister = getClassesToRegister(additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		keyType = determineKeyType(metaData, requestedKeyType);
+		if (keyType == null) {
+			throw new InvalidKeyTypeException("null keyType");
+		}
 		segmentSizeSettings = determineSegmentSize(metaData, keyType, segmentSize, isNewCollection);
 	}
 
@@ -129,9 +133,6 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 				segmentSize = SegmentSizeSetting.getOriginalDefaultSettingsFor(keyType);
 			} else {
 				segmentSize = (requestedSegmentSize != null) ? requestedSegmentSize : SegmentSizeSetting.getDefaultSettingsFor(keyType);
-			}
-			if (segmentSize == null) {
-				return null;
 			}
 			if (metaData instanceof ReadWriteCollectionMetaData) {
 				((ReadWriteCollectionMetaData)metaData).saveSegmentSize(segmentSize);

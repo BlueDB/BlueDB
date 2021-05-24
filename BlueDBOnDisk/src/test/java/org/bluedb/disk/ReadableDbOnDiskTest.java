@@ -1,5 +1,6 @@
 package org.bluedb.disk;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,7 +69,9 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
     //Currently it is causing a null pointer when this happens
 	@Test
     public void test_getUntypedCollectionForBackup_withInvalidPath() throws BlueDbException {
-        assertNull(db.getUntypedCollectionForBackup("bad_folder"));
+        assertNull(db.getUntypedCollectionForBackup("nonexistent_folder"));
+        File temp = createTempFolder("empty_folder");
+        assertNull(db.getUntypedCollectionForBackup(temp.getName()));
     }
 
 	@SuppressWarnings("deprecation")

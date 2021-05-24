@@ -12,6 +12,7 @@ import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadableBlueDb;
 import org.bluedb.api.ReadableBlueTimeCollection;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.FacadeCollection;
@@ -68,10 +69,21 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	}
 
 	private <T extends Serializable> ReadOnlyCollectionOnDisk<T> instantiateCollectionFromExistingOnDisk(String name, Class<T> valueType) throws BlueDbException {
-		ReadOnlyCollectionOnDisk<T> collection = new ReadOnlyCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
+		ReadOnlyCollectionOnDisk<T> collection = null;
+		try {
+			collection = new ReadOnlyCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
+		} catch (InvalidKeyTypeException ex) {
+			ex.printStackTrace();
+			throw new BlueDbException("There was a null keyType");
+		}
 		if (TimeKey.class.isAssignableFrom(collection.getKeyType())) {
 			Class<? extends BlueKey> keyType = collection.getKeyType();
-			collection = new ReadOnlyTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
+			try {
+				collection = new ReadOnlyTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
+			} catch (InvalidKeyTypeException e) {
+				e.printStackTrace();
+				throw new BlueDbException("There was a null keyType");
+			}
 		}
 		return collection;
 	}

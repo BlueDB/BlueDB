@@ -12,6 +12,7 @@ import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
@@ -48,11 +49,11 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	private final ReadWriteSegmentManager<T> segmentManager;
 	protected final ReadWriteIndexManager<T> indexManager;
 
-	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException, InvalidKeyTypeException {
 		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
-	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException, InvalidKeyTypeException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		sharedExecutor = db.getSharedExecutor();
 		collectionKey = getPath().toString();
@@ -62,10 +63,6 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
 		Rollupable rollupable = this;
 		indexManager = new ReadWriteIndexManager<T>(this, collectionPath);
-		if (segmentSizeSettings == null) {
-			segmentManager = null;
-			return;
-		}
 		segmentManager = new ReadWriteSegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
 		recoveryManager.recover();  // everything else has to be in place before running this
 	}
