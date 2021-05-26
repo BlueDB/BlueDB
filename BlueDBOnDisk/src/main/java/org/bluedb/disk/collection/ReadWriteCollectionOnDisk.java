@@ -12,7 +12,6 @@ import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
@@ -49,11 +48,11 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	private final ReadWriteSegmentManager<T> segmentManager;
 	protected final ReadWriteIndexManager<T> indexManager;
 
-	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException, InvalidKeyTypeException {
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
-	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException, InvalidKeyTypeException {
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		sharedExecutor = db.getSharedExecutor();
 		collectionKey = getPath().toString();

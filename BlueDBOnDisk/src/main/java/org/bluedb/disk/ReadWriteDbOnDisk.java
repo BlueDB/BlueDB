@@ -16,7 +16,6 @@ import org.bluedb.api.BlueDb;
 import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.BlueTimeCollectionBuilder;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
@@ -71,12 +70,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 			@SuppressWarnings("unchecked")
 			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				try {
-					collection = new ReadWriteCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
-				} catch (InvalidKeyTypeException ex) {
-					ex.printStackTrace();
-					return null;
-				}
+				collection = new ReadWriteCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
@@ -96,12 +90,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 			@SuppressWarnings("unchecked")
 			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				try {
-					collection = new ReadWriteTimeCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
-				} catch (InvalidKeyTypeException ex) {
-					ex.printStackTrace();
-					throw new BlueDbException("There was an invalid keyType");
-				}
+				collection = new ReadWriteTimeCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
@@ -187,7 +176,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	protected ReadWriteCollectionOnDisk getUntypedCollectionForBackup(String folderName) throws BlueDbException {
+	protected ReadWriteCollectionOnDisk getUntypedCollectionForBackup(String folderName) {
 		ReadWriteCollectionOnDisk collection;
 		synchronized (collections) {
 			collection = collections.get(folderName);
@@ -195,9 +184,8 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		if (collection == null) {
 			try {
 				collection = new ReadWriteCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
-			} catch (InvalidKeyTypeException ex) {
-				ex.printStackTrace();
-				return null;
+			} catch(Throwable t) {
+				t.printStackTrace();
 			}
 		}
 		return collection;

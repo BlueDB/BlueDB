@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
@@ -24,11 +23,11 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 	private final ReadOnlySegmentManager<T> segmentManager;
 	protected final ReadOnlyIndexManager<T> indexManager;
 
-	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException, InvalidKeyTypeException {
+	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
 		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
-	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException, InvalidKeyTypeException {
+	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		metadata = getOrCreateMetadata();
 		fileManager = new ReadOnlyFileManager(serializer);

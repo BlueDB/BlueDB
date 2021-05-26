@@ -11,7 +11,6 @@ import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
@@ -43,7 +42,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	public abstract ReadableSegmentManager<T> getSegmentManager();
 	public abstract <I extends ValueKey> BlueIndex<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
 
-	public ReadableCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException, InvalidKeyTypeException {
+	public ReadableCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		boolean isNewCollection = !collectionPath.toFile().exists();
@@ -52,9 +51,6 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		Class<? extends Serializable>[] classesToRegister = getClassesToRegister(additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		keyType = determineKeyType(metaData, requestedKeyType);
-		if (keyType == null) {
-			throw new InvalidKeyTypeException("null keyType");
-		}
 		segmentSizeSettings = determineSegmentSize(metaData, keyType, segmentSize, isNewCollection);
 	}
 
@@ -134,6 +130,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 			} else {
 				segmentSize = (requestedSegmentSize != null) ? requestedSegmentSize : SegmentSizeSetting.getDefaultSettingsFor(keyType);
 			}
+			
 			if (metaData instanceof ReadWriteCollectionMetaData) {
 				((ReadWriteCollectionMetaData)metaData).saveSegmentSize(segmentSize);
 			}
@@ -143,6 +140,11 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 
 	protected static Class<? extends BlueKey> determineKeyType(ReadableCollectionMetadata metaData, Class<? extends BlueKey> providedKeyType) throws BlueDbException {
 		Class<? extends BlueKey> storedKeyType = metaData.getKeyType();
+		
+		if(storedKeyType == null && providedKeyType == null) {
+			throw new BlueDbException("Unable to determine key type for collection at " + metaData.getPath() + ". You must initialize a pre-existing valid collection or provide a key type.");
+		} 
+		
 		if (storedKeyType == null) {
 			if (metaData instanceof ReadWriteCollectionMetaData) {
 				((ReadWriteCollectionMetaData)metaData).saveKeyType(providedKeyType);

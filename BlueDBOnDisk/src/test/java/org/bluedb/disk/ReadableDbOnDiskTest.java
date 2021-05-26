@@ -2,9 +2,11 @@ package org.bluedb.disk;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -765,12 +767,21 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
     public void test_getAllCollectionsFromDiskWithNullKeyType() throws Exception {
-	    getTimeCollection();
-        List<ReadWriteCollectionOnDisk<?>> allCollections = db().getAllCollectionsFromDisk();
-        assertEquals(5, allCollections.size());
-        db().getCollectionBuilder("null_key", null, String.class).build();
-        allCollections = db().getAllCollectionsFromDisk();
-        assertEquals(5, allCollections.size());
+        try {
+	        db().getCollectionBuilder("null_key", null, String.class).build();
+	        fail("Building a new collection with a null key type should have thrown an exception");
+        } catch(BlueDbException e) {
+        	//This is what we expect
+        }
+		
+        ReadWriteDbOnDisk newDatabase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();
+        List<ReadWriteCollectionOnDisk<?>> allCollections = newDatabase.getAllCollectionsFromDisk();
+        assertEquals("Failed to initialize all collections from disk", 5, allCollections.size());
+        
+        Files.delete(getTimeCollectionMetaData().getPath().resolve("key_type"));
+        newDatabase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();
+        allCollections = newDatabase.getAllCollectionsFromDisk();
+        assertEquals("Invalidating one collection caused other collections to fail to initialize from disk", 4, allCollections.size());
     }
 
 	@Test
@@ -804,7 +815,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_backup_fail() throws Exception {
+	public void test_invalidCollectionDoesNotStopEntireBackup() throws Exception {
 		@SuppressWarnings("rawtypes")
 		ReadWriteTimeCollectionOnDisk newUntypedCollection = (ReadWriteTimeCollectionOnDisk) db.getUntypedCollectionForBackup(getTimeCollectionName());
         Path serializedClassesPath = ReadWriteFileManager.getNewestVersionPath(newUntypedCollection.getPath().resolve(".meta"), ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
@@ -816,11 +827,24 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
         ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
         try {
             reopenedDatbase.backup(backedUpPath);
-            fail();  // because the "test2" collection was broken, the backup should error out;
+        } catch (BlueDbException e) {
+        	fail();  // The "test2" collection was broken, but the rest of the backup should still go on
+        }
+	}
 
+	@Test
+	public void test_backup_fail() throws Exception {
+        ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
+        try {
+        	Path backupZipPath = reopenedDatbase.getPath().resolve("path-that-will-fail.zip");
+        	Files.createFile(backupZipPath);
+        	try (FileChannel channel = FileChannel.open(backupZipPath, StandardOpenOption.APPEND)) { 
+        		channel.lock(); //Lock the file so it can't be written to and results in the backup failing
+        		reopenedDatbase.backup(reopenedDatbase.getPath().resolve(backupZipPath));
+        		fail();  // Should fail since the backup file is locked
+        	}
         } catch (BlueDbException e) {
         }
-
 	}
 
 	@Test
@@ -915,7 +939,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_backupTimeFrame_fail() throws Exception {
+	public void test_invalidTimeFrameCollectionDoesNotStopEntireBackup() throws Exception {
 		@SuppressWarnings("rawtypes")
 		ReadWriteTimeCollectionOnDisk newUntypedCollection = (ReadWriteTimeCollectionOnDisk) db.getUntypedCollectionForBackup(getTimeCollectionName());
         Path serializedClassesPath = ReadWriteFileManager.getNewestVersionPath(newUntypedCollection.getPath().resolve(".meta"), ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
@@ -927,11 +951,25 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
         ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
         try {
             reopenedDatbase.backupTimeFrame(backedUpPath, Long.MIN_VALUE, Long.MAX_VALUE);
-            fail();  // because the "test2" collection was broken, the backup should error out;
-
         } catch (BlueDbException e) {
+        	fail();  // The "test2" collection was broken, but the rest of the backup should still go on
         }
 
+	}
+
+	@Test
+	public void test_backupTimeFrame_fail() throws Exception {
+        ReadWriteDbOnDisk reopenedDatbase = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(getPath()).build();
+        try {
+        	Path backupZipPath = reopenedDatbase.getPath().resolve("path-that-will-fail.zip");
+        	Files.createFile(backupZipPath);
+        	try (FileChannel channel = FileChannel.open(backupZipPath, StandardOpenOption.APPEND)) { 
+        		channel.lock(); //Lock the file so it can't be written to and results in the backup failing
+        		reopenedDatbase.backupTimeFrame(backupZipPath, Long.MIN_VALUE, Long.MAX_VALUE);
+        		fail();  // Should fail since the backup file is locked
+        	}
+        } catch (BlueDbException e) {
+        }
 	}
 
 	@Test

@@ -6,7 +6,6 @@ import java.util.List;
 import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.BlueTimeQuery;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.exceptions.InvalidKeyTypeException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
@@ -17,7 +16,7 @@ import org.bluedb.disk.segment.SegmentSizeSetting;
 
 public class ReadWriteTimeCollectionOnDisk<T extends Serializable> extends ReadWriteCollectionOnDisk<T> implements BlueTimeCollection<T> {
 
-	public ReadWriteTimeCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException, InvalidKeyTypeException {
+	public ReadWriteTimeCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 	}
 
