@@ -140,6 +140,11 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 
 	protected static Class<? extends BlueKey> determineKeyType(ReadableCollectionMetadata metaData, Class<? extends BlueKey> providedKeyType) throws BlueDbException {
 		Class<? extends BlueKey> storedKeyType = metaData.getKeyType();
+		
+		if(storedKeyType == null && providedKeyType == null) {
+			throw new BlueDbException("Unable to determine key type for collection at " + metaData.getPath() + ". You must initialize a pre-existing valid collection or provide a key type.");
+		} 
+		
 		if (storedKeyType == null) {
 			if (metaData instanceof ReadWriteCollectionMetaData) {
 				((ReadWriteCollectionMetaData)metaData).saveKeyType(providedKeyType);

@@ -176,13 +176,17 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	protected ReadWriteCollectionOnDisk getUntypedCollectionForBackup(String folderName) throws BlueDbException {
+	protected ReadWriteCollectionOnDisk getUntypedCollectionForBackup(String folderName) {
 		ReadWriteCollectionOnDisk collection;
 		synchronized (collections) {
 			collection = collections.get(folderName);
 		}
 		if (collection == null) {
-			collection = new ReadWriteCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
+			try {
+				collection = new ReadWriteCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
+			} catch(Throwable t) {
+				t.printStackTrace();
+			}
 		}
 		return collection;
 	}
