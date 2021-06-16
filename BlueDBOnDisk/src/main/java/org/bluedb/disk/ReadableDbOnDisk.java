@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadableBlueDb;
 import org.bluedb.api.ReadableBlueTimeCollection;
+import org.bluedb.api.encryption.ReadableBlueDbEncryptionConfig;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
@@ -23,11 +24,13 @@ import org.bluedb.disk.collection.ReadOnlyTimeCollectionOnDisk;
 public class ReadableDbOnDisk implements ReadableBlueDb {
 
 	protected final Path path;
+	protected final ReadableBlueDbEncryptionConfig encryptionConfig;
 
 	private final Map<String, ReadOnlyCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
-	ReadableDbOnDisk(Path path) {
+	ReadableDbOnDisk(Path path, ReadableBlueDbEncryptionConfig encryptionConfig) {
 		this.path = path;
+		this.encryptionConfig = encryptionConfig;
 	}
 	
 	@Override

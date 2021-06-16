@@ -15,6 +15,7 @@ import org.bluedb.api.BlueCollectionBuilder;
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.BlueTimeCollectionBuilder;
+import org.bluedb.api.encryption.ReadWriteBlueDbEncryptionConfig;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
@@ -30,13 +31,15 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 
 	protected final BackupManager backupManager;
 	protected final BlueExecutor sharedExecutor;
+	protected final ReadWriteBlueDbEncryptionConfig encryptionConfig;
 	private final Map<String, ReadWriteCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
 
-	public ReadWriteDbOnDisk(Path path) {
-		super(path);
+	public ReadWriteDbOnDisk(Path path, ReadWriteBlueDbEncryptionConfig readWriteBlueDbEncryptionConfig) {
+		super(path, readWriteBlueDbEncryptionConfig);
 		this.backupManager = new BackupManager(this);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
+		this.encryptionConfig = readWriteBlueDbEncryptionConfig;
 	}
 
 	@Override
