@@ -5,8 +5,7 @@ import java.nio.file.Paths;
 
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.ReadableBlueDb;
-import org.bluedb.api.encryption.ReadWriteBlueDbEncryptionConfig;
-import org.bluedb.api.encryption.ReadableBlueDbEncryptionConfig;
+import org.bluedb.api.encryption.EncryptionConfig;
 
 /**
  * A builder for the {@link ReadableDbOnDisk} and {@link ReadWriteDbOnDisk} classes
@@ -14,8 +13,7 @@ import org.bluedb.api.encryption.ReadableBlueDbEncryptionConfig;
 public class BlueDbOnDiskBuilder {
 
 	private Path path = Paths.get(".", "bluedb");
-	private ReadableBlueDbEncryptionConfig readableBlueDbEncryptionConfig = null;
-	private ReadWriteBlueDbEncryptionConfig readWriteBlueDbEncryptionConfig = null;
+	private EncryptionConfig encryptionConfig = null;
 
 	/**
 	 * Sets the path you wish to use for the BlueDB data
@@ -29,13 +27,13 @@ public class BlueDbOnDiskBuilder {
 	}
 
 	/**
-	 * Enables encryption with a given encryption config.
+	 * Enables encryption with a given encryption config
 	 *
 	 * @param encryptionConfig the encryption config specifying how to encrypt and decrypt data
 	 * @return itself with the encryption config set
 	 */
-	public BlueDbOnDiskBuilder enableEncryption(ReadWriteBlueDbEncryptionConfig encryptionConfig) {
-		if (this.readableBlueDbEncryptionConfig != null || this.readWriteBlueDbEncryptionConfig != null) {
+	public BlueDbOnDiskBuilder enableEncryption(EncryptionConfig encryptionConfig) {
+		if (this.encryptionConfig != null) {
 			throw new IllegalStateException("encryption can only be enabled once");
 		}
 		if (encryptionConfig == null) {
@@ -45,28 +43,7 @@ public class BlueDbOnDiskBuilder {
 			throw new IllegalArgumentException("encryptionConfig#getCurrentEncryptionKeyVersion() cannot be null or empty");
 		}
 
-		this.readWriteBlueDbEncryptionConfig = encryptionConfig;
-		return this;
-	}
-
-	/**
-	 * Enables encryption with a given encryption config. Should only be used when building a {@link ReadableDbOnDisk}. When building a {@link ReadWriteDbOnDisk}, use {@link BlueDbOnDiskBuilder#enableEncryption(ReadWriteBlueDbEncryptionConfig)}
-	 *
-	 * @param encryptionConfig the encryption config specifying how to decrypt data
-	 * @return itself with the encryption config set
-	 */
-	public BlueDbOnDiskBuilder enableEncryption(ReadableBlueDbEncryptionConfig encryptionConfig) {
-		if (this.readableBlueDbEncryptionConfig != null || this.readWriteBlueDbEncryptionConfig != null) {
-			throw new IllegalStateException("encryption can only be enabled once");
-		}
-		if (encryptionConfig == null) {
-			throw new IllegalArgumentException("encryptionConfig cannot be null");
-		}
-		if (encryptionConfig.getCurrentEncryptionKeyVersion() == null || encryptionConfig.getCurrentEncryptionKeyVersion().trim().isEmpty()) {
-			throw new IllegalArgumentException("encryptionConfig#getCurrentEncryptionKeyVersion() cannot be null or empty");
-		}
-
-		this.readableBlueDbEncryptionConfig = encryptionConfig;
+		this.encryptionConfig = encryptionConfig;
 		return this;
 	}
 
@@ -76,7 +53,7 @@ public class BlueDbOnDiskBuilder {
 	 * @return the {@link BlueDb} built
 	 */
 	public BlueDb build() {
-		return new ReadWriteDbOnDisk(path, readWriteBlueDbEncryptionConfig);
+		return new ReadWriteDbOnDisk(path, encryptionConfig);
 	}
 
 	/**
@@ -85,7 +62,7 @@ public class BlueDbOnDiskBuilder {
 	 * @return the {@link ReadableBlueDb} built
 	 */
 	public ReadableBlueDb buildReadOnly() {
-		return new ReadableDbOnDisk(path, readableBlueDbEncryptionConfig);
+		return new ReadableDbOnDisk(path, encryptionConfig);
 	}
 
 	/**

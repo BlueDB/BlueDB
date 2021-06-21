@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 
+import org.bluedb.api.encryption.EncryptionService;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -22,11 +23,13 @@ import org.nustaq.serialization.simpleapi.DefaultCoder;
 public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
 	
 	private static final int MAX_ATTEMPTS = 5;
-	
+
+	protected final EncryptionService encryptionService;
 	private Class<?>[] registeredSerializableClasses;
-	
-	public ThreadLocalFstSerializer(Class<?>...registeredSerializableClasses) {
+
+	public ThreadLocalFstSerializer(EncryptionService encryptionService, Class<?>...registeredSerializableClasses) {
 		this.registeredSerializableClasses = registeredSerializableClasses;
+		this.encryptionService = encryptionService;
 	}
 
 	@Override
@@ -68,7 +71,7 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			try {
 				byte[] serializedBytes = get().toByteArray(o);
 				validateBytesAfterSerialization(serializedBytes);
-				return serializedBytes;
+				return encryptionService.encryptOrReturn(serializedBytes);
 			} catch(Throwable t) {
 				failureCause = t;
 				retryCount++;
@@ -120,6 +123,7 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 	}
 
 	private Object toObject(byte[] bytes) {
+		bytes = encryptionService.decryptOrReturn(bytes);
 		try {
 			return get().toObject(bytes);
 		} catch(Throwable t) {

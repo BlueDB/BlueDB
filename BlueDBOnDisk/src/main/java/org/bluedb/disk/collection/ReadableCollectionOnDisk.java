@@ -49,7 +49,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		collectionPath.toFile().mkdirs();
 		ReadableCollectionMetadata metaData = getOrCreateMetadata();
 		Class<? extends Serializable>[] classesToRegister = getClassesToRegister(additionalRegisteredClasses);
-		serializer = new ThreadLocalFstSerializer(classesToRegister);
+		serializer = new ThreadLocalFstSerializer(db.getEncryptionService(), classesToRegister);
 		keyType = determineKeyType(metaData, requestedKeyType);
 		segmentSizeSettings = determineSegmentSize(metaData, keyType, segmentSize, isNewCollection);
 	}
