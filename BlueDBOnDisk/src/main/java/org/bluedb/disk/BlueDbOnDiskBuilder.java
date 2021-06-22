@@ -11,13 +11,11 @@ import org.bluedb.api.encryption.EncryptionService;
  * A builder for the {@link ReadableDbOnDisk} and {@link ReadWriteDbOnDisk} classes
  */
 public class BlueDbOnDiskBuilder {
-
 	private Path path = Paths.get(".", "bluedb");
 	private EncryptionService encryptionService = null;
 
 	/**
 	 * Sets the path you wish to use for the BlueDB data
-	 *
 	 * @param path the path directory that will contain the BlueDB data
 	 * @return itself with the path set
 	 */

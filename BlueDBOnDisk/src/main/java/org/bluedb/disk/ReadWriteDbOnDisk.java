@@ -80,7 +80,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 			} else {
 				assertExistingCollectionIsType(collection, BlueCollection.class);
 			}
-			
+
 			BlueCollection<T> typedCollection = (BlueCollection<T>) collection;
 			return typedCollection;
 		}
@@ -220,5 +220,4 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	public BackupManager getBackupManager() {
 		return backupManager;
 	}
-
 }
