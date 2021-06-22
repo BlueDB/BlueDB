@@ -80,12 +80,12 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 			} else {
 				assertExistingCollectionIsType(collection, BlueCollection.class);
 			}
-
+			
 			BlueCollection<T> typedCollection = (BlueCollection<T>) collection;
 			return typedCollection;
 		}
 	}
-
+	
 	protected <T extends Serializable> BlueTimeCollection<T> initializeTimeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
@@ -100,13 +100,13 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 			} else {
 				assertExistingCollectionIsType(collection, BlueTimeCollection.class);
 			}
-
+			
 			@SuppressWarnings("unchecked")
 			BlueTimeCollection<T> typedCollection = (BlueTimeCollection<T>) collection;
 			return typedCollection;
 		}
 	}
-
+	
 	/*
 	 * TODO: Regarding getCollection and getTimeCollection: Should this return an existing collection even if the user has not
 	 * initialized/built the collection? I kind of like forcing read/write users to intialize/build the collection first so that
@@ -125,7 +125,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 			} else {
 				assertExistingCollectionIsType(untypedCollection, BlueCollection.class);
 			}
-
+			
 			@SuppressWarnings("unchecked")
 			BlueCollection<T> typedCollection = (BlueCollection<T>) untypedCollection;
 			return typedCollection;
@@ -151,7 +151,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 			throw new BlueDbException("BlueDB backup failed", e);
 		}
 	}
-
+	
 	@Override
 	public void backupTimeFrame(Path zipPath, long startTime, long endTime) throws BlueDbException {
 		try {
@@ -202,12 +202,12 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	public void shutdown() {
 		sharedExecutor.shutdown();
 	}
-
+	
 	@Override
 	public void shutdownNow() {
 		sharedExecutor.shutdownNow();
 	}
-
+	
 	@Override
 	public boolean awaitTermination(long timeout, TimeUnit timeUnit) throws BlueDbException {
 		try {

@@ -60,7 +60,7 @@ public class BlueDbOnDiskBuilder {
 	public ReadableBlueDb buildReadOnly() {
 		return new ReadableDbOnDisk(path, encryptionService);
 	}
-
+	
 	/**
 	 * Replaced by withPath<br><br>
 	 * Sets the path you wish to use for the BlueDB data

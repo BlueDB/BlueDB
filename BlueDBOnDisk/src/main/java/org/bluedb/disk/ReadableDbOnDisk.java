@@ -28,12 +28,12 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	protected final EncryptionServiceWrapper encryptionService;
 
 	private final Map<String, ReadOnlyCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
-
+	
 	ReadableDbOnDisk(Path path, EncryptionService encryptionService) {
 		this.path = path;
 		this.encryptionService = new EncryptionServiceWrapper(encryptionService);
 	}
-
+	
 	@Override
 	public <T extends Serializable> ReadableBlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
 		try {
@@ -101,11 +101,11 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	@Override
 	public void shutdown() {
 	}
-
+	
 	@Override
 	public void shutdownNow() {
 	}
-
+	
 	@Override
 	public boolean awaitTermination(long timeout, TimeUnit timeUnit) throws BlueDbException {
 		return true;
