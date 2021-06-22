@@ -38,7 +38,7 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 	@Override
 	protected ReadOnlyCollectionMetadata getOrCreateMetadata() {
 		if (metadata == null) {
-			metadata = new ReadOnlyCollectionMetadata(getPath());
+			metadata = new ReadOnlyCollectionMetadata(getPath(), this.encryptionService);
 		}
 		return metadata;
 	}

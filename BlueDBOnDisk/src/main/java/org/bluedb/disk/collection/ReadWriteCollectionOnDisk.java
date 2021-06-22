@@ -181,7 +181,7 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	@Override
 	protected ReadWriteCollectionMetaData getOrCreateMetadata() {
 		if (metadata == null) {
-			metadata = new ReadWriteCollectionMetaData(getPath());
+			metadata = new ReadWriteCollectionMetaData(getPath(), this.encryptionService);
 		}
 		return metadata;
 	}

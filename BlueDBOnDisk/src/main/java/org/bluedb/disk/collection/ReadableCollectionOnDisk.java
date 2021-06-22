@@ -10,6 +10,7 @@ import java.util.List;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.ReadableBlueCollection;
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
@@ -32,6 +33,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
+	protected final EncryptionServiceWrapper encryptionService;
 	protected final BlueSerializer serializer;
 	protected final Path collectionPath;
 	protected final SegmentSizeSetting segmentSizeSettings;
@@ -47,6 +49,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		boolean isNewCollection = !collectionPath.toFile().exists();
 		collectionPath.toFile().mkdirs();
+		encryptionService = db.getEncryptionService();
 		ReadableCollectionMetadata metaData = getOrCreateMetadata();
 		Class<? extends Serializable>[] classesToRegister = getClassesToRegister(additionalRegisteredClasses);
 		serializer = new ThreadLocalFstSerializer(db.getEncryptionService(), classesToRegister);

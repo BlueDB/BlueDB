@@ -15,7 +15,7 @@ import org.bluedb.api.BlueCollectionBuilder;
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.BlueTimeCollectionBuilder;
-import org.bluedb.api.encryption.EncryptionConfig;
+import org.bluedb.api.encryption.EncryptionService;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.backup.BackupManager;
@@ -34,15 +34,15 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	private final Map<String, ReadWriteCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 
 
-	public ReadWriteDbOnDisk(Path path, EncryptionConfig encryptionConfig) {
-		super(path, encryptionConfig);
+	public ReadWriteDbOnDisk(Path path, EncryptionService encryptionService) {
+		super(path, encryptionService);
 		this.backupManager = new BackupManager(this);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
 	}
 
 	@Override
 	@Deprecated
-	public <K extends BlueKey, T extends Serializable> BlueCollectionBuilder<K, T> collectionBuilder(String name, Class<K> keyType, Class<T> valueType) {
+	public <K extends BlueKey, T extends Serializable> BlueCollectionBuilder<K, T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
 		return getCollectionBuilder(name, keyType, valueType);
 	}
 
@@ -70,10 +70,10 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
-			if (collection == null) {
+			if(collection == null) {
 				collection = new ReadWriteCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
-			} else if (!collection.getType().equals(valueType)) {
+			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
 			} else if (!collection.getKeyType().equals(keyType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different key type (" + collection.getKeyType() + ") vs " + keyType);
@@ -90,10 +90,10 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
-			if (collection == null) {
+			if(collection == null) {
 				collection = new ReadWriteTimeCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
-			} else if (!collection.getType().equals(valueType)) {
+			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
 			} else if (!collection.getKeyType().equals(keyType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different key type (" + collection.getKeyType() + ") vs " + keyType);
@@ -115,7 +115,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 
 	@Override
 	public <T extends Serializable> BlueCollection<T> getCollection(String name, Class<T> valueType) throws BlueDbException {
-		synchronized (collections) {
+		synchronized(collections) {
 			ReadableCollectionOnDisk<?> untypedCollection = collections.get(name);
 			if (untypedCollection == null) {
 				return null;
@@ -135,7 +135,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	@Override
 	public <V extends Serializable> BlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException {
 		BlueCollection<V> collection = getCollection(name, valueType);
-		if (collection instanceof BlueTimeCollection) {
+		if(collection instanceof BlueTimeCollection) {
 			return (BlueTimeCollection<V>) collection;
 		} else {
 			throw new BlueDbException("Cannot cast " + collection.getClass() + " to " + BlueTimeCollection.class);
@@ -163,7 +163,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	}
 
 	protected static void assertExistingCollectionIsType(ReadableCollectionOnDisk<?> collection, Class<?> klazz) throws BlueDbException {
-		if (!klazz.isAssignableFrom(collection.getClass())) {
+		if(!klazz.isAssignableFrom(collection.getClass())) {
 			String name = collection.getPath().toFile().getName();
 			throw new BlueDbException("The " + name + " collection already exists but it cannot be cast to a " + klazz.getSimpleName() + ". InvalidType=" + collection.getClass());
 		}
@@ -185,7 +185,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		if (collection == null) {
 			try {
 				collection = new ReadWriteCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
-			} catch (Throwable t) {
+			} catch(Throwable t) {
 				t.printStackTrace();
 			}
 		}
@@ -212,7 +212,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	public boolean awaitTermination(long timeout, TimeUnit timeUnit) throws BlueDbException {
 		try {
 			return sharedExecutor.awaitTermination(timeout, timeUnit);
-		} catch (Throwable t) {
+		} catch(Throwable t) {
 			throw new BlueDbException("Failure during shutdown", t);
 		}
 	}

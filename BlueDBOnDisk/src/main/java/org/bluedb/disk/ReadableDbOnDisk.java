@@ -6,14 +6,13 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadableBlueDb;
 import org.bluedb.api.ReadableBlueTimeCollection;
-import org.bluedb.api.encryption.EncryptionConfig;
 import org.bluedb.api.encryption.EncryptionService;
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
@@ -26,13 +25,13 @@ import org.bluedb.disk.collection.ReadOnlyTimeCollectionOnDisk;
 public class ReadableDbOnDisk implements ReadableBlueDb {
 
 	protected final Path path;
-	protected final EncryptionService encryptionService;
+	protected final EncryptionServiceWrapper encryptionService;
 
 	private final Map<String, ReadOnlyCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 
-	ReadableDbOnDisk(Path path, EncryptionConfig encryptionConfig) {
+	ReadableDbOnDisk(Path path, EncryptionService encryptionService) {
 		this.path = path;
-		this.encryptionService = new EncryptionService(encryptionConfig);
+		this.encryptionService = new EncryptionServiceWrapper(encryptionService);
 	}
 
 	@Override
@@ -45,7 +44,7 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	}
 
 	private <T extends Serializable> ReadOnlyCollectionOnDisk<?> getUntypedCollectionIfExists(String name, Class<T> valueType) throws BlueDbException {
-		synchronized (collections) {
+		synchronized(collections) {
 			ReadOnlyCollectionOnDisk<?> collection = collections.get(name);
 			if (collection != null) {
 				return collection;
@@ -85,7 +84,7 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	public <V extends Serializable> ReadableBlueTimeCollection<V> getTimeCollection(String name, Class<V> valueType) throws BlueDbException {
 		try {
 			ReadableBlueCollection<V> collection = getExistingCollection(name, valueType);
-			if (collection instanceof ReadableBlueTimeCollection) {
+			if(collection instanceof ReadableBlueTimeCollection) {
 				return (ReadableBlueTimeCollection<V>) collection;
 			} else {
 				throw new BlueDbException("Cannot cast " + collection.getClass() + " to " + ReadableBlueTimeCollection.class);
@@ -116,6 +115,6 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 		return path;
 	}
 
-	public EncryptionService getEncryptionService() { return encryptionService; }
+	public EncryptionServiceWrapper getEncryptionService() { return encryptionService; }
 
 }

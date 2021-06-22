@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 
-import org.bluedb.api.encryption.EncryptionService;
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -24,12 +24,12 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 	
 	private static final int MAX_ATTEMPTS = 5;
 
-	protected final EncryptionService encryptionService;
+	protected final EncryptionServiceWrapper encryptionService;
 	private Class<?>[] registeredSerializableClasses;
 
-	public ThreadLocalFstSerializer(EncryptionService encryptionService, Class<?>...registeredSerializableClasses) {
-		this.registeredSerializableClasses = registeredSerializableClasses;
+	public ThreadLocalFstSerializer(EncryptionServiceWrapper encryptionService, Class<?>...registeredSerializableClasses) {
 		this.encryptionService = encryptionService;
+		this.registeredSerializableClasses = registeredSerializableClasses;
 	}
 
 	@Override

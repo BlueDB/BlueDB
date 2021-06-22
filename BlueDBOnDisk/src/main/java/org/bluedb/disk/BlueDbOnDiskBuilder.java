@@ -5,7 +5,7 @@ import java.nio.file.Paths;
 
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.ReadableBlueDb;
-import org.bluedb.api.encryption.EncryptionConfig;
+import org.bluedb.api.encryption.EncryptionService;
 
 /**
  * A builder for the {@link ReadableDbOnDisk} and {@link ReadWriteDbOnDisk} classes
@@ -13,7 +13,7 @@ import org.bluedb.api.encryption.EncryptionConfig;
 public class BlueDbOnDiskBuilder {
 
 	private Path path = Paths.get(".", "bluedb");
-	private EncryptionConfig encryptionConfig = null;
+	private EncryptionService encryptionService = null;
 
 	/**
 	 * Sets the path you wish to use for the BlueDB data
@@ -27,48 +27,45 @@ public class BlueDbOnDiskBuilder {
 	}
 
 	/**
-	 * Enables encryption with a given encryption config
+	 * Sets the {@link EncryptionService} you wish to use for your BlueDB instance
 	 *
-	 * @param encryptionConfig the encryption config specifying how to encrypt and decrypt data
-	 * @return itself with the encryption config set
+	 * @param encryptionService the encryption service specifying how to encrypt and decrypt data
+	 * @return itself with the encryption service set
 	 */
-	public BlueDbOnDiskBuilder enableEncryption(EncryptionConfig encryptionConfig) {
-		if (this.encryptionConfig != null) {
+	public BlueDbOnDiskBuilder withEncryptionService(EncryptionService encryptionService) {
+		if (this.encryptionService != null) {
 			throw new IllegalStateException("encryption can only be enabled once");
 		}
-		if (encryptionConfig == null) {
-			throw new IllegalArgumentException("encryptionConfig cannot be null");
+		if (encryptionService == null) {
+			throw new IllegalArgumentException("encryptionService cannot be null");
 		}
-		if (encryptionConfig.getCurrentEncryptionKeyVersion() == null || encryptionConfig.getCurrentEncryptionKeyVersion().trim().isEmpty()) {
-			throw new IllegalArgumentException("encryptionConfig#getCurrentEncryptionKeyVersion() cannot be null or empty");
+		if (encryptionService.getCurrentEncryptionVersionKey() == null || encryptionService.getCurrentEncryptionVersionKey().trim().isEmpty()) {
+			throw new IllegalArgumentException("encryptionService#getCurrentEncryptionVersionKey() cannot be null or empty");
 		}
 
-		this.encryptionConfig = encryptionConfig;
+		this.encryptionService = encryptionService;
 		return this;
 	}
 
 	/**
 	 * Builds the {@link BlueDb} object
-	 *
 	 * @return the {@link BlueDb} built
 	 */
 	public BlueDb build() {
-		return new ReadWriteDbOnDisk(path, encryptionConfig);
+		return new ReadWriteDbOnDisk(path, encryptionService);
 	}
 
 	/**
 	 * Builds the {@link ReadableBlueDb} object
-	 *
 	 * @return the {@link ReadableBlueDb} built
 	 */
 	public ReadableBlueDb buildReadOnly() {
-		return new ReadableDbOnDisk(path, encryptionConfig);
+		return new ReadableDbOnDisk(path, encryptionService);
 	}
 
 	/**
 	 * Replaced by withPath<br><br>
 	 * Sets the path you wish to use for the BlueDB data
-	 *
 	 * @param path the path directory that will contain the BlueDB data
 	 * @return itself with the path set
 	 */
@@ -77,5 +74,4 @@ public class BlueDbOnDiskBuilder {
 		this.path = path;
 		return this;
 	}
-
 }
