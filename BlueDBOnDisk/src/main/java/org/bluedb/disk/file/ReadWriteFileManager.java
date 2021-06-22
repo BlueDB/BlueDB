@@ -5,18 +5,21 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class ReadWriteFileManager extends ReadFileManager {
 
-	public ReadWriteFileManager(BlueSerializer serializer) {
-		super(serializer);
+	public ReadWriteFileManager(BlueSerializer serializer, EncryptionServiceWrapper encryptionService) {
+		super(serializer, encryptionService);
 	}
 
 	public void saveObject(Path path, Object o) throws BlueDbException {
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		bytes = encryptionService.encryptOrReturn(bytes);
+		path = encryptionService.addEncryptionExtensionOrReturn(path);
 		FileUtils.ensureDirectoryExists(path.toFile());
 		Path tmpPath = FileUtils.createTempFilePath(path);
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {

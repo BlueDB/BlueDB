@@ -30,7 +30,7 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		metadata = getOrCreateMetadata();
-		fileManager = new ReadOnlyFileManager(serializer);
+		fileManager = new ReadOnlyFileManager(serializer, db.getEncryptionService());
 		segmentManager = new ReadOnlySegmentManager<T>(collectionPath, fileManager, segmentSizeSettings.getConfig());
 		indexManager = new ReadOnlyIndexManager<T>(this, collectionPath);
 	}

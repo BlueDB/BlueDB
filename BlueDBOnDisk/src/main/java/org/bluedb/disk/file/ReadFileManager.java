@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
@@ -15,11 +16,13 @@ public class ReadFileManager {
 	public static final String TIMESTAMP_VERSION_FORMAT = "yyyy-MM-dd_HH-mm-ss-SSS";
 
 	protected final BlueSerializer serializer;
+	protected final EncryptionServiceWrapper encryptionService;
 	protected final LockManager<Path> lockManager;
 
-	public ReadFileManager(BlueSerializer serializer) {
+	public ReadFileManager(BlueSerializer serializer, EncryptionServiceWrapper encryptionService) {
 		this.serializer = serializer;
-		lockManager = new LockManager<Path>();
+		this.encryptionService = encryptionService;
+		lockManager = new LockManager<>();
 	}
 
 	public Object loadObject(BlueReadLock<Path> readLock) throws BlueDbException {
@@ -27,6 +30,7 @@ public class ReadFileManager {
 		if (fileData == null || fileData.length == 0) {
 			return null;
 		}
+		fileData = encryptionService.decryptOrReturn(readLock.getKey(), fileData);
 		return serializer.deserializeObjectFromByteArray(fileData);
 	}
 

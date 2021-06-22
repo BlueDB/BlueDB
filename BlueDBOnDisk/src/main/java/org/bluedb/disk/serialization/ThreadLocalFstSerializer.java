@@ -24,11 +24,9 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 	
 	private static final int MAX_ATTEMPTS = 5;
 
-	protected final EncryptionServiceWrapper encryptionService;
 	private Class<?>[] registeredSerializableClasses;
 
-	public ThreadLocalFstSerializer(EncryptionServiceWrapper encryptionService, Class<?>...registeredSerializableClasses) {
-		this.encryptionService = encryptionService;
+	public ThreadLocalFstSerializer(Class<?>...registeredSerializableClasses) {
 		this.registeredSerializableClasses = registeredSerializableClasses;
 	}
 
@@ -71,7 +69,7 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			try {
 				byte[] serializedBytes = get().toByteArray(o);
 				validateBytesAfterSerialization(serializedBytes);
-				return encryptionService.encryptOrReturn(serializedBytes);
+				return serializedBytes;
 			} catch(Throwable t) {
 				failureCause = t;
 				retryCount++;
@@ -123,7 +121,6 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 	}
 
 	private Object toObject(byte[] bytes) {
-		bytes = encryptionService.decryptOrReturn(bytes);
 		try {
 			return get().toObject(bytes);
 		} catch(Throwable t) {

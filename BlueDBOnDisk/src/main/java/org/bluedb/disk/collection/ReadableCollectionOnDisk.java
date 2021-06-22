@@ -52,7 +52,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		encryptionService = db.getEncryptionService();
 		ReadableCollectionMetadata metaData = getOrCreateMetadata();
 		Class<? extends Serializable>[] classesToRegister = getClassesToRegister(additionalRegisteredClasses);
-		serializer = new ThreadLocalFstSerializer(db.getEncryptionService(), classesToRegister);
+		serializer = new ThreadLocalFstSerializer(classesToRegister);
 		keyType = determineKeyType(metaData, requestedKeyType);
 		segmentSizeSettings = determineSegmentSize(metaData, keyType, segmentSize, isNewCollection);
 	}
