@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
@@ -165,6 +166,6 @@ public class ReadWriteCollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	private ReadWriteCollectionMetaData createNewMetaData() {
 		Path tempPath = createTempFolder().toPath();
-		return new ReadWriteCollectionMetaData(tempPath);
+		return new ReadWriteCollectionMetaData(tempPath, new EncryptionServiceWrapper(null));
 	}
 }

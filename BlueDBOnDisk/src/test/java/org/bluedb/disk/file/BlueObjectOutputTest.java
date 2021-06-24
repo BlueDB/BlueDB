@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.bluedb.api.exceptions.BlueDbException;
@@ -26,6 +27,7 @@ import junit.framework.TestCase;
 public class BlueObjectOutputTest extends TestCase {
 
 	BlueSerializer serializer;
+	EncryptionServiceWrapper encryptionService;
 	ReadWriteFileManager fileManager;
 	LockManager<Path> lockManager;
 	Path testingFolderPath;
@@ -38,7 +40,8 @@ public class BlueObjectOutputTest extends TestCase {
 		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
 		tempFilePath = FileUtils.createTempFilePath(targetFilePath);
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
-		fileManager = new ReadWriteFileManager(serializer);
+		encryptionService = new EncryptionServiceWrapper(null);
+		fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
 	}
 
@@ -57,7 +60,7 @@ public class BlueObjectOutputTest extends TestCase {
 			Path path = writeLock.getKey();
 			AtomicBoolean dataOutputClosed = new AtomicBoolean(false);
 			DataOutputStream outStream = createDataOutputStreamThatThrowsExceptionOnClose(path.toFile(), dataOutputClosed);
-			BlueObjectOutput<TestValue> mockStream = BlueObjectOutput.getTestOutput(path, serializer, outStream);
+			BlueObjectOutput<TestValue> mockStream = BlueObjectOutput.getTestOutput(path, serializer, encryptionService, outStream);
 			mockStream.close(); // BlueObjectOutput should handle the exception
 			assertTrue(dataOutputClosed.get());  // make sure it actually closed the underlying stream
 		}
@@ -98,7 +101,7 @@ public class BlueObjectOutputTest extends TestCase {
 		}
 
 		try {
-			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null);
+			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null, null);
 			invalidOut.write(value);
 			fail();
 		} catch (BlueDbException e) {
@@ -147,7 +150,7 @@ public class BlueObjectOutputTest extends TestCase {
 		}
 
 		try {
-			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null);
+			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null, null);
 			invalidOut.writeBytes(valueBytes);
 			fail();
 		} catch (BlueDbException e) {
@@ -196,7 +199,7 @@ public class BlueObjectOutputTest extends TestCase {
 		Mockito.verify(lock, Mockito.times(0)).close();
 		try {
 			@SuppressWarnings({ "unused", "resource" })
-			BlueObjectOutput<TestValue> stream = new BlueObjectOutput<>(lock, null);
+			BlueObjectOutput<TestValue> stream = new BlueObjectOutput<>(lock, null, null);
 		} catch (BlueDbException e) {}
 		Mockito.verify(lock, Mockito.times(1)).close();
 	}

@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
@@ -33,6 +34,7 @@ import junit.framework.TestCase;
 public class ReadWriteFileManagerTest extends TestCase {
 
 	BlueSerializer serializer;
+	EncryptionServiceWrapper encryptionService;
 	ReadWriteFileManager fileManager;
 	LockManager<Path> lockManager;
 	private List<File> filesToDelete;
@@ -41,7 +43,8 @@ public class ReadWriteFileManagerTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		serializer = new ThreadLocalFstSerializer(new Class[] {});
-		fileManager = new ReadWriteFileManager(serializer);
+		encryptionService = new EncryptionServiceWrapper(null);
+		fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
 		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
@@ -246,7 +249,7 @@ public class ReadWriteFileManagerTest extends TestCase {
 		assertNotNull(existingLock);
 		existingLock.release();
 		
-		ReadWriteFileManager mockFileManager = new ReadWriteFileManager(null) {
+		ReadWriteFileManager mockFileManager = new ReadWriteFileManager(null, null) {
 			@Override
 			public boolean exists(Path path) {
 				throw new RuntimeException();

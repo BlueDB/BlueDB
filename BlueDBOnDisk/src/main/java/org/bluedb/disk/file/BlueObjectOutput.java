@@ -49,7 +49,7 @@ public class BlueObjectOutput<T> implements Closeable {
 	}
 	
 	public static <T> BlueObjectOutput<T> createWithoutLockOrSerializer(Path path) throws BlueDbException {
-		return createWithoutLock(path, null, null);
+		return createWithoutLock(path, null, new EncryptionServiceWrapper(null));
 	}
 	
 	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {

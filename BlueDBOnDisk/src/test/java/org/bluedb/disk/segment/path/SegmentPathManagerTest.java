@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.file.ReadOnlyFileManager;
 import org.bluedb.disk.segment.Range;
@@ -65,7 +66,8 @@ public class SegmentPathManagerTest {
 	
 	private static List<ReadOnlySegment<Serializable>> findTargetSegments(SegmentSizeSetting segmentSizeSetting, SegmentPathManager pathManager, Range targetRange) {
 		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
-		ReadOnlyFileManager fileManager = new ReadOnlyFileManager(serializer);
+		EncryptionServiceWrapper encryptionService = new EncryptionServiceWrapper(null);
+		ReadOnlyFileManager fileManager = new ReadOnlyFileManager(serializer, encryptionService);
 		
 		return getAllPossibleSegmentPaths(pathManager, targetRange).stream()
 			.map(segmentPath -> (toSegment(pathManager, fileManager, segmentPath)))

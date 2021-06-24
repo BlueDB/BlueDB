@@ -97,28 +97,19 @@ public class EncryptionServiceWrapper {
 			return cachedEncryptionVersionKey; // Key has not changed
 		}
 
-		// Validate new key
-		boolean validEncryptionVersionKey = false;
-		if (currentKey != null && currentKey.length() <= EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH) {
-			try {
-				File.createTempFile("tmp", EncryptionUtils.ENCRYPTED_FILE_BASE_EXTENSION + "." + currentKey); // IOException if characters are invalid for OS
-				validEncryptionVersionKey = true;
-			} catch (IOException e) {
-				validEncryptionVersionKey = false;
-			}
-		}
-		if (validEncryptionVersionKey) {
+		// Return new key if valid
+		if (EncryptionUtils.isValidEncryptionVersionKey(currentKey)) {
 			cachedEncryptionVersionKey = currentKey;
 			return currentKey;
 		}
 
-		// Return cached key if current key is invalid
+		// Return cached key if one exists
 		if (cachedEncryptionVersionKey != null) {
 			// TODO Warning or error level log here
 			return cachedEncryptionVersionKey;
 		}
 
-		// Error if no cached key and current key is invalid
+		// Error only if current key is invalid and no cached key exists
 		throw new IllegalStateException("getCurrentEncryptionVersionKey must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters and must be a valid file extension for your OS");
 	}
 

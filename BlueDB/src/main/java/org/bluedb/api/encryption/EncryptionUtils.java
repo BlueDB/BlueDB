@@ -1,5 +1,7 @@
 package org.bluedb.api.encryption;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -38,6 +40,24 @@ public class EncryptionUtils {
 	 */
 	public static Optional<String> getEncryptionVersionKey(Path path) {
 		return getEncryptionVersionKey(path.getFileName().toString());
+	}
+
+	/**
+	 * Returns a boolean representing whether the given {@code String} is a valid encryption version key.
+	 * @param key the {@code String} to validate
+	 * @return true if the key is valid, false if invalid.
+	 */
+	public static boolean isValidEncryptionVersionKey(String key) {
+		boolean isValidEncryptionVersionKey = false;
+		if (key != null && key.length() <= EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH) {
+			try {
+				File.createTempFile("tmp", EncryptionUtils.ENCRYPTED_FILE_BASE_EXTENSION + "." + key); // IOException if characters are invalid for OS
+				isValidEncryptionVersionKey = true;
+			} catch (IOException e) {
+				isValidEncryptionVersionKey = false;
+			}
+		}
+		return isValidEncryptionVersionKey;
 	}
 
 }
