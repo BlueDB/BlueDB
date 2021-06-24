@@ -66,7 +66,7 @@ public class ReadFileManager {
 	}
 
 	public <T> BlueObjectInput<T> getBlueInputStream(BlueReadLock<Path> readLock) throws BlueDbException {
-		return new BlueObjectInput<T>(readLock, serializer);
+		return new BlueObjectInput<T>(readLock, serializer, encryptionService);
 	}
 
 	public BlueReadLock<Path> getReadLockIfFileExists(Path path) throws BlueDbException {

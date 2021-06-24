@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
@@ -16,13 +17,15 @@ public class BlueObjectOutput<T> implements Closeable {
 	private final BlueWriteLock<Path> lock;
 	private final Path path;
 	private final BlueSerializer serializer;
+	private final EncryptionServiceWrapper encryptionService;
 	private final DataOutputStream dataOutputStream;
 
-	public BlueObjectOutput(BlueWriteLock<Path> writeLock, BlueSerializer serializer) throws BlueDbException {
+	public BlueObjectOutput(BlueWriteLock<Path> writeLock, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
 		try {
 			lock = writeLock;
 			path = lock.getKey();
 			this.serializer = serializer;
+			this.encryptionService = encryptionService;
 			File file = path.toFile();
 			FileUtils.ensureDirectoryExists(file);
 			dataOutputStream = FileUtils.openDataOutputStream(file);
@@ -32,31 +35,33 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	protected static <T> BlueObjectOutput<T> getTestOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
-		return new BlueObjectOutput<T>(path, serializer, dataOutputStream);
+	protected static <T> BlueObjectOutput<T> getTestOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, DataOutputStream dataOutputStream) {
+		return new BlueObjectOutput<T>(path, serializer, encryptionService, dataOutputStream);
 	}
 
-	private BlueObjectOutput(Path path, BlueSerializer serializer, DataOutputStream dataOutputStream) {
+	private BlueObjectOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, DataOutputStream dataOutputStream) {
 		LockManager<Path> lockManager = new LockManager<Path>();
 		lock = lockManager.acquireWriteLock(path);
 		this.path = path;
 		this.serializer = serializer;
+		this.encryptionService = encryptionService;
 		this.dataOutputStream = dataOutputStream;
 	}
 	
 	public static <T> BlueObjectOutput<T> createWithoutLockOrSerializer(Path path) throws BlueDbException {
-		return createWithoutLock(path, null);
+		return createWithoutLock(path, null, null);
 	}
 	
-	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer) throws BlueDbException {
-		return new BlueObjectOutput<>(path, serializer);
+	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
+		return new BlueObjectOutput<>(path, serializer, encryptionService);
 	}
 
-	private BlueObjectOutput(Path path, BlueSerializer serializer) throws BlueDbException {
+	private BlueObjectOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
 		try {
 			this.lock = null;
 			this.path = path;
 			this.serializer = serializer;
+			this.encryptionService = encryptionService;
 			this.dataOutputStream = FileUtils.openDataOutputStream(path.toFile());
 		} catch (IOException e) {
 			throw new BlueDbException("Failed to create BlueObjectOutput for path " + path, e);
@@ -65,6 +70,7 @@ public class BlueObjectOutput<T> implements Closeable {
 
 	public void writeBytes(byte[] bytes) throws BlueDbException {
 		try {
+			bytes = encryptionService.encryptOrReturn(bytes);
 			FileUtils.validateBytes(bytes);
 			int len = bytes.length;
 			dataOutputStream.writeInt(len);
@@ -81,6 +87,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 		try {
 			byte[] bytes = serializer.serializeObjectToByteArray(value);
+			bytes = encryptionService.encryptOrReturn(bytes);
 			int len = bytes.length;
 			dataOutputStream.writeInt(len);
 			dataOutputStream.write(bytes);

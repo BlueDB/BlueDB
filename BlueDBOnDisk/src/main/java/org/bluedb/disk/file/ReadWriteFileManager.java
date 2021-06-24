@@ -51,7 +51,7 @@ public class ReadWriteFileManager extends ReadFileManager {
 	}
 
 	public <T> BlueObjectOutput<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
-		return new BlueObjectOutput<T>(writeLock, serializer);
+		return new BlueObjectOutput<T>(writeLock, serializer, encryptionService);
 	}
 
 	protected void writeBytes(BlueWriteLock<Path> writeLock, byte[] bytes) throws BlueDbException {

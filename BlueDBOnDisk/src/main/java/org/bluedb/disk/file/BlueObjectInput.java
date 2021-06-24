@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
@@ -21,17 +22,19 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	private final BlueReadLock<Path> readLock;
 	private final Path path;
 	private final BlueSerializer serializer;
+	private final EncryptionServiceWrapper encryptionService;
 	private final DataInputStream dataInputStream;
 			
 	private T next = null;
 	private byte[] nextBytes = null;
 	private byte[] lastBytes = null;
 
-	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
+	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
 		try {
 			this.readLock = readLock;
 			this.path = readLock.getKey();
 			this.serializer = serializer;
+			this.encryptionService = encryptionService;
 		
 			if (path.toFile().exists()) {
 				dataInputStream = openDataInputStream(path.toFile());
@@ -44,14 +47,15 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		}
 	}
 
-	protected static <T> BlueObjectInput<T> getTestInput(Path path, BlueSerializer serializer, DataInputStream dataInputStream) {
-		return new BlueObjectInput<T>(path, serializer, dataInputStream);
+	protected static <T> BlueObjectInput<T> getTestInput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, DataInputStream dataInputStream) {
+		return new BlueObjectInput<T>(path, serializer, encryptionService, dataInputStream);
 	}
 
-	private BlueObjectInput(Path path, BlueSerializer serializer, DataInputStream dataInputStream) {
+	private BlueObjectInput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, DataInputStream dataInputStream) {
 		LockManager<Path> lockManager = new LockManager<Path>();
 		readLock = lockManager.acquireReadLock(path);
 		this.serializer = serializer;
+		this.encryptionService = encryptionService;
 		this.path = null;
 		this.dataInputStream = dataInputStream;
 	}
@@ -150,6 +154,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			}
 			byte[] nextBytes = new byte[objectLength];
 			dataInputStream.readFully(nextBytes, 0, objectLength);
+			nextBytes = encryptionService.decryptOrReturn(path, nextBytes);
 			return nextBytes;
 		} catch (EOFException e) {
 			return null;
