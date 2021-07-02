@@ -90,20 +90,20 @@ public class BlueObjectOutput<T> implements Closeable {
 	}
 
 	public void writeBytes(byte[] bytes) throws BlueDbException {
-		writeBytes(bytes, true);
-	}
-
-	public void writeBytesWithoutEncrypting(byte[] bytes) throws BlueDbException {
 		writeBytes(bytes, false);
 	}
 
-	private void writeBytes(byte[] bytes, boolean shouldAllowEncryption) throws BlueDbException {
+	public void writeBytesAndForceSkipEncryption(byte[] bytes) throws BlueDbException {
+		writeBytes(bytes, true);
+	}
+
+	private void writeBytes(byte[] bytes, boolean shouldSkipEncryption) throws BlueDbException {
 		if (!hasBeenWrittenTo) {
 			writeMetadata();
 			hasBeenWrittenTo = true;
 		}
 		try {
-			if (shouldAllowEncryption && metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
+			if (!shouldSkipEncryption && metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
 				String encryptionVersionKey = (String) metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
 			}

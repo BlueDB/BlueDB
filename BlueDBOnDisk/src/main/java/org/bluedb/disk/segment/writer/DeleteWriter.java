@@ -18,12 +18,17 @@ public class DeleteWriter<T extends Serializable> implements StreamingWriter<T> 
 
 	@Override
 	public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
-		boolean shouldAllowEncryption = EncryptionUtils.shouldEncrypt(input.getMetadata(), output.getMetadata());
+		boolean shouldSkipEncryption = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(input.getMetadata(), output.getMetadata());
 		while (input.hasNext()) {
 			BlueEntity<T> entry = input.next();
 			if (!entry.getKey().equals(key)) {
-				output.writeBytes(input.getLastRawBytes());
+				if (shouldSkipEncryption) {
+					output.writeBytesAndForceSkipEncryption(input.getLastRawBytes());
+				} else {
+					output.writeBytes(input.getLastUnencryptedBytes());
+				}
 			}
 		}
 	}
+
 }

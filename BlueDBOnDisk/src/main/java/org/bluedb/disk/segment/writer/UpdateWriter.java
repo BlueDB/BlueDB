@@ -1,6 +1,7 @@
 package org.bluedb.disk.segment.writer;
 
 import java.io.Serializable;
+import org.bluedb.api.encryption.EncryptionUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.BlueObjectInput;
@@ -19,6 +20,7 @@ public class UpdateWriter<T extends Serializable> implements StreamingWriter<T> 
 
 	@Override
 	public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
+		boolean shouldSkipEncryption = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(input.getMetadata(), output.getMetadata());
 		BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
 		while (input.hasNext()) {
 			BlueEntity<T> iterEntity = input.next();
@@ -27,8 +29,13 @@ public class UpdateWriter<T extends Serializable> implements StreamingWriter<T> 
 				output.write(newEntity);
 				newEntity = null;
 			} else {
-				output.writeBytes(input.getLastRawBytes());
+				if (shouldSkipEncryption) {
+					output.writeBytesAndForceSkipEncryption(input.getLastRawBytes());
+				} else {
+					output.writeBytes(input.getLastUnencryptedBytes());
+				}
 			}
 		}
 	}
+
 }

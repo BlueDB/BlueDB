@@ -38,11 +38,28 @@ public class EncryptionUtils {
 		return key != null && key.length() <= EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH;
 	}
 
-	public static boolean shouldEncrypt(BlueFileMetadata oldFileMetadata, BlueFileMetadata newFileMetadata) {
+	/**
+	 * Method to be used by a {@code StreamingWriter} or other classes handling file writes. Determines if encryption can forcefully be skipped for unchanged bytes, instead writing the raw bytes from the original file.
+	 * Prevents unnecessary encryption of unencrypted files or files that have not had their encryption version changed.
+	 *
+	 * @param oldFileMetadata the {@code BlueFileMetadata} of the original file being rewritten for an atomic swap.
+	 * @param newFileMetadata the {@code BlueFileMetadata} of the new file being written.
+	 * @return true if neither file is encrypted or the encryption version has not changed, false otherwise.
+	 */
+	public static boolean shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(BlueFileMetadata oldFileMetadata, BlueFileMetadata newFileMetadata) {
 		String oldEncryptionVersionKey = (String) oldFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 		String newEncryptionVersionKey = (String) newFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
-		
-		return newEncryptionVersionKey != null;
+
+		// Neither file is encrypted
+		if (oldEncryptionVersionKey == null && newEncryptionVersionKey == null) {
+			return true;
+		}
+		// Only one of the files is encrypted
+		if (oldEncryptionVersionKey == null || newEncryptionVersionKey == null) {
+			return false;
+		}
+		// Both files are encrypted, skip encryption if version hasn't changed
+		return oldEncryptionVersionKey.equals(newEncryptionVersionKey);
 	}
 
 }
