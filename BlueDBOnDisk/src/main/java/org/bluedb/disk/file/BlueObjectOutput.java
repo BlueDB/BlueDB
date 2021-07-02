@@ -94,8 +94,10 @@ public class BlueObjectOutput<T> implements Closeable {
 		// TODO better protection against hitting overlapping ranges.
 		//      There's some protection against this in rollup recovery and 
 		//      from single-threaded writes.
-		while(input.hasNext()) {
-			writeBytes(input.nextWithoutDeserializing());
+		byte[] nextBytes = input.nextWithoutDeserializing();
+		while(nextBytes != null && nextBytes.length > 0) {
+			writeBytes(nextBytes);
+			nextBytes = input.nextWithoutDeserializing();
 		}
 	}
 
