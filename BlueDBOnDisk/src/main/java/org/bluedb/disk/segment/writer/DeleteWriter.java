@@ -1,6 +1,7 @@
 package org.bluedb.disk.segment.writer;
 
 import java.io.Serializable;
+import org.bluedb.api.encryption.EncryptionUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.BlueObjectInput;
@@ -17,10 +18,11 @@ public class DeleteWriter<T extends Serializable> implements StreamingWriter<T> 
 
 	@Override
 	public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
+		boolean shouldAllowEncryption = EncryptionUtils.shouldEncrypt(input.getMetadata(), output.getMetadata());
 		while (input.hasNext()) {
 			BlueEntity<T> entry = input.next();
 			if (!entry.getKey().equals(key)) {
-				output.writeBytes(input.getLastBytes());
+				output.writeBytes(input.getLastRawBytes());
 			}
 		}
 	}

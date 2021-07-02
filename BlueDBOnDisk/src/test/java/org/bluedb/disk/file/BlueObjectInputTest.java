@@ -112,27 +112,27 @@ public class BlueObjectInputTest extends TestCase {
 
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
-				assertNull(inStream.getLastBytes());
+				assertNull(inStream.getLastRawBytes());
 
 				assertTrue(inStream.hasNext());
-				assertNull(inStream.getLastBytes());  // hasNext should not populate lastBytes
+				assertNull(inStream.getLastRawBytes());  // hasNext should not populate lastBytes
 
 				assertEquals(firstValue, inStream.next());
-				byte[] firstValueBytes = inStream.getLastBytes();
+				byte[] firstValueBytes = inStream.getLastRawBytes();
 				TestValue restoredFirstValue = (TestValue) serializer.deserializeObjectFromByteArray(firstValueBytes);
 				assertEquals(firstValue, restoredFirstValue);
 				assertEquals(firstValue, restoredFirstValue);
 
 				assertTrue(inStream.hasNext());
-				assertEquals(firstValueBytes, inStream.getLastBytes());  // hasNext should not re-populate out lastBytes
+				assertEquals(firstValueBytes, inStream.getLastRawBytes());  // hasNext should not re-populate out lastBytes
 
 				assertEquals(secondValue, inStream.next());
-				byte[] secondValueBytes = inStream.getLastBytes();
+				byte[] secondValueBytes = inStream.getLastRawBytes();
 				TestValue restoredSecondValue = (TestValue) serializer.deserializeObjectFromByteArray(secondValueBytes);
 				assertEquals(secondValue, restoredSecondValue);
 
 				assertFalse(inStream.hasNext());
-				assertEquals(secondValueBytes, inStream.getLastBytes());  // hasNext should not clear out lastBytes
+				assertEquals(secondValueBytes, inStream.getLastRawBytes());  // hasNext should not clear out lastBytes
 
 				inStream.close();
 			}

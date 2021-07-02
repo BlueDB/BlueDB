@@ -29,9 +29,9 @@ public class InsertWriter<T extends Serializable> implements StreamingWriter<T> 
 			} else if (toInsert != null && iterKey.compareTo(newKey) > 0) {
 				output.write(newEntity);
 				toInsert = null;
-				output.writeBytes(input.getLastBytes());
+				output.writeBytes(input.getLastRawBytes());
 			} else {
-				output.writeBytes(input.getLastBytes());
+				output.writeBytes(input.getLastRawBytes());
 			}
 		}
 		if (toInsert != null) {

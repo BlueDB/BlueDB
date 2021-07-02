@@ -133,7 +133,7 @@ public class BackupManager {
 				while(fileInputStream.hasNext()) {
 					BlueEntity<?> next = (BlueEntity<?>) fileInputStream.next();
 					if(next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
-						output.writeBytes(fileInputStream.getLastBytes());
+						output.writeBytes(fileInputStream.getLastRawBytes());
 						isFileEmpty = false;
 					}
 				}

@@ -27,7 +27,7 @@ public class UpdateWriter<T extends Serializable> implements StreamingWriter<T> 
 				output.write(newEntity);
 				newEntity = null;
 			} else {
-				output.writeBytes(input.getLastBytes());
+				output.writeBytes(input.getLastRawBytes());
 			}
 		}
 	}

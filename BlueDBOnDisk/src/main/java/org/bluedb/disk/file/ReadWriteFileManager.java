@@ -19,7 +19,6 @@ public class ReadWriteFileManager extends ReadFileManager {
 	public void saveObject(Path path, Object o) throws BlueDbException {
 		byte[] bytes = serializer.serializeObjectToByteArray(o);
 		bytes = encryptionService.encryptOrReturn(bytes);
-		path = encryptionService.addEncryptionExtensionOrReturn(path);
 		FileUtils.ensureDirectoryExists(path.toFile());
 		Path tmpPath = FileUtils.createTempFilePath(path);
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {

@@ -5,13 +5,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
+import org.bluedb.api.metadata.BlueFileMetadata;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ByteUtils;
 import org.bluedb.disk.collection.index.IndexCompositeKey;
@@ -46,7 +46,8 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			PendingChange.class,
 			UUID.class,
 			UUIDKey.class,
-			IndexCompositeKey.class
+			IndexCompositeKey.class, 
+			BlueFileMetadata.class
 		);
 	}
 

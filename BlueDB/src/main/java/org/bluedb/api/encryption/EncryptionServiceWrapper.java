@@ -1,9 +1,7 @@
 package org.bluedb.api.encryption;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Optional;
+import org.bluedb.api.metadata.BlueFileMetadata;
 
 /**
  * Wrapper class for interacting with an {@code EncryptionService} implementation optionally supplied on creation of a BlueDB instance.
@@ -11,9 +9,9 @@ import java.util.Optional;
 public class EncryptionServiceWrapper {
 
 	/**
-	 * An implementation of {@code EncryptionService} supplied on creation of a BlueDB instance, or an empty {@code Optional} if none was provided.
+	 * An implementation of {@code EncryptionService} supplied on creation of a BlueDB instance, or null if none was provided.
 	 */
-	protected final Optional<EncryptionService> encryptionService;
+	protected final EncryptionService encryptionService;
 
 	/**
 	 * A cached encryption version key populated when an instance of this class is created.
@@ -22,23 +20,37 @@ public class EncryptionServiceWrapper {
 	protected String cachedEncryptionVersionKey;
 
 	public EncryptionServiceWrapper(EncryptionService encryptionService) {
-		this.encryptionService = Optional.ofNullable(encryptionService);
-		if (this.encryptionService.isPresent()) {
-			this.cachedEncryptionVersionKey = this.getMostRecentValidEncryptionVersionKey();
+		this.encryptionService = encryptionService;
+		if (this.encryptionService != null) {
+			this.cachedEncryptionVersionKey = this.getCurrentEncryptionVersionKey();
 		}
 	}
 
 	/**
-	 * Encrypts and returns the bytes if encryption is enabled. Uses {@link EncryptionServiceWrapper#getMostRecentValidEncryptionVersionKey()} to determine which encryption version to use.
+	 * Encrypts and returns the bytes if encryption is enabled. Uses {@link EncryptionServiceWrapper#getCurrentEncryptionVersionKey()} to determine which encryption version to use.
 	 *
 	 * @param bytes the bytes to encrypt.
 	 * @return the encrypted bytes or the unmodified bytes if encryption is not enabled.
 	 */
 	public byte[] encryptOrReturn(byte[] bytes) {
 		if (isEncryptionEnabled()) {
-			return encrypt(this.getMostRecentValidEncryptionVersionKey(), bytes);
+			return encrypt(this.getCurrentEncryptionVersionKey(), bytes);
 		}
 		return bytes;
+	}
+
+	/**
+	 * Encrypts and returns the bytes using a given encryption version key.
+	 *
+	 * @param encryptionVersionKey the encryption version key to use for encryption.
+	 * @param bytes the bytes to encrypt.
+	 * @return the encrypted bytes or the unmodified bytes if encryption is not enabled.
+	 */
+	public byte[] encryptOrThrow(String encryptionVersionKey, byte[] bytes) {
+		if (this.encryptionService != null) {
+			return this.encrypt(encryptionVersionKey, bytes);
+		}
+		throw new IllegalStateException("Unable to encrypt, encryption service not supplied");
 	}
 
 	/**
@@ -56,41 +68,35 @@ public class EncryptionServiceWrapper {
 	}
 
 	/**
-	 * Decrypts and returns the bytes if encryption is enabled and the {@code Path} supplied is an encrypted file. Uses the encryption version key from the file extension to decrypt.
+	 * Decrypts and returns the bytes if encryption is enabled and the {@code BlueFileMetadata} supplied indicates the file is encrypted. Uses the encryption version key from the file extension to decrypt.
 	 *
-	 * @param filePath the {@code Path} the bytes are being decrypted from.
+	 * @param fileMetadata the {@link BlueFileMetadata} retrieved from the file with information regarding the encryption status of the file.
 	 * @param bytes    the bytes to decrypt.
 	 * @return the decrypted bytes or the unmodified bytes.
 	 */
-	public byte[] decryptOrReturn(Path filePath, byte[] bytes) {
+	public byte[] decryptOrReturn(BlueFileMetadata fileMetadata, byte[] bytes) {
 		Optional<String> encryptionVersionKey;
-		if (isEncryptionEnabled() && (encryptionVersionKey = EncryptionUtils.getEncryptionVersionKey(filePath)).isPresent()) {
+		if (isEncryptionEnabled() && (encryptionVersionKey = EncryptionUtils.getEncryptionVersionKey(fileMetadata)).isPresent()) {
 			return decrypt(encryptionVersionKey.get(), bytes);
 		}
 		return bytes;
 	}
 
-	/**
-	 * If encryption is enabled, returns the given {@code Path} with the encryption extension and the current encryption version key appended to it.
-	 *
-	 * @param filePath the {@code Path} to append the encryption extension to.
-	 * @return the updated {@code Path} if encryption is enabled or the unmodified {@code Path}.
-	 */
-	public Path addEncryptionExtensionOrReturn(Path filePath) {
-		if (isEncryptionEnabled()) {
-			return filePath.resolveSibling(filePath.getFileName() + EncryptionUtils.ENCRYPTED_FILE_BASE_EXTENSION + "." + getMostRecentValidEncryptionVersionKey());
-		}
-		return filePath;
+	public boolean isEncryptionEnabled() {
+		return encryptionService != null && encryptionService.isEncryptionEnabled();
 	}
-
+	
 	/**
 	 * Returns the current encryption version key or the most recent valid key if the current one is invalid, logging warnings for any validation errors.
 	 *
 	 * @return the current encryption version key or the cached key if the current one is invalid.
 	 * @throws IllegalStateException if the current encryption version key is invalid and no cached key exists.
 	 */
-	private String getMostRecentValidEncryptionVersionKey() {
-		String currentKey = encryptionService.get().getCurrentEncryptionVersionKey();
+	public String getCurrentEncryptionVersionKey() {
+		if(!isEncryptionEnabled()) {
+			return null;
+		}
+		String currentKey = encryptionService.getCurrentEncryptionVersionKey();
 
 		// Return without validation if key has not changed
 		if (cachedEncryptionVersionKey != null && cachedEncryptionVersionKey.equals(currentKey)) {
@@ -114,15 +120,11 @@ public class EncryptionServiceWrapper {
 	}
 
 	private byte[] encrypt(String encryptionVersionKey, byte[] bytes) {
-		return encryptionService.get().decrypt(encryptionVersionKey, bytes);
+		return encryptionService.encrypt(encryptionVersionKey, bytes);
 	}
-
+	
 	private byte[] decrypt(String encryptionVersionKey, byte[] bytes) {
-		return encryptionService.get().decrypt(encryptionVersionKey, bytes);
-	}
-
-	private boolean isEncryptionEnabled() {
-		return encryptionService.isPresent() && encryptionService.get().isEncryptionEnabled();
+		return encryptionService.decrypt(encryptionVersionKey, bytes);
 	}
 
 }
