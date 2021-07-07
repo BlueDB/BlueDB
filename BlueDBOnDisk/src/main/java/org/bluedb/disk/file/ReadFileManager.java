@@ -8,6 +8,8 @@ import java.util.Comparator;
 
 import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.api.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -18,11 +20,17 @@ public class ReadFileManager {
 	protected final BlueSerializer serializer;
 	protected final EncryptionServiceWrapper encryptionService;
 	protected final LockManager<Path> lockManager;
+	protected final BlueFileMetadata metadata;
 
 	public ReadFileManager(BlueSerializer serializer, EncryptionServiceWrapper encryptionService) {
 		this.serializer = serializer;
 		this.encryptionService = encryptionService;
-		lockManager = new LockManager<>();
+		this.lockManager = new LockManager<>();
+
+		metadata = new BlueFileMetadata();
+		if (encryptionService.isEncryptionEnabled()) {
+			metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
+		}
 	}
 
 	public Object loadObject(BlueReadLock<Path> readLock) throws BlueDbException {
@@ -30,7 +38,6 @@ public class ReadFileManager {
 		if (fileData == null || fileData.length == 0) {
 			return null;
 		}
-		fileData = encryptionService.decryptOrReturn(readLock.getKey(), fileData);
 		return serializer.deserializeObjectFromByteArray(fileData);
 	}
 
@@ -66,7 +73,7 @@ public class ReadFileManager {
 	}
 
 	public <T> BlueObjectInput<T> getBlueInputStream(BlueReadLock<Path> readLock) throws BlueDbException {
-		return new BlueObjectInput<T>(readLock, serializer, encryptionService);
+		return new BlueObjectInput<>(readLock, serializer, encryptionService);
 	}
 
 	public BlueReadLock<Path> getReadLockIfFileExists(Path path) throws BlueDbException {

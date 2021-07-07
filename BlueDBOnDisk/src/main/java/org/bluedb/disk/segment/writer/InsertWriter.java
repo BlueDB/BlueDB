@@ -20,7 +20,7 @@ public class InsertWriter<T extends Serializable> implements StreamingWriter<T> 
 
 	public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
 		boolean shouldSkipEncryption = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(input.getMetadata(), output.getMetadata());
-		BlueEntity<T> newEntity = new BlueEntity<T>(newKey, newValue);
+		BlueEntity<T> newEntity = new BlueEntity<>(newKey, newValue);
 		BlueEntity<T> toInsert = newEntity;
 		while (input.hasNext()) {
 			BlueEntity<T> iterEntity = input.next();

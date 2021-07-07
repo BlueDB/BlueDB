@@ -183,12 +183,10 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		} catch (EOFException e) {
 			nextRawBytes = null;
 			nextUnencryptedBytes = null;
-			return;
 		} catch (IOException e) {
 			e.printStackTrace();
 			nextRawBytes = null;
 			nextUnencryptedBytes = null;
-			return;
 		}
 	}
 
