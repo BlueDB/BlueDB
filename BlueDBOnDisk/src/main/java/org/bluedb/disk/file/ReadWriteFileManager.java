@@ -7,12 +7,13 @@ import java.text.SimpleDateFormat;
 
 import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.metadata.BlueFileMetadata;
 import org.bluedb.api.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class ReadWriteFileManager extends ReadFileManager {
-
+	
 	public ReadWriteFileManager(BlueSerializer serializer, EncryptionServiceWrapper encryptionService) {
 		super(serializer, encryptionService);
 	}
@@ -57,12 +58,15 @@ public class ReadWriteFileManager extends ReadFileManager {
 		Path path = writeLock.getKey();
 		File file = path.toFile();
 		try (DataOutputStream dos = FileUtils.openDataOutputStream(file)) {
-			if (metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
-				String encryptionVersionKey = (String) metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+
+			BlueFileMetadata metadata = new BlueFileMetadata();
+			if (encryptionService.isEncryptionEnabled()) {
+				String encryptionVersionKey = encryptionService.getCurrentEncryptionVersionKey();
+				metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionVersionKey);
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
 			}
 			FileUtils.validateBytes(bytes);
-			writeMetadata(dos, path);
+			writeMetadata(metadata, dos, path);
 			dos.write(bytes);
 		} catch (Throwable t) {
 			t.printStackTrace();
@@ -70,7 +74,7 @@ public class ReadWriteFileManager extends ReadFileManager {
 		}
 	}
 
-	protected void writeMetadata(DataOutputStream dos, Path path) throws BlueDbException {
+	protected void writeMetadata(BlueFileMetadata metadata, DataOutputStream dos, Path path) throws BlueDbException {
 		try {
 			byte[] bytes = serializer.serializeObjectToByteArray(metadata);
 			int len = bytes.length;

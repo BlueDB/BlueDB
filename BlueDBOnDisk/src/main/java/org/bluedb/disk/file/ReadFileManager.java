@@ -20,17 +20,11 @@ public class ReadFileManager {
 	protected final BlueSerializer serializer;
 	protected final EncryptionServiceWrapper encryptionService;
 	protected final LockManager<Path> lockManager;
-	protected final BlueFileMetadata metadata;
 
 	public ReadFileManager(BlueSerializer serializer, EncryptionServiceWrapper encryptionService) {
 		this.serializer = serializer;
 		this.encryptionService = encryptionService;
 		this.lockManager = new LockManager<>();
-
-		metadata = new BlueFileMetadata();
-		if (encryptionService.isEncryptionEnabled()) {
-			metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
-		}
 	}
 
 	public Object loadObject(BlueReadLock<Path> readLock) throws BlueDbException {
