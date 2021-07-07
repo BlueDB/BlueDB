@@ -25,6 +25,7 @@ public class FileUtilsTest extends TestCase {
 	LockManager<Path> lockManager;
 	private List<File> filesToDelete;
 	private Path testPath;
+	private Path testingFolderPath;
 
 	@Override
 	protected void setUp() throws Exception {
@@ -34,6 +35,7 @@ public class FileUtilsTest extends TestCase {
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
 		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
+		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		filesToDelete.add(testPath.toFile());
 	}
 
@@ -397,6 +399,15 @@ public class FileUtilsTest extends TestCase {
 		}  catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Test
+	public void test_openDataInputStream() {
+		File nonExistentFile = Paths.get(testingFolderPath.toString(), "Santa_Clause").toFile();
+		try {
+			FileUtils.openDataInputStream(nonExistentFile);
+			fail();
+		} catch (IOException e) {}
 	}
 
 	private File createTempFile(File parentFolder, String fileName) throws IOException {

@@ -1,5 +1,7 @@
 package org.bluedb.disk.file;
 
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,8 +15,10 @@ import org.bluedb.api.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
+import org.bluedb.disk.serialization.validation.SerializationException;
 
 public class ReadFileManager {
+
 	public static final String TIMESTAMP_VERSION_FORMAT = "yyyy-MM-dd_HH-mm-ss-SSS";
 
 	protected final BlueSerializer serializer;
@@ -40,25 +44,25 @@ public class ReadFileManager {
 	}
 
 	public Object loadObject(Path path) throws BlueDbException {
-		try (BlueReadLock<Path> lock = lockManager.acquireReadLock(path)){
+		try (BlueReadLock<Path> lock = lockManager.acquireReadLock(path)) {
 			return loadObject(lock);
 		}
 	}
 
 	public Object loadVersionedObject(Path folderPath, String filename) throws BlueDbException, IOException {
 		Path newestVersionPath = getNewestVersionPath(folderPath, filename);
-		if(newestVersionPath == null) {
+		if (newestVersionPath == null) {
 			return null;
 		}
-		
+
 		return loadObject(newestVersionPath);
 	}
 
 	public static Path getNewestVersionPath(Path folderPath, String filename) throws IOException {
-		if(!Files.isDirectory(folderPath)) {
+		if (!Files.isDirectory(folderPath)) {
 			return null;
 		}
-		
+
 		return Files.list(folderPath)
 				.filter(path -> path.getFileName().toString().startsWith(filename))
 				.sorted(Comparator.comparing(Path::getFileName, Comparator.comparing(Path::toString)).reversed())
@@ -102,11 +106,42 @@ public class ReadFileManager {
 	}
 
 	protected byte[] readBytes(Path path) throws BlueDbException {
-		try {
-			return Files.readAllBytes(path);
+		try (DataInputStream dis = FileUtils.openDataInputStream(path.toFile())) {
+			BlueFileMetadata metadata = readMetadata(dis);
+			return encryptionService.decryptOrReturn(metadata, FileUtils.readAllBytes(dis));
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new BlueDbException("error reading bytes from " + path);
 		}
 	}
+
+	private BlueFileMetadata readMetadata(DataInputStream dis) throws IOException {
+		try {
+			dis.mark(Integer.MAX_VALUE);
+			Integer objectLength = FileUtils.readInt(dis);
+			if (objectLength == null || objectLength <= 0) {
+				dis.reset();
+				return null; // The file is empty or the unexpected bytes are the first sign of a legacy file
+			}
+			byte[] metadataBytes = new byte[objectLength];
+			dis.readFully(metadataBytes, 0, objectLength);
+			Object object;
+			try {
+				object = serializer.deserializeObjectFromByteArray(metadataBytes);
+			} catch (SerializationException e) {
+				dis.reset();
+				return null; // Legacy file without metadata header
+			}
+			return object instanceof BlueFileMetadata ? (BlueFileMetadata) object : null;
+		}
+		catch (EOFException ex) {
+			dis.reset();
+			return null; // End of file hit when attempting to read in metadata header
+		}
+		finally {
+			dis.mark(0); // Essentially removes the original mark, don't want to tell the input stream to store more in it's buffer than is needed.
+		}
+
+	}
+
 }

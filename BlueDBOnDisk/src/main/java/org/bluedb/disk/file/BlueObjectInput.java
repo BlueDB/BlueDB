@@ -1,11 +1,8 @@
 package org.bluedb.disk.file;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -42,7 +39,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			this.encryptionService = encryptionService;
 
 			if (path.toFile().exists()) {
-				dataInputStream = openDataInputStream(path.toFile());
+				dataInputStream = FileUtils.openDataInputStream(path.toFile());
 			} else {
 				dataInputStream = null;
 			}
@@ -207,10 +204,6 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			return null;
 		}
 		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
-	}
-
-	protected static DataInputStream openDataInputStream(File file) throws IOException {
-		return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
 	}
 
 	public Path getPath() {

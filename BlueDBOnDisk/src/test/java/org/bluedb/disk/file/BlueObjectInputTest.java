@@ -71,15 +71,6 @@ public class BlueObjectInputTest extends TestCase {
 	}
 
 	@Test
-	public void test_openDataInputStream() {
-		File nonExistentFile = Paths.get(testingFolderPath.toString(), "Santa_Clause").toFile();
-		try {
-			BlueObjectInput.openDataInputStream(nonExistentFile);
-			fail();
-		} catch (IOException e) {}
-	}
-
-	@Test
 	public void test_hasNext() throws Exception {
 		TestValue value = new TestValue("Jobodo Monobodo");
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
