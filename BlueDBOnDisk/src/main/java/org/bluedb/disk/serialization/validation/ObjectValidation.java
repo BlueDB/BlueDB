@@ -135,6 +135,7 @@ public class ObjectValidation {
 			field.getType() != String.class && 
 			!field.getType().isEnum() &&
 			isNotEmptyCollection(fieldValue) &&
+			!isByteArray(field) &&
 			!previouslyValidatedObjects.contains(fieldValue);
 	}
 
@@ -143,5 +144,12 @@ public class ObjectValidation {
 			return !((Collection<?>)obj).isEmpty();
 		}
 		return true;
+	}
+
+	private static boolean isByteArray(Field field) {
+		if(field.getType().equals(byte[].class) || field.getType().equals(Byte[].class)) {
+			return true;
+		}
+		return false;
 	}
 }

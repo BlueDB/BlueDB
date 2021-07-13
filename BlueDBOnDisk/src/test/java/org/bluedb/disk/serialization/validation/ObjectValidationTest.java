@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import org.bluedb.TestUtils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.models.Blob;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.models.calls.CallV2;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -163,6 +164,14 @@ public class ObjectValidationTest {
 			calls.put(UUID.randomUUID(), CallV2.generateBasicTestCall());
 		}
 		ObjectValidation.validateFieldValueTypesForObject(calls);
+	}
+	
+	@Test
+	public void testMassiveBlob() throws IllegalArgumentException, IllegalAccessException, SerializationException {
+		byte[] largeByteArray = new byte[100_000_000];
+		new Random().nextBytes(largeByteArray);
+		Blob blob = new Blob(UUID.randomUUID().toString(), "label", largeByteArray);
+		ObjectValidation.validateFieldValueTypesForObject(blob);
 	}
 
 	@Test
