@@ -147,9 +147,6 @@ public class ObjectValidation {
 	}
 
 	private static boolean isByteArray(Field field) {
-		if(field.getType().equals(byte[].class) || field.getType().equals(Byte[].class)) {
-			return true;
-		}
-		return false;
+		return field.getType().equals(byte[].class) || field.getType().equals(Byte[].class);
 	}
 }
