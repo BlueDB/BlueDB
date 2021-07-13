@@ -1,5 +1,7 @@
 package org.bluedb.tasks;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 
 public class TestTask implements Runnable {
@@ -8,6 +10,9 @@ public class TestTask implements Runnable {
 	
 	private CountDownLatch startLatch = new CountDownLatch(1);
 	private CountDownLatch completionLatch = new CountDownLatch(1);
+	
+	private Instant startTime;
+	private Instant endTime;
 
 	public TestTask(ThrowingRunnable runnable) {
 		this.runnable = runnable;
@@ -15,6 +20,7 @@ public class TestTask implements Runnable {
 
 	@Override
 	public void run() {
+		startTime = Instant.now();
 		startLatch.countDown();
 		
 		try {
@@ -22,6 +28,7 @@ public class TestTask implements Runnable {
 		} catch(Throwable t) {
 			error = t;
 		} finally {
+			endTime = Instant.now();
 			completionLatch.countDown();
 		}
 	}
@@ -40,6 +47,24 @@ public class TestTask implements Runnable {
 	
 	public Throwable getError() {
 		return error;
+	}
+	
+	public void printStackTraceIfErrorOccurred() {
+		if(error != null) {
+			error.printStackTrace();
+		}
+	}
+	
+	public Instant getStartTime() {
+		return startTime;
+	}
+	
+	public Instant getEndTime() {
+		return endTime;
+	}
+	
+	public Duration getDuration() {
+		return Duration.between(startTime, endTime);
 	}
 	
 	public static TestTask run(ThrowingRunnable runnable) {

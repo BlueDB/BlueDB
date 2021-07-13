@@ -19,10 +19,12 @@ import java.util.UUID;
 
 import org.bluedb.TestUtils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.models.Blob;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.models.calls.CallV2;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.bluedb.tasks.TestTask;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -163,6 +165,23 @@ public class ObjectValidationTest {
 			calls.put(UUID.randomUUID(), CallV2.generateBasicTestCall());
 		}
 		ObjectValidation.validateFieldValueTypesForObject(calls);
+	}
+	
+	@Test
+	public void testMassiveBlob() throws IllegalArgumentException, IllegalAccessException, SerializationException, InterruptedException {
+		byte[] largeByteArray = new byte[100_000_000];
+		new Random().nextBytes(largeByteArray);
+		Blob blob = new Blob(UUID.randomUUID().toString(), "label", largeByteArray);
+		
+		TestTask testTask = new TestTask(() -> {
+			ObjectValidation.validateFieldValueTypesForObject(blob);
+		});
+		testTask.run();
+		testTask.awaitCompletion();
+		testTask.printStackTraceIfErrorOccurred();
+		
+		assertTrue("An error ocurred while validating a large byte array. See logs for details.", testTask.getError() == null);
+		assertTrue("It can't take forever to validate a large byte array", testTask.getDuration().getSeconds() < 5);
 	}
 
 	@Test
