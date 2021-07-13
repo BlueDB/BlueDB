@@ -1,5 +1,6 @@
 package org.bluedb.disk.file;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.nio.file.Path;
@@ -13,7 +14,7 @@ import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class ReadWriteFileManager extends ReadFileManager {
-	
+
 	public ReadWriteFileManager(BlueSerializer serializer, EncryptionServiceWrapper encryptionService) {
 		super(serializer, encryptionService);
 	}
@@ -33,10 +34,10 @@ public class ReadWriteFileManager extends ReadFileManager {
 	public void saveVersionedObject(Path folderPath, String filename, Object o) throws BlueDbException {
 		SimpleDateFormat postfixFormat = new SimpleDateFormat(TIMESTAMP_VERSION_FORMAT);
 		String postfix = postfixFormat.format(System.currentTimeMillis());
-		
+
 		saveObject(folderPath.resolve(filename + "_" + postfix), o);
 	}
-	
+
 	public void lockMoveFileUnlock(Path src, Path dst) throws BlueDbException {
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(dst)) {
 			FileUtils.moveFile(src, lock);
@@ -56,8 +57,7 @@ public class ReadWriteFileManager extends ReadFileManager {
 
 	protected void writeBytes(BlueWriteLock<Path> writeLock, byte[] bytes) throws BlueDbException {
 		Path path = writeLock.getKey();
-		File file = path.toFile();
-		try (DataOutputStream dos = FileUtils.openDataOutputStream(file)) {
+		try (DataOutputStream dos = FileUtils.openDataOutputStream(path.toFile())) {
 
 			BlueFileMetadata metadata = new BlueFileMetadata();
 			if (encryptionService.isEncryptionEnabled()) {
@@ -77,12 +77,32 @@ public class ReadWriteFileManager extends ReadFileManager {
 	protected void writeMetadata(BlueFileMetadata metadata, DataOutputStream dos, Path path) throws BlueDbException {
 		try {
 			byte[] bytes = serializer.serializeObjectToByteArray(metadata);
-			int len = bytes.length;
-			dos.writeInt(len);
+			dos.writeInt(bytes.length);
 			dos.write(bytes);
 		} catch (Throwable t) {
 			t.printStackTrace();
 			throw new BlueDbException("error writing metadata to file " + path, t);
 		}
 	}
+
+	public void makeUnencryptedCopy(Path srcPath, Path destPath) throws BlueDbException {
+		try (
+				DataInputStream dis = FileUtils.openDataInputStream(srcPath.toFile());
+				DataOutputStream dos = FileUtils.openDataOutputStream(destPath.toFile())
+		) {
+			// Write metadata with ENCRYPTION_VERSION_KEY removed
+			BlueFileMetadata srcMetadata = readMetadata(dis);
+			BlueFileMetadata destMetadata = srcMetadata != null ? srcMetadata : new BlueFileMetadata();
+			destMetadata.remove(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+			writeMetadata(destMetadata, dos, destPath);
+
+			// Write unencrypted bytes
+			byte[] unencryptedBytes = encryptionService.decryptOrReturn(srcMetadata, FileUtils.readAllBytes(dis));
+			dos.write(unencryptedBytes);
+		} catch (Throwable t) {
+			t.printStackTrace();
+			throw new BlueDbException("error making unencrypted copy from " + srcPath + " to " + destPath, t);
+		}
+	}
+
 }

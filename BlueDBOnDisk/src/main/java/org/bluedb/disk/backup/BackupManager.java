@@ -6,8 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.UncheckedBlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
@@ -63,7 +65,7 @@ public class BackupManager {
 	protected Range backupDataToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange) throws BlueDbException {
 		long dataBackupStartTime = System.currentTimeMillis();
 		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
-			copyMetaData(collection, tempFolder);
+			copyMetadata(collection, tempFolder);
 			copyDataFolders(collection, tempFolder, includedTimeRange);
 		}
 		long dataBackupEndTime = System.currentTimeMillis();
@@ -76,10 +78,21 @@ public class BackupManager {
 		}
 	}
 
-	private void copyMetaData(ReadWriteCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
-		Path srcPath = collection.getMetaData().getPath();
-		Path dstPath = translatePath(dbPath, tempFolder, srcPath);
-		FileUtils.copyDirectoryWithoutLock(srcPath, dstPath);
+	private void copyMetadata(ReadWriteCollectionOnDisk<?> collection, Path tempFolder) throws BlueDbException {
+		try (Stream<Path> paths = Files.walk(collection.getMetaData().getPath())) {
+			paths
+					.filter(Files::isRegularFile)
+					.forEach(srcPath -> {
+						Path destPath = translatePath(dbPath, tempFolder, srcPath);
+						try {
+							collection.getFileManager().makeUnencryptedCopy(srcPath, destPath);
+						} catch (BlueDbException e) {
+							throw new UncheckedBlueDbException(e);
+						}
+					});
+		} catch (UncheckedBlueDbException | IOException e) {
+			throw new BlueDbException("Failed to backup metadata", e);
+		}
 	}
 
 	private void copyDataFolders(ReadWriteCollectionOnDisk<?> collection, Path tempFolder, Range includedTimeRange) throws BlueDbException {
@@ -128,6 +141,7 @@ public class BackupManager {
 		FileUtils.ensureDirectoryExists(dst.toFile());
 		boolean isFileEmpty = true;
 		
+		// Change this
 		try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst)) {
 			try(BlueObjectInput<?> fileInputStream = segment.getObjectInputFor(groupingNumber)) {
 				while(fileInputStream.hasNext()) {
@@ -149,6 +163,7 @@ public class BackupManager {
 		try (BlueReadLock<Path> lock = segment.getReadLockFor(groupingNumber)) {
 			Path src = lock.getKey();
 			Path dst = translatePath(dbPath, tempFolder, src);
+			// Change this
 			FileUtils.copyFileWithoutLock(src, dst);  // already have read lock on src, shouldn't need write lock on dst
 		}
 	}
@@ -172,6 +187,7 @@ public class BackupManager {
 	private void copyChangeAfterFilteringBasedOnTime(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
 		Recoverable<?> change = (Recoverable<?>) collection.getFileManager().loadObject(file);
 		if(shouldCopyChange(includedTimeRange, change)) {
+			// Change this
 			collection.getFileManager().saveObject(destinationPath, change);
 			recoveryManager.markChangePending(destinationPath);
 		}
@@ -179,11 +195,7 @@ public class BackupManager {
 
 	private boolean shouldCopyChange(Range includedTimeRange, Recoverable<?> change) {
 		if(change instanceof PendingChange) {
-			if(((PendingChange<?>)change).getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
-				return true;
-			} else {
-				return false;
-			}
+			return ((PendingChange<?>) change).getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd());
 		}
 		
 		if(change instanceof PendingBatchChange) {
@@ -196,6 +208,7 @@ public class BackupManager {
 	}
 
 	private void copyChangeStraightOver(RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
+		// Change this
 		FileUtils.copyFileWithoutLock(file.toPath(), destinationPath);
 		recoveryManager.markChangePending(destinationPath);
 	}

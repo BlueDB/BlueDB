@@ -11,7 +11,6 @@ import java.util.Comparator;
 import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.metadata.BlueFileMetadata;
-import org.bluedb.api.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -115,7 +114,7 @@ public class ReadFileManager {
 		}
 	}
 
-	private BlueFileMetadata readMetadata(DataInputStream dis) throws IOException {
+	protected BlueFileMetadata readMetadata(DataInputStream dis) throws IOException {
 		try {
 			dis.mark(Integer.MAX_VALUE);
 			Integer objectLength = FileUtils.readInt(dis);
@@ -141,7 +140,6 @@ public class ReadFileManager {
 		finally {
 			dis.mark(0); // Essentially removes the original mark, don't want to tell the input stream to store more in it's buffer than is needed.
 		}
-
 	}
 
 }
