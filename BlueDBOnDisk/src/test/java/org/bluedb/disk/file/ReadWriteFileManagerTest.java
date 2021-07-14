@@ -323,19 +323,19 @@ public class ReadWriteFileManagerTest extends TestCase {
 		
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
 			byte[] bytes = new byte[] {1, 2, 3};
-			fileManager.writeBytes(lock, bytes);
+			fileManager.writeBytes(lock, bytes, false);
 			fail();
 		} catch (BlueDbException e) {
 		}
 		
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
-			fileManager.writeBytes(lock, new byte[] { });
+			fileManager.writeBytes(lock, new byte[] { }, false);
 			fail();
 		} catch (BlueDbException e) {
 		}
 		
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
-			fileManager.writeBytes(lock, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+			fileManager.writeBytes(lock, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, false);
 			fail();
 		} catch (BlueDbException e) {
 		}

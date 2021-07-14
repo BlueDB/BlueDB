@@ -36,7 +36,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 
 	public ReadWriteDbOnDisk(Path path, EncryptionService encryptionService) {
 		super(path, encryptionService);
-		this.backupManager = new BackupManager(this);
+		this.backupManager = new BackupManager(this, this.encryptionService);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
 	}
 

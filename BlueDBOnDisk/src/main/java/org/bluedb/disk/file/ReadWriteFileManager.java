@@ -24,7 +24,7 @@ public class ReadWriteFileManager extends ReadFileManager {
 		FileUtils.ensureDirectoryExists(path.toFile());
 		Path tmpPath = FileUtils.createTempFilePath(path);
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
-			writeBytes(tempFileLock, bytes);
+			writeBytes(tempFileLock, bytes, false);
 			try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
 				FileUtils.moveFile(tmpPath, targetFileLock);
 			}
@@ -55,12 +55,12 @@ public class ReadWriteFileManager extends ReadFileManager {
 		return new BlueObjectOutput<>(writeLock, serializer, encryptionService);
 	}
 
-	protected void writeBytes(BlueWriteLock<Path> writeLock, byte[] bytes) throws BlueDbException {
+	protected void writeBytes(BlueWriteLock<Path> writeLock, byte[] bytes, boolean forceSkipEncryption) throws BlueDbException {
 		Path path = writeLock.getKey();
 		try (DataOutputStream dos = FileUtils.openDataOutputStream(path.toFile())) {
 
 			BlueFileMetadata metadata = new BlueFileMetadata();
-			if (encryptionService.isEncryptionEnabled()) {
+			if (!forceSkipEncryption && encryptionService.isEncryptionEnabled()) {
 				String encryptionVersionKey = encryptionService.getCurrentEncryptionVersionKey();
 				metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionVersionKey);
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
@@ -102,6 +102,18 @@ public class ReadWriteFileManager extends ReadFileManager {
 		} catch (Throwable t) {
 			t.printStackTrace();
 			throw new BlueDbException("error making unencrypted copy from " + srcPath + " to " + destPath, t);
+		}
+	}
+
+	public void saveObjectUnencrypted(Path path, Object o) throws BlueDbException {
+		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		FileUtils.ensureDirectoryExists(path.toFile());
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
+			writeBytes(tempFileLock, bytes, true);
+			try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
+				FileUtils.moveFile(tmpPath, targetFileLock);
+			}
 		}
 	}
 

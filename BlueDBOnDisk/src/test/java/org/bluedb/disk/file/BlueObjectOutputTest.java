@@ -207,7 +207,7 @@ public class BlueObjectOutputTest extends TestCase {
 	@Test
 	public void test_createWithoutLock_exception() {
 		Path missingFile = testingFolderPath.resolve("far away").resolve("not_home");
-		try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(missingFile)) {
+		try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(missingFile, null, false)) {
 			fail();
 		}  catch (BlueDbException e) {
 			e.printStackTrace(); //Expect exception

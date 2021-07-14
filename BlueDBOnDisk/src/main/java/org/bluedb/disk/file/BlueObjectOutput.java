@@ -21,7 +21,6 @@ public class BlueObjectOutput<T> implements Closeable {
 	private final BlueSerializer serializer;
 	private final EncryptionServiceWrapper encryptionService;
 	private final DataOutputStream dataOutputStream;
-
 	private final BlueFileMetadata metadata;
 
 	private boolean hasBeenWrittenTo = false;
@@ -64,15 +63,15 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	public static <T> BlueObjectOutput<T> createWithoutLockOrSerializer(Path path) throws BlueDbException {
-		return createWithoutLock(path, null, new EncryptionServiceWrapper(null));
+	public static <T> BlueObjectOutput<T> createWithoutLockOrSerializer(Path path, EncryptionServiceWrapper encryptionService, boolean forceWriteUnencrypted) throws BlueDbException {
+		return createWithoutLock(path, null, encryptionService, forceWriteUnencrypted);
 	}
 
-	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
-		return new BlueObjectOutput<>(path, serializer, encryptionService);
+	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, boolean forceWriteUnencrypted) throws BlueDbException {
+		return new BlueObjectOutput<>(path, serializer, encryptionService, forceWriteUnencrypted);
 	}
 
-	private BlueObjectOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
+	private BlueObjectOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, boolean forceWriteUnencrypted) throws BlueDbException {
 		try {
 			this.lock = null;
 			this.path = path;
@@ -81,7 +80,7 @@ public class BlueObjectOutput<T> implements Closeable {
 			this.dataOutputStream = FileUtils.openDataOutputStream(path.toFile());
 
 			metadata = new BlueFileMetadata();
-			if (encryptionService.isEncryptionEnabled()) {
+			if (!forceWriteUnencrypted && encryptionService.isEncryptionEnabled()) {
 				metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
 			}
 		} catch (IOException e) {

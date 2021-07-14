@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.exceptions.UncheckedBlueDbException;
 import org.bluedb.disk.Blutils;
@@ -29,9 +30,11 @@ import org.bluedb.zip.ZipUtils;
 public class BackupManager {
 	
 	private final Path dbPath;
+	private final EncryptionServiceWrapper encryptionService;
 
-	public BackupManager(ReadableDbOnDisk db) {
+	public BackupManager(ReadableDbOnDisk db, EncryptionServiceWrapper encryptionService) {
 		this.dbPath = db.getPath();
+		this.encryptionService = encryptionService;
 	}
 	
 	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
@@ -141,13 +144,12 @@ public class BackupManager {
 		FileUtils.ensureDirectoryExists(dst.toFile());
 		boolean isFileEmpty = true;
 		
-		// Change this
-		try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst)) {
-			try(BlueObjectInput<?> fileInputStream = segment.getObjectInputFor(groupingNumber)) {
-				while(fileInputStream.hasNext()) {
-					BlueEntity<?> next = (BlueEntity<?>) fileInputStream.next();
+		try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true)) {
+			try(BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
+				while(input.hasNext()) {
+					BlueEntity<?> next = (BlueEntity<?>) input.next();
 					if(next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
-						output.writeBytes(fileInputStream.getLastRawBytes());
+						output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
 						isFileEmpty = false;
 					}
 				}
@@ -163,8 +165,15 @@ public class BackupManager {
 		try (BlueReadLock<Path> lock = segment.getReadLockFor(groupingNumber)) {
 			Path src = lock.getKey();
 			Path dst = translatePath(dbPath, tempFolder, src);
-			// Change this
-			FileUtils.copyFileWithoutLock(src, dst);  // already have read lock on src, shouldn't need write lock on dst
+
+			try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true)) {
+				try(BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
+					while(input.hasNext()) {
+						input.nextWithoutDeserializing();
+						output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
+					}
+				}
+			}
 		}
 	}
 
@@ -179,7 +188,7 @@ public class BackupManager {
 			if(shouldFilterDataBasedOnTime(collection.isTimeBased(), includedTimeRange)) {
 				copyChangeAfterFilteringBasedOnTime(collection, includedTimeRange, recoveryManager, file, destinationPath);
 			} else {
-				copyChangeStraightOver(recoveryManager, file, destinationPath);
+				copyChangeStraightOver(collection, recoveryManager, file, destinationPath);
 			}
 		}
 	}
@@ -187,8 +196,7 @@ public class BackupManager {
 	private void copyChangeAfterFilteringBasedOnTime(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
 		Recoverable<?> change = (Recoverable<?>) collection.getFileManager().loadObject(file);
 		if(shouldCopyChange(includedTimeRange, change)) {
-			// Change this
-			collection.getFileManager().saveObject(destinationPath, change);
+			collection.getFileManager().saveObjectUnencrypted(destinationPath, change);
 			recoveryManager.markChangePending(destinationPath);
 		}
 	}
@@ -207,9 +215,9 @@ public class BackupManager {
 		return true; //We don't need to check rollups
 	}
 
-	private void copyChangeStraightOver(RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
-		// Change this
-		FileUtils.copyFileWithoutLock(file.toPath(), destinationPath);
+	private void copyChangeStraightOver(ReadWriteCollectionOnDisk<?> collection, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
+		Recoverable<?> change = (Recoverable<?>) collection.getFileManager().loadObject(file);
+		collection.getFileManager().saveObjectUnencrypted(destinationPath, change);
 		recoveryManager.markChangePending(destinationPath);
 	}
 
