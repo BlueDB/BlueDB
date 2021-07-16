@@ -175,11 +175,9 @@ public class BlueObjectOutputTest extends TestCase {
 			try (BlueObjectInput<TestValue> input = fileManager.getBlueInputStream(readLock)) {
 				try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(dstPath)) {
 					try (BlueObjectOutput<TestValue> output = fileManager.getBlueOutputStream(writeLock)) {
-						output.writeAll(input);
-						output.close();
+						output.writeAllAndAllowEncryption(input);
 					}
 				}
-				input.close();
 			}
 		}
 
@@ -187,7 +185,6 @@ public class BlueObjectOutputTest extends TestCase {
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(dstPath)) {
 			try (BlueObjectInput<TestValue> input = fileManager.getBlueInputStream(readLock)) {
 				assertEquals(value, input.next());
-				input.close();
 			}
 		}
 	}

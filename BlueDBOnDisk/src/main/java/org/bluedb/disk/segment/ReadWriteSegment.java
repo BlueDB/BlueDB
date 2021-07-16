@@ -207,7 +207,7 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 		try(BlueObjectOutput<BlueEntity<T>> output = getObjectOutputFor(destination)) {
 			for (File file: sources) {
 				try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(file.toPath())) {
-					output.writeAll(inputStream);
+					output.writeAllAndAllowEncryption(inputStream);
 				}
 			}
 		}

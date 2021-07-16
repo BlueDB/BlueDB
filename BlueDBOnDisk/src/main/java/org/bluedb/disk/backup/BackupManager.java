@@ -28,7 +28,7 @@ import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.zip.ZipUtils;
 
 public class BackupManager {
-	
+
 	private final Path dbPath;
 	private final EncryptionServiceWrapper encryptionService;
 
@@ -36,15 +36,15 @@ public class BackupManager {
 		this.dbPath = db.getPath();
 		this.encryptionService = encryptionService;
 	}
-	
+
 	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath) throws BlueDbException, IOException {
 		backup(collectionsToBackup, backupPath, Range.createMaxRange());
 	}
-	
+
 	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath, Range includedTimeRange) throws BlueDbException, IOException {
 		backup(collectionsToBackup, backupPath, includedTimeRange, false);
 	}
-	
+
 	public void backup(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path backupPath, Range includedTimeRange, boolean acceptAllPendingChanges) throws BlueDbException, IOException {
 		try {
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().placeHoldOnHistoryCleanup());
@@ -58,7 +58,7 @@ public class BackupManager {
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().removeHoldOnHistoryCleanup());
 		}
 	}
-	
+
 	protected void backupToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange, boolean acceptAllPendingChanges) throws BlueDbException {
 		Range dataBackupRuntime = backupDataToTempDirectory(collectionsToBackup, tempFolder, includedTimeRange);
 		Range includedChangeTimes = acceptAllPendingChanges ? Range.createMaxRange() : dataBackupRuntime;
@@ -67,7 +67,7 @@ public class BackupManager {
 
 	protected Range backupDataToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange) throws BlueDbException {
 		long dataBackupStartTime = System.currentTimeMillis();
-		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
+		for (ReadWriteCollectionOnDisk<?> collection : collectionsToBackup) {
 			copyMetadata(collection, tempFolder);
 			copyDataFolders(collection, tempFolder, includedTimeRange);
 		}
@@ -76,7 +76,7 @@ public class BackupManager {
 	}
 
 	protected void backupNewChangesToTempDirectory(List<ReadWriteCollectionOnDisk<?>> collectionsToBackup, Path tempFolder, Range includedTimeRange, Range includedChangeTimes) throws BlueDbException {
-		for (ReadWriteCollectionOnDisk<?> collection: collectionsToBackup) {
+		for (ReadWriteCollectionOnDisk<?> collection : collectionsToBackup) {
 			copyChanges(collection, includedTimeRange, includedChangeTimes, tempFolder);
 		}
 	}
@@ -100,40 +100,40 @@ public class BackupManager {
 
 	private void copyDataFolders(ReadWriteCollectionOnDisk<?> collection, Path tempFolder, Range includedTimeRange) throws BlueDbException {
 		Range fileRangeToConsider = createFileRangeToConsider(includedTimeRange, collection.isTimeBased());
-		
-		for (ReadWriteSegment<?> segment: collection.getSegmentManager().getAllExistingSegments()) {
+
+		for (ReadWriteSegment<?> segment : collection.getSegmentManager().getAllExistingSegments()) {
 			copyDataFolders(segment, tempFolder, includedTimeRange, collection.isTimeBased(), fileRangeToConsider);
 		}
-	} 
+	}
 
 	private Range createFileRangeToConsider(Range includedTimeRange, boolean isTimeBased) {
-		if(!isTimeBased) {
+		if (!isTimeBased) {
 			return Range.createMaxRange(); //Include everything in a non time base collection
 		}
-	
+
 		/*
 		 * Since values with a TimeFrameKey have an end time, we have to look at anything with a start time at or
 		 * before the end time of the included time range since any of those objects could be long enough to overlap
 		 * into the included time range. And since you can insert a value with a TimeFrameKey into a Collection with
-		 * a key type of TimeKey we must do this even for collections with a key type of TimeKey. 
+		 * a key type of TimeKey we must do this even for collections with a key type of TimeKey.
 		 */
 		return new Range(Long.MIN_VALUE, includedTimeRange.getEnd());
 	}
 
 	private void copyDataFolders(ReadWriteSegment<?> segment, Path tempFolder, Range includedTimeRange, boolean isTimeBased, Range fileRangeToConsider) throws BlueDbException {
 		List<File> files = segment.getOrderedFilesInRange(fileRangeToConsider);
-		for (File file: files) {
+		for (File file : files) {
 			Range fileRange = Range.fromUnderscoreDelmimitedString(file.getName());
 			long groupingNumber = fileRange.getStart();
-			
-			if(shouldFilterDataBasedOnTime(isTimeBased, includedTimeRange)) {
+
+			if (shouldFilterDataBasedOnTime(isTimeBased, includedTimeRange)) {
 				copyDataFileAfterFilteringBasedOnTime(segment, tempFolder, includedTimeRange, groupingNumber);
 			} else {
 				copyDataFileStraightOver(segment, tempFolder, groupingNumber);
 			}
 		}
 	}
-	
+
 	private boolean shouldFilterDataBasedOnTime(boolean isCollectionTimeBased, Range includedTimeRange) {
 		return isCollectionTimeBased && !includedTimeRange.isMaxRange();
 	}
@@ -143,20 +143,20 @@ public class BackupManager {
 		Path dst = translatePath(dbPath, tempFolder, src);
 		FileUtils.ensureDirectoryExists(dst.toFile());
 		boolean isFileEmpty = true;
-		
-		try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true)) {
-			try(BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
-				while(input.hasNext()) {
-					BlueEntity<?> next = (BlueEntity<?>) input.next();
-					if(next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
-						output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
-						isFileEmpty = false;
-					}
+
+		try (
+				BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true);
+				BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
+			while (input.hasNext()) {
+				BlueEntity<?> next = (BlueEntity<?>) input.next();
+				if (next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
+					output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
+					isFileEmpty = false;
 				}
 			}
 		}
-		
-		if(isFileEmpty) {
+
+		if (isFileEmpty) {
 			FileUtils.deleteIfExistsWithoutLock(dst);
 		}
 	}
@@ -166,13 +166,10 @@ public class BackupManager {
 			Path src = lock.getKey();
 			Path dst = translatePath(dbPath, tempFolder, src);
 
-			try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true)) {
-				try(BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
-					while(input.hasNext()) {
-						byte[] nextBytes = input.nextUnencryptedBytesWithoutDeserializing();
-						output.writeBytesAndForceSkipEncryption(nextBytes);
-					}
-				}
+			try (
+					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true);
+					BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
+				output.writeAllAndAllowEncryption(input);
 			}
 		}
 	}
@@ -183,9 +180,9 @@ public class BackupManager {
 		Path historyFolderPath = recoveryManager.getHistoryFolder();
 		Path destinationFolderPath = translatePath(dbPath, tempFolder, historyFolderPath);
 		destinationFolderPath.toFile().mkdirs();
-		for (File file: changesToCopy) {
+		for (File file : changesToCopy) {
 			Path destinationPath = Paths.get(destinationFolderPath.toString(), file.getName());
-			if(shouldFilterDataBasedOnTime(collection.isTimeBased(), includedTimeRange)) {
+			if (shouldFilterDataBasedOnTime(collection.isTimeBased(), includedTimeRange)) {
 				copyChangeAfterFilteringBasedOnTime(collection, includedTimeRange, recoveryManager, file, destinationPath);
 			} else {
 				copyChangeStraightOver(collection, recoveryManager, file, destinationPath);
@@ -195,23 +192,23 @@ public class BackupManager {
 
 	private void copyChangeAfterFilteringBasedOnTime(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
 		Recoverable<?> change = (Recoverable<?>) collection.getFileManager().loadObject(file);
-		if(shouldCopyChange(includedTimeRange, change)) {
+		if (shouldCopyChange(includedTimeRange, change)) {
 			collection.getFileManager().saveObjectUnencrypted(destinationPath, change);
 			recoveryManager.markChangePending(destinationPath);
 		}
 	}
 
 	private boolean shouldCopyChange(Range includedTimeRange, Recoverable<?> change) {
-		if(change instanceof PendingChange) {
+		if (change instanceof PendingChange) {
 			return ((PendingChange<?>) change).getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd());
 		}
-		
-		if(change instanceof PendingBatchChange) {
+
+		if (change instanceof PendingBatchChange) {
 			PendingBatchChange<?> batchChange = (PendingBatchChange<?>) change;
 			batchChange.removeChangesOutsideRange(includedTimeRange);
 			return !batchChange.isEmpty();
 		}
-		
+
 		return true; //We don't need to check rollups
 	}
 
@@ -225,4 +222,5 @@ public class BackupManager {
 		Path relativePath = fromPath.relativize(targetPath);
 		return Paths.get(toPath.toString(), relativePath.toString());
 	}
+
 }
