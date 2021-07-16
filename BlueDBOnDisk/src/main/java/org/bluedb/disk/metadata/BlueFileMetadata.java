@@ -1,4 +1,4 @@
-package org.bluedb.api.metadata;
+package org.bluedb.disk.metadata;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -16,7 +16,7 @@ public class BlueFileMetadata implements Serializable {
 		return metadataMap.get(key);
 	}
 
-	public Object put(BlueFileMetadataKey key, String value) {
+	public String put(BlueFileMetadataKey key, String value) {
 		if (key == null || value == null) {
 			throw new IllegalArgumentException("Key and value must not be null");
 		}

@@ -1,4 +1,4 @@
-package org.bluedb.api.metadata;
+package org.bluedb.disk.metadata;
 
 public enum BlueFileMetadataKey {
 

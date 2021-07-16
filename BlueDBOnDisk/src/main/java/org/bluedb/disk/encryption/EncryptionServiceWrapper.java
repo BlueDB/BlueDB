@@ -1,7 +1,7 @@
 package org.bluedb.disk.encryption;
 
 import java.util.Optional;
-import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadata;
 
 /**
  * Wrapper class for interacting with an {@code EncryptionService} implementation optionally supplied on creation of a BlueDB instance.

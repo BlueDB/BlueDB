@@ -1,8 +1,8 @@
 package org.bluedb.disk.encryption;
 
 import java.util.Optional;
-import org.bluedb.api.metadata.BlueFileMetadata;
-import org.bluedb.api.metadata.BlueFileMetadataKey;
+import org.bluedb.disk.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
 
 /**
  * Static utility methods and fields that assist with the encryption and decryption processes.

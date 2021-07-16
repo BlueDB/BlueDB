@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertArrayEquals;
-import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.junit.Test;
 import org.mockito.Mockito;

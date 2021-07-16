@@ -7,8 +7,8 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.metadata.BlueFileMetadata;
-import org.bluedb.api.metadata.BlueFileMetadataKey;
+import org.bluedb.disk.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.serialization.BlueSerializer;

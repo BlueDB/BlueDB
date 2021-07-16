@@ -11,7 +11,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
-import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ByteUtils;
 import org.bluedb.disk.collection.index.IndexCompositeKey;

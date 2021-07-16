@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
