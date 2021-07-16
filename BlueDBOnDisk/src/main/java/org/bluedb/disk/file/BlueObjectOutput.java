@@ -88,8 +88,8 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	public void writeBytesAndAllowEncryption(byte[] bytes) throws BlueDbException {
-		writeBytes(bytes, false);
+	public void writeBytesAndAllowEncryption(byte[] unencryptedBytes) throws BlueDbException {
+		writeBytes(unencryptedBytes, false);
 	}
 
 	public void writeBytesAndForceSkipEncryption(byte[] bytes) throws BlueDbException {
