@@ -1,4 +1,4 @@
-package org.bluedb.api.encryption;
+package org.bluedb.disk.encryption;
 
 import java.util.Optional;
 import org.bluedb.api.metadata.BlueFileMetadata;
@@ -27,23 +27,10 @@ public class EncryptionServiceWrapper {
 	}
 
 	/**
-	 * Encrypts and returns the bytes if encryption is enabled. Uses {@link EncryptionServiceWrapper#getCurrentEncryptionVersionKey()} to determine which encryption version to use.
-	 *
-	 * @param bytes the bytes to encrypt.
-	 * @return the encrypted bytes or the unmodified bytes if encryption is not enabled.
-	 */
-	public byte[] encryptOrReturn(byte[] bytes) {
-		if (isEncryptionEnabled()) {
-			return encrypt(this.getCurrentEncryptionVersionKey(), bytes);
-		}
-		return bytes;
-	}
-
-	/**
 	 * Encrypts and returns the bytes using a given encryption version key.
 	 *
 	 * @param encryptionVersionKey the encryption version key to use for encryption.
-	 * @param bytes the bytes to encrypt.
+	 * @param bytes                the bytes to encrypt.
 	 * @return the encrypted bytes or the unmodified bytes if encryption is not enabled.
 	 */
 	public byte[] encryptOrThrow(String encryptionVersionKey, byte[] bytes) {
@@ -54,30 +41,18 @@ public class EncryptionServiceWrapper {
 	}
 
 	/**
-	 * Decrypts and returns the bytes if encryption is enabled.
-	 *
-	 * @param encryptionVersionKey the encryption version key to use.
-	 * @param bytes                the bytes to decrypt.
-	 * @return the decrypted bytes or the unmodified bytes if encryption is not enabled.
-	 */
-	public byte[] decryptOrReturn(String encryptionVersionKey, byte[] bytes) {
-		if (isEncryptionEnabled()) {
-			return decrypt(encryptionVersionKey, bytes);
-		}
-		return bytes;
-	}
-
-	/**
 	 * Decrypts and returns the bytes if encryption is enabled and the {@code BlueFileMetadata} supplied indicates the file is encrypted. Uses the encryption version key from the file extension to decrypt.
 	 *
 	 * @param fileMetadata the {@link BlueFileMetadata} retrieved from the file with information regarding the encryption status of the file.
-	 * @param bytes    the bytes to decrypt.
+	 * @param bytes        the bytes to decrypt.
 	 * @return the decrypted bytes or the unmodified bytes.
 	 */
 	public byte[] decryptOrReturn(BlueFileMetadata fileMetadata, byte[] bytes) {
-		Optional<String> encryptionVersionKey;
-		if (isEncryptionEnabled() && (encryptionVersionKey = EncryptionUtils.getEncryptionVersionKey(fileMetadata)).isPresent()) {
-			return decrypt(encryptionVersionKey.get(), bytes);
+		if (encryptionService != null) {
+			Optional<String> encryptionVersionKey = EncryptionUtils.getEncryptionVersionKey(fileMetadata);
+			if (encryptionVersionKey.isPresent()) {
+				return decrypt(encryptionVersionKey.get(), bytes);
+			}
 		}
 		return bytes;
 	}
@@ -85,7 +60,7 @@ public class EncryptionServiceWrapper {
 	public boolean isEncryptionEnabled() {
 		return encryptionService != null && encryptionService.isEncryptionEnabled();
 	}
-	
+
 	/**
 	 * Returns the current encryption version key or the most recent valid key if the current one is invalid, logging warnings for any validation errors.
 	 *
@@ -93,7 +68,7 @@ public class EncryptionServiceWrapper {
 	 * @throws IllegalStateException if the current encryption version key is invalid and no cached key exists.
 	 */
 	public String getCurrentEncryptionVersionKey() {
-		if(!isEncryptionEnabled()) {
+		if (!isEncryptionEnabled()) {
 			return null;
 		}
 		String currentKey = encryptionService.getCurrentEncryptionVersionKey();
@@ -111,18 +86,17 @@ public class EncryptionServiceWrapper {
 
 		// Return cached key if one exists
 		if (cachedEncryptionVersionKey != null) {
-			// TODO Warning or error level log here
+			System.out.println("Warning: current encryption version key is invalid, this should be fixed ASAP! Using most recent valid key.");
 			return cachedEncryptionVersionKey;
 		}
-
 		// Error only if current key is invalid and no cached key exists
-		throw new IllegalStateException("getCurrentEncryptionVersionKey must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters and must be a valid file extension for your OS");
+		throw new IllegalStateException("getCurrentEncryptionVersionKey must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters.");
 	}
 
 	private byte[] encrypt(String encryptionVersionKey, byte[] bytes) {
 		return encryptionService.encrypt(encryptionVersionKey, bytes);
 	}
-	
+
 	private byte[] decrypt(String encryptionVersionKey, byte[] bytes) {
 		return encryptionService.decrypt(encryptionVersionKey, bytes);
 	}

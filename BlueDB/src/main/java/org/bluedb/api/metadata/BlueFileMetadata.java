@@ -1,29 +1,33 @@
 package org.bluedb.api.metadata;
 
+import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Map;
 
-public class BlueFileMetadata extends HashMap<BlueFileMetadataKey, Object> {
+public class BlueFileMetadata implements Serializable {
 
-	@Override
-	public Object put(BlueFileMetadataKey key, Object value) {
-		validatePut(key, value);
-		return super.put(key, value);
+	private final Map<BlueFileMetadataKey, String> metadataMap;
+
+	public BlueFileMetadata() {
+		metadataMap = new HashMap<>();
+	}
+	
+	public String get(BlueFileMetadataKey key) {
+		return metadataMap.get(key);
 	}
 
-	@Override
-	public Object putIfAbsent(BlueFileMetadataKey key, Object value) {
-		validatePut(key, value);
-		return super.putIfAbsent(key, value);
-	}
-
-	private void validatePut(BlueFileMetadataKey key, Object value) {
+	public Object put(BlueFileMetadataKey key, String value) {
 		if (key == null || value == null) {
 			throw new IllegalArgumentException("Key and value must not be null");
 		}
-		if (key.getValueClass() != value.getClass()) {
-			throw new IllegalArgumentException("Invalid type for metadata key " + key.name() + ": " + value.getClass() +
-					". Type must be " + key.getValueClass());
-		}
+		return metadataMap.put(key, value);
 	}
-
+	
+	public boolean containsKey(BlueFileMetadataKey key) {
+		return metadataMap.containsKey(key);
+	}
+	
+	public String remove(BlueFileMetadataKey key) {
+		return metadataMap.remove(key);
+	}
 }

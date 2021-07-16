@@ -8,9 +8,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;

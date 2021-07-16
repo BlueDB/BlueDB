@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.ReadOnlyFileManager;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadOnlySegment;

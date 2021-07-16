@@ -8,12 +8,12 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.exceptions.UncheckedBlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.FileUtils;

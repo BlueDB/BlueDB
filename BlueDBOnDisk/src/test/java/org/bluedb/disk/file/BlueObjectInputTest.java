@@ -12,7 +12,8 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertArrayEquals;
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
+import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.bluedb.TestUtils;
@@ -230,7 +231,7 @@ public class BlueObjectInputTest extends TestCase {
 	public void test_nextFromFile_IOException() {
 		AtomicBoolean readCalled = new AtomicBoolean(false);
 		DataInputStream dataInputStream = createDataInputStreamThatThrowsExceptionOnRead(readCalled);
-		BlueObjectInput<TestValue> inStream = BlueObjectInput.getTestInput(targetFilePath, serializer, encryptionService, dataInputStream);
+		BlueObjectInput<TestValue> inStream = BlueObjectInput.getTestInput(targetFilePath, serializer, encryptionService, dataInputStream, new BlueFileMetadata());
 		assertFalse(readCalled.get());
 		assertNull(inStream.next());
 		assertTrue(readCalled.get());
@@ -243,7 +244,7 @@ public class BlueObjectInputTest extends TestCase {
 			Path path = readLock.getKey();
 			AtomicBoolean streamClosed = new AtomicBoolean(false);
 			DataInputStream inStream = createDataInputStreamThatThrowsExceptionOnClose(streamClosed);
-			BlueObjectInput<TestValue> mockStream = BlueObjectInput.getTestInput(path, serializer, encryptionService, inStream);
+			BlueObjectInput<TestValue> mockStream = BlueObjectInput.getTestInput(path, serializer, encryptionService, inStream, new BlueFileMetadata());
 			mockStream.close();  // BlueObjectInput should handle the exception
 			assertTrue(streamClosed.get());  // make sure it actually closed the underlying stream
 		}

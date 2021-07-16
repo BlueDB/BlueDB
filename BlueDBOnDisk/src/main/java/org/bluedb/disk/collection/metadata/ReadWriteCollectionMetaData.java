@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.BlueSerializer;

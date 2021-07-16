@@ -1,9 +1,9 @@
 package org.bluedb.disk.segment.writer;
 
 import java.io.Serializable;
-import org.bluedb.api.encryption.EncryptionUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.encryption.EncryptionUtils;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.serialization.BlueEntity;

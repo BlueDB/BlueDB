@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.bluedb.api.encryption.EncryptionUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.encryption.EncryptionUtils;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.recovery.IndividualChange;
@@ -18,7 +18,7 @@ public class BatchWriter<T extends Serializable> implements StreamingWriter<T> {
 	LinkedList<IndividualChange<T>> changes;
 
 	public BatchWriter(Collection<IndividualChange<T>> changes) {
-		this.changes = new LinkedList<IndividualChange<T>>(changes);
+		this.changes = new LinkedList<>(changes);
 	}
 
 	public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
@@ -44,6 +44,8 @@ public class BatchWriter<T extends Serializable> implements StreamingWriter<T> {
 					output.writeBytes(input.getLastUnencryptedBytes());
 				}
 			}
+
+
 		}
 
 		// drain out the remaining items from whichever is not empty

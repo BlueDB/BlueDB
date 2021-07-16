@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.bluedb.api.exceptions.BlueDbException;

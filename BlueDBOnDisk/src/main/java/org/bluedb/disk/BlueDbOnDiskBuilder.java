@@ -5,7 +5,7 @@ import java.nio.file.Paths;
 
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.ReadableBlueDb;
-import org.bluedb.api.encryption.EncryptionService;
+import org.bluedb.disk.encryption.EncryptionService;
 
 /**
  * A builder for the {@link ReadableDbOnDisk} and {@link ReadWriteDbOnDisk} classes

@@ -8,9 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -70,7 +70,7 @@ public class ReadFileManager {
 	}
 
 	public <T> BlueObjectInput<T> getBlueInputStream(BlueReadLock<Path> readLock) throws BlueDbException {
-		return new BlueObjectInput<>(readLock, serializer, encryptionService);
+		return new BlueObjectInput<T>(readLock, serializer, encryptionService);
 	}
 
 	public BlueReadLock<Path> getReadLockIfFileExists(Path path) throws BlueDbException {

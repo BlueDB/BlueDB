@@ -18,10 +18,10 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;

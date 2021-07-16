@@ -1,4 +1,4 @@
-package org.bluedb.api.encryption;
+package org.bluedb.disk.encryption;
 
 import java.util.Optional;
 import org.bluedb.api.metadata.BlueFileMetadata;

@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadableBlueDb;
 import org.bluedb.api.ReadableBlueTimeCollection;
-import org.bluedb.api.encryption.EncryptionService;
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
@@ -21,6 +19,8 @@ import org.bluedb.disk.collection.FacadeTimeCollection;
 import org.bluedb.disk.collection.NoSuchCollectionException;
 import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 import org.bluedb.disk.collection.ReadOnlyTimeCollectionOnDisk;
+import org.bluedb.disk.encryption.EncryptionService;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 
 public class ReadableDbOnDisk implements ReadableBlueDb {
 

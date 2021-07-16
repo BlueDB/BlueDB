@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.metadata.BlueFileMetadata;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;

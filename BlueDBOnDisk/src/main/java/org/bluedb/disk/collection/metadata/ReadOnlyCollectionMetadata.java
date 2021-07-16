@@ -2,7 +2,7 @@ package org.bluedb.disk.collection.metadata;
 
 import java.nio.file.Path;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.ReadOnlyFileManager;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;

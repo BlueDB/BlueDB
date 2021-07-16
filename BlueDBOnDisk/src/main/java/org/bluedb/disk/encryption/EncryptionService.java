@@ -1,4 +1,4 @@
-package org.bluedb.api.encryption;
+package org.bluedb.disk.encryption;
 
 public interface EncryptionService {
 

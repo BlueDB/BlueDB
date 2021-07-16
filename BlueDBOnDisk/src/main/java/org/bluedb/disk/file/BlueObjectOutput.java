@@ -6,10 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.metadata.BlueFileMetadata;
 import org.bluedb.api.metadata.BlueFileMetadataKey;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -103,7 +103,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 		try {
 			if (!shouldSkipEncryption && metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
-				String encryptionVersionKey = (String) metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+				String encryptionVersionKey = metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
 			}
 			FileUtils.validateBytes(bytes);
@@ -127,7 +127,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		try {
 			byte[] bytes = serializer.serializeObjectToByteArray(value);
 			if (metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
-				String encryptionVersionKey = (String) metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+				String encryptionVersionKey = metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
 			}
 			int len = bytes.length;

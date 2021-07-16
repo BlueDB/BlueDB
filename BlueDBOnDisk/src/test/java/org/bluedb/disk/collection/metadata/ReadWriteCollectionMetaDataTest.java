@@ -13,13 +13,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.bluedb.api.encryption.EncryptionServiceWrapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
 import org.bluedb.disk.TestValueSub;
-import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
