@@ -49,6 +49,8 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 				Object firstObject = this.serializer.deserializeObjectFromByteArray(nextUnencryptedBytes);
 				if (firstObject != null && firstObject.getClass() == BlueFileMetadata.class) {
 					this.metadata = (BlueFileMetadata) firstObject;
+					nextRawBytes = null;
+					nextUnencryptedBytes = null;
 				} else {
 					this.metadata = null;
 					next = (T) firstObject;
@@ -112,18 +114,25 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		return response;
 	}
 
-	public byte[] nextWithoutDeserializing() {
+	public byte[] nextRawBytesWithoutDeserializing() {
+		nextWithoutDeserializing();
+		return lastRawBytes;
+	}
+
+	public byte[] nextUnencryptedBytesWithoutDeserializing() {
+		nextWithoutDeserializing();
+		return lastUnencryptedBytes;
+	}
+
+	private void nextWithoutDeserializing() {
 		if (next == null) {
 			setNextBytesFromFile();
 		}  // otherwise you've already peeked ahead
-		byte[] response = nextRawBytes;
-
 		lastRawBytes = nextRawBytes;
 		lastUnencryptedBytes = nextUnencryptedBytes;
 		next = null;
 		nextRawBytes = null;
 		nextUnencryptedBytes = null;
-		return response;
 	}
 
 	public T peek() {
@@ -148,7 +157,7 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 		if (nextRawBytes == null) {
 			return null;
 		}
-		Object object = serializer.deserializeObjectFromByteArray(nextRawBytes);
+		Object object = serializer.deserializeObjectFromByteArray(nextUnencryptedBytes);
 		@SuppressWarnings("unchecked")
 		T t = (T) object;
 		return t;

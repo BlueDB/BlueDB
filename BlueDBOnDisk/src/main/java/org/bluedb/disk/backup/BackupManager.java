@@ -169,8 +169,8 @@ public class BackupManager {
 			try(BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true)) {
 				try(BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
 					while(input.hasNext()) {
-						input.nextWithoutDeserializing();
-						output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
+						byte[] nextBytes = input.nextUnencryptedBytesWithoutDeserializing();
+						output.writeBytesAndForceSkipEncryption(nextBytes);
 					}
 				}
 			}

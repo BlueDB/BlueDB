@@ -131,7 +131,11 @@ public class ReadFileManager {
 				dis.reset();
 				return null; // Legacy file without metadata header
 			}
-			return object instanceof BlueFileMetadata ? (BlueFileMetadata) object : null;
+			if (!(object instanceof  BlueFileMetadata)) {
+				dis.reset();
+				return null; // Legacy file without metadata header, somehow serialized into an object successfully
+			}
+			return (BlueFileMetadata) object;
 		}
 		catch (EOFException ex) {
 			dis.reset();

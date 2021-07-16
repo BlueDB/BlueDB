@@ -32,7 +32,7 @@ public class UpdateWriter<T extends Serializable> implements StreamingWriter<T> 
 				if (shouldSkipEncryption) {
 					output.writeBytesAndForceSkipEncryption(input.getLastRawBytes());
 				} else {
-					output.writeBytes(input.getLastUnencryptedBytes());
+					output.writeBytesAndAllowEncryption(input.getLastUnencryptedBytes());
 				}
 			}
 		}

@@ -114,7 +114,7 @@ public class BlueObjectOutputTest extends TestCase {
 		byte[] valueBytes = serializer.serializeObjectToByteArray(value);
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock);
-			outStream.writeBytes(valueBytes);
+			outStream.writeBytesAndAllowEncryption(valueBytes);
 			outStream.close();
 		}
 
@@ -127,7 +127,7 @@ public class BlueObjectOutputTest extends TestCase {
 
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			try (BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock)) {
-				outStream.writeBytes(null);
+				outStream.writeBytesAndAllowEncryption(null);
 				fail();
 			}
 		} catch (BlueDbException e) {
@@ -135,7 +135,7 @@ public class BlueObjectOutputTest extends TestCase {
 
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			try (BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock)) {
-				outStream.writeBytes(new byte[] { });
+				outStream.writeBytesAndAllowEncryption(new byte[] { });
 				fail();
 			}
 		} catch (BlueDbException e) {
@@ -143,7 +143,7 @@ public class BlueObjectOutputTest extends TestCase {
 
 		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath)) {
 			try (BlueObjectOutput<TestValue> outStream = fileManager.getBlueOutputStream(writeLock)) {
-				outStream.writeBytes(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00 });
+				outStream.writeBytesAndAllowEncryption(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00 });
 				fail();
 			}
 		} catch (BlueDbException e) {
@@ -151,7 +151,7 @@ public class BlueObjectOutputTest extends TestCase {
 
 		try {
 			BlueObjectOutput<TestValue> invalidOut = BlueObjectOutput.getTestOutput(null, null, null, null);
-			invalidOut.writeBytes(valueBytes);
+			invalidOut.writeBytesAndAllowEncryption(valueBytes);
 			fail();
 		} catch (BlueDbException e) {
 		}

@@ -207,7 +207,7 @@ public class FileUtils {
 	public static byte[] readAllBytes(InputStream is) throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		int numBytesRead;
-		byte[] nextBytes = new byte[4];
+		byte[] nextBytes = new byte[1024];
 		while ((numBytesRead = is.read(nextBytes, 0, nextBytes.length)) != -1) {
 			buffer.write(nextBytes, 0, numBytesRead);
 		}

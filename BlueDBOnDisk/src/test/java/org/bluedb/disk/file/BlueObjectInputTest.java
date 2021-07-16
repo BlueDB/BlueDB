@@ -181,7 +181,7 @@ public class BlueObjectInputTest extends TestCase {
 
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
-				assertArrayEquals(valueBytes, inStream.nextWithoutDeserializing());
+				assertArrayEquals(valueBytes, inStream.nextUnencryptedBytesWithoutDeserializing());
 				assertNull(inStream.next());
 				inStream.close();
 			}

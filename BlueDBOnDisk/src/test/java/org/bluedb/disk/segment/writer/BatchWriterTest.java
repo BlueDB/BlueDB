@@ -209,7 +209,7 @@ public class BatchWriterTest {
 		BlueObjectInput<T> mockInput = Mockito.mock(BlueObjectInput.class);
 		Mockito.doAnswer((x) -> !inputValues.isEmpty()).when(mockInput).hasNext();
 		Mockito.doAnswer((x) -> inputValues.poll()).when(mockInput).next();
-		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextWithoutDeserializing();
+		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextUnencryptedBytesWithoutDeserializing();
 		Mockito.doAnswer((x) -> inputValues.peek()).when(mockInput).peek();
 		return mockInput;
 	}
@@ -242,7 +242,7 @@ public class BatchWriterTest {
 		};
 		
 		Mockito.doAnswer(writeObjectMethod).when(mockOutput).write(anyObject());
-		Mockito.doAnswer(writeBytesMethod).when(mockOutput).writeBytes(anyObject());
+		Mockito.doAnswer(writeBytesMethod).when(mockOutput).writeBytesAndAllowEncryption(anyObject());
 		return mockOutput;
 	}
 }

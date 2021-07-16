@@ -28,29 +28,29 @@ public class BatchWriter<T extends Serializable> implements StreamingWriter<T> {
 			BlueKey peekFromChanges = changes.peek().getKey();
 
 			if (peekFromInput.equals(peekFromChanges)) {
-				input.nextWithoutDeserializing();
 				if (shouldSkipEncryptionForUnchangedData) {
-					replaceItemWithNextChange(input.getLastRawBytes(), changes, output, true);
+					replaceItemWithNextChange(input.nextRawBytesWithoutDeserializing(), changes, output, true);
 				} else {
-					replaceItemWithNextChange(input.getLastUnencryptedBytes(), changes, output, false);
+					replaceItemWithNextChange(input.nextUnencryptedBytesWithoutDeserializing(), changes, output, false);
 				}
 			} else if (peekFromInput.compareTo(peekFromChanges) > 0) {
 				writeNextChange(changes, output);
 			} else {
-				input.nextWithoutDeserializing();
 				if (shouldSkipEncryptionForUnchangedData) {
-					output.writeBytesAndForceSkipEncryption(input.getLastRawBytes());
+					output.writeBytesAndForceSkipEncryption(input.nextRawBytesWithoutDeserializing());
 				} else {
-					output.writeBytes(input.getLastUnencryptedBytes());
+					output.writeBytesAndAllowEncryption(input.nextUnencryptedBytesWithoutDeserializing());
 				}
 			}
-
-
 		}
 
 		// drain out the remaining items from whichever is not empty
 		while (input.hasNext()) {
-			output.writeBytes(input.nextWithoutDeserializing());
+			if (shouldSkipEncryptionForUnchangedData) {
+				output.writeBytesAndForceSkipEncryption(input.nextRawBytesWithoutDeserializing());
+			} else {
+				output.writeBytesAndAllowEncryption(input.nextUnencryptedBytesWithoutDeserializing());
+			}
 		}
 		while (!changes.isEmpty()) {
 			writeNextChange(changes, output);
@@ -75,7 +75,7 @@ public class BatchWriter<T extends Serializable> implements StreamingWriter<T> {
 					if (shouldSkipEncryptionForUnchangedData) {
 						output.writeBytesAndForceSkipEncryption(originalItemBytes);
 					} else {
-						output.writeBytes(originalItemBytes);
+						output.writeBytesAndAllowEncryption(originalItemBytes);
 					}
 				} else {
 					new BlueDbException("A BlueDB batch query was supposed to insert an object but failed to serialize it. Key: " + newEntity.getKey(), e).printStackTrace();
