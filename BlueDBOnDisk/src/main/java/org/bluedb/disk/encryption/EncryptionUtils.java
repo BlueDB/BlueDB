@@ -47,8 +47,8 @@ public class EncryptionUtils {
 	 * @return true if neither file is encrypted or the encryption version has not changed, false otherwise.
 	 */
 	public static boolean shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(BlueFileMetadata oldFileMetadata, BlueFileMetadata newFileMetadata) {
-		String oldEncryptionVersionKey = (String) oldFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
-		String newEncryptionVersionKey = (String) newFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+		String oldEncryptionVersionKey = oldFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+		String newEncryptionVersionKey = newFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 
 		// Neither file is encrypted
 		if (oldEncryptionVersionKey == null && newEncryptionVersionKey == null) {

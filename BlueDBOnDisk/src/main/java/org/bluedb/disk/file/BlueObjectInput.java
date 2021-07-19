@@ -47,16 +47,16 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			setNextBytesFromFile();
 			if (nextRawBytes != null) {
 				Object firstObject = this.serializer.deserializeObjectFromByteArray(nextUnencryptedBytes);
-				if (firstObject != null && firstObject.getClass() == BlueFileMetadata.class) {
+				if (firstObject instanceof BlueFileMetadata) {
 					this.metadata = (BlueFileMetadata) firstObject;
 					nextRawBytes = null;
 					nextUnencryptedBytes = null;
 				} else {
-					this.metadata = null;
+					this.metadata = new BlueFileMetadata();
 					next = (T) firstObject;
 				}
 			} else {
-				this.metadata = null;
+				this.metadata = new BlueFileMetadata();
 			}
 
 		} catch (Throwable t) {

@@ -52,14 +52,17 @@ public class BlueObjectOutput<T> implements Closeable {
 
 	private BlueObjectOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, DataOutputStream dataOutputStream) {
 		LockManager<Path> lockManager = new LockManager<>();
-		lock = lockManager.acquireWriteLock(path);
+		this.lock = lockManager.acquireWriteLock(path);
 		this.path = path;
 		this.serializer = serializer;
-		this.encryptionService = encryptionService;
 		this.dataOutputStream = dataOutputStream;
+		this.metadata = new BlueFileMetadata();
 
-		metadata = new BlueFileMetadata();
-		if (encryptionService.isEncryptionEnabled()) {
+		if (encryptionService == null) {
+			encryptionService = new EncryptionServiceWrapper(null);
+		}
+		this.encryptionService = encryptionService;
+		if (this.encryptionService.isEncryptionEnabled()) {
 			metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
 		}
 	}
@@ -80,7 +83,7 @@ public class BlueObjectOutput<T> implements Closeable {
 			this.encryptionService = encryptionService;
 			this.dataOutputStream = FileUtils.openDataOutputStream(path.toFile());
 			this.allWritesForceSkipEncryption = allWritesForceSkipEncryption;
-			
+
 			metadata = new BlueFileMetadata();
 			if (!allWritesForceSkipEncryption && encryptionService.isEncryptionEnabled()) {
 				metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
@@ -146,7 +149,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		//      There's some protection against this in rollup recovery and 
 		//      from single-threaded writes.
 		byte[] nextBytes = input.nextUnencryptedBytesWithoutDeserializing();
-		while(nextBytes != null && nextBytes.length > 0) {
+		while (nextBytes != null && nextBytes.length > 0) {
 			writeBytesAndAllowEncryption(nextBytes);
 			nextBytes = input.nextUnencryptedBytesWithoutDeserializing();
 		}

@@ -20,6 +20,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
+import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -211,6 +212,7 @@ public class BatchWriterTest {
 		Mockito.doAnswer((x) -> inputValues.poll()).when(mockInput).next();
 		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextUnencryptedBytesWithoutDeserializing();
 		Mockito.doAnswer((x) -> inputValues.peek()).when(mockInput).peek();
+		Mockito.when(mockInput.getMetadata()).thenReturn(new BlueFileMetadata());
 		return mockInput;
 	}
 
@@ -218,31 +220,25 @@ public class BatchWriterTest {
 		@SuppressWarnings("unchecked")
 		BlueObjectOutput<T> mockOutput = Mockito.mock(BlueObjectOutput.class);
 		
-		Answer<T> writeObjectMethod = new Answer<T>() {
-			@Override
-			public T answer(InvocationOnMock invocation) throws Throwable {
-				@SuppressWarnings("unchecked")
-				T outputValue = (T) invocation.getArguments()[0];
-				
-				ObjectValidation.validateFieldValueTypesForObject(outputValue);
-				
-				results.add(outputValue);
-				return null;
-			}
+		Answer<T> writeObjectMethod = (InvocationOnMock invocation) -> {
+			@SuppressWarnings("unchecked")
+			T outputValue = (T) invocation.getArguments()[0];
+			
+			ObjectValidation.validateFieldValueTypesForObject(outputValue);
+			
+			results.add(outputValue);
+			return null;
 		};
 		
-		Answer<T> writeBytesMethod = new Answer<T>() {
-			@SuppressWarnings({ "unchecked", "deprecation" })
-			@Override
-			public T answer(InvocationOnMock invocation) throws Throwable {
-				byte[] outputValueBytes = (byte[]) invocation.getArguments()[0];
-				results.add((T)serializer.deserializeObjectFromByteArrayWithoutChecks(outputValueBytes));
-				return null;
-			}
+		Answer<T> writeBytesMethod = (InvocationOnMock invocation) -> {
+			byte[] outputValueBytes = (byte[]) invocation.getArguments()[0];
+			results.add((T)serializer.deserializeObjectFromByteArrayWithoutChecks(outputValueBytes));
+			return null;
 		};
 		
 		Mockito.doAnswer(writeObjectMethod).when(mockOutput).write(anyObject());
 		Mockito.doAnswer(writeBytesMethod).when(mockOutput).writeBytesAndAllowEncryption(anyObject());
+		Mockito.when(mockOutput.getMetadata()).thenReturn(new BlueFileMetadata());
 		return mockOutput;
 	}
 }
