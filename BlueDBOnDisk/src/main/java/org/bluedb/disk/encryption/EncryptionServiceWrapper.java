@@ -57,6 +57,11 @@ public class EncryptionServiceWrapper {
 		return bytes;
 	}
 
+	/**
+	 * Returns whether or not encryption is enabled.
+	 *
+	 * @return true if an encryption service has been supplied and encryption is enabled, false otherwise.
+	 */
 	public boolean isEncryptionEnabled() {
 		return encryptionService != null && encryptionService.isEncryptionEnabled();
 	}

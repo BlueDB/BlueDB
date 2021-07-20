@@ -90,7 +90,7 @@ public class BackupManager {
 					.forEach(srcPath -> {
 						Path destPath = translatePath(dbPath, tempFolder, srcPath);
 						try {
-							collection.getFileManager().makeUnencryptedCopy(srcPath, destPath);
+							collection.getMetaData().getFileManager().makeUnencryptedCopy(srcPath, destPath);
 						} catch (BlueDbException e) {
 							throw new UncheckedBlueDbException(e);
 						} catch (IOException e) {
