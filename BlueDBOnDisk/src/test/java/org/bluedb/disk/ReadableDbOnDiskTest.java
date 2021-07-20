@@ -919,7 +919,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		
 		assertEquals(true, db.awaitTermination(1, TimeUnit.MINUTES));
 		
-		assertEquals(true, queryTask.isComplete());
+		queryTask.awaitCompletion();
 		TestUtils.assertThrowable(null, queryTask.getError()); //query is run on separate thread, so we won't see the interruption on this task
 		
 		assertEquals(true, updateAndSleepTask.isComplete());

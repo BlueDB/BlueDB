@@ -103,7 +103,6 @@ public class GroupedThreadPoolTest {
 			pool.submit("collection-2", () -> System.out.println("Collection 2 task"));
 		});
 
-		assertEquals(false, pool.awaitTermination(3, TimeUnit.MILLISECONDS));
 		assertEquals(true, pool.awaitTermination(1, TimeUnit.MINUTES));
 		
 		assertEquals(true, sleepTask.isComplete());
