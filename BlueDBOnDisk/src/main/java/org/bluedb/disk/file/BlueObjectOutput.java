@@ -67,10 +67,6 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	public static <T> BlueObjectOutput<T> createWithoutLockOrSerializer(Path path, EncryptionServiceWrapper encryptionService, boolean allWritesForceSkipEncryption) throws BlueDbException {
-		return createWithoutLock(path, null, encryptionService, allWritesForceSkipEncryption);
-	}
-
 	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, boolean allWritesForceSkipEncryption) throws BlueDbException {
 		return new BlueObjectOutput<>(path, serializer, encryptionService, allWritesForceSkipEncryption);
 	}

@@ -26,6 +26,7 @@ import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.SegmentSizeSetting;
+import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 

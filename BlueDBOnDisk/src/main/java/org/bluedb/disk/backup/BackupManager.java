@@ -26,6 +26,7 @@ import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.serialization.BlueEntity;
+import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.zip.ZipUtils;
 
 public class BackupManager {
@@ -105,7 +106,7 @@ public class BackupManager {
 		Range fileRangeToConsider = createFileRangeToConsider(includedTimeRange, collection.isTimeBased());
 
 		for (ReadWriteSegment<?> segment : collection.getSegmentManager().getAllExistingSegments()) {
-			copyDataFolders(segment, tempFolder, includedTimeRange, collection.isTimeBased(), fileRangeToConsider);
+			copyDataFolders(segment, collection.getSerializer(), tempFolder, includedTimeRange, collection.isTimeBased(), fileRangeToConsider);
 		}
 	}
 
@@ -123,16 +124,16 @@ public class BackupManager {
 		return new Range(Long.MIN_VALUE, includedTimeRange.getEnd());
 	}
 
-	private void copyDataFolders(ReadWriteSegment<?> segment, Path tempFolder, Range includedTimeRange, boolean isTimeBased, Range fileRangeToConsider) throws BlueDbException {
+	private void copyDataFolders(ReadWriteSegment<?> segment, BlueSerializer serializer, Path tempFolder, Range includedTimeRange, boolean isTimeBased, Range fileRangeToConsider) throws BlueDbException {
 		List<File> files = segment.getOrderedFilesInRange(fileRangeToConsider);
 		for (File file : files) {
 			Range fileRange = Range.fromUnderscoreDelmimitedString(file.getName());
 			long groupingNumber = fileRange.getStart();
 
 			if (shouldFilterDataBasedOnTime(isTimeBased, includedTimeRange)) {
-				copyDataFileAfterFilteringBasedOnTime(segment, tempFolder, includedTimeRange, groupingNumber);
+				copyDataFileAfterFilteringBasedOnTime(segment, serializer, tempFolder, includedTimeRange, groupingNumber);
 			} else {
-				copyDataFileStraightOver(segment, tempFolder, groupingNumber);
+				copyDataFileStraightOver(segment, serializer, tempFolder, groupingNumber);
 			}
 		}
 	}
@@ -141,14 +142,20 @@ public class BackupManager {
 		return isCollectionTimeBased && !includedTimeRange.isMaxRange();
 	}
 
-	private void copyDataFileAfterFilteringBasedOnTime(ReadWriteSegment<?> segment, Path tempFolder, Range includedTimeRange, long groupingNumber) throws BlueDbException {
+	private void copyDataFileAfterFilteringBasedOnTime(ReadWriteSegment<?> segment, BlueSerializer serializer, Path tempFolder, Range includedTimeRange, long groupingNumber) throws BlueDbException {
 		Path src = segment.getPathFor(groupingNumber);
 		Path dst = translatePath(dbPath, tempFolder, src);
 		FileUtils.ensureDirectoryExists(dst.toFile());
 		boolean isFileEmpty = true;
 
+		try {
+			dst.toFile().getParentFile().mkdirs();
+			dst.toFile().createNewFile();
+		} catch (IOException e) {
+			throw new BlueDbException("Failed to copy data file from " + src + " to " + dst, e);
+		}
 		try (
-				BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true);
+				BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService, true);
 				BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
 			while (input.hasNext()) {
 				BlueEntity<?> next = (BlueEntity<?>) input.next();
@@ -164,16 +171,22 @@ public class BackupManager {
 		}
 	}
 
-	private void copyDataFileStraightOver(ReadWriteSegment<?> segment, Path tempFolder, long groupingNumber) throws BlueDbException {
+	private void copyDataFileStraightOver(ReadWriteSegment<?> segment, BlueSerializer serializer, Path tempFolder, long groupingNumber) throws BlueDbException {
+		Path src = null;
+		Path dst = null;
 		try (BlueReadLock<Path> lock = segment.getReadLockFor(groupingNumber)) {
-			Path src = lock.getKey();
-			Path dst = translatePath(dbPath, tempFolder, src);
+			src = lock.getKey();
+			dst = translatePath(dbPath, tempFolder, src);
 
+			dst.toFile().getParentFile().mkdirs();
+			dst.toFile().createNewFile();
 			try (
-					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLockOrSerializer(dst, this.encryptionService, true);
+					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService, true);
 					BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
 				output.writeAllAndAllowEncryption(input);
 			}
+		} catch (IOException e) {
+			throw new BlueDbException("Failed to copy data file from " + src + " to " + dst, e);
 		}
 	}
 

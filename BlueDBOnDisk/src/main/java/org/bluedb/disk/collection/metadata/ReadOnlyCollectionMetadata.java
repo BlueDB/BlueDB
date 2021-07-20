@@ -13,7 +13,7 @@ public class ReadOnlyCollectionMetadata extends ReadableCollectionMetadata {
 
 	public ReadOnlyCollectionMetadata(Path collectionPath, EncryptionServiceWrapper encryptionService) {
 		super(collectionPath);
-		// meta data needs its own serialized because collection doesn't know which classes to register until metadata deserializes them from disk
+		// meta data needs its own serializer because collection doesn't know which classes to register until metadata deserializes them from disk
 		BlueSerializer serializer = new ThreadLocalFstSerializer();
 		fileManager = new ReadOnlyFileManager(serializer, encryptionService);  
 	}
