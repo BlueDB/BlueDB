@@ -2,6 +2,7 @@ package org.bluedb.disk.backup;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,9 +92,11 @@ public class BackupManager {
 							collection.getFileManager().makeUnencryptedCopy(srcPath, destPath);
 						} catch (BlueDbException e) {
 							throw new UncheckedBlueDbException(e);
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
 						}
 					});
-		} catch (UncheckedBlueDbException | IOException e) {
+		} catch (UncheckedBlueDbException | UncheckedIOException | IOException e) {
 			throw new BlueDbException("Failed to backup metadata", e);
 		}
 	}

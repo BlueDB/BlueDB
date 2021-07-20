@@ -3,6 +3,7 @@ package org.bluedb.disk.file;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 
@@ -85,7 +86,11 @@ public class ReadWriteFileManager extends ReadFileManager {
 		}
 	}
 
-	public void makeUnencryptedCopy(Path srcPath, Path destPath) throws BlueDbException {
+	public void makeUnencryptedCopy(Path srcPath, Path destPath) throws BlueDbException, IOException {
+		// Create file at destPath on the system if needed
+		destPath.toFile().getParentFile().mkdirs();
+		destPath.toFile().createNewFile();
+		
 		try (
 				DataInputStream dis = FileUtils.openDataInputStream(srcPath.toFile());
 				DataOutputStream dos = FileUtils.openDataOutputStream(destPath.toFile())
