@@ -1,5 +1,6 @@
 package org.bluedb.disk.encryption;
 
+import java.util.Objects;
 import java.util.Optional;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
@@ -24,7 +25,7 @@ public class EncryptionUtils {
 		if (fileMetadata == null || !fileMetadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
 			return Optional.empty();
 		}
-		return Optional.ofNullable(String.valueOf(fileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)));
+		return Optional.ofNullable(fileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY));
 
 	}
 
@@ -49,17 +50,7 @@ public class EncryptionUtils {
 	public static boolean shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(BlueFileMetadata oldFileMetadata, BlueFileMetadata newFileMetadata) {
 		String oldEncryptionVersionKey = oldFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 		String newEncryptionVersionKey = newFileMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
-
-		// Neither file is encrypted
-		if (oldEncryptionVersionKey == null && newEncryptionVersionKey == null) {
-			return true;
-		}
-		// Only one of the files is encrypted
-		if (oldEncryptionVersionKey == null || newEncryptionVersionKey == null) {
-			return false;
-		}
-		// Both files are encrypted, skip encryption if version hasn't changed
-		return oldEncryptionVersionKey.equals(newEncryptionVersionKey);
+		return Objects.equals(oldEncryptionVersionKey, newEncryptionVersionKey);
 	}
 
 }

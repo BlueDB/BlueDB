@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.ReadableBlueDb;
 import org.bluedb.disk.encryption.EncryptionService;
+import org.bluedb.disk.encryption.EncryptionUtils;
 
 /**
  * A builder for the {@link ReadableDbOnDisk} and {@link ReadWriteDbOnDisk} classes
@@ -37,8 +38,8 @@ public class BlueDbOnDiskBuilder {
 		if (encryptionService == null) {
 			throw new IllegalArgumentException("encryptionService cannot be null");
 		}
-		if (encryptionService.getCurrentEncryptionVersionKey() == null || encryptionService.getCurrentEncryptionVersionKey().trim().isEmpty()) {
-			throw new IllegalArgumentException("encryptionService#getCurrentEncryptionVersionKey() cannot be null or empty");
+		if (!EncryptionUtils.isValidEncryptionVersionKey(encryptionService.getCurrentEncryptionVersionKey())) {
+			throw new IllegalArgumentException("value returned from encryptionService#getCurrentEncryptionVersionKey() cannot be null or whitespace, and must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters");
 		}
 
 		this.encryptionService = encryptionService;

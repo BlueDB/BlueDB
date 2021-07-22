@@ -2,6 +2,7 @@ package org.bluedb.disk.backup;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,7 +61,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_backupToTempDirectory_fileManagerThrowsBlueDbException_shouldWrapWithUncheckedException() throws Exception {
+	public void test_backupToTempDirectory_fileManagerThrowsBlueDbException_shouldCascadeExpectedExceptions() throws Exception {
 		// Arrange
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
@@ -87,6 +88,36 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 			assertTrue("Cause of exception was not the expected unchecked exception", ex.getCause() instanceof UncheckedBlueDbException);
 		}
 		
+	}
+
+	@Test
+	public void test_backupToTempDirectory_fileManagerThrowsIOException_shouldCascadeExpectedExceptions() throws Exception {
+		// Arrange
+		BlueKey key1At1 = createKey(1, 1);
+		TestValue value1 = createValue("Anna");
+		getTimeCollection().insert(key1At1, value1);
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
+
+		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(collectionsToBackup.get(0));
+		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
+		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
+		Mockito.doThrow(new IOException("can't make unencrypted copy")).when(fileManagerMock).makeUnencryptedCopy(any(), any());
+		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
+		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
+		collectionsToBackup.set(0, collectionSpy);
+
+		Path backedUpPath = createTempFolder().toPath();
+		BackupManager backupManager = db().getBackupManager();
+
+		// Act
+		try {
+			backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
+			fail("Expected exception was not thrown");
+		} catch (BlueDbException ex) {
+			// Assert
+			assertTrue("Cause of exception was not the expected unchecked exception", ex.getCause() instanceof UncheckedIOException);
+		}
+
 	}
 
 	@Test

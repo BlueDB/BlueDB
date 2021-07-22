@@ -1,6 +1,7 @@
 package org.bluedb.disk.encryption;
 
 import java.util.Optional;
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 
 /**
@@ -24,6 +25,48 @@ public class EncryptionServiceWrapper {
 		if (this.encryptionService != null) {
 			this.cachedEncryptionVersionKey = this.getCurrentEncryptionVersionKey();
 		}
+	}
+
+	/**
+	 * Returns whether or not encryption is enabled.
+	 *
+	 * @return true if an encryption service has been supplied and encryption is enabled, false otherwise.
+	 */
+	public boolean isEncryptionEnabled() {
+		return encryptionService != null && encryptionService.isEncryptionEnabled();
+	}
+
+	/**
+	 * Returns the current encryption version key or the most recent valid key if the current one is invalid, logging warnings for any validation errors.
+	 *
+	 * @return the current encryption version key or the cached key if the current one is invalid.
+	 * @throws IllegalStateException if the current encryption version key is invalid and no cached key exists.
+	 */
+	public String getCurrentEncryptionVersionKey() {
+
+		if (!isEncryptionEnabled()) {
+			return null;
+		}
+		String currentKey = encryptionService.getCurrentEncryptionVersionKey();
+
+		// Return without validation if key has not changed
+		if (cachedEncryptionVersionKey != null && cachedEncryptionVersionKey.equals(currentKey)) {
+			return cachedEncryptionVersionKey; // Key has not changed
+		}
+
+		// Return new key if valid
+		if (EncryptionUtils.isValidEncryptionVersionKey(currentKey)) {
+			cachedEncryptionVersionKey = currentKey;
+			return currentKey;
+		}
+
+		// Return cached key if one exists
+		if (cachedEncryptionVersionKey != null) {
+			System.out.println("Warning: current encryption version key is invalid, this should be fixed ASAP! Using most recent valid key.");
+			return cachedEncryptionVersionKey;
+		}
+		// Error only if current key is invalid and no cached key exists
+		throw new IllegalStateException("getCurrentEncryptionVersionKey cannot be null or whitespace and must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters.");
 	}
 
 	/**
@@ -55,48 +98,6 @@ public class EncryptionServiceWrapper {
 			}
 		}
 		return bytes;
-	}
-
-	/**
-	 * Returns whether or not encryption is enabled.
-	 *
-	 * @return true if an encryption service has been supplied and encryption is enabled, false otherwise.
-	 */
-	public boolean isEncryptionEnabled() {
-		return encryptionService != null && encryptionService.isEncryptionEnabled();
-	}
-
-	/**
-	 * Returns the current encryption version key or the most recent valid key if the current one is invalid, logging warnings for any validation errors.
-	 *
-	 * @return the current encryption version key or the cached key if the current one is invalid.
-	 * @throws IllegalStateException if the current encryption version key is invalid and no cached key exists.
-	 */
-	public String getCurrentEncryptionVersionKey() {
-		
-		if (!isEncryptionEnabled()) {
-			return null;
-		}
-		String currentKey = encryptionService.getCurrentEncryptionVersionKey();
-
-		// Return without validation if key has not changed
-		if (cachedEncryptionVersionKey != null && cachedEncryptionVersionKey.equals(currentKey)) {
-			return cachedEncryptionVersionKey; // Key has not changed
-		}
-
-		// Return new key if valid
-		if (EncryptionUtils.isValidEncryptionVersionKey(currentKey)) {
-			cachedEncryptionVersionKey = currentKey;
-			return currentKey;
-		}
-
-		// Return cached key if one exists
-		if (cachedEncryptionVersionKey != null) {
-			System.out.println("Warning: current encryption version key is invalid, this should be fixed ASAP! Using most recent valid key.");
-			return cachedEncryptionVersionKey;
-		}
-		// Error only if current key is invalid and no cached key exists
-		throw new IllegalStateException("getCurrentEncryptionVersionKey cannot be null or whitespace and must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters.");
 	}
 
 	private byte[] encrypt(String encryptionVersionKey, byte[] bytes) {
