@@ -73,6 +73,7 @@ public class EncryptionServiceWrapper {
 	 * @throws IllegalStateException if the current encryption version key is invalid and no cached key exists.
 	 */
 	public String getCurrentEncryptionVersionKey() {
+		
 		if (!isEncryptionEnabled()) {
 			return null;
 		}
@@ -95,7 +96,7 @@ public class EncryptionServiceWrapper {
 			return cachedEncryptionVersionKey;
 		}
 		// Error only if current key is invalid and no cached key exists
-		throw new IllegalStateException("getCurrentEncryptionVersionKey must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters.");
+		throw new IllegalStateException("getCurrentEncryptionVersionKey cannot be null or whitespace and must be no longer than " + EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH + " characters.");
 	}
 
 	private byte[] encrypt(String encryptionVersionKey, byte[] bytes) {

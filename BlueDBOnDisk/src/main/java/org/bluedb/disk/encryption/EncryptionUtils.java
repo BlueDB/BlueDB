@@ -12,7 +12,7 @@ public class EncryptionUtils {
 	/**
 	 * The max number of characters allowed in an encryption version key.
 	 */
-	public static final int ENCRYPTION_VERSION_KEY_MAX_LENGTH = 5;
+	public static final int ENCRYPTION_VERSION_KEY_MAX_LENGTH = 20;
 
 	/**
 	 * Get the encryption version key for a file with a given {@code BlueFileMetadata}.
@@ -35,7 +35,7 @@ public class EncryptionUtils {
 	 * @return true if the key is valid, false if invalid.
 	 */
 	public static boolean isValidEncryptionVersionKey(String key) {
-		return key != null && key.length() <= EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH;
+		return key != null && !key.trim().isEmpty() && key.length() <= EncryptionUtils.ENCRYPTION_VERSION_KEY_MAX_LENGTH;
 	}
 
 	/**
