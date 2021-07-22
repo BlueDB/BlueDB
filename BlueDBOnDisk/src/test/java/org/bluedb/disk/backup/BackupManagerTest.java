@@ -11,6 +11,7 @@ import java.util.List;
 import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.UncheckedBlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.TimeFrameKey;
@@ -24,6 +25,8 @@ import org.bluedb.disk.TestValueSub;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.PendingIndexRollup;
 import org.bluedb.disk.recovery.PendingRollup;
@@ -33,6 +36,9 @@ import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import static org.mockito.Matchers.*;
 
 public class BackupManagerTest extends BlueDbDiskTestBase {
 
@@ -51,6 +57,36 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 		assertTrue(restoredCollection.contains(key1At1));
 		assertEquals(value1, restoredCollection.get(key1At1));
+	}
+
+	@Test
+	public void test_backupToTempDirectory_fileManagerThrowsBlueDbException_shouldWrapWithUncheckedException() throws Exception {
+		// Arrange
+		BlueKey key1At1 = createKey(1, 1);
+		TestValue value1 = createValue("Anna");
+		getTimeCollection().insert(key1At1, value1);
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
+		
+		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(collectionsToBackup.get(0));
+		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
+		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
+		Mockito.doThrow(new BlueDbException("can't make unencrypted copy")).when(fileManagerMock).makeUnencryptedCopy(any(), any());
+		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
+		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
+		collectionsToBackup.set(0, collectionSpy);
+		
+		Path backedUpPath = createTempFolder().toPath();
+		BackupManager backupManager = db().getBackupManager();
+		
+		// Act
+		try {
+			backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
+			fail("Expected exception was not thrown");
+		} catch (BlueDbException ex) {
+			// Assert
+			assertTrue("Cause of exception was not the expected unchecked exception", ex.getCause() instanceof UncheckedBlueDbException);
+		}
+		
 	}
 
 	@Test
