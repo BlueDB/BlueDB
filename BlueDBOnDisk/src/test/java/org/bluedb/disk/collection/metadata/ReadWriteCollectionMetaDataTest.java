@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,15 +24,19 @@ import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ReadWriteCollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	private ReadWriteCollectionMetaData metaData;
+	private Path targetFilePath;
 	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		metaData = getTimeCollection().getMetaData();
+		Path testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
+		targetFilePath = Paths.get(testingFolderPath.toString(), "ReadWriteCollectionMetaDataTest.test_junk");
 	}
 
 	@Test
@@ -61,6 +66,31 @@ public class ReadWriteCollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_getSerializedClassList_exception() throws Exception {
+		Path serializedClassesPath = ReadWriteFileManager.getNewestVersionPath(metaData.getPath(), ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
+		getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
+		try {
+			metaData.getSerializedClassList();  // now this should fail with BlueDbException
+			fail();
+		} catch (BlueDbException e) {
+		}
+	}
+
+	@Test
+	public void test_getSerializedClassList_throwsClassCastException_wrapsWithBlueDbException() throws Exception {
+		// Arrange
+		ClassCastException expected = new ClassCastException("I'm broken!");
+		ReadableCollectionMetadata metadata = new ReadWriteCollectionMetaData(targetFilePath, new EncryptionServiceWrapper(null));
+		ReadableCollectionMetadata metadataSpy = Mockito.spy(metadata);
+		Mockito.doThrow(expected).when(metadataSpy).getFileManager();
+		// Act
+		try {
+			metadataSpy.getSerializedClassList();
+			fail("Expected exception was not thrown");
+		} catch (BlueDbException ex) {
+			// Assert
+			assertEquals("Wrapped exception was not the expected cause of the failure", expected, ex.getCause());
+		}
+		
 		Path serializedClassesPath = ReadWriteFileManager.getNewestVersionPath(metaData.getPath(), ReadWriteCollectionMetaData.FILENAME_SERIALIZED_CLASSES);
 		getFileManager().saveObject(serializedClassesPath, "some_nonsense");  // serialize a string where there should be a list
 		try {
