@@ -1,9 +1,9 @@
 package org.bluedb.disk.file;
 
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.*;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,13 +21,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
+import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.bluedb.disk.serialization.validation.SerializationException;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import junit.framework.TestCase;
 
@@ -57,8 +61,8 @@ public class ReadWriteFileManagerTest extends TestCase {
 			Blutils.recursiveDelete(file);
 	}
 
-	
-	
+
+
 	@Test
 	public void test_loadObject() throws Exception {
 		TestValue value = new TestValue("joe", 1);
@@ -97,41 +101,41 @@ public class ReadWriteFileManagerTest extends TestCase {
 		Object reloadedNull = fileManager.loadObject(fileWithNull.toPath());
 		assertNull(reloadedNull);
 	}
-	
+
 	@Test
 	public void test_saveAndLoadVersionedObjects() throws Exception {
 		File tempDir = createTempFolder("test_saveVersionedObject");
 		Path tempDirPath = tempDir.toPath();
 		String filename = "test_filename";
-		
+
 		TestValue value1 = new TestValue("Joe Dirt", 5);
 		Path value1Path = tempDirPath.resolve(filename);
-		
+
 		fileManager.saveObject(value1Path, value1);
-		
+
 		assertEquals(value1, fileManager.loadVersionedObject(tempDirPath, filename)); //It should load the legacy non-versioned object if its the only one
 		FileTime value1LastModified = Files.getLastModifiedTime(value1Path);
 
-		
+
 		TestValue value2 = new TestValue("Michael Scott", 3);
 		fileManager.saveVersionedObject(tempDirPath, filename, value2);
-		
+
 		Path value2Path = ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename);
 		FileTime value2LastModified = Files.getLastModifiedTime(value2Path);
-		
+
 		assertEquals(value1, fileManager.loadObject(value1Path));
 		assertEquals(value1LastModified, Files.getLastModifiedTime(value1Path));
 		assertEquals(value2, fileManager.loadVersionedObject(tempDirPath, filename));
 		assertNotEquals(value2LastModified, value1LastModified);
-		
+
 		Thread.sleep(1);
-		
+
 		TestValue value3 = new TestValue("Leroy Jenkins", 0);
 		fileManager.saveVersionedObject(tempDirPath, filename, value3);
-		
+
 		Path value3Path = ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename);
 		FileTime value3LastModified = Files.getLastModifiedTime(value3Path);
-		
+
 		assertEquals(value1, fileManager.loadObject(value1Path));
 		assertEquals(value1LastModified, Files.getLastModifiedTime(value1Path));
 		assertEquals(value2, fileManager.loadObject(value2Path));
@@ -139,42 +143,42 @@ public class ReadWriteFileManagerTest extends TestCase {
 		assertEquals(value3, fileManager.loadVersionedObject(tempDirPath, filename));
 		assertNotEquals(value3LastModified, value2LastModified);
 	}
-	
+
 	@Test
 	public void test_getNewestVersionPath() throws IOException {
 		File tempDir = createTempFolder("test_getNewestVersionPath");
 		Path tempDirPath = tempDir.toPath();
 		String filename = "test_filename";
-		
+
 		Random r = new Random();
 		SimpleDateFormat sdf = new SimpleDateFormat(ReadWriteFileManager.TIMESTAMP_VERSION_FORMAT);
-		
+
 		assertNull(ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename));
-		
+
 		List<Path> testPaths = new LinkedList<Path>();
-		
+
 		Path legacyPath = tempDirPath.resolve(filename);
 		Files.createFile(legacyPath);
 		testPaths.add(legacyPath);
-		
+
 		assertEquals(legacyPath, ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename));
-		
+
 		long maxTime = -1;
 		Path maxPath = null;
-		for(int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 1000; i++) {
 			long time = Math.abs(r.nextLong()) % 4134005999000L;
 			Path path = tempDirPath.resolve(filename + "_" + sdf.format(time));
-			if(time > maxTime) {
+			if (time > maxTime) {
 				maxTime = time;
 				maxPath = path;
 			}
 			Files.createFile(path);
 			testPaths.add(path);
 		}
-		
+
 		assertEquals(maxPath, ReadWriteFileManager.getNewestVersionPath(tempDirPath, filename));
 	}
-	
+
 	@Test
 	public void test_getOutputStream() throws Exception {
 		Path path = Paths.get("test_getOutputStream");
@@ -248,7 +252,7 @@ public class ReadWriteFileManagerTest extends TestCase {
 		assertNull(nonExistingLock);
 		assertNotNull(existingLock);
 		existingLock.release();
-		
+
 		ReadWriteFileManager mockFileManager = new ReadWriteFileManager(null, null) {
 			@Override
 			public boolean exists(Path path) {
@@ -258,7 +262,7 @@ public class ReadWriteFileManagerTest extends TestCase {
 		try {
 			mockFileManager.getReadLockIfFileExists(existing);
 			fail();
-		} catch(BlueDbException expectedException) {
+		} catch (BlueDbException expectedException) {
 		}
 		assertFalse(mockFileManager.getLockManager().isLocked(existing));
 	}
@@ -283,7 +287,7 @@ public class ReadWriteFileManagerTest extends TestCase {
 		try {
 			fileManager.lockMoveFileUnlock(nonExistingFileTemp, nonExistingFile);
 			fail();
-		} catch ( BlueDbException e) {
+		} catch (BlueDbException e) {
 		}
 	}
 
@@ -306,42 +310,106 @@ public class ReadWriteFileManagerTest extends TestCase {
 			assertNull(fileManager.readBytes(lock));
 		}
 	}
-	
+
 	@Test
 	public void test_readBytes_path_invalid() {
 		Path nonExistingFile = Paths.get(testPath.toString(), "test_move_non_existing");
 		try {
 			fileManager.readBytes(nonExistingFile);
 			fail();
-		} catch ( BlueDbException e) {
+		} catch (BlueDbException e) {
 		}
 	}
-	
+
 	@Test
-	public void test_writeBytes_invalid() throws Exception {
+	public void test_writeBytes_invalid() {
 		Path nonExistingFile = Paths.get(testPath.toString(), "test_move_non_existing");
-		
+
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
 			byte[] bytes = new byte[] {1, 2, 3};
 			fileManager.writeBytes(lock, bytes, false);
 			fail();
 		} catch (BlueDbException e) {
 		}
-		
+
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
-			fileManager.writeBytes(lock, new byte[] { }, false);
+			fileManager.writeBytes(lock, new byte[] {}, false);
 			fail();
 		} catch (BlueDbException e) {
 		}
-		
+
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(nonExistingFile)) {
-			fileManager.writeBytes(lock, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, false);
+			fileManager.writeBytes(lock, new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, false);
 			fail();
 		} catch (BlueDbException e) {
 		}
 	}
 
+	@Test
+	public void test_makeUnencryptedCopy_exceptionThrown_wrapsWithBlueDbException() throws SerializationException {
+		// Arrange
+		IllegalStateException expected = new IllegalStateException("I'm broken!");
+		BlueSerializer mockSerializer = mock(BlueSerializer.class);
+		when(mockSerializer.serializeObjectToByteArray(anyObject())).thenReturn(new byte[] {1, 2, 3});
+		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
+		when(mockEncryptionService.decryptOrReturn(any(BlueFileMetadata.class), any(byte[].class))).thenThrow(expected);
+		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
 
+		// Act
+		try {
+			readWriteFileManager.makeUnencryptedCopy(testPath, testPath);
+			fail("Expected exception was not thrown");
+		} catch (IOException e) {
+			fail("Not the expected exception for this test");
+		} catch (BlueDbException e) {
+			// Assert
+			assertEquals("Wrapped exception was not what was expected", expected, e.getCause());
+		}
+	}
+
+	@Test
+	public void test_writeMetadata_exceptionThrown_wrapsWithBlueDbException() throws SerializationException {
+		// Arrange
+		IllegalStateException expected = new IllegalStateException("I'm broken!");
+		BlueSerializer mockSerializer = mock(BlueSerializer.class);
+		when(mockSerializer.serializeObjectToByteArray(anyObject())).thenThrow(expected);
+		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
+		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
+
+		// Act
+		try {
+			readWriteFileManager.writeMetadata(null, null, testPath);
+			fail("Expected exception was not thrown");
+		} catch (BlueDbException e) {
+			// Assert
+			assertEquals("Wrapped exception was not what was expected", expected, e.getCause());
+		}
+	}
+
+	@Test
+	public void test_writeBytes_encryptionEnabled_encryptOrThrowCalledWithExpectedParams() throws BlueDbException {
+		// Arrange
+		String expectedKey = "valid-key";
+		byte[] expectedBytes = new byte[] {'u', 'n', 'e', 'n', 'c', 'r', 'y', 'p', 't', 'e', 'd'};
+		
+		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
+		when(mockEncryptionService.isEncryptionEnabled()).thenReturn(true);
+		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn(expectedKey);
+		when(mockEncryptionService.encryptOrThrow(anyString(), anyObject())).thenReturn(new byte[] {'e', 'n', 'c', 'r', 'y', 'p', 't', 'e', 'd'});
+
+		BlueSerializer mockSerializer = mock(BlueSerializer.class);
+		when(mockSerializer.serializeObjectToByteArray(any())).thenReturn(new byte[] {'b', 'y', 't', 'e', 's'});
+		
+		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
+
+		// Act
+		try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(testPath)) {
+			readWriteFileManager.writeBytes(writeLock, expectedBytes, false);
+		}
+		
+		// Assert
+		verify(mockEncryptionService).encryptOrThrow(expectedKey, expectedBytes);
+	}
 
 	private File createFile(String fileName) throws Exception {
 		File file = new File(fileName);
@@ -349,12 +417,11 @@ public class ReadWriteFileManagerTest extends TestCase {
 		return file;
 	}
 
-	private File createCorruptedFile(String fileName) throws FileNotFoundException, IOException {
+	private File createCorruptedFile(String fileName) throws IOException {
 		File file = new File(fileName);
-		byte[] junk = new byte[] { 3, 1, 2 };
+		byte[] junk = new byte[] {3, 1, 2};
 		try (FileOutputStream fos = new FileOutputStream(file)) {
 			fos.write(junk);
-			fos.close();
 		}
 		return file;
 	}
@@ -388,4 +455,5 @@ public class ReadWriteFileManagerTest extends TestCase {
 		filesToDelete.add(tempFolder);
 		return tempFolder;
 	}
+
 }
