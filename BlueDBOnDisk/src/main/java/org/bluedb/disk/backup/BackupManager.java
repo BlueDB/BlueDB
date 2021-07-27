@@ -143,27 +143,30 @@ public class BackupManager {
 	}
 
 	private void copyDataFileAfterFilteringBasedOnTime(ReadWriteSegment<?> segment, BlueSerializer serializer, Path tempFolder, Range includedTimeRange, long groupingNumber) throws BlueDbException {
-		Path src = segment.getPathFor(groupingNumber);
-		Path dst = translatePath(dbPath, tempFolder, src);
-		FileUtils.ensureDirectoryExists(dst.toFile());
 		boolean isFileEmpty = true;
-
+		Path src = null;
+		Path dst = null;
 		try {
+			src = segment.getPathFor(groupingNumber);
+			dst = translatePath(dbPath, tempFolder, src);
+			FileUtils.ensureDirectoryExists(dst.toFile());
+
 			dst.toFile().getParentFile().mkdirs();
 			dst.toFile().createNewFile();
-		} catch (IOException e) {
-			throw new BlueDbException("Failed to copy data file from " + src + " to " + dst, e);
-		}
-		try (
-				BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService, true);
-				BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
-			while (input.hasNext()) {
-				BlueEntity<?> next = (BlueEntity<?>) input.next();
-				if (next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
-					output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
-					isFileEmpty = false;
+
+			try (
+					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService, true);
+					BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
+				while (input.hasNext()) {
+					BlueEntity<?> next = (BlueEntity<?>) input.next();
+					if (next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
+						output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
+						isFileEmpty = false;
+					}
 				}
 			}
+		} catch (Exception e) {
+			throw new BlueDbException("Failed to copy data file from " + src + " to " + dst, e);
 		}
 
 		if (isFileEmpty) {
@@ -180,12 +183,13 @@ public class BackupManager {
 
 			dst.toFile().getParentFile().mkdirs();
 			dst.toFile().createNewFile();
+			
 			try (
 					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService, true);
 					BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
 				output.writeAllAndAllowEncryption(input);
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new BlueDbException("Failed to copy data file from " + src + " to " + dst, e);
 		}
 	}

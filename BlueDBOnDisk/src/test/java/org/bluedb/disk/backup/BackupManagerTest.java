@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.bluedb.TestUtils;
@@ -33,6 +34,8 @@ import org.bluedb.disk.recovery.PendingIndexRollup;
 import org.bluedb.disk.recovery.PendingRollup;
 import org.bluedb.disk.recovery.Recoverable;
 import org.bluedb.disk.segment.Range;
+import org.bluedb.disk.segment.ReadWriteSegment;
+import org.bluedb.disk.segment.ReadWriteSegmentManager;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.zip.ZipUtils;
@@ -66,19 +69,18 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
-		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
-		
-		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(collectionsToBackup.get(0));
+		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
+
 		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
 		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
 		Mockito.doThrow(new BlueDbException("can't make unencrypted copy")).when(fileManagerMock).makeUnencryptedCopy(any(), any());
 		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
 		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
-		collectionsToBackup.set(0, collectionSpy);
-		
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
+
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupManager = db().getBackupManager();
-		
+
 		// Act
 		try {
 			backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
@@ -87,7 +89,66 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 			// Assert
 			assertTrue("Cause of exception was not the expected unchecked exception", ex.getCause() instanceof UncheckedBlueDbException);
 		}
-		
+
+	}
+
+	@Test
+	public void test_backupToTempDirectory_ExceptionInCopyDataFileStraightOver_shouldWrapWithBlueDbException() throws Exception {
+		// Arrange
+		IllegalStateException expected = new IllegalStateException("I'm broken!");
+		BlueKey key1At1 = createKey(1, 1);
+		TestValue value1 = createValue("Anna");
+		getTimeCollection().insert(key1At1, value1);
+
+		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
+		ReadWriteSegmentManager<?> segmentManagerSpy = Mockito.spy(collectionSpy.getSegmentManager());
+		ReadWriteSegment<?> segmentSpy = Mockito.spy(segmentManagerSpy.getAllExistingSegments().get(0));
+		Mockito.doThrow(expected).when(segmentSpy).getPathFor(anyLong());
+		Mockito.doReturn(segmentManagerSpy).when(collectionSpy).getSegmentManager();
+		Mockito.doReturn(Collections.singletonList(segmentSpy)).when(segmentManagerSpy).getAllExistingSegments();
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
+
+		Path backedUpPath = createTempFolder().toPath();
+		BackupManager backupManager = db().getBackupManager();
+
+		// Act
+		try {
+			backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
+			fail("Expected exception was not thrown");
+		} catch (BlueDbException ex) {
+			// Assert
+			assertEquals("Cause of exception was not the expected Exception", expected, ex.getCause());
+		}
+	}
+
+	@Test
+	public void test_backupToTempDirectory_ExceptionInCopyDataFileAfterFilteringBasedOnTime_shouldWrapWithBlueDbException() throws Exception {
+		// Arrange
+		IllegalStateException expected = new IllegalStateException("I'm broken!");
+		BlueKey key1At1 = createKey(1, 1);
+		TestValue value1 = createValue("Anna");
+		getTimeCollection().insert(key1At1, value1);
+
+		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
+		ReadWriteSegmentManager<?> segmentManagerSpy = Mockito.spy(collectionSpy.getSegmentManager());
+		ReadWriteSegment<?> segmentSpy = Mockito.spy(segmentManagerSpy.getAllExistingSegments().get(0));
+		Mockito.doThrow(expected).when(segmentSpy).getPathFor(anyLong());
+		Mockito.doReturn(segmentManagerSpy).when(collectionSpy).getSegmentManager();
+		Mockito.doReturn(Collections.singletonList(segmentSpy)).when(segmentManagerSpy).getAllExistingSegments();
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
+
+		Path backedUpPath = createTempFolder().toPath();
+		BackupManager backupManager = db().getBackupManager();
+
+		// Act
+		try {
+			backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.forValueAndRangeSize(1L, 100), false);
+			fail("Expected exception was not thrown");
+		} catch (BlueDbException ex) {
+			// Assert
+			assertEquals("Cause of exception was not the expected Exception", expected, ex.getCause());
+		}
+
 	}
 
 	@Test
@@ -96,15 +157,15 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
-		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 
-		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(collectionsToBackup.get(0));
+		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
 		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
 		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
 		Mockito.doThrow(new IOException("can't make unencrypted copy")).when(fileManagerMock).makeUnencryptedCopy(any(), any());
 		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
 		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
-		collectionsToBackup.set(0, collectionSpy);
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
+
 
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupManager = db().getBackupManager();
@@ -126,8 +187,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueKey key2At2 = createKey(2, 2);
 		TestValue value1 = createValue("Anna");
 		TestValue value2 = createValue("Bob");
-        getTimeCollection().insert(key1At1, value1);
-        Recoverable<TestValue> change = PendingChange.createInsert(key2At2, value2, getTimeCollection().getSerializer());
+		getTimeCollection().insert(key1At1, value1);
+		Recoverable<TestValue> change = PendingChange.createInsert(key2At2, value2, getTimeCollection().getSerializer());
 		getRecoveryManager().saveChange(change);
 
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
@@ -147,8 +208,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	public void test_backupToTempDirectory_rollup_pending() throws Exception {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
-        getTimeCollection().insert(key1At1, value1);
-        Range range = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() -1);
+		getTimeCollection().insert(key1At1, value1);
+		Range range = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 		RollupTarget rollupTarget = new RollupTarget(0, range);
 		Recoverable<TestValue> rollup = new PendingRollup<>(rollupTarget);
 		getRecoveryManager().saveChange(rollup);
@@ -158,8 +219,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BackupManager backupTask = db().getBackupManager();
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
 
-        ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
-        ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
+		ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 		Path segmentPath = restoredCollection.getSegmentManager().getSegment(1).getPath();
 		File[] filesInSegment = segmentPath.toFile().listFiles();
 		assertEquals(1, filesInSegment.length);
@@ -179,8 +240,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		timeCollection.createIndex(indexName, IntegerKey.class, new TestRetrievalKeyExtractor());
 
 		// save a PendingIndexRollup
-		Range range = new Range(0, timeCollection.getSegmentManager().getSegmentSize() -1);
-        IndexRollupTarget rollupTarget = new IndexRollupTarget(indexName, 0, range);
+		Range range = new Range(0, timeCollection.getSegmentManager().getSegmentSize() - 1);
+		IndexRollupTarget rollupTarget = new IndexRollupTarget(indexName, 0, range);
 		Recoverable<TestValue> indexRollup = new PendingIndexRollup<>(indexName, rollupTarget);
 		timeCollection.getRecoveryManager().saveChange(indexRollup);
 
@@ -191,8 +252,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		backupTask.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
 
 		// restore (this failed before we ignored PendingIndexRollup when index doesn't exist.
-        ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
-        restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
+		ReadWriteDbOnDisk restoredDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(backedUpPath).build();
+		restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
 	}
 
 	@Test
@@ -207,13 +268,13 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 			fail();
 		}
 
-		BlueCollection<TestValue> newCollection =  newDb.getCollection(collectionName, TestValue.class);
+		BlueCollection<TestValue> newCollection = newDb.getCollection(collectionName, TestValue.class);
 		List<TestValue> valuesInNewCollection = newCollection.query().getList();
-		
+
 		ReadWriteDbOnDisk restoredDb = getRestoredDatabase(zipPath);
 		ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
 		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
-		
+
 		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
 	}
 
@@ -229,13 +290,13 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 			fail();
 		}
 
-		BlueCollection<TestValue> newCollection =  newDb.getCollection(collectionName, TestValue.class);
+		BlueCollection<TestValue> newCollection = newDb.getCollection(collectionName, TestValue.class);
 		List<TestValue> valuesInNewCollection = newCollection.query().getList();
-		
+
 		ReadWriteDbOnDisk restoredDb = getRestoredDatabase(zipPath);
 		ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) restoredDb.getTimeCollectionBuilder(collectionName, TimeKey.class, TestValue.class).build();
 		List<TestValue> valuesInRestoredCollection = restoredCollection.query().getList();
-		
+
 		assertEquals(valuesInNewCollection, valuesInRestoredCollection);
 	}
 
@@ -251,8 +312,8 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		Path newDbPath = createTempFolder().toPath();
 		ReadWriteDbOnDisk newDb = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(newDbPath).build();
 		ReadWriteTimeCollectionOnDisk<TestValue> newCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) newDb.getTimeCollectionBuilder("time_collection", TimeKey.class, TestValue.class)
-			.withOptimizedClasses(Arrays.asList(TestValue2.class, TestValueSub.class))
-			.build();
+				.withOptimizedClasses(Arrays.asList(TestValue2.class, TestValueSub.class))
+				.build();
 
 		TestValue value1 = new TestValue("Anna");
 		TestValue value2 = new TestValueSub("Bob");
@@ -261,7 +322,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueKey key1 = new TimeFrameKey(1, 1, 4);
 		BlueKey key2 = new TimeFrameKey(2, 2, 3);
 		BlueKey key3 = new TimeFrameKey(3, 3, 5);
-		
+
 		newCollection.insert(key1, value1);
 		newCollection.insert(key2, value2);
 		newCollection.insert(key3, value3);
@@ -271,4 +332,5 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	private Path getbackedUpZipPath() throws URISyntaxException, IOException {
 		return TestUtils.getResourcePath("backup.zip");
 	}
+
 }
