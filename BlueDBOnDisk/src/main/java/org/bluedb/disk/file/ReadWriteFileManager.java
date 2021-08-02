@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.disk.encryption.EncryptionUtils;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
@@ -86,24 +87,31 @@ public class ReadWriteFileManager extends ReadFileManager {
 		}
 	}
 
-	public void makeUnencryptedCopy(Path srcPath, Path destPath) throws BlueDbException, IOException {
+	public void makeCopy(Path srcPath, Path destPath) throws BlueDbException, IOException {
 		// Create file at destPath on the system if needed
 		destPath.toFile().getParentFile().mkdirs();
 		destPath.toFile().createNewFile();
-		
+
 		try (
 				DataInputStream dis = FileUtils.openDataInputStream(srcPath.toFile());
 				DataOutputStream dos = FileUtils.openDataOutputStream(destPath.toFile())
 		) {
-			// Write metadata with ENCRYPTION_VERSION_KEY removed
+			// Write metadata
 			BlueFileMetadata srcMetadata = readMetadata(dis);
-			BlueFileMetadata destMetadata = srcMetadata != null ? srcMetadata : new BlueFileMetadata();
-			destMetadata.remove(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+			BlueFileMetadata destMetadata = new BlueFileMetadata();
+			if (encryptionService.isEncryptionEnabled()) {
+				destMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
+			}
 			writeMetadata(destMetadata, dos, destPath);
-
-			// Write unencrypted bytes
-			byte[] unencryptedBytes = encryptionService.decryptOrReturn(srcMetadata, FileUtils.readAllBytes(dis));
-			dos.write(unencryptedBytes);
+			
+			// Write bytes
+			byte[] rawBytes = FileUtils.readAllBytes(dis);
+			if (EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(srcMetadata, destMetadata)) {
+				dos.write(rawBytes);
+			} else {
+				byte[] unencryptedBytes = encryptionService.decryptOrReturn(srcMetadata, rawBytes);
+				dos.write(unencryptedBytes);
+			}
 		} catch (Throwable t) {
 			t.printStackTrace();
 			throw new BlueDbException("error making unencrypted copy from " + srcPath + " to " + destPath, t);

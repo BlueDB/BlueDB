@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
-import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
@@ -31,7 +30,6 @@ import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.bluedb.disk.serialization.validation.SerializationException;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import junit.framework.TestCase;
 
@@ -346,18 +344,51 @@ public class ReadWriteFileManagerTest extends TestCase {
 	}
 
 	@Test
-	public void test_makeUnencryptedCopy_exceptionThrown_wrapsWithBlueDbException() throws SerializationException {
+	public void test_makeCopy_shouldSkipEncryption_successAndDecryptNotCalled() throws BlueDbException, IOException {
+		// Arrange
+		BlueSerializer mockSerializer = mock(BlueSerializer.class);
+		when(mockSerializer.serializeObjectToByteArray(anyObject())).thenReturn(new byte[] {1, 2, 3});
+		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
+		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
+
+		// Act
+		readWriteFileManager.makeCopy(testPath, testPath);
+		
+		// Assert
+		verify(mockEncryptionService, never()).decryptOrReturn(any(), any());
+	}
+
+	@Test
+	public void test_makeCopy_shouldNotSkipEncryption_successAndDecryptCalled() throws BlueDbException, IOException {
+		// Arrange
+		BlueSerializer mockSerializer = mock(BlueSerializer.class);
+		when(mockSerializer.serializeObjectToByteArray(anyObject())).thenReturn(new byte[] {1, 2, 3});
+		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
+		when(mockEncryptionService.isEncryptionEnabled()).thenReturn(true);
+		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn("valid-key");
+		when(mockEncryptionService.decryptOrReturn(any(), any())).thenReturn(new byte[] {});
+		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
+
+		// Act
+		readWriteFileManager.makeCopy(testPath, testPath);
+
+		// Assert
+		verify(mockEncryptionService, times(1)).decryptOrReturn(any(), any());
+	}
+
+	@Test
+	public void test_makeCopy_exceptionThrown_wrapsWithBlueDbException() throws SerializationException {
 		// Arrange
 		IllegalStateException expected = new IllegalStateException("I'm broken!");
 		BlueSerializer mockSerializer = mock(BlueSerializer.class);
 		when(mockSerializer.serializeObjectToByteArray(anyObject())).thenReturn(new byte[] {1, 2, 3});
 		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
-		when(mockEncryptionService.decryptOrReturn(any(BlueFileMetadata.class), any(byte[].class))).thenThrow(expected);
+		when(mockEncryptionService.isEncryptionEnabled()).thenThrow(expected);
 		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
 
 		// Act
 		try {
-			readWriteFileManager.makeUnencryptedCopy(testPath, testPath);
+			readWriteFileManager.makeCopy(testPath, testPath);
 			fail("Expected exception was not thrown");
 		} catch (IOException e) {
 			fail("Not the expected exception for this test");

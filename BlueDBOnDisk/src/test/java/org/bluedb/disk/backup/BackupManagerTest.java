@@ -40,7 +40,6 @@ import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import static org.mockito.Matchers.*;
 
@@ -73,7 +72,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 
 		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
 		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
-		Mockito.doThrow(new BlueDbException("can't make unencrypted copy")).when(fileManagerMock).makeUnencryptedCopy(any(), any());
+		Mockito.doThrow(new BlueDbException("can't make unencrypted copy")).when(fileManagerMock).makeCopy(any(), any());
 		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
 		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
@@ -161,7 +160,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
 		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
 		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
-		Mockito.doThrow(new IOException("can't make unencrypted copy")).when(fileManagerMock).makeUnencryptedCopy(any(), any());
+		Mockito.doThrow(new IOException("can't make unencrypted copy")).when(fileManagerMock).makeCopy(any(), any());
 		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
 		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);

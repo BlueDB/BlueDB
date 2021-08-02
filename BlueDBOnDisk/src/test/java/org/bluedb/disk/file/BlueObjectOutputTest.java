@@ -102,7 +102,7 @@ public class BlueObjectOutputTest extends TestCase {
 		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn(expected);
 
 		// Act
-		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService, false)) {
+		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
 			String actual = blueObjectOutput.getMetadata().get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 
 			// Assert
@@ -120,7 +120,7 @@ public class BlueObjectOutputTest extends TestCase {
 		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn(expectedKey);
 		when(mockEncryptionService.encryptOrThrow(anyString(), anyObject())).thenReturn(new byte[] {'e', 'n', 'c', 'r', 'y', 'p', 't', 'e', 'd'});
 		// Act
-		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService, false)) {
+		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
 			blueObjectOutput.writeBytesAndAllowEncryption(expectedBytes);
 
 			// Assert
@@ -141,7 +141,7 @@ public class BlueObjectOutputTest extends TestCase {
 		when(mockEncryptionService.encryptOrThrow(anyString(), anyObject())).thenReturn(new byte[] {'e', 'n', 'c', 'r', 'y', 'p', 't', 'e', 'd'});
 
 		// Act
-		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService, false)) {
+		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
 			blueObjectOutput.write(value);
 
 			// Assert
@@ -162,7 +162,7 @@ public class BlueObjectOutputTest extends TestCase {
 		when(mockEncryptionService.encryptOrThrow(anyString(), anyObject())).thenThrow(expectedException);
 
 		// Act
-		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService, false)) {
+		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
 			blueObjectOutput.write(value);
 			fail();
 		} catch (BlueDbException ex) {
@@ -323,7 +323,7 @@ public class BlueObjectOutputTest extends TestCase {
 	@Test
 	public void test_createWithoutLock_exception() {
 		Path missingFile = testingFolderPath.resolve("far away").resolve("not_home");
-		try (BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(missingFile, null, null, false)) {
+		try (BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(missingFile, null, null)) {
 			fail();
 		} catch (BlueDbException e) {
 			e.printStackTrace(); //Expect exception

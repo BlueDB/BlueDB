@@ -15,6 +15,7 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
+import org.bluedb.disk.encryption.EncryptionUtils;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.FileUtils;
@@ -90,7 +91,7 @@ public class BackupManager {
 					.forEach(srcPath -> {
 						Path destPath = translatePath(dbPath, tempFolder, srcPath);
 						try {
-							collection.getMetaData().getFileManager().makeUnencryptedCopy(srcPath, destPath);
+							collection.getMetaData().getFileManager().makeCopy(srcPath, destPath);
 						} catch (BlueDbException e) {
 							throw new UncheckedBlueDbException(e);
 						} catch (IOException e) {
@@ -142,6 +143,7 @@ public class BackupManager {
 		return isCollectionTimeBased && !includedTimeRange.isMaxRange();
 	}
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void copyDataFileAfterFilteringBasedOnTime(ReadWriteSegment<?> segment, BlueSerializer serializer, Path tempFolder, Range includedTimeRange, long groupingNumber) throws BlueDbException {
 		boolean isFileEmpty = true;
 		Path src = null;
@@ -155,12 +157,17 @@ public class BackupManager {
 			dst.toFile().createNewFile();
 
 			try (
-					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService, true);
+					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService);
 					BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
+				boolean shouldSkipEncryptionForUnchangedData = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(input.getMetadata(), output.getMetadata());
 				while (input.hasNext()) {
 					BlueEntity<?> next = (BlueEntity<?>) input.next();
 					if (next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
-						output.writeBytesAndForceSkipEncryption(input.getLastUnencryptedBytes());
+						if (shouldSkipEncryptionForUnchangedData) {
+							output.writeBytesAndForceSkipEncryption(input.getLastRawBytes());
+						} else {
+							output.writeBytesAndAllowEncryption(input.getLastUnencryptedBytes());
+						}
 						isFileEmpty = false;
 					}
 				}
@@ -174,6 +181,7 @@ public class BackupManager {
 		}
 	}
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void copyDataFileStraightOver(ReadWriteSegment<?> segment, BlueSerializer serializer, Path tempFolder, long groupingNumber) throws BlueDbException {
 		Path src = null;
 		Path dst = null;
@@ -185,7 +193,7 @@ public class BackupManager {
 			dst.toFile().createNewFile();
 			
 			try (
-					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService, true);
+					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService);
 					BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
 				output.writeAllAndAllowEncryption(input);
 			}
@@ -194,6 +202,7 @@ public class BackupManager {
 		}
 	}
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void copyChanges(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, Range includedChangeTimes, Path tempFolder) throws BlueDbException {
 		RecoveryManager<?> recoveryManager = collection.getRecoveryManager();
 		List<File> changesToCopy = recoveryManager.getChangeHistory(includedChangeTimes.getStart(), includedChangeTimes.getEnd());

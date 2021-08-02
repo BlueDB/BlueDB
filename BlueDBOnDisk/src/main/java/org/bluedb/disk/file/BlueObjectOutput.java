@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.disk.encryption.EncryptionUtils;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
@@ -24,7 +25,6 @@ public class BlueObjectOutput<T> implements Closeable {
 	private final BlueFileMetadata metadata;
 
 	private boolean hasBeenWrittenTo = false;
-	private boolean allWritesForceSkipEncryption = false;
 
 	public BlueObjectOutput(BlueWriteLock<Path> writeLock, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
 		try {
@@ -67,21 +67,20 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, boolean allWritesForceSkipEncryption) throws BlueDbException {
-		return new BlueObjectOutput<>(path, serializer, encryptionService, allWritesForceSkipEncryption);
+	public static <T> BlueObjectOutput<T> createWithoutLock(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
+		return new BlueObjectOutput<>(path, serializer, encryptionService);
 	}
 
-	private BlueObjectOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, boolean allWritesForceSkipEncryption) throws BlueDbException {
+	private BlueObjectOutput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
 		try {
 			this.lock = null;
 			this.path = path;
 			this.serializer = serializer;
 			this.encryptionService = encryptionService;
 			this.dataOutputStream = FileUtils.openDataOutputStream(path.toFile());
-			this.allWritesForceSkipEncryption = allWritesForceSkipEncryption;
 
 			metadata = new BlueFileMetadata();
-			if (!allWritesForceSkipEncryption && encryptionService.isEncryptionEnabled()) {
+			if (encryptionService.isEncryptionEnabled()) {
 				metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
 			}
 		} catch (IOException e) {
@@ -103,7 +102,7 @@ public class BlueObjectOutput<T> implements Closeable {
 			hasBeenWrittenTo = true;
 		}
 		try {
-			if (!allWritesForceSkipEncryption && !forceSkipEncryption && metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
+			if (!forceSkipEncryption && metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
 				String encryptionVersionKey = metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
 			}
@@ -144,10 +143,15 @@ public class BlueObjectOutput<T> implements Closeable {
 		// TODO better protection against hitting overlapping ranges.
 		//      There's some protection against this in rollup recovery and 
 		//      from single-threaded writes.
-		byte[] nextBytes = input.nextUnencryptedBytesWithoutDeserializing();
-		while (nextBytes != null && nextBytes.length > 0) {
-			writeBytesAndAllowEncryption(nextBytes);
-			nextBytes = input.nextUnencryptedBytesWithoutDeserializing();
+		boolean shouldSkipEncryptionForUnchangedData = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(input.getMetadata(), getMetadata());
+		byte[] nextRawBytes = input.nextRawBytesWithoutDeserializing();
+		while (nextRawBytes != null && nextRawBytes.length > 0) {
+			if (shouldSkipEncryptionForUnchangedData) {
+				writeBytesAndForceSkipEncryption(input.getLastRawBytes());
+			} else {
+				writeBytesAndAllowEncryption(input.getLastUnencryptedBytes());
+			}
+			nextRawBytes = input.nextRawBytesWithoutDeserializing();
 		}
 	}
 
