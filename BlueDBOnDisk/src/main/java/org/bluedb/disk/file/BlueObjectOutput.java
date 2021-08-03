@@ -139,7 +139,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 	}
 
-	public void writeAllAndAllowEncryption(BlueObjectInput<?> input) throws BlueDbException {
+	public void writeAll(BlueObjectInput<?> input) throws BlueDbException {
 		// TODO better protection against hitting overlapping ranges.
 		//      There's some protection against this in rollup recovery and 
 		//      from single-threaded writes.

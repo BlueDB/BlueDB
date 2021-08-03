@@ -10,9 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
-import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -119,13 +117,14 @@ public class BlueObjectOutputTest extends TestCase {
 		when(mockEncryptionService.isEncryptionEnabled()).thenReturn(true);
 		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn(expectedKey);
 		when(mockEncryptionService.encryptOrThrow(anyString(), anyObject())).thenReturn(new byte[] {'e', 'n', 'c', 'r', 'y', 'p', 't', 'e', 'd'});
+
 		// Act
 		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
 			blueObjectOutput.writeBytesAndAllowEncryption(expectedBytes);
-
-			// Assert
-			verify(mockEncryptionService).encryptOrThrow(expectedKey, expectedBytes);
 		}
+
+		// Assert
+		verify(mockEncryptionService).encryptOrThrow(expectedKey, expectedBytes);
 	}
 
 	@Test
@@ -143,10 +142,35 @@ public class BlueObjectOutputTest extends TestCase {
 		// Act
 		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
 			blueObjectOutput.write(value);
-
-			// Assert
-			verify(mockEncryptionService).encryptOrThrow(expectedKey, expectedBytes);
 		}
+
+		// Assert
+		verify(mockEncryptionService).encryptOrThrow(expectedKey, expectedBytes);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_writeAll_metadataUpdated_encryptOrThrowIsCalled() throws BlueDbException, IOException {
+		// Arrange
+		String expectedKey = "valid-key";
+		byte[] expectedBytes = new byte[] {'u', 'n', 'e', 'n', 'c', 'r', 'y', 'p', 't', 'e', 'd'};
+
+		BlueObjectInput<TestValue> input = (BlueObjectInput<TestValue>) mock(BlueObjectInput.class);
+		when(input.nextRawBytesWithoutDeserializing()).thenReturn(new byte[] {'r', 'a', 'w'}, new byte[] {});
+		when(input.getLastUnencryptedBytes()).thenReturn(expectedBytes);
+
+		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
+		when(mockEncryptionService.isEncryptionEnabled()).thenReturn(true);
+		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn(expectedKey);
+		when(mockEncryptionService.encryptOrThrow(anyString(), anyObject())).thenReturn(new byte[] {'e', 'n', 'c', 'r', 'y', 'p', 't', 'e', 'd'});
+
+		// Act
+		try (BlueObjectOutput<TestValue> output = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
+			output.writeAll(input);
+		}
+
+		// Assert
+		verify(mockEncryptionService).encryptOrThrow(expectedKey, expectedBytes);
 	}
 
 	@Test
@@ -293,7 +317,7 @@ public class BlueObjectOutputTest extends TestCase {
 			try (BlueObjectInput<TestValue> input = fileManager.getBlueInputStream(readLock)) {
 				try (BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(dstPath)) {
 					try (BlueObjectOutput<TestValue> output = fileManager.getBlueOutputStream(writeLock)) {
-						output.writeAllAndAllowEncryption(input);
+						output.writeAll(input);
 					}
 				}
 			}

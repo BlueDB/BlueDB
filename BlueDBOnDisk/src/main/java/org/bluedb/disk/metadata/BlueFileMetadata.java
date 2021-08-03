@@ -11,7 +11,7 @@ public class BlueFileMetadata implements Serializable {
 	public BlueFileMetadata() {
 		metadataMap = new HashMap<>();
 	}
-	
+
 	public String get(BlueFileMetadataKey key) {
 		return metadataMap.get(key);
 	}
@@ -22,12 +22,16 @@ public class BlueFileMetadata implements Serializable {
 		}
 		return metadataMap.put(key, value);
 	}
-	
+
 	public boolean containsKey(BlueFileMetadataKey key) {
 		return metadataMap.containsKey(key);
 	}
-	
+
 	public String remove(BlueFileMetadataKey key) {
+		if (key == null) {
+			throw new IllegalArgumentException("Key cannot be null");
+		}
 		return metadataMap.remove(key);
 	}
+
 }

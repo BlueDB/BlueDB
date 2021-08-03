@@ -151,7 +151,6 @@ public class BackupManager {
 		try {
 			src = segment.getPathFor(groupingNumber);
 			dst = translatePath(dbPath, tempFolder, src);
-			FileUtils.ensureDirectoryExists(dst.toFile());
 
 			dst.toFile().getParentFile().mkdirs();
 			dst.toFile().createNewFile();
@@ -195,7 +194,7 @@ public class BackupManager {
 			try (
 					BlueObjectOutput<BlueEntity<?>> output = BlueObjectOutput.createWithoutLock(dst, serializer, this.encryptionService);
 					BlueObjectInput<?> input = segment.getObjectInputFor(groupingNumber)) {
-				output.writeAllAndAllowEncryption(input);
+				output.writeAll(input);
 			}
 		} catch (Exception e) {
 			throw new BlueDbException("Failed to copy data file from " + src + " to " + dst, e);

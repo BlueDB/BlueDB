@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -28,7 +29,11 @@ import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.file.BlueObjectInput;
+import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.PendingIndexRollup;
 import org.bluedb.disk.recovery.PendingRollup;
@@ -40,8 +45,8 @@ import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.zip.ZipUtils;
 import org.junit.Test;
-import org.mockito.Mockito;
 import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 public class BackupManagerTest extends BlueDbDiskTestBase {
 
@@ -68,13 +73,13 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
-		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
+		ReadWriteCollectionOnDisk<?> collectionSpy = spy(getTimeCollection());
 
-		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
-		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
-		Mockito.doThrow(new BlueDbException("can't make unencrypted copy")).when(fileManagerMock).makeCopy(any(), any());
-		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
-		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
+		ReadWriteCollectionMetaData metadataSpy = spy(collectionSpy.getMetaData());
+		ReadWriteFileManager fileManagerMock = mock(ReadWriteFileManager.class);
+		doThrow(new BlueDbException("can't make unencrypted copy")).when(fileManagerMock).makeCopy(any(), any());
+		doReturn(metadataSpy).when(collectionSpy).getMetaData();
+		doReturn(fileManagerMock).when(metadataSpy).getFileManager();
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
 
 		Path backedUpPath = createTempFolder().toPath();
@@ -99,12 +104,12 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
 
-		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
-		ReadWriteSegmentManager<?> segmentManagerSpy = Mockito.spy(collectionSpy.getSegmentManager());
-		ReadWriteSegment<?> segmentSpy = Mockito.spy(segmentManagerSpy.getAllExistingSegments().get(0));
-		Mockito.doThrow(expected).when(segmentSpy).getPathFor(anyLong());
-		Mockito.doReturn(segmentManagerSpy).when(collectionSpy).getSegmentManager();
-		Mockito.doReturn(Collections.singletonList(segmentSpy)).when(segmentManagerSpy).getAllExistingSegments();
+		ReadWriteCollectionOnDisk<?> collectionSpy = spy(getTimeCollection());
+		ReadWriteSegmentManager<?> segmentManagerSpy = spy(collectionSpy.getSegmentManager());
+		ReadWriteSegment<?> segmentSpy = spy(segmentManagerSpy.getAllExistingSegments().get(0));
+		doThrow(expected).when(segmentSpy).getPathFor(anyLong());
+		doReturn(segmentManagerSpy).when(collectionSpy).getSegmentManager();
+		doReturn(Collections.singletonList(segmentSpy)).when(segmentManagerSpy).getAllExistingSegments();
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
 
 		Path backedUpPath = createTempFolder().toPath();
@@ -128,12 +133,12 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
 
-		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
-		ReadWriteSegmentManager<?> segmentManagerSpy = Mockito.spy(collectionSpy.getSegmentManager());
-		ReadWriteSegment<?> segmentSpy = Mockito.spy(segmentManagerSpy.getAllExistingSegments().get(0));
-		Mockito.doThrow(expected).when(segmentSpy).getPathFor(anyLong());
-		Mockito.doReturn(segmentManagerSpy).when(collectionSpy).getSegmentManager();
-		Mockito.doReturn(Collections.singletonList(segmentSpy)).when(segmentManagerSpy).getAllExistingSegments();
+		ReadWriteCollectionOnDisk<?> collectionSpy = spy(getTimeCollection());
+		ReadWriteSegmentManager<?> segmentManagerSpy = spy(collectionSpy.getSegmentManager());
+		ReadWriteSegment<?> segmentSpy = spy(segmentManagerSpy.getAllExistingSegments().get(0));
+		doThrow(expected).when(segmentSpy).getPathFor(anyLong());
+		doReturn(segmentManagerSpy).when(collectionSpy).getSegmentManager();
+		doReturn(Collections.singletonList(segmentSpy)).when(segmentManagerSpy).getAllExistingSegments();
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
 
 		Path backedUpPath = createTempFolder().toPath();
@@ -151,18 +156,48 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_backupToTempDirectory_encryptionEnabledAndUpdatedMetadata_shouldCompleteSuccessfully() throws Exception {
+		// Arrange
+
+		BlueKey key1At1 = createKey(1, 1);
+		TestValue value1 = createValue("Anna");
+		getTimeCollection().insert(key1At1, value1);
+
+		BlueFileMetadata inputMetadata = new BlueFileMetadata();
+		inputMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, "UNIQUE-KEY");
+		
+		ReadWriteCollectionOnDisk<?> collectionSpy = spy(getTimeCollection());
+		ReadWriteSegmentManager<?> segmentManagerSpy = spy(collectionSpy.getSegmentManager());
+		ReadWriteSegment<?> segmentSpy = spy(segmentManagerSpy.getAllExistingSegments().get(0));
+		BlueObjectInput<?> inputSpy = spy(segmentSpy.getObjectInputFor(1));
+		when(inputSpy.getMetadata()).thenReturn(inputMetadata);
+		doReturn(segmentManagerSpy).when(collectionSpy).getSegmentManager();
+		doReturn(Collections.singletonList(segmentSpy)).when(segmentManagerSpy).getAllExistingSegments();
+		doReturn(inputSpy).when(segmentSpy).getObjectInputFor(1);
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
+
+		Path backedUpPath = createTempFolder().toPath();
+		BackupManager backupManager = db().getBackupManager();
+
+		// Act
+		backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.forValueAndRangeSize(1L, 100), false);
+
+		// No assert needed, pass if no exception thrown
+	}
+
+	@Test
 	public void test_backupToTempDirectory_fileManagerThrowsIOException_shouldCascadeExpectedExceptions() throws Exception {
 		// Arrange
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
 
-		ReadWriteCollectionOnDisk<?> collectionSpy = Mockito.spy(getTimeCollection());
-		ReadWriteCollectionMetaData metadataSpy = Mockito.spy(collectionSpy.getMetaData());
-		ReadWriteFileManager fileManagerMock = Mockito.mock(ReadWriteFileManager.class);
-		Mockito.doThrow(new IOException("can't make unencrypted copy")).when(fileManagerMock).makeCopy(any(), any());
-		Mockito.doReturn(metadataSpy).when(collectionSpy).getMetaData();
-		Mockito.doReturn(fileManagerMock).when(metadataSpy).getFileManager();
+		ReadWriteCollectionOnDisk<?> collectionSpy = spy(getTimeCollection());
+		ReadWriteCollectionMetaData metadataSpy = spy(collectionSpy.getMetaData());
+		ReadWriteFileManager fileManagerMock = mock(ReadWriteFileManager.class);
+		doThrow(new IOException("can't make unencrypted copy")).when(fileManagerMock).makeCopy(any(), any());
+		doReturn(metadataSpy).when(collectionSpy).getMetaData();
+		doReturn(fileManagerMock).when(metadataSpy).getFileManager();
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(collectionSpy);
 
 
