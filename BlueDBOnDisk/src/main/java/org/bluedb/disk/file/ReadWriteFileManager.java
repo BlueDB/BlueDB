@@ -103,14 +103,18 @@ public class ReadWriteFileManager extends ReadFileManager {
 				destMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
 			}
 			writeMetadata(destMetadata, dos, destPath);
-			
+
 			// Write bytes
 			byte[] rawBytes = FileUtils.readAllBytes(dis);
 			if (EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(srcMetadata, destMetadata)) {
 				dos.write(rawBytes);
 			} else {
-				byte[] unencryptedBytes = encryptionService.decryptOrReturn(srcMetadata, rawBytes);
-				dos.write(unencryptedBytes);
+				byte[] bytes = encryptionService.decryptOrReturn(srcMetadata, rawBytes);
+				if (destMetadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
+					String encryptionVersionKey = destMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+					bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
+				}
+				dos.write(bytes);
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
