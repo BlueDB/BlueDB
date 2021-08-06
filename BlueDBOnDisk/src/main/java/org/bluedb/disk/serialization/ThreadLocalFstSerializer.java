@@ -11,6 +11,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
+import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ByteUtils;
 import org.bluedb.disk.collection.index.IndexCompositeKey;
@@ -22,9 +23,9 @@ import org.nustaq.serialization.simpleapi.DefaultCoder;
 public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implements BlueSerializer {
 	
 	private static final int MAX_ATTEMPTS = 5;
-	
+
 	private Class<?>[] registeredSerializableClasses;
-	
+
 	public ThreadLocalFstSerializer(Class<?>...registeredSerializableClasses) {
 		this.registeredSerializableClasses = registeredSerializableClasses;
 	}
@@ -45,7 +46,8 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			PendingChange.class,
 			UUID.class,
 			UUIDKey.class,
-			IndexCompositeKey.class
+			IndexCompositeKey.class, 
+			BlueFileMetadata.class
 		);
 	}
 

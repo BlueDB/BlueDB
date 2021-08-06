@@ -19,15 +19,19 @@ import org.bluedb.disk.collection.FacadeTimeCollection;
 import org.bluedb.disk.collection.NoSuchCollectionException;
 import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 import org.bluedb.disk.collection.ReadOnlyTimeCollectionOnDisk;
+import org.bluedb.disk.encryption.EncryptionService;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 
 public class ReadableDbOnDisk implements ReadableBlueDb {
 
 	protected final Path path;
+	protected final EncryptionServiceWrapper encryptionService;
 
 	private final Map<String, ReadOnlyCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
-	ReadableDbOnDisk(Path path) {
+	ReadableDbOnDisk(Path path, EncryptionService encryptionService) {
 		this.path = path;
+		this.encryptionService = new EncryptionServiceWrapper(encryptionService);
 	}
 	
 	@Override
@@ -110,4 +114,7 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	public Path getPath() {
 		return path;
 	}
+
+	public EncryptionServiceWrapper getEncryptionService() { return encryptionService; }
+
 }

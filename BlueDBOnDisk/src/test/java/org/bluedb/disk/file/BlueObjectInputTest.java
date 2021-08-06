@@ -12,6 +12,8 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertArrayEquals;
+import org.bluedb.disk.metadata.BlueFileMetadata;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.bluedb.TestUtils;
@@ -29,6 +31,7 @@ import junit.framework.TestCase;
 public class BlueObjectInputTest extends TestCase {
 
 	BlueSerializer serializer;
+	EncryptionServiceWrapper encryptionService;
 	ReadWriteFileManager fileManager;
 	LockManager<Path> lockManager;
 	Path testingFolderPath;
@@ -41,7 +44,8 @@ public class BlueObjectInputTest extends TestCase {
 		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
 		tempFilePath = FileUtils.createTempFilePath(targetFilePath);
 		serializer = new ThreadLocalFstSerializer(new Class[]{});
-		fileManager = new ReadWriteFileManager(serializer);
+		encryptionService = new EncryptionServiceWrapper(null);
+		fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
 	}
 
@@ -65,15 +69,6 @@ public class BlueObjectInputTest extends TestCase {
 			stream.close();  // make sure it doesn't throw an exception if you close it twice
 			assertTrue(emptyFile.exists());
 		}
-	}
-
-	@Test
-	public void test_openDataInputStream() {
-		File nonExistentFile = Paths.get(testingFolderPath.toString(), "Santa_Clause").toFile();
-		try {
-			BlueObjectInput.openDataInputStream(nonExistentFile);
-			fail();
-		} catch (IOException e) {}
 	}
 
 	@Test
@@ -109,27 +104,27 @@ public class BlueObjectInputTest extends TestCase {
 
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
-				assertNull(inStream.getLastBytes());
+				assertNull(inStream.getLastRawBytes());
 
 				assertTrue(inStream.hasNext());
-				assertNull(inStream.getLastBytes());  // hasNext should not populate lastBytes
+				assertNull(inStream.getLastRawBytes());  // hasNext should not populate lastBytes
 
 				assertEquals(firstValue, inStream.next());
-				byte[] firstValueBytes = inStream.getLastBytes();
+				byte[] firstValueBytes = inStream.getLastRawBytes();
 				TestValue restoredFirstValue = (TestValue) serializer.deserializeObjectFromByteArray(firstValueBytes);
 				assertEquals(firstValue, restoredFirstValue);
 				assertEquals(firstValue, restoredFirstValue);
 
 				assertTrue(inStream.hasNext());
-				assertEquals(firstValueBytes, inStream.getLastBytes());  // hasNext should not re-populate out lastBytes
+				assertEquals(firstValueBytes, inStream.getLastRawBytes());  // hasNext should not re-populate out lastBytes
 
 				assertEquals(secondValue, inStream.next());
-				byte[] secondValueBytes = inStream.getLastBytes();
+				byte[] secondValueBytes = inStream.getLastRawBytes();
 				TestValue restoredSecondValue = (TestValue) serializer.deserializeObjectFromByteArray(secondValueBytes);
 				assertEquals(secondValue, restoredSecondValue);
 
 				assertFalse(inStream.hasNext());
-				assertEquals(secondValueBytes, inStream.getLastBytes());  // hasNext should not clear out lastBytes
+				assertEquals(secondValueBytes, inStream.getLastRawBytes());  // hasNext should not clear out lastBytes
 
 				inStream.close();
 			}
@@ -186,7 +181,7 @@ public class BlueObjectInputTest extends TestCase {
 
 		try(BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
-				assertArrayEquals(valueBytes, inStream.nextWithoutDeserializing());
+				assertArrayEquals(valueBytes, inStream.nextUnencryptedBytesWithoutDeserializing());
 				assertNull(inStream.next());
 				inStream.close();
 			}
@@ -236,7 +231,7 @@ public class BlueObjectInputTest extends TestCase {
 	public void test_nextFromFile_IOException() {
 		AtomicBoolean readCalled = new AtomicBoolean(false);
 		DataInputStream dataInputStream = createDataInputStreamThatThrowsExceptionOnRead(readCalled);
-		BlueObjectInput<TestValue> inStream = BlueObjectInput.getTestInput(targetFilePath, serializer, dataInputStream);
+		BlueObjectInput<TestValue> inStream = BlueObjectInput.getTestInput(targetFilePath, serializer, encryptionService, dataInputStream, new BlueFileMetadata());
 		assertFalse(readCalled.get());
 		assertNull(inStream.next());
 		assertTrue(readCalled.get());
@@ -249,7 +244,7 @@ public class BlueObjectInputTest extends TestCase {
 			Path path = readLock.getKey();
 			AtomicBoolean streamClosed = new AtomicBoolean(false);
 			DataInputStream inStream = createDataInputStreamThatThrowsExceptionOnClose(streamClosed);
-			BlueObjectInput<TestValue> mockStream = BlueObjectInput.getTestInput(path, serializer, inStream);
+			BlueObjectInput<TestValue> mockStream = BlueObjectInput.getTestInput(path, serializer, encryptionService, inStream, new BlueFileMetadata());
 			mockStream.close();  // BlueObjectInput should handle the exception
 			assertTrue(streamClosed.get());  // make sure it actually closed the underlying stream
 		}
@@ -262,7 +257,7 @@ public class BlueObjectInputTest extends TestCase {
 		
 		Path garbagePath = TestUtils.getResourcePath("good-bad-good-stream.bin");
 		BlueReadLock<Path> readLock = lockManager.acquireReadLock(garbagePath);
-		BlueObjectInput<Call> inStream = new BlueObjectInput<>(readLock, serializer);
+		BlueObjectInput<Call> inStream = new BlueObjectInput<>(readLock, serializer, encryptionService);
 		int count = 0;
 		while (inStream.hasNext()) {
 			count += 1;
@@ -279,7 +274,7 @@ public class BlueObjectInputTest extends TestCase {
 		Mockito.verify(lock, Mockito.times(0)).close();
 		try {
 			@SuppressWarnings({ "unused", "resource" })
-			BlueObjectInput<TestValue> stream = new BlueObjectInput<>(lock, null);
+			BlueObjectInput<TestValue> stream = new BlueObjectInput<>(lock, null, null);
 		} catch (BlueDbException e) {}
 		Mockito.verify(lock, Mockito.times(1)).close();
 	}

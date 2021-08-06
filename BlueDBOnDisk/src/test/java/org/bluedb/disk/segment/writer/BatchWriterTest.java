@@ -20,6 +20,8 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
+import org.bluedb.disk.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -83,6 +85,25 @@ public class BatchWriterTest {
 		
 		assertEquals(Arrays.asList(value1at1, value3at3, value5bAt5, value7at7), results);
 	}
+
+	@Test
+	public void test_UpdateAndInsert_changedMetadata() throws Exception {
+		List<BlueEntity<String>> initialValues = Arrays.asList(value3at3, value5at5, value7at7);
+		BlueObjectInput<BlueEntity<String>> mockInput = createMockInput(serializer, initialValues);
+		
+
+		List<BlueEntity<String>> results = new ArrayList<>();
+		BlueObjectOutput<BlueEntity<String>> mockOutput = createMockOutput(serializer, results);
+		BlueFileMetadata outputMetadata = new BlueFileMetadata();
+		outputMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, "output-key");
+		Mockito.when(mockOutput.getMetadata()).thenReturn(outputMetadata);
+
+		List<IndividualChange<String>> insert1andUpdate5 = Arrays.asList(insert1, update5bAt5);
+		BatchWriter<String> batchInsert1andUpdate5 = new BatchWriter<>(insert1andUpdate5);
+		batchInsert1andUpdate5.process(mockInput, mockOutput);
+
+		assertEquals(Arrays.asList(value1at1, value3at3, value5bAt5, value7at7), results);
+	}
 	
 	@Test
 	public void testUpdatingInvalidObjectThenMakingOtherChanges() throws BlueDbException, IOException, URISyntaxException {
@@ -133,6 +154,61 @@ public class BatchWriterTest {
 		assertNotNull(resultingCall4);
 		assertEquals("testChange", resultingCall4.getValue().getCallingParty()); //Call was successfully updated
 		
+		assertNull(resultingCall5); //Call was successfully deleted
+	}
+
+	@Test
+	public void testUpdatingInvalidObjectThenMakingOtherChanges_changedMetadata() throws BlueDbException, IOException, URISyntaxException {
+		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+
+		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
+		long invalidCallStart = invalidCall.getValue().getStart();
+
+		BlueEntity<Call> call1 = Call.generateBasicTestCallEntity(invalidCallStart - 10);
+		BlueEntity<Call> call3 = Call.generateBasicTestCallEntity(invalidCallStart + 10);
+		BlueEntity<Call> call4 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
+		BlueEntity<Call> call5 = Call.generateBasicTestCallEntity(invalidCallStart + 30);
+
+		@SuppressWarnings("deprecation")
+		BlueEntity<Call> updatedInvalidCall = serializer.cloneWithoutChecks(invalidCall);
+		updatedInvalidCall.getValue().setReceivingParty("testChange");
+
+		BlueEntity<Call> updatedcall4 = Call.wrapCallAsEntity(call4.getValue().clone());
+		updatedcall4.getValue().setCallingParty("testChange");
+
+		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(call1, invalidCall, call4, call5));
+		BlueObjectInput<BlueEntity<Call>> mockInput = createMockInput(serializer, initialValues);
+
+		List<BlueEntity<Call>> results = new ArrayList<>();
+		BlueObjectOutput<BlueEntity<Call>> mockOutput = createMockOutput(serializer, results);
+		BlueFileMetadata outputMetadata = new BlueFileMetadata();
+		outputMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, "output-key");
+		Mockito.when(mockOutput.getMetadata()).thenReturn(outputMetadata);
+
+		IndividualChange<Call> updateInvalidCall = new IndividualChange<Call>(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue());
+		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
+		IndividualChange<Call> update4 = new IndividualChange<Call>(call4.getKey(), call4.getValue(), updatedcall4.getValue());
+		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5.getKey());
+
+		BatchWriter<Call> batchWriter = new BatchWriter<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
+		batchWriter.process(mockInput, mockOutput);
+
+		BlueEntity<Call> resultingCall1 = results.stream().filter(callEntity -> callEntity.getKey().equals(call1.getKey())).findAny().orElse(null);
+		BlueEntity<Call> resultingInvalidCall = results.stream().filter(callEntity -> callEntity.getKey().equals(invalidCall.getKey())).findAny().orElse(null);
+		BlueEntity<Call> resultingCall3 = results.stream().filter(callEntity -> callEntity.getKey().equals(call3.getKey())).findAny().orElse(null);
+		BlueEntity<Call> resultingCall4 = results.stream().filter(callEntity -> callEntity.getKey().equals(call4.getKey())).findAny().orElse(null);
+		BlueEntity<Call> resultingCall5 = results.stream().filter(callEntity -> callEntity.getKey().equals(call5.getKey())).findAny().orElse(null);
+
+		assertNotNull(resultingCall1); //This call was unchanged
+
+		assertNotNull(resultingInvalidCall);
+		assertNotEquals("testChange", resultingInvalidCall.getValue().getReceivingParty()); //Change won't be made because the new object failed to serialize properly
+
+		assertNotNull(resultingCall3); //Call was successfully inserted
+
+		assertNotNull(resultingCall4);
+		assertEquals("testChange", resultingCall4.getValue().getCallingParty()); //Call was successfully updated
+
 		assertNull(resultingCall5); //Call was successfully deleted
 	}
 	
@@ -209,8 +285,10 @@ public class BatchWriterTest {
 		BlueObjectInput<T> mockInput = Mockito.mock(BlueObjectInput.class);
 		Mockito.doAnswer((x) -> !inputValues.isEmpty()).when(mockInput).hasNext();
 		Mockito.doAnswer((x) -> inputValues.poll()).when(mockInput).next();
-		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextWithoutDeserializing();
+		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextUnencryptedBytesWithoutDeserializing();
+		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextRawBytesWithoutDeserializing();
 		Mockito.doAnswer((x) -> inputValues.peek()).when(mockInput).peek();
+		Mockito.when(mockInput.getMetadata()).thenReturn(new BlueFileMetadata());
 		return mockInput;
 	}
 
@@ -218,31 +296,26 @@ public class BatchWriterTest {
 		@SuppressWarnings("unchecked")
 		BlueObjectOutput<T> mockOutput = Mockito.mock(BlueObjectOutput.class);
 		
-		Answer<T> writeObjectMethod = new Answer<T>() {
-			@Override
-			public T answer(InvocationOnMock invocation) throws Throwable {
-				@SuppressWarnings("unchecked")
-				T outputValue = (T) invocation.getArguments()[0];
-				
-				ObjectValidation.validateFieldValueTypesForObject(outputValue);
-				
-				results.add(outputValue);
-				return null;
-			}
+		Answer<T> writeObjectMethod = (InvocationOnMock invocation) -> {
+			@SuppressWarnings("unchecked")
+			T outputValue = (T) invocation.getArguments()[0];
+			
+			ObjectValidation.validateFieldValueTypesForObject(outputValue);
+			
+			results.add(outputValue);
+			return null;
 		};
 		
-		Answer<T> writeBytesMethod = new Answer<T>() {
-			@SuppressWarnings({ "unchecked", "deprecation" })
-			@Override
-			public T answer(InvocationOnMock invocation) throws Throwable {
-				byte[] outputValueBytes = (byte[]) invocation.getArguments()[0];
-				results.add((T)serializer.deserializeObjectFromByteArrayWithoutChecks(outputValueBytes));
-				return null;
-			}
+		Answer<T> writeBytesMethod = (InvocationOnMock invocation) -> {
+			byte[] outputValueBytes = (byte[]) invocation.getArguments()[0];
+			results.add((T)serializer.deserializeObjectFromByteArrayWithoutChecks(outputValueBytes));
+			return null;
 		};
 		
 		Mockito.doAnswer(writeObjectMethod).when(mockOutput).write(anyObject());
-		Mockito.doAnswer(writeBytesMethod).when(mockOutput).writeBytes(anyObject());
+		Mockito.doAnswer(writeBytesMethod).when(mockOutput).writeBytesAndAllowEncryption(anyObject());
+		Mockito.doAnswer(writeBytesMethod).when(mockOutput).writeBytesAndForceSkipEncryption(anyObject());
+		Mockito.when(mockOutput.getMetadata()).thenReturn(new BlueFileMetadata());
 		return mockOutput;
 	}
 }

@@ -21,21 +21,23 @@ import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
+import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.SegmentSizeSetting;
+import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 
 	protected final BackupManager backupManager;
 	protected final BlueExecutor sharedExecutor;
 	private final Map<String, ReadWriteCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
-	
 
-	public ReadWriteDbOnDisk(Path path) {
-		super(path);
-		this.backupManager = new BackupManager(this);
+
+	public ReadWriteDbOnDisk(Path path, EncryptionService encryptionService) {
+		super(path, encryptionService);
+		this.backupManager = new BackupManager(this, this.encryptionService);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
 	}
 
@@ -107,7 +109,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	}
 	
 	/*
-	 * TODO: Regarding getCollection and getTimeCollection: Should this return an existing collection even if the user has not 
+	 * TODO: Regarding getCollection and getTimeCollection: Should this return an existing collection even if the user has not
 	 * initialized/built the collection? I kind of like forcing read/write users to intialize/build the collection first so that
 	 * if they make schema changes they always get applied on startup.
 	 */

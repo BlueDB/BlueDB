@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -24,14 +25,17 @@ public class FileUtilsTest extends TestCase {
 	LockManager<Path> lockManager;
 	private List<File> filesToDelete;
 	private Path testPath;
+	private Path testingFolderPath;
 
 	@Override
 	protected void setUp() throws Exception {
 		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
-		ReadWriteFileManager fileManager = new ReadWriteFileManager(serializer);
+		EncryptionServiceWrapper encryptionService = new EncryptionServiceWrapper(null);
+		ReadWriteFileManager fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
 		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
+		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		filesToDelete.add(testPath.toFile());
 	}
 
@@ -395,6 +399,15 @@ public class FileUtilsTest extends TestCase {
 		}  catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Test
+	public void test_openDataInputStream() {
+		File nonExistentFile = Paths.get(testingFolderPath.toString(), "Santa_Clause").toFile();
+		try {
+			FileUtils.openDataInputStream(nonExistentFile);
+			fail();
+		} catch (IOException e) {}
 	}
 
 	private File createTempFile(File parentFolder, String fileName) throws IOException {

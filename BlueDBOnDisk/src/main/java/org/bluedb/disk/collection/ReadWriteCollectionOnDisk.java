@@ -58,7 +58,7 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 		collectionKey = getPath().toString();
 		rollupScheduler = new RollupScheduler(this);
 		rollupScheduler.start();
-		fileManager = new ReadWriteFileManager(serializer);
+		fileManager = new ReadWriteFileManager(serializer, db.getEncryptionService());
 		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
 		Rollupable rollupable = this;
 		indexManager = new ReadWriteIndexManager<T>(this, collectionPath);
@@ -181,7 +181,7 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	@Override
 	protected ReadWriteCollectionMetaData getOrCreateMetadata() {
 		if (metadata == null) {
-			metadata = new ReadWriteCollectionMetaData(getPath());
+			metadata = new ReadWriteCollectionMetaData(getPath(), this.encryptionService);
 		}
 		return metadata;
 	}

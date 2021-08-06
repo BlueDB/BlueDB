@@ -1,16 +1,15 @@
 package org.bluedb.disk.file;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.disk.metadata.BlueFileMetadata;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -21,43 +20,63 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	private final BlueReadLock<Path> readLock;
 	private final Path path;
 	private final BlueSerializer serializer;
+	private final EncryptionServiceWrapper encryptionService;
 	private final DataInputStream dataInputStream;
-			
-	private T next = null;
-	private byte[] nextBytes = null;
-	private byte[] lastBytes = null;
+	private final BlueFileMetadata metadata;
 
-	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer) throws BlueDbException {
+	private T next = null;
+	private byte[] nextRawBytes = null;
+	private byte[] lastRawBytes = null;
+	private byte[] nextUnencryptedBytes = null;
+	private byte[] lastUnencryptedBytes = null;
+
+	@SuppressWarnings("unchecked")
+	public BlueObjectInput(BlueReadLock<Path> readLock, BlueSerializer serializer, EncryptionServiceWrapper encryptionService) throws BlueDbException {
 		try {
 			this.readLock = readLock;
 			this.path = readLock.getKey();
 			this.serializer = serializer;
-		
+			this.encryptionService = encryptionService;
+
 			if (path.toFile().exists()) {
-				dataInputStream = openDataInputStream(path.toFile());
+				dataInputStream = FileUtils.openDataInputStream(path.toFile());
 			} else {
 				dataInputStream = null;
 			}
-		} catch(Throwable t) {
+
+			setNextBytesFromFile();
+			if (nextRawBytes != null) {
+				Object firstObject = this.serializer.deserializeObjectFromByteArray(nextUnencryptedBytes);
+				if (firstObject instanceof BlueFileMetadata) {
+					this.metadata = (BlueFileMetadata) firstObject;
+					nextRawBytes = null;
+					nextUnencryptedBytes = null;
+				} else {
+					this.metadata = new BlueFileMetadata();
+					next = (T) firstObject;
+				}
+			} else {
+				this.metadata = new BlueFileMetadata();
+			}
+
+		} catch (Throwable t) {
 			close();
 			throw new BlueDbException(t.getMessage(), t);
 		}
 	}
 
-	protected static <T> BlueObjectInput<T> getTestInput(Path path, BlueSerializer serializer, DataInputStream dataInputStream) {
-		return new BlueObjectInput<T>(path, serializer, dataInputStream);
+	protected static <T> BlueObjectInput<T> getTestInput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, DataInputStream dataInputStream, BlueFileMetadata metadata) {
+		return new BlueObjectInput<>(path, serializer, encryptionService, dataInputStream, metadata);
 	}
 
-	private BlueObjectInput(Path path, BlueSerializer serializer, DataInputStream dataInputStream) {
-		LockManager<Path> lockManager = new LockManager<Path>();
+	private BlueObjectInput(Path path, BlueSerializer serializer, EncryptionServiceWrapper encryptionService, DataInputStream dataInputStream, BlueFileMetadata metadata) {
+		LockManager<Path> lockManager = new LockManager<>();
 		readLock = lockManager.acquireReadLock(path);
 		this.serializer = serializer;
+		this.encryptionService = encryptionService;
 		this.path = null;
 		this.dataInputStream = dataInputStream;
-	}
-
-	public Path getPath() {
-		return path;
+		this.metadata = metadata;
 	}
 
 	@Override
@@ -69,8 +88,8 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 				e.printStackTrace();
 			}
 		}
-		
-		if(readLock != null) {
+
+		if (readLock != null) {
 			readLock.close();
 		}
 	}
@@ -86,25 +105,34 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			next = nextValidObjectFromFile();
 		}
 		T response = next;
-		lastBytes = nextBytes;
+
+		lastRawBytes = nextRawBytes;
+		lastUnencryptedBytes = nextUnencryptedBytes;
 		next = null;
-		nextBytes = null;
+		nextRawBytes = null;
+		nextUnencryptedBytes = null;
 		return response;
 	}
 
-	public byte[] nextWithoutDeserializing() {
+	public byte[] nextRawBytesWithoutDeserializing() {
+		nextWithoutDeserializing();
+		return lastRawBytes;
+	}
+
+	public byte[] nextUnencryptedBytesWithoutDeserializing() {
+		nextWithoutDeserializing();
+		return lastUnencryptedBytes;
+	}
+
+	private void nextWithoutDeserializing() {
 		if (next == null) {
-			nextBytes = nextBytesFromFile();
+			setNextBytesFromFile();
 		}  // otherwise you've already peeked ahead
-		lastBytes = nextBytes;
-		byte[] response = nextBytes;
+		lastRawBytes = nextRawBytes;
+		lastUnencryptedBytes = nextUnencryptedBytes;
 		next = null;
-		nextBytes = null;
-		return response;
-	}
-
-	public byte[] getLastBytes() {
-		return lastBytes;
+		nextRawBytes = null;
+		nextUnencryptedBytes = null;
 	}
 
 	public T peek() {
@@ -115,50 +143,59 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	}
 
 	private T nextValidObjectFromFile() {
-		while(true) {
+		while (true) {
 			try {
 				return nextFromFile();
-			} catch(SerializationException t) {
+			} catch (SerializationException t) {
 				t.printStackTrace(); // Object was corrupted. Print stack trace but try loading the next one
 			}
 		}
 	}
 
 	private T nextFromFile() throws SerializationException {
-		nextBytes = nextBytesFromFile();
-		if (nextBytes == null) {
+		setNextBytesFromFile();
+		if (nextRawBytes == null) {
 			return null;
 		}
-		Object object = serializer.deserializeObjectFromByteArray(nextBytes);
+		Object object = serializer.deserializeObjectFromByteArray(nextUnencryptedBytes);
 		@SuppressWarnings("unchecked")
 		T t = (T) object;
 		return t;
 	}
 
-	protected byte[] nextBytesFromFile() {
+	protected void setNextBytesFromFile() {
 		if (dataInputStream == null) {
-			return null;
+			nextRawBytes = null;
+			nextUnencryptedBytes = null;
+			return;
 		}
 		try {
 			Integer objectLength = readInt();
-			if(objectLength == null) {
-				return null; //This means that we've reached the end of the file
+			if (objectLength == null) {
+				nextRawBytes = null;
+				nextUnencryptedBytes = null;
+				return; // This means that we've reached the end of the file
 			}
-			if(objectLength <= 0) {
+			if (objectLength <= 0) {
 				System.out.println("BlueDB Error: We just read in an object size of " + objectLength + " which doesn't make sense. We will skip this file since it must be corrupt: " + path);
-				return null;
+				nextRawBytes = null;
+				nextUnencryptedBytes = null;
+				return;
 			}
 			byte[] nextBytes = new byte[objectLength];
 			dataInputStream.readFully(nextBytes, 0, objectLength);
-			return nextBytes;
+			nextRawBytes = nextBytes;
+			nextUnencryptedBytes = encryptionService.decryptOrReturn(metadata, nextRawBytes);
 		} catch (EOFException e) {
-			return null;
+			nextRawBytes = null;
+			nextUnencryptedBytes = null;
 		} catch (IOException e) {
 			e.printStackTrace();
-			return null;
+			nextRawBytes = null;
+			nextUnencryptedBytes = null;
 		}
 	}
-	
+
 	/*
 	 * This is a copy of DataInputStream.readInt except that it returns null if the end of the file was reached
 	 * instead of throwing an exception. We noticed that reading through so many files in BlueDB was resulting
@@ -168,16 +205,30 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 	 * call it.
 	 */
 	private Integer readInt() throws IOException {
-        int ch1 = dataInputStream.read();
-        int ch2 = dataInputStream.read();
-        int ch3 = dataInputStream.read();
-        int ch4 = dataInputStream.read();
-        if ((ch1 | ch2 | ch3 | ch4) < 0)
-            return null;
-        return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
-    }
-
-	protected static DataInputStream openDataInputStream(File file) throws IOException {
-		return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+		int ch1 = dataInputStream.read();
+		int ch2 = dataInputStream.read();
+		int ch3 = dataInputStream.read();
+		int ch4 = dataInputStream.read();
+		if ((ch1 | ch2 | ch3 | ch4) < 0) {
+			return null;
+		}
+		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
 	}
+
+	public Path getPath() {
+		return path;
+	}
+
+	public BlueFileMetadata getMetadata() {
+		return metadata;
+	}
+
+	public byte[] getLastRawBytes() {
+		return lastRawBytes;
+	}
+
+	public byte[] getLastUnencryptedBytes() {
+		return lastUnencryptedBytes;
+	}
+
 }

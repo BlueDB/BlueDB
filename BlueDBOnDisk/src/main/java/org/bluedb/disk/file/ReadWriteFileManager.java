@@ -1,18 +1,24 @@
 package org.bluedb.disk.file;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.disk.encryption.EncryptionUtils;
+import org.bluedb.disk.metadata.BlueFileMetadata;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
+import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class ReadWriteFileManager extends ReadFileManager {
 
-	public ReadWriteFileManager(BlueSerializer serializer) {
-		super(serializer);
+	public ReadWriteFileManager(BlueSerializer serializer, EncryptionServiceWrapper encryptionService) {
+		super(serializer, encryptionService);
 	}
 
 	public void saveObject(Path path, Object o) throws BlueDbException {
@@ -20,7 +26,7 @@ public class ReadWriteFileManager extends ReadFileManager {
 		FileUtils.ensureDirectoryExists(path.toFile());
 		Path tmpPath = FileUtils.createTempFilePath(path);
 		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
-			writeBytes(tempFileLock, bytes);
+			writeBytes(tempFileLock, bytes, false);
 			try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
 				FileUtils.moveFile(tmpPath, targetFileLock);
 			}
@@ -30,10 +36,10 @@ public class ReadWriteFileManager extends ReadFileManager {
 	public void saveVersionedObject(Path folderPath, String filename, Object o) throws BlueDbException {
 		SimpleDateFormat postfixFormat = new SimpleDateFormat(TIMESTAMP_VERSION_FORMAT);
 		String postfix = postfixFormat.format(System.currentTimeMillis());
-		
+
 		saveObject(folderPath.resolve(filename + "_" + postfix), o);
 	}
-	
+
 	public void lockMoveFileUnlock(Path src, Path dst) throws BlueDbException {
 		try (BlueWriteLock<Path> lock = lockManager.acquireWriteLock(dst)) {
 			FileUtils.moveFile(src, lock);
@@ -48,19 +54,84 @@ public class ReadWriteFileManager extends ReadFileManager {
 	}
 
 	public <T> BlueObjectOutput<T> getBlueOutputStream(BlueWriteLock<Path> writeLock) throws BlueDbException {
-		return new BlueObjectOutput<T>(writeLock, serializer);
+		return new BlueObjectOutput<>(writeLock, serializer, encryptionService);
 	}
 
-	protected void writeBytes(BlueWriteLock<Path> writeLock, byte[] bytes) throws BlueDbException {
+	protected void writeBytes(BlueWriteLock<Path> writeLock, byte[] bytes, boolean forceSkipEncryption) throws BlueDbException {
 		Path path = writeLock.getKey();
-		File file = path.toFile();
-		try (FileOutputStream fos = new FileOutputStream(file)) {
+		try (DataOutputStream dos = FileUtils.openDataOutputStream(path.toFile())) {
+
+			BlueFileMetadata metadata = new BlueFileMetadata();
+			if (!forceSkipEncryption && encryptionService.isEncryptionEnabled()) {
+				String encryptionVersionKey = encryptionService.getCurrentEncryptionVersionKey();
+				metadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionVersionKey);
+				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
+			}
 			FileUtils.validateBytes(bytes);
-			fos.write(bytes);
-			fos.close();
+			writeMetadata(metadata, dos, path);
+			dos.write(bytes);
 		} catch (Throwable t) {
 			t.printStackTrace();
 			throw new BlueDbException("error writing to file " + path, t);
 		}
 	}
+
+	protected void writeMetadata(BlueFileMetadata metadata, DataOutputStream dos, Path path) throws BlueDbException {
+		try {
+			byte[] bytes = serializer.serializeObjectToByteArray(metadata);
+			dos.writeInt(bytes.length);
+			dos.write(bytes);
+		} catch (Throwable t) {
+			t.printStackTrace();
+			throw new BlueDbException("error writing metadata to file " + path, t);
+		}
+	}
+
+	public void makeCopy(Path srcPath, Path destPath) throws BlueDbException, IOException {
+		// Create file at destPath on the system if needed
+		destPath.toFile().getParentFile().mkdirs();
+		destPath.toFile().createNewFile();
+
+		try (
+				DataInputStream dis = FileUtils.openDataInputStream(srcPath.toFile());
+				DataOutputStream dos = FileUtils.openDataOutputStream(destPath.toFile())
+		) {
+			// Write metadata
+			BlueFileMetadata srcMetadata = readMetadata(dis);
+			BlueFileMetadata destMetadata = new BlueFileMetadata();
+			if (encryptionService.isEncryptionEnabled()) {
+				destMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, encryptionService.getCurrentEncryptionVersionKey());
+			}
+			writeMetadata(destMetadata, dos, destPath);
+
+			// Write bytes
+			byte[] rawBytes = FileUtils.readAllBytes(dis);
+			if (EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(srcMetadata, destMetadata)) {
+				dos.write(rawBytes);
+			} else {
+				byte[] bytes = encryptionService.decryptOrReturn(srcMetadata, rawBytes);
+				if (destMetadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
+					String encryptionVersionKey = destMetadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+					bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
+				}
+				dos.write(bytes);
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+			throw new BlueDbException("error making unencrypted copy from " + srcPath + " to " + destPath, t);
+		}
+	}
+
+	public void saveObjectUnencrypted(Path path, Object o) throws BlueDbException {
+		byte[] bytes = serializer.serializeObjectToByteArray(o);
+		FileUtils.ensureDirectoryExists(path.toFile());
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
+			writeBytes(tempFileLock, bytes, true);
+			try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
+				FileUtils.moveFile(tmpPath, targetFileLock);
+			}
+		}
+	}
+
 }

@@ -30,15 +30,15 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		metadata = getOrCreateMetadata();
-		fileManager = new ReadOnlyFileManager(serializer);
-		segmentManager = new ReadOnlySegmentManager<T>(collectionPath, fileManager, segmentSizeSettings.getConfig());
-		indexManager = new ReadOnlyIndexManager<T>(this, collectionPath);
+		fileManager = new ReadOnlyFileManager(serializer, db.getEncryptionService());
+		segmentManager = new ReadOnlySegmentManager<>(collectionPath, fileManager, segmentSizeSettings.getConfig());
+		indexManager = new ReadOnlyIndexManager<>(this, collectionPath);
 	}
 
 	@Override
 	protected ReadOnlyCollectionMetadata getOrCreateMetadata() {
 		if (metadata == null) {
-			metadata = new ReadOnlyCollectionMetadata(getPath());
+			metadata = new ReadOnlyCollectionMetadata(getPath(), this.encryptionService);
 		}
 		return metadata;
 	}
@@ -68,7 +68,7 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 		try {
 			return getExistingIndex(indexName, keyType);
 		} catch (NoSuchIndexException e1) {
-			return new FacadeIndexOnDisk<I, T>(() -> {
+			return new FacadeIndexOnDisk<>(() -> {
 				try {
 					return indexManager.getIndex(indexName, keyType);
 				} catch (BlueDbException e2) {
