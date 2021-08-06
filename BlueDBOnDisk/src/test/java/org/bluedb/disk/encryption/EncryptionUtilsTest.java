@@ -1,12 +1,18 @@
 package org.bluedb.disk.encryption;
 
 import java.util.Optional;
+
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class EncryptionUtilsTest {
+
+	@Test
+	public void test_constructor() {
+		new EncryptionUtils(); // this doesn't really test anything, it just makes code coverage 100%
+	}
 
 	@Test
 	public void test_getEncryptionVersionKey_nullMetadata_returnsEmptyOptional() {
@@ -121,6 +127,33 @@ public class EncryptionUtilsTest {
 		boolean actual = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(oldMetadata, newMetadata);
 		// Assert
 		assertFalse(actual);
+	}
+
+	@Test
+	public void test_shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes_bothFilesNull_returnsTrue() {
+		// Arrange
+		BlueFileMetadata metadataOfUnencryptedFile1 = null;
+		BlueFileMetadata metadataOfUnencryptedFile2 = null;
+		// Act
+		boolean actual = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(metadataOfUnencryptedFile1, metadataOfUnencryptedFile2);
+		boolean actualParamsSwitched = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(metadataOfUnencryptedFile2, metadataOfUnencryptedFile1);
+		// Assert
+		assertTrue(actual);
+		assertTrue(actualParamsSwitched);
+	}
+
+	@Test
+	public void test_shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes_oneFileNull_returnsFalse() {
+		// Arrange
+		BlueFileMetadata metadataOfEncryptedFile = new BlueFileMetadata();
+		metadataOfEncryptedFile.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, "valid-key");
+		BlueFileMetadata metadataOfUnencryptedFile = null;
+		// Act
+		boolean actual = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(metadataOfEncryptedFile, metadataOfUnencryptedFile);
+		boolean actualParamsSwitched = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(metadataOfUnencryptedFile, metadataOfEncryptedFile);
+		// Assert
+		assertFalse(actual);
+		assertFalse(actualParamsSwitched);
 	}
 
 }
