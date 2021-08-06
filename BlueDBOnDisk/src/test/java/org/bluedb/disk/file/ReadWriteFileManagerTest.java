@@ -359,7 +359,7 @@ public class ReadWriteFileManagerTest extends TestCase {
 	}
 
 	@Test
-	public void test_makeCopy_shouldNotSkipEncryption_successAndDecryptCalled() throws BlueDbException, IOException {
+	public void test_makeCopy_shouldNotSkipEncryption_decryptAndEncryptCalled() throws BlueDbException, IOException {
 		// Arrange
 		BlueSerializer mockSerializer = mock(BlueSerializer.class);
 		when(mockSerializer.serializeObjectToByteArray(anyObject())).thenReturn(new byte[] {1, 2, 3});
@@ -367,13 +367,35 @@ public class ReadWriteFileManagerTest extends TestCase {
 		when(mockEncryptionService.isEncryptionEnabled()).thenReturn(true);
 		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn("valid-key");
 		when(mockEncryptionService.decryptOrReturn(any(), any())).thenReturn(new byte[] {});
+		when(mockEncryptionService.encryptOrThrow(any(), any())).thenReturn(new byte[] {});
 		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
 
 		// Act
 		readWriteFileManager.makeCopy(testPath, testPath);
 
 		// Assert
-		verify(mockEncryptionService, times(1)).decryptOrReturn(any(), any());
+		verify(mockEncryptionService).decryptOrReturn(any(), any());
+		verify(mockEncryptionService).encryptOrThrow(any(), any());
+	}
+
+	@Test
+	public void test_makeCopy_shouldSkipEncryption_decryptAndEncryptNotCalled() throws BlueDbException, IOException {
+		// Arrange
+		BlueSerializer mockSerializer = mock(BlueSerializer.class);
+		when(mockSerializer.serializeObjectToByteArray(anyObject())).thenReturn(new byte[] {1, 2, 3});
+		EncryptionServiceWrapper mockEncryptionService = mock(EncryptionServiceWrapper.class);
+		when(mockEncryptionService.isEncryptionEnabled()).thenReturn(false);
+		when(mockEncryptionService.getCurrentEncryptionVersionKey()).thenReturn("valid-key");
+		when(mockEncryptionService.decryptOrReturn(any(), any())).thenReturn(new byte[] {});
+		when(mockEncryptionService.encryptOrThrow(any(), any())).thenReturn(new byte[] {});
+		ReadWriteFileManager readWriteFileManager = new ReadWriteFileManager(mockSerializer, mockEncryptionService);
+
+		// Act
+		readWriteFileManager.makeCopy(testPath, testPath);
+
+		// Assert
+		verify(mockEncryptionService, never()).decryptOrReturn(any(), any());
+		verify(mockEncryptionService, never()).encryptOrThrow(any(), any());
 	}
 
 	@Test
