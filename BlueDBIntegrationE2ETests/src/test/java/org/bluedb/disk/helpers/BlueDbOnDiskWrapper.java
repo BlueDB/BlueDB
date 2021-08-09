@@ -84,6 +84,31 @@ public class BlueDbOnDiskWrapper implements Closeable {
 		timeCollectionMetaData = getTimeCollection().getMetaData();
 	}
 
+	public BlueDbOnDiskWrapper(StartupOption startupOption, Path path) throws BlueDbException {
+		dbPath = path;
+		encryptionService = new SimpleEncryptionService();
+
+		switch (startupOption) {
+			case EncryptionEnabled:
+				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).withEncryptionService(encryptionService).build();
+				break;
+			case EncryptionDisabled:
+				encryptionService.setEncryptionEnabled(false);
+				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).withEncryptionService(encryptionService).build();
+				break;
+			default:
+				throw new IllegalStateException("Unexpected value: " + startupOption);
+		}
+		timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
+		hashGroupedCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
+		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
+		callCollection = (ReadWriteCollectionOnDisk<Call>) db.getCollectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
+		intCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
+		lockManager = timeCollection.getFileManager().getLockManager();
+		rollupScheduler = new RollupScheduler(timeCollection);
+		timeCollectionMetaData = getTimeCollection().getMetaData();
+	}
+
 	@Override
 	public void close() throws IOException {
 		Files.walk(dbPath)
