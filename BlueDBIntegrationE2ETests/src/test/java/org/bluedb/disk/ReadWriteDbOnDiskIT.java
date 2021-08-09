@@ -11,7 +11,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class ReadWriteDbOnDiskIT {
-	
+
 	@Test
 	public void encryptedDb_writeAndQueryValues_successfullyEncryptsAndDecrypts() throws IOException, BlueDbException {
 		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled)) {
@@ -25,7 +25,7 @@ public class ReadWriteDbOnDiskIT {
 
 			List<TestValue> expected = Collections.singletonList(value2Bob);
 			List<TestValue> actual = dbWrapper.getTimeCollection().query().where((v) -> v.getName().equals("Bob")).getList();
-			
+
 			assertEquals(expected, actual);
 		}
 	}
@@ -40,7 +40,7 @@ public class ReadWriteDbOnDiskIT {
 			BlueKey key2At2 = new TimeKey(2, 2);
 			TestValue value2Bob = new TestValue("Bob");
 			dbWrapper.getTimeCollection().insert(key2At2, value2Bob);
-			
+
 			dbWrapper.getEncryptionService().setEncryptionEnabled(false);
 
 			List<TestValue> expected = Collections.singletonList(value2Bob);
@@ -49,4 +49,5 @@ public class ReadWriteDbOnDiskIT {
 			assertEquals(expected, actual);
 		}
 	}
+
 }
