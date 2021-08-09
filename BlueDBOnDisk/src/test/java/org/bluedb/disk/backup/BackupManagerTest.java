@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -30,7 +29,6 @@ import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.file.BlueObjectInput;
-import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
@@ -55,7 +53,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BlueKey key1At1 = createKey(1, 1);
 		TestValue value1 = createValue("Anna");
 		getTimeCollection().insert(key1At1, value1);
-		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
+		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Collections.singletonList(getTimeCollection());
 
 		Path backedUpPath = createTempFolder().toPath();
 		BackupManager backupTask = db().getBackupManager();
