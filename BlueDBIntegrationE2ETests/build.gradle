@@ -7,8 +7,10 @@ repositories {
 }
 
 dependencies {
-	compile project(":BlueDB")
-	compile project(":BlueDBOnDisk")
+	testCompile project(":BlueDB")
+	testCompile project(":BlueDBOnDisk")
+	testCompile project(":BlueDBOnDisk").sourceSets.test.output
 	testImplementation group: 'org.mockito', name: 'mockito-all', version: mockitoVersion
-	testImplementation "junit:junit:4.12"
+	testImplementation group: 'org.jasypt', name: 'jasypt', version: '1.9.0'
+	testImplementation 'junit:junit:4.13.2'
 }
