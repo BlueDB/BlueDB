@@ -48,11 +48,19 @@ public class FileUtils {
 		return getFolderContentsExcludingTempFiles(path.toFile(), endsWithSuffix);
 	}
 
-	public static List<File> getFolderContentsExcludingTempFiles(File folder, FileFilter filter) {
+	public static DirectoryStream<Path> getFolderContentsExcludingTempFilesAsStream(Path path, String suffix) throws IOException {
+		FileFilter endsWithSuffix = (f) -> f.toPath().toString().endsWith(suffix);
+		return getFolderContentsExcludingTempFilesAsStream(path.toFile(), endsWithSuffix);
+	}
+
+	private static DirectoryStream<Path> getFolderContentsExcludingTempFilesAsStream(File folder, FileFilter filter) throws IOException {
 		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_NOT_TEMP_FILE.accept(p.toFile());
-		
+		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
+	}
+
+	public static List<File> getFolderContentsExcludingTempFiles(File folder, FileFilter filter) {
 		List<File> files = new LinkedList<File>();
-		try(DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile )){
+		try(DirectoryStream<Path> stream = getFolderContentsExcludingTempFilesAsStream(folder, filter)){
 			stream.iterator().forEachRemaining(p -> files.add(p.toFile()));
 		} catch (IOException ex) {
 			ex.printStackTrace();
