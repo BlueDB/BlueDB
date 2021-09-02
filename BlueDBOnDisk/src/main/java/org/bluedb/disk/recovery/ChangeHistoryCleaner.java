@@ -61,8 +61,11 @@ public class ChangeHistoryCleaner {
 			while (iterator.hasNext()) {
 				timestampedFiles.addAll(getNextBatchOfTimestampedFiles(iterator));
 				Collections.sort(timestampedFiles);
+				
 				int numFilesToDelete = Math.max(0, timestampedFiles.size() - completedChangeLimit);
 				List<TimeStampedFile> filesToDelete = timestampedFiles.subList(0, numFilesToDelete);
+				timestampedFiles.removeAll(filesToDelete);
+
 				filesToDelete.forEach((f) -> f.getFile().delete());
 			}
 		} catch (IOException ex) {
