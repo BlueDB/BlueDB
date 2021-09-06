@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.SortedChangeSupplier;
 
@@ -29,7 +30,7 @@ public class SegmentBatch<T extends Serializable> {
 		this.existingChunkRanges = new HashSet<>(ReadableSegment.getAllFileRangesInOrder(segment.getPath()));
 	}
 
-	public Optional<Range> determineNextChunkRange() {
+	public Optional<Range> determineNextChunkRange() throws BlueDbException {
 		Optional<IndividualChange<T>> nextChange = sortedChanges.getNextChange();
 		if(nextChange.isPresent()) {
 			long firstChangeGroupingNumber = nextChange.get().getGroupingNumber();

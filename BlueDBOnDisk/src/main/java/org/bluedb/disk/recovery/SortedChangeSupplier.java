@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Optional;
 import java.util.Set;
 
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.segment.Range;
 
 /**
@@ -22,13 +23,13 @@ public interface SortedChangeSupplier<T extends Serializable> {
 	 * @param range - Lets you specify a range for the next change that you are looking for.
 	 * @return true if it found and is pointing at the next change in the given range, false if not.
 	 */
-	public boolean seekToNextChangeInRange(Range range);
+	public boolean seekToNextChangeInRange(Range range) throws BlueDbException;
 	
 	/**
 	 * @return the change that the cursor is currently pointing at without changing the cursor's position. Returns
 	 * empty if the cursor is not currently pointing at a change.
 	 */
-	public Optional<IndividualChange<T>> getNextChange();
+	public Optional<IndividualChange<T>> getNextChange() throws BlueDbException;
 	
 	/**
 	 * 
@@ -36,7 +37,7 @@ public interface SortedChangeSupplier<T extends Serializable> {
 	 * @return true if the change at the current cursor position overlaps with the given range. This operation
 	 * does not move the cursor position.
 	 */
-	public default boolean nextChangeOverlapsRange(Range range) {
+	public default boolean nextChangeOverlapsRange(Range range) throws BlueDbException {
 		Optional<IndividualChange<T>> nextChange = getNextChange();
 		return nextChange.isPresent() && nextChange.get().overlaps(range);
 	}
@@ -47,7 +48,7 @@ public interface SortedChangeSupplier<T extends Serializable> {
 	 * @param range - The range to check.
 	 * @return true if more than one change is left in the given range. Else false.
 	 */
-	public boolean hasMoreThanOneChangeLeftInRange(Range range);
+	public boolean hasMoreThanOneChangeLeftInRange(Range range) throws BlueDbException;
 
 	/**
 	 * Finds all of the grouping numbers for the remaining changes before or at the given maxGroupingNumber, including
@@ -56,22 +57,22 @@ public interface SortedChangeSupplier<T extends Serializable> {
 	 * @return a all of the grouping numbers for the remaining changes before or at the given 
 	 * maxGroupingNumber, including the change at the current cursor location.
 	 */
-	public Set<Long> findGroupingNumbersForNextChangesBeforeOrAtGroupingNumber(long maxGroupingNumber);
+	public Set<Long> findGroupingNumbersForNextChangesBeforeOrAtGroupingNumber(long maxGroupingNumber) throws BlueDbException;
 
 	/**
 	 * Saves a cursor position that will result in a seek starting to search from the change at the current cursor position.
 	 * This allows you to come back to this position later.
 	 */
-	public void setCursorCheckpoint();
+	public void setCursorCheckpoint() throws BlueDbException;
 	
 	/**
 	 * Sets the cursor position to the last checkpoint. If no checkpoint has been set then the next seek
 	 * will start searching from the beginning of the changes.
 	 */
-	public void setCursorToLastCheckpoint();
+	public void setCursorToLastCheckpoint() throws BlueDbException;
 	
 	/**
 	 * Resets the cursor position so that the next seek will start searching from the beginning of the changes.
 	 */
-	public void setCursorToBeginning();
+	public void setCursorToBeginning() throws BlueDbException;
 }

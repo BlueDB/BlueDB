@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.segment.Range;
@@ -49,15 +50,15 @@ public abstract class SortedChangeSupplierTest {
 	
 	private SortedChangeSupplier<? extends Serializable> sortedChangeSupplier;
 	
-	protected abstract SortedChangeSupplier<TestValue> createSortedChangeSupplier();
+	protected abstract SortedChangeSupplier<TestValue> createSortedChangeSupplier() throws Exception;
 	
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		this.sortedChangeSupplier = createSortedChangeSupplier();
 	}
 	
 	@Test
-	public void test_basicIterationThroughAllChangesWorks() {
+	public void test_basicIterationThroughAllChangesWorks() throws BlueDbException {
 		Range allInclusiveRange = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
 		
 		assertTrue(sortedChangeSupplier.seekToNextChangeInRange(allInclusiveRange));
@@ -91,7 +92,7 @@ public abstract class SortedChangeSupplierTest {
 	}
 	
 	@Test
-	public void test_iterationByRangeWorks() {
+	public void test_iterationByRangeWorks() throws BlueDbException {
 		Range range = new Range(0, 9);
 		
 		assertTrue(sortedChangeSupplier.seekToNextChangeInRange(range));
@@ -142,7 +143,7 @@ public abstract class SortedChangeSupplierTest {
 	}
 	
 	@Test
-	public void test_seekToSpecificRange() {
+	public void test_seekToSpecificRange() throws BlueDbException {
 		Range range = new Range(75, 120);
 		assertTrue(sortedChangeSupplier.seekToNextChangeInRange(range));
 		assertEquals(change4_15_to75, sortedChangeSupplier.getNextChange().orElse(null));
@@ -156,7 +157,7 @@ public abstract class SortedChangeSupplierTest {
 	}
 	
 	@Test
-	public void test_findGroupingNumbers() {
+	public void test_findGroupingNumbers() throws BlueDbException {
 		Set<Long> allGroupingNumbers = new HashSet<>(Arrays.asList((long)1, (long)10, (long)15, (long)25, (long)27, (long)32, (long)150));
 		Set<Long> allGroupingNumbersBeforeOrAt27 = new HashSet<>(Arrays.asList((long)1, (long)10, (long)15, (long)25, (long)27));
 		Set<Long> allGroupingNumbersAfter10BeforeOrAt32 = new HashSet<>(Arrays.asList((long)15, (long)25, (long)27, (long)32));
@@ -173,7 +174,7 @@ public abstract class SortedChangeSupplierTest {
 	}
 	
 	@Test
-	public void test_setCursorCheckpoint() {
+	public void test_setCursorCheckpoint() throws BlueDbException {
 		/*
 		 * The batch change application process iterates through the changes more like this. It does one segment, then
 		 * moves to the next segment. However, the next segment might contain changes from previous segments that overlap
@@ -316,7 +317,7 @@ public abstract class SortedChangeSupplierTest {
 	}
 	
 	@Test
-	public void test_setCursorToBeginning() {
+	public void test_setCursorToBeginning() throws BlueDbException {
 		assertTrue(sortedChangeSupplier.seekToNextChangeInRange(new Range(150, 160)));
 		assertEquals(change8_150to165, sortedChangeSupplier.getNextChange().orElse(null));
 		sortedChangeSupplier.setCursorToBeginning();
@@ -326,7 +327,7 @@ public abstract class SortedChangeSupplierTest {
 	}
 	
 	@Test
-	public void test_nextRangeOverlaps() {
+	public void test_nextRangeOverlaps() throws BlueDbException {
 		assertFalse(sortedChangeSupplier.nextChangeOverlapsRange(new Range(0, 10)));
 		
 		assertTrue(sortedChangeSupplier.seekToNextChangeInRange(new Range(80, 90)));

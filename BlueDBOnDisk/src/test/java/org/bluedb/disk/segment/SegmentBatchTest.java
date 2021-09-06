@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
-
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.TestValue;
@@ -61,7 +61,7 @@ public class SegmentBatchTest {
 	List<IndividualChange<TestValue>> inserts4 = Arrays.asList(insert4At4);
 
 	@Test
-	public void test_breakIntoChunks_cappedByExistingChunk() {
+	public void test_breakIntoChunks_cappedByExistingChunk() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|o|
 		// proposed: |x|x|-|-|x|-|-|-|
@@ -85,7 +85,7 @@ public class SegmentBatchTest {
 
 
 	@Test
-	public void test_breakIntoChunks_overlapsExistingChunk() {
+	public void test_breakIntoChunks_overlapsExistingChunk() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |o|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|-|x|-|-|-|
@@ -110,7 +110,7 @@ public class SegmentBatchTest {
 	}
 
 	@Test
-	public void test_breakIntoChunks_empty() {
+	public void test_breakIntoChunks_empty() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |-|-|-|-|-|-|-|-|
@@ -123,7 +123,7 @@ public class SegmentBatchTest {
 	}
 
 	@Test
-	public void test_breakIntoChunks_noExistingChunks() {
+	public void test_breakIntoChunks_noExistingChunks() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|-|x|-|-|-|
@@ -144,7 +144,7 @@ public class SegmentBatchTest {
 	}
 
 	@Test
-	public void test_breakIntoChunks_noExistingChunks2() {
+	public void test_breakIntoChunks_noExistingChunks2() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|x|-|-|-|-|
@@ -165,7 +165,7 @@ public class SegmentBatchTest {
 	}
 
 	@Test
-	public void test_breakIntoChunks_multipleAtOneGroupingNumber() {
+	public void test_breakIntoChunks_multipleAtOneGroupingNumber() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |X|-|-|-|-|-|-|-|
