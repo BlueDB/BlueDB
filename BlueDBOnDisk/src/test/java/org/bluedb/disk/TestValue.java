@@ -45,6 +45,14 @@ public class TestValue implements Serializable {
 	public String toString() {
 		return name + " has " + cupcakes + " cupcakes";
 	}
+	
+	public TestValue clone() {
+		return new TestValue(this.name, this.cupcakes);
+	}
+	
+	public TestValue cloneWithNewCupcakeCount(int cupcakes) {
+		return new TestValue(this.name, cupcakes);
+	}
 
 	@Override
 	public boolean equals(Object obj) {

@@ -5,8 +5,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
 import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
@@ -37,11 +40,6 @@ public class ReadWriteSegmentManager<T extends Serializable> extends ReadableSeg
 		return getSegment(groupingNumber);
 	}
 
-	public ReadWriteSegment<T> getSegmentAfter(ReadWriteSegment<T> segment) {
-		long groupingNumber = segment.getRange().getEnd() + 1;
-		return getSegment(groupingNumber);
-	}
-
 	@Override
 	public ReadWriteSegment<T> getSegment(long groupingNumber) {
 		Path segmentPath = pathManager.getSegmentPath(groupingNumber);
@@ -68,5 +66,25 @@ public class ReadWriteSegmentManager<T extends Serializable> extends ReadableSeg
 				.collect(Collectors.toList());
 	}
 
-
+	public void applyChanges(SortedChangeSupplier<T> sortedChangeSupplier) throws BlueDbException {
+		sortedChangeSupplier.setCursorToBeginning();
+		
+		long minStartTime = Long.MIN_VALUE;
+		while(sortedChangeSupplier.seekToNextChangeInRange(new Range(minStartTime, Long.MAX_VALUE))) {
+			sortedChangeSupplier.setCursorCheckpoint(); //We shouldn't ever have to look at changes before this point again
+			
+			/*
+			 * The first change will help us discover what segment to apply the next changes to. Unless the first change
+			 * overlaps into the next segment and we've already handled its first segment. In that case, just move
+			 * to the next segment.
+			 */
+			IndividualChange<T> change = sortedChangeSupplier.getNextChange().get();
+			ReadWriteSegment<T> segment = getSegment(Math.max(change.getGroupingNumber(), minStartTime));
+			
+			segment.applyChanges(sortedChangeSupplier);
+			
+			minStartTime = segment.getRange().getEnd() + 1; //Don't look at anything before this range
+			sortedChangeSupplier.setCursorToLastCheckpoint();
+		}
+	}
 }

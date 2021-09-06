@@ -5,8 +5,8 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -15,11 +15,11 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.Blutils.CheckedFunction;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
-import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
-import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 import org.bluedb.disk.segment.writer.BatchWriter;
@@ -105,17 +105,19 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 	}
 
 
-	public void applyChanges(LinkedList<IndividualChange<T>> changeQueueForSegment) throws BlueDbException {
-		if(changeQueueForSegment.size() > 1) {
+	public void applyChanges(SortedChangeSupplier<T> sortedChangeSupplier) throws BlueDbException {
+		if(sortedChangeSupplier.hasMoreThanOneChangeLeftInRange(getRange())) {
 			performPreBatchRollups(); //If we're inserting many items into the segment then lets rollup at least one level first
 		}
-		SegmentBatch<T> segmentBatch = new SegmentBatch<>(changeQueueForSegment);
-		List<Range> existingChunkRanges = getAllFileRangesInOrder(getPath());
-		List<ChunkBatch<T>> chunkBatches = segmentBatch.breakIntoChunks(existingChunkRanges, this);
-		for (ChunkBatch<T> chunkBatch: chunkBatches) {
-			String fileName = chunkBatch.getRange().toUnderscoreDelimitedString();
+		
+		SegmentBatch<T> segmentBatch = new SegmentBatch<>(sortedChangeSupplier, this);
+		
+		Optional<Range> chunkRange = segmentBatch.determineNextChunkRange();
+		while(chunkRange.isPresent()) {
+			String fileName = chunkRange.get().toUnderscoreDelimitedString();
 			Path path = Paths.get(segmentPath.toString(), fileName);
-			modifyChunk(path, new BatchWriter<T>(chunkBatch.getChangesInOrder()));
+			modifyChunk(path, new BatchWriter<T>(sortedChangeSupplier, chunkRange.get()));
+			chunkRange = segmentBatch.determineNextChunkRange();
 		}
 	}
 

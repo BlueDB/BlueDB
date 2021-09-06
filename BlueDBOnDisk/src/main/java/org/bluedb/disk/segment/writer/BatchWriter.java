@@ -1,40 +1,41 @@
 package org.bluedb.disk.segment.writer;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.LinkedList;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.encryption.EncryptionUtils;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
-import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.validation.SerializationException;
 
 public class BatchWriter<T extends Serializable> implements StreamingWriter<T> {
 
-	LinkedList<IndividualChange<T>> changes;
+	private SortedChangeSupplier<T> sortedChanges; 
+	private Range range;
 
-	public BatchWriter(Collection<IndividualChange<T>> changes) {
-		this.changes = new LinkedList<>(changes);
+	public BatchWriter(SortedChangeSupplier<T> sortedChanges, Range range) {
+		this.sortedChanges = sortedChanges;
+		this.range = range;
 	}
 
 	public void process(BlueObjectInput<BlueEntity<T>> input, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
 		boolean shouldSkipEncryptionForUnchangedData = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(input.getMetadata(), output.getMetadata());
-		while (input.hasNext() && !changes.isEmpty()) {
+		while (input.hasNext() && sortedChanges.nextChangeOverlapsRange(range)) {
 			BlueKey peekFromInput = input.peek().getKey();
-			BlueKey peekFromChanges = changes.peek().getKey();
+			BlueKey peekFromChanges = sortedChanges.getNextChange().get().getKey();
 
 			if (peekFromInput.equals(peekFromChanges)) {
 				if (shouldSkipEncryptionForUnchangedData) {
-					replaceItemWithNextChange(input.nextRawBytesWithoutDeserializing(), changes, output, true);
+					replaceItemWithNextChange(input.nextRawBytesWithoutDeserializing(), output, true);
 				} else {
-					replaceItemWithNextChange(input.nextUnencryptedBytesWithoutDeserializing(), changes, output, false);
+					replaceItemWithNextChange(input.nextUnencryptedBytesWithoutDeserializing(), output, false);
 				}
 			} else if (peekFromInput.compareTo(peekFromChanges) > 0) {
-				writeNextChange(changes, output);
+				writeNextChange(output);
 			} else {
 				if (shouldSkipEncryptionForUnchangedData) {
 					output.writeBytesAndForceSkipEncryption(input.nextRawBytesWithoutDeserializing());
@@ -52,17 +53,18 @@ public class BatchWriter<T extends Serializable> implements StreamingWriter<T> {
 				output.writeBytesAndAllowEncryption(input.nextUnencryptedBytesWithoutDeserializing());
 			}
 		}
-		while (!changes.isEmpty()) {
-			writeNextChange(changes, output);
+		while (sortedChanges.nextChangeOverlapsRange(range)) {
+			writeNextChange(output);
 		}
 	}
 
-	private static <T extends Serializable> void writeNextChange(LinkedList<IndividualChange<T>> changes, BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
-		replaceItemWithNextChange(null, changes, output, false);
+	private void writeNextChange(BlueObjectOutput<BlueEntity<T>> output) throws BlueDbException {
+		replaceItemWithNextChange(null, output, false);
 	}
 
-	private static <T extends Serializable> void replaceItemWithNextChange(byte[] originalItemBytes, LinkedList<IndividualChange<T>> changes, BlueObjectOutput<BlueEntity<T>> output, boolean shouldSkipEncryptionForUnchangedData) throws BlueDbException {
-		BlueEntity<T> newEntity = changes.poll().getNewEntity();
+	private void replaceItemWithNextChange(byte[] originalItemBytes, BlueObjectOutput<BlueEntity<T>> output, boolean shouldSkipEncryptionForUnchangedData) throws BlueDbException {
+		BlueEntity<T> newEntity = sortedChanges.getNextChange().get().getNewEntity();
+		sortedChanges.seekToNextChangeInRange(range);
 
 		if (newEntity != null) {
 			try {

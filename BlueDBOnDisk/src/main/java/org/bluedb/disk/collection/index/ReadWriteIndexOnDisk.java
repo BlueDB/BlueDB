@@ -17,12 +17,12 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.BatchUtils;
 import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.recovery.InMemorySortedChangeSupplier;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
@@ -109,7 +109,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 			.flatMap(value -> StreamUtils.stream(getSortedIndexChangesForValueUpdate(value.getKey(), null, value.getValue())))
 			.sorted()
 			.collect(Collectors.toList());
-		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
+		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges)); //TODO: Should be passed in
 	}
 
 	public void indexChanges(Collection<IndividualChange<T>> changes) throws BlueDbException {
@@ -122,11 +122,12 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		 * be able to calculate the proper index changes. However, this should be functioning better than it was
 		 * before. It wasn't ever removing any indices, it was only adding the ones for the new values.
 		 */
-		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
+		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges)); //TODO: Should be passed in
 	}
 
 	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
-		BatchUtils.apply(getSegmentManager(), getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueUpdate(key, oldValue, newValue);
+		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges)); //TODO: Should be passed in
 	}
 
 	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueUpdate(BlueKey valueKey, T oldValue, T newValue) {
