@@ -106,10 +106,6 @@ public class RecoveryManager<T extends Serializable> {
 		return changes;
 	}
 
-	public List<File> getCompletedChangeFiles() {
-		return FileUtils.getFolderContentsExcludingTempFiles(historyFolderPath, SUFFIX_COMPLETE);
-	}
-
 	public DirectoryStream<Path> getCompletedChangeFilesAsStream() throws IOException {
 		return FileUtils.getFolderContentsExcludingTempFilesAsStream(historyFolderPath, SUFFIX_COMPLETE);
 	}

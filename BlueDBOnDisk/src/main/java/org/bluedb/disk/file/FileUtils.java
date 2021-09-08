@@ -53,20 +53,20 @@ public class FileUtils {
 		return getFolderContentsExcludingTempFilesAsStream(path.toFile(), endsWithSuffix);
 	}
 
-	private static DirectoryStream<Path> getFolderContentsExcludingTempFilesAsStream(File folder, FileFilter filter) throws IOException {
-		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_NOT_TEMP_FILE.accept(p.toFile());
-		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
-	}
-
 	public static List<File> getFolderContentsExcludingTempFiles(File folder, FileFilter filter) {
 		List<File> files = new LinkedList<File>();
 		try(DirectoryStream<Path> stream = getFolderContentsExcludingTempFilesAsStream(folder, filter)){
 			stream.iterator().forEachRemaining(p -> files.add(p.toFile()));
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			
 		}
 		
 		return files;
+	}
+	
+	private static DirectoryStream<Path> getFolderContentsExcludingTempFilesAsStream(File folder, FileFilter filter) throws IOException {
+		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_NOT_TEMP_FILE.accept(p.toFile());
+		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
 	}
 
 	public static void ensureFileExists(Path path) throws BlueDbException {

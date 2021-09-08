@@ -36,6 +36,10 @@ public class ChangeHistoryCleaner {
 	public void setRetentionLimit(int completedChangeLimit) {
 		this.completedChangeLimit = completedChangeLimit;
 	}
+	
+	public void setCompletedChangeBatchRemovalLimit(int completedChangeBatchRemovalLimit) {
+		this.completedChangeBatchRemovalLimit = completedChangeBatchRemovalLimit;
+	}
 
 	public void placeHoldOnHistoryCleanup() {
 		holdsOnHistoryCleanup.incrementAndGet();
@@ -45,28 +49,26 @@ public class ChangeHistoryCleaner {
 		holdsOnHistoryCleanup.decrementAndGet();
 	}
 
-	public List<TimeStampedFile> getCompletedTimeStampedFiles() {
-		List<File> historicChangeFiles = recoveryManager.getCompletedChangeFiles();
-		List<TimeStampedFile> timestampedFiles = Blutils.mapIgnoringExceptions(historicChangeFiles, (f) -> new TimeStampedFile(f) );
-		return timestampedFiles;
-	}
-
 	public void cleanupHistory() {
 		if (holdsOnHistoryCleanup.get() > 0) {
 			return;
 		}
 		try (DirectoryStream<Path> completedChangeFileStream = recoveryManager.getCompletedChangeFilesAsStream()){
-			Iterator<Path> iterator = completedChangeFileStream.iterator();
+			Iterator<Path> completedChangeFilesIterator = completedChangeFileStream.iterator();
 			List<TimeStampedFile> timestampedFiles = new LinkedList<TimeStampedFile>();
-			while (iterator.hasNext()) {
-				timestampedFiles.addAll(getNextBatchOfTimestampedFiles(iterator));
+			while (completedChangeFilesIterator.hasNext()) {
+				timestampedFiles.addAll(getNextBatchOfTimestampedFiles(completedChangeFilesIterator));
 				Collections.sort(timestampedFiles);
 				
 				int numFilesToDelete = Math.max(0, timestampedFiles.size() - completedChangeLimit);
-				List<TimeStampedFile> filesToDelete = timestampedFiles.subList(0, numFilesToDelete);
-				timestampedFiles.removeAll(filesToDelete);
-
-				filesToDelete.forEach((f) -> f.getFile().delete());
+				int deleteCount = 0;
+				Iterator<TimeStampedFile> activeFilesIterator = timestampedFiles.iterator();
+				while (activeFilesIterator.hasNext() && deleteCount < numFilesToDelete) {
+					TimeStampedFile file = activeFilesIterator.next();
+					file.getFile().delete();
+					activeFilesIterator.remove();
+					deleteCount++;
+				}
 			}
 		} catch (IOException ex) {
 			
