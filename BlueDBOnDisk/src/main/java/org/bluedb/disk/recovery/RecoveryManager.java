@@ -1,7 +1,9 @@
 package org.bluedb.disk.recovery;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -104,8 +106,8 @@ public class RecoveryManager<T extends Serializable> {
 		return changes;
 	}
 
-	public List<File> getCompletedChangeFiles() {
-		return FileUtils.getFolderContentsExcludingTempFiles(historyFolderPath, SUFFIX_COMPLETE);
+	public DirectoryStream<Path> getCompletedChangeFilesAsStream() throws IOException {
+		return FileUtils.getFolderContentsExcludingTempFilesAsStream(historyFolderPath, SUFFIX_COMPLETE);
 	}
 
 	public List<File> getPendingChangeFiles() {

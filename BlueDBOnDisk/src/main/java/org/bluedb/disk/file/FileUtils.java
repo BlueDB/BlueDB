@@ -11,12 +11,15 @@ import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -45,10 +48,25 @@ public class FileUtils {
 		return getFolderContentsExcludingTempFiles(path.toFile(), endsWithSuffix);
 	}
 
+	public static DirectoryStream<Path> getFolderContentsExcludingTempFilesAsStream(Path path, String suffix) throws IOException {
+		FileFilter endsWithSuffix = (f) -> f.toPath().toString().endsWith(suffix);
+		return getFolderContentsExcludingTempFilesAsStream(path.toFile(), endsWithSuffix);
+	}
+
 	public static List<File> getFolderContentsExcludingTempFiles(File folder, FileFilter filter) {
-		FileFilter passesFilterAndIsNotTempFile = (f) -> filter.accept(f) && IS_NOT_TEMP_FILE.accept(f);
-		File[] folderContentsArray = folder.listFiles(passesFilterAndIsNotTempFile);
-		return toList(folderContentsArray);
+		List<File> files = new LinkedList<File>();
+		try(DirectoryStream<Path> stream = getFolderContentsExcludingTempFilesAsStream(folder, filter)){
+			stream.iterator().forEachRemaining(p -> files.add(p.toFile()));
+		} catch (IOException ex) {
+			
+		}
+		
+		return files;
+	}
+	
+	private static DirectoryStream<Path> getFolderContentsExcludingTempFilesAsStream(File folder, FileFilter filter) throws IOException {
+		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_NOT_TEMP_FILE.accept(p.toFile());
+		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
 	}
 
 	public static void ensureFileExists(Path path) throws BlueDbException {
