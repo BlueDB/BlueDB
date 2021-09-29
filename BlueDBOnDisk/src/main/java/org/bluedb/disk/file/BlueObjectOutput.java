@@ -103,7 +103,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		}
 		try {
 			if (!forceSkipEncryption && metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
-				String encryptionVersionKey = metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+				String encryptionVersionKey = metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY).get();
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
 			}
 			FileUtils.validateBytes(bytes);
@@ -127,7 +127,7 @@ public class BlueObjectOutput<T> implements Closeable {
 		try {
 			byte[] bytes = serializer.serializeObjectToByteArray(value);
 			if (metadata.containsKey(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY)) {
-				String encryptionVersionKey = metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+				String encryptionVersionKey = metadata.get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY).get();
 				bytes = encryptionService.encryptOrThrow(encryptionVersionKey, bytes);
 			}
 			int len = bytes.length;
@@ -184,6 +184,10 @@ public class BlueObjectOutput<T> implements Closeable {
 
 	public BlueFileMetadata getMetadata() {
 		return metadata;
+	}
+
+	public void setMetadataValue(BlueFileMetadataKey key, String value) {
+		metadata.put(key, value);
 	}
 
 }

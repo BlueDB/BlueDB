@@ -1,6 +1,5 @@
 package org.bluedb.disk.file;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -230,7 +229,7 @@ public class BlueObjectInputTest extends TestCase {
 	@Test
 	public void test_nextFromFile_IOException() {
 		AtomicBoolean readCalled = new AtomicBoolean(false);
-		DataInputStream dataInputStream = createDataInputStreamThatThrowsExceptionOnRead(readCalled);
+		BlueInputStream dataInputStream = createDataInputStreamThatThrowsExceptionOnRead(readCalled);
 		BlueObjectInput<TestValue> inStream = BlueObjectInput.getTestInput(targetFilePath, serializer, encryptionService, dataInputStream, new BlueFileMetadata());
 		assertFalse(readCalled.get());
 		assertNull(inStream.next());
@@ -243,7 +242,7 @@ public class BlueObjectInputTest extends TestCase {
 		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(targetFilePath)) {
 			Path path = readLock.getKey();
 			AtomicBoolean streamClosed = new AtomicBoolean(false);
-			DataInputStream inStream = createDataInputStreamThatThrowsExceptionOnClose(streamClosed);
+			BlueInputStream inStream = createDataInputStreamThatThrowsExceptionOnClose(streamClosed);
 			BlueObjectInput<TestValue> mockStream = BlueObjectInput.getTestInput(path, serializer, encryptionService, inStream, new BlueFileMetadata());
 			mockStream.close();  // BlueObjectInput should handle the exception
 			assertTrue(streamClosed.get());  // make sure it actually closed the underlying stream
@@ -269,14 +268,13 @@ public class BlueObjectInputTest extends TestCase {
 
 	@Test
 	public void test_constructor_exception() throws Exception {
-		@SuppressWarnings("unchecked")
-		BlueReadLock<Path> lock = Mockito.mock(BlueReadLock.class);
-		Mockito.verify(lock, Mockito.times(0)).close();
+		BlueInputStream inputStream = Mockito.mock(BlueInputStream.class);
+		Mockito.verify(inputStream, Mockito.times(0)).close();
 		try {
 			@SuppressWarnings({ "unused", "resource" })
-			BlueObjectInput<TestValue> stream = new BlueObjectInput<>(lock, null, null);
+			BlueObjectInput<TestValue> stream = new BlueObjectInput<>(null, null, null, inputStream);
 		} catch (BlueDbException e) {}
-		Mockito.verify(lock, Mockito.times(1)).close();
+		Mockito.verify(inputStream, Mockito.times(1)).close();
 	}
 
 
@@ -287,7 +285,7 @@ public class BlueObjectInputTest extends TestCase {
 		return file;
 	}
 
-	private static DataInputStream createDataInputStreamThatThrowsExceptionOnRead(AtomicBoolean isRead){
+	private static BlueInputStream createDataInputStreamThatThrowsExceptionOnRead(AtomicBoolean isRead){
 		InputStream inputStream = new InputStream() {
 			@Override
 			public int read() throws IOException {
@@ -295,10 +293,10 @@ public class BlueObjectInputTest extends TestCase {
 				throw new IOException();
 			}
 		};
-		return new DataInputStream(inputStream);
+		return new BlueDataInputStream(inputStream);
 	}
 
-	private static DataInputStream createDataInputStreamThatThrowsExceptionOnClose(AtomicBoolean isClosed) {
+	private static BlueInputStream createDataInputStreamThatThrowsExceptionOnClose(AtomicBoolean isClosed) {
 		InputStream inputStream = new InputStream() {
 			@Override
 			public int read() throws IOException {
@@ -310,6 +308,6 @@ public class BlueObjectInputTest extends TestCase {
 				throw new IOException("fail!");
 			}
 		};
-		return new DataInputStream(inputStream);
+		return new BlueDataInputStream(inputStream);
 	}
 }

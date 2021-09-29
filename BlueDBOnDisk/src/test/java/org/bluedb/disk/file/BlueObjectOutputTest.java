@@ -67,7 +67,7 @@ public class BlueObjectOutputTest extends TestCase {
 				BlueWriteLock<Path> writeLock = lockManager.acquireWriteLock(targetFilePath);
 				BlueObjectOutput<TestValue> blueObjectOutput = new BlueObjectOutput<>(writeLock, serializer, mockEncryptionService)
 		) {
-			String actual = blueObjectOutput.getMetadata().get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+			String actual = blueObjectOutput.getMetadata().get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY).get();
 
 			// Assert
 			assertEquals(actual, expected);
@@ -84,7 +84,7 @@ public class BlueObjectOutputTest extends TestCase {
 
 		// Act
 		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.getTestOutput(targetFilePath, serializer, mockEncryptionService, null)) {
-			String actual = blueObjectOutput.getMetadata().get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+			String actual = blueObjectOutput.getMetadata().get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY).get();
 
 			// Assert
 			assertEquals(actual, expected);
@@ -101,7 +101,7 @@ public class BlueObjectOutputTest extends TestCase {
 
 		// Act
 		try (BlueObjectOutput<TestValue> blueObjectOutput = BlueObjectOutput.createWithoutLock(targetFilePath, serializer, mockEncryptionService)) {
-			String actual = blueObjectOutput.getMetadata().get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY);
+			String actual = blueObjectOutput.getMetadata().get(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY).get();
 
 			// Assert
 			assertEquals(actual, expected);

@@ -13,7 +13,7 @@ import org.bluedb.disk.segment.Range;
  * methods to search in order for the next changes you want to process.
  * @param <T> - The object type that is being updated.
  */
-public interface SortedChangeSupplier<T extends Serializable> {
+public interface SortedChangeSupplier<T extends Serializable> extends AutoCloseable {
 	
 	/**
 	 * Skips the change at the current cursor location and reads through the changes in order until it finds the next
@@ -75,4 +75,7 @@ public interface SortedChangeSupplier<T extends Serializable> {
 	 * Resets the cursor position so that the next seek will start searching from the beginning of the changes.
 	 */
 	public void setCursorToBeginning() throws BlueDbException;
+	
+	@Override
+	public void close();
 }

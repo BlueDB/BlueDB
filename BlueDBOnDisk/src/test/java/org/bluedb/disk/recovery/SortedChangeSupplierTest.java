@@ -48,7 +48,7 @@ public abstract class SortedChangeSupplierTest {
 	
 	protected static final List<IndividualChange<TestValue>> changeList = Arrays.asList(change1_1To50, change2_10to60, change3_10To50, change4_15_to75, change5_25to28, change6_27to110, change7_32_to_90, change8_150to165);
 	
-	private SortedChangeSupplier<? extends Serializable> sortedChangeSupplier;
+	protected SortedChangeSupplier<? extends Serializable> sortedChangeSupplier;
 	
 	protected abstract SortedChangeSupplier<TestValue> createSortedChangeSupplier() throws Exception;
 	

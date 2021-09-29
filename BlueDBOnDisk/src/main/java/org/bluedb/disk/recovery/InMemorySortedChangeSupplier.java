@@ -95,4 +95,7 @@ public class InMemorySortedChangeSupplier<T extends Serializable> implements Sor
 		currentIndex = -1;
 		lastCheckpointIndex = -1;
 	}
+
+	@Override
+	public void close() { }
 }

@@ -1,16 +1,12 @@
 package org.bluedb.disk.file;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -72,6 +68,14 @@ public class FileUtils {
 		File parent = file.getParentFile();
 		if (parent != null) {
 			parent.mkdirs();
+		}
+	}
+	
+	public static Path createTempFileInDirectory(Path directory, String prefix) throws BlueDbException {
+		try {
+			return Files.createTempFile(directory, TEMP_FILE_PREFIX + prefix, null);
+		} catch(Throwable t) {
+			throw new BlueDbException("Failed to create temp file in directory " + directory + " with prefix " + prefix, t);
 		}
 	}
 
@@ -179,41 +183,6 @@ public class FileUtils {
 	
 	public static DataOutputStream openDataOutputStream(File file) throws IOException {
 		return new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
-	}
-
-	protected static DataInputStream openDataInputStream(File file) throws IOException {
-		return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
-	}
-
-	/*
-	 * This is a copy of DataInputStream.readInt except that it returns null if the end of the file was reached
-	 * instead of throwing an exception. We noticed that reading through so many files in BlueDB was resulting
-	 * in TONS of EOFExceptions being thrown and caught which is a bit heavy. We could return an optional or
-	 * something but this is a really low level method that is going to be called a TON so I figured that
-	 * it is probably worth just handling a null return rather than creating a new object every time we
-	 * call it.
-	 */
-	public static Integer readInt(DataInputStream dataInputStream) throws IOException {
-		int ch1 = dataInputStream.read();
-		int ch2 = dataInputStream.read();
-		int ch3 = dataInputStream.read();
-		int ch4 = dataInputStream.read();
-		if ((ch1 | ch2 | ch3 | ch4) < 0) {
-			return null;
-		}
-		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
-	}
-
-	public static byte[] readAllBytes(InputStream is) throws IOException {
-		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-		int numBytesRead;
-		byte[] nextBytes = new byte[1024];
-		while ((numBytesRead = is.read(nextBytes, 0, nextBytes.length)) != -1) {
-			buffer.write(nextBytes, 0, numBytesRead);
-		}
-
-		buffer.flush();
-		return buffer.toByteArray();
 	}
 	
 	public static void validateFileBytes(Path file) throws BlueDbException {

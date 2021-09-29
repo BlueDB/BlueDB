@@ -1,12 +1,18 @@
 package org.bluedb.disk.recovery;
 
 import org.bluedb.disk.TestValue;
+import org.junit.After;
 
 public class InMemorySortedChangeSupplierTest extends SortedChangeSupplierTest {
 
 	@Override
 	protected SortedChangeSupplier<TestValue> createSortedChangeSupplier() {
 		return new InMemorySortedChangeSupplier<TestValue>(changeList);
+	}
+	
+	@After
+	public void after() {
+		sortedChangeSupplier.close();
 	}
 
 	/*

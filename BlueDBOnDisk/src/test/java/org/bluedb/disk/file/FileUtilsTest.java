@@ -25,7 +25,6 @@ public class FileUtilsTest extends TestCase {
 	LockManager<Path> lockManager;
 	private List<File> filesToDelete;
 	private Path testPath;
-	private Path testingFolderPath;
 
 	@Override
 	protected void setUp() throws Exception {
@@ -35,7 +34,6 @@ public class FileUtilsTest extends TestCase {
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
 		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
-		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		filesToDelete.add(testPath.toFile());
 	}
 
@@ -156,6 +154,23 @@ public class FileUtilsTest extends TestCase {
 		Path tempWithoutParent = FileUtils.createTempFilePath(withoutParent);
 		Path expectedTempWithoutParent = Paths.get("_tmp_target");
 		assertEquals(expectedTempWithoutParent, tempWithoutParent);
+	}
+	
+	@Test
+	public void test_createTempFileInDirectory() throws IOException, BlueDbException {
+		Path tempDirectory = Files.createTempDirectory("FileUtils#test_createTempFileInDirectory");
+		filesToDelete.add(tempDirectory.toFile());
+		
+		Path tmpFile = FileUtils.createTempFileInDirectory(tempDirectory, "my-test-tmp-file");
+		assertTrue(Files.exists(tmpFile));
+
+		Blutils.recursiveDelete(tempDirectory.toFile());
+		try {
+			FileUtils.createTempFileInDirectory(tempDirectory, "my-test-tmp-file");
+			fail();
+		} catch(BlueDbException e) {
+			//expected
+		}
 	}
 
 	@Test
@@ -399,15 +414,6 @@ public class FileUtilsTest extends TestCase {
 		}  catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	@Test
-	public void test_openDataInputStream() {
-		File nonExistentFile = Paths.get(testingFolderPath.toString(), "Santa_Clause").toFile();
-		try {
-			FileUtils.openDataInputStream(nonExistentFile);
-			fail();
-		} catch (IOException e) {}
 	}
 
 	private File createTempFile(File parentFolder, String fileName) throws IOException {
