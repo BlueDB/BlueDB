@@ -26,6 +26,7 @@ public class FileUtils {
 	
 	private final static String TEMP_FILE_PREFIX = "_tmp_";
 	private final static FileFilter IS_NOT_TEMP_FILE = (f) -> !f.getName().startsWith(TEMP_FILE_PREFIX);
+	private final static FileFilter IS_TEMP_FILE = (f) -> f.getName().startsWith(TEMP_FILE_PREFIX);
 
 	protected FileUtils() {}  // just to get test coverage to 100%
 
@@ -62,6 +63,11 @@ public class FileUtils {
 	
 	private static DirectoryStream<Path> getFolderContentsExcludingTempFilesAsStream(File folder, FileFilter filter) throws IOException {
 		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_NOT_TEMP_FILE.accept(p.toFile());
+		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
+	}
+	
+	public static DirectoryStream<Path> getTempFolderContentsAsStream(File folder, FileFilter filter) throws IOException {
+		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_TEMP_FILE.accept(p.toFile());
 		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
 	}
 

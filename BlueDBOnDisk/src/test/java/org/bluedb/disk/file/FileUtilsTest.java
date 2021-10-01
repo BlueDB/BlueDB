@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -33,7 +34,7 @@ public class FileUtilsTest extends TestCase {
 		ReadWriteFileManager fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
-		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
+		testPath = Files.createTempDirectory("test_" + this.getClass().getSimpleName());
 		filesToDelete.add(testPath.toFile());
 	}
 
@@ -75,6 +76,22 @@ public class FileUtilsTest extends TestCase {
 		assertListContainsFile(filesWithSuffix, fileWithSuffix);
 		assertListContainsFile(filesWithSuffix, fileWithSuffix2);
 		assertListDoesNotContainFile(filesWithSuffix,tempFile);
+	}
+	
+	@Test
+	public void test_getTempFolderContents() throws IOException {
+		Files.createDirectories(testPath);
+		
+		List<Path> filesForTest = new ArrayList<>();
+		filesForTest.add(Files.createFile(testPath.resolve("test_getTempFolderContents_0")));
+		filesForTest.add(Files.createFile(testPath.resolve("_tmp_test_getTempFolderContents_1")));
+		filesForTest.add(Files.createFile(testPath.resolve("test_getTempFolderContents_2")));
+		filesForTest.add(Files.createFile(testPath.resolve("_tmp_test_getTempFolderContents_3")));
+		
+		Iterator<Path> matchingFileIterator = FileUtils.getTempFolderContentsAsStream(testPath.toFile(), file -> file.getName().contains("test_getTempFolderContents")).iterator();
+		assertEquals(filesForTest.get(1).toAbsolutePath(), matchingFileIterator.next().toAbsolutePath());
+		assertEquals(filesForTest.get(3).toAbsolutePath(), matchingFileIterator.next().toAbsolutePath());
+		assertFalse(matchingFileIterator.hasNext());
 	}
 	
 	private void assertListContainsFile(List<File> filteredResult, File fileInQuestion) {
@@ -154,10 +171,12 @@ public class FileUtilsTest extends TestCase {
 	
 	@Test
 	public void test_exists() throws BlueDbException {
+		Path subDir = testPath.resolve("test_exists_subdir");
+		
 		assertFalse(FileUtils.exists(null));
-		assertFalse(FileUtils.exists(testPath));
-		FileUtils.ensureFileExists(testPath);
-		assertTrue(FileUtils.exists(testPath));
+		assertFalse(FileUtils.exists(subDir));
+		FileUtils.ensureFileExists(subDir);
+		assertTrue(FileUtils.exists(subDir));
 	}
 
 	@Test

@@ -1,6 +1,8 @@
 package org.bluedb.disk.collection.index;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
+import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
@@ -293,6 +296,36 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptyList, indexOnDisk.get(integerKey1));
 		assertEquals(emptyList, indexOnDisk.get(integerKey2));
 		assertEquals(justBob, indexOnDisk.get(integerKey3));
+	}
+
+	@Test
+	public void test_indexStartupCleansUpTempFiles() throws Exception {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+
+		Path indexPath = collection.getPath().resolve(".index").resolve("test_index");
+		Files.createDirectories(indexPath);
+		Path file1 = Files.createFile(indexPath.resolve("file1"));
+		Path file2 = Files.createFile(indexPath.resolve("_tmp_file2"));
+		Path file3 = Files.createFile(indexPath.resolve("file3"));
+		Path file4 = Files.createFile(indexPath.resolve("_tmp_file4"));
+		
+		collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		assertTrue(Files.exists(indexPath));
+		assertTrue(Files.exists(file1));
+		assertFalse(Files.exists(file2));
+		assertTrue(Files.exists(file3));
+		assertFalse(Files.exists(file4));
+	}
+
+	@Test
+	public void test_indexStartupCleanUpTempLockedFilesDoesntErrorOut() throws Exception {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+
+		Path indexPath = collection.getPath().resolve(".index").resolve("test_index");
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> index = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		Blutils.recursiveDelete(indexPath.toFile());
+		assertFalse(Files.exists(indexPath));
+		index.cleanupTempFiles(); //Shouldn't throw and exception if deleting the tmp files fails
 	}
 
 	@Test

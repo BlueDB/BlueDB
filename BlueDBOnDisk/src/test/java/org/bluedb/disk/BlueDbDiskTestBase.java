@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -22,9 +21,6 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
-import org.bluedb.disk.ReadWriteDbOnDisk;
-import org.bluedb.disk.BlueDbOnDiskBuilder;
-import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
@@ -78,10 +74,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	@Override
 	public void tearDown() throws Exception {
-		Files.walk(dbPath)
-		.sorted(Comparator.reverseOrder())
-		.map(Path::toFile)
-		.forEach(File::delete);
+		Blutils.recursiveDelete(dbPath.toFile());
 		for (File file: filesToDelete) {
 			Blutils.recursiveDelete(file);
 		}

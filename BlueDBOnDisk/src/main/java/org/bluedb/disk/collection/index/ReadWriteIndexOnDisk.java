@@ -1,6 +1,7 @@
 package org.bluedb.disk.collection.index;
 
 import java.io.Serializable;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -88,6 +89,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
 		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
 		rollupScheduler = collection.getRollupScheduler();
+		cleanupTempFiles();
 	}
 
 	public ReadWriteSegmentManager<BlueKey> getSegmentManager() {
@@ -192,5 +194,16 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		return StreamUtils.stream(keyExtractor.extractKeys(value))
 				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
 				.collect( Collectors.toList() );
+	}
+
+	protected void cleanupTempFiles() {
+		try {
+			DirectoryStream<Path> tempIndexFileStream = FileUtils.getTempFolderContentsAsStream(indexPath.toFile(), file -> true);
+			tempIndexFileStream.forEach(path -> {
+				path.toFile().delete();	
+			});
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
 	}
 }
