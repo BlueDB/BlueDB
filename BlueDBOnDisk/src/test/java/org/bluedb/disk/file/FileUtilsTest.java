@@ -157,20 +157,14 @@ public class FileUtilsTest extends TestCase {
 	}
 	
 	@Test
-	public void test_createTempFileInDirectory() throws IOException, BlueDbException {
+	public void test_createTempFilePathInDirectory() throws IOException, BlueDbException {
 		Path tempDirectory = Files.createTempDirectory("FileUtils#test_createTempFileInDirectory");
 		filesToDelete.add(tempDirectory.toFile());
 		
-		Path tmpFile = FileUtils.createTempFileInDirectory(tempDirectory, "my-test-tmp-file");
-		assertTrue(Files.exists(tmpFile));
-
-		Blutils.recursiveDelete(tempDirectory.toFile());
-		try {
-			FileUtils.createTempFileInDirectory(tempDirectory, "my-test-tmp-file");
-			fail();
-		} catch(BlueDbException e) {
-			//expected
-		}
+		Path tmpFile = FileUtils.createTempFilePathInDirectory(tempDirectory, "my-test-tmp-file");
+		assertFalse(Files.exists(tmpFile));
+		assertEquals(tempDirectory, tmpFile.getParent());
+		assertEquals("_tmp_my-test-tmp-file", tmpFile.getFileName().toString());
 	}
 
 	@Test

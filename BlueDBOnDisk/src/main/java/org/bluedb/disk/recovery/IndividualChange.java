@@ -4,10 +4,11 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.file.ComparableAndSerializable;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class IndividualChange <T extends Serializable> implements Serializable, Comparable<IndividualChange<T>> {
+public class IndividualChange <T extends Serializable> implements ComparableAndSerializable<IndividualChange<T>> {
 
 	private static final long serialVersionUID = 1L;
 

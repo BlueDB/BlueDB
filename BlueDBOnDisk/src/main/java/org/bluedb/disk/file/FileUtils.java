@@ -71,12 +71,10 @@ public class FileUtils {
 		}
 	}
 	
-	public static Path createTempFileInDirectory(Path directory, String prefix) throws BlueDbException {
-		try {
-			return Files.createTempFile(directory, TEMP_FILE_PREFIX + prefix, null);
-		} catch(Throwable t) {
-			throw new BlueDbException("Failed to create temp file in directory " + directory + " with prefix " + prefix, t);
-		}
+	public static Path createTempFilePathInDirectory(Path directory, String filename) throws BlueDbException {
+		Path path = directory.resolve(TEMP_FILE_PREFIX + filename);
+		path.toFile().deleteOnExit();
+		return path;
 	}
 
 	public static Path createTempFilePath(Path originalPath) {
