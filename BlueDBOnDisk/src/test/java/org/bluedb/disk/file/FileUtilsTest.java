@@ -72,9 +72,26 @@ public class FileUtilsTest extends TestCase {
 		createFile(nonEmptyFolder, "junk");
 		List<File> filesWithSuffix = FileUtils.getFolderContentsExcludingTempFiles(nonEmptyFolder.toPath(), suffix);
 		assertEquals(2, filesWithSuffix.size());
-		assertTrue(filesWithSuffix.contains(fileWithSuffix));
-		assertTrue(filesWithSuffix.contains(fileWithSuffix2));
-		assertFalse(filesWithSuffix.contains(tempFile));
+		assertListContainsFile(filesWithSuffix, fileWithSuffix);
+		assertListContainsFile(filesWithSuffix, fileWithSuffix2);
+		assertListDoesNotContainFile(filesWithSuffix,tempFile);
+	}
+	
+	private void assertListContainsFile(List<File> filteredResult, File fileInQuestion) {
+		assertTrue("List did not contain file name: " + fileInQuestion.toString(), listContainsFile(filteredResult, fileInQuestion));
+	}
+
+	private void assertListDoesNotContainFile(List<File> filteredResult, File fileInQuestion) {
+		assertTrue("List did contain file name: " + fileInQuestion.toString(), !listContainsFile(filteredResult, fileInQuestion));
+	}
+
+	private boolean listContainsFile(List<File> filteredResult, File fileInQuestion) {
+		for (File file : filteredResult) {
+			if (file.toString().endsWith(fileInQuestion.toString())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Test
