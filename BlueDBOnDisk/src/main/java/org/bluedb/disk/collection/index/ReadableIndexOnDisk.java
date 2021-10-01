@@ -25,6 +25,7 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 	protected final static String FILE_KEY_EXTRACTOR = ".extractor";
 
 	private final ReadableCollectionOnDisk<T> collection;
+	protected final Path indexPath;
 	protected final KeyExtractor<I, T> keyExtractor;
 
 	public abstract ReadableSegmentManager<BlueKey> getSegmentManager();
@@ -35,6 +36,7 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 
 	protected ReadableIndexOnDisk(ReadableCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		this.collection = collection;
+		this.indexPath = indexPath;
 		this.keyExtractor = keyExtractor;
 	}
 

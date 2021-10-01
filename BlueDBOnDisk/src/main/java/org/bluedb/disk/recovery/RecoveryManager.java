@@ -9,11 +9,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
-import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
+import org.bluedb.disk.query.QueryOnDisk;
+import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class RecoveryManager<T extends Serializable> {
@@ -47,6 +52,34 @@ public class RecoveryManager<T extends Serializable> {
 		fileManager.saveObject(historyPath, change);
 	}
 
+	public PendingMassChange<T> saveMassChange(QueryOnDisk<T> updateQuery, EntityToChangeMapper<T> entityToChangeMapper) throws BlueDbException {
+		long creationTime = System.currentTimeMillis();
+		long recoverableId = getNewRecoverableId();
+		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		tmpPath.getParent().toFile().mkdirs();
+		
+		try(
+				CloseableIterator<BlueEntity<T>> entitiesToUpdateIterator = updateQuery.getEntityIterator();
+				BlueObjectOutput<IndividualChange<T>> output = fileManager.getBlueOutputStreamWithoutLock(tmpPath)) {
+			
+			output.setMetadataValue(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, Boolean.toString(true));
+			
+			while(entitiesToUpdateIterator.hasNext()) {
+				BlueEntity<T> entity = entitiesToUpdateIterator.next();
+				try {
+					IndividualChange<T> change = entityToChangeMapper.map(entity);
+					output.write(change);
+				} catch(Throwable t) {
+					throw new BlueDbException("Cannot update object " + entity.getKey() + ", it will be skipped.", t);
+				}
+			}
+		}
+		
+		FileUtils.moveWithoutLock(tmpPath, path);
+		return new PendingMassChange<>(creationTime, recoverableId, path);
+	}
+	
 	public Path getHistoryFolder() {
 		return historyFolderPath;
 	}
@@ -88,20 +121,42 @@ public class RecoveryManager<T extends Serializable> {
 	public List<Recoverable<T>> getPendingChanges() throws BlueDbException {
 		List<Recoverable<T>> changes = new ArrayList<>();
 		for (File file: getPendingChangeFiles()) {
-			try {
-				@SuppressWarnings("unchecked")
-				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
-				if(change != null) {
-					changes.add(change);
-				} else {
-					System.out.println("BlueDB ignoring empty or missing recovery file: " + file.getAbsolutePath());
-				}
-			} catch (Throwable t) {
-				System.out.println("BlueDB ignoring corrupt recovery file: " + file.getAbsolutePath());
+			Recoverable<T> change = tryLoadingMassChange(file.toPath());
+			
+			if(change == null) {
+				change = tryLoadingNormalChange(file.toPath());
+			}
+			
+			if(change != null) {
+				changes.add(change);
+			} else {
+				System.out.println("BlueDB ignoring empty, missing, or corrupt recovery file: " + file.getAbsolutePath());
 			}
 		}
 		Collections.sort(changes);
 		return changes;
+	}
+
+	private PendingMassChange<T> tryLoadingMassChange(Path path) throws BlueDbException {
+		try(OnDiskSortedChangeSupplier<T> onDiskSortedChangeSupplier = new OnDiskSortedChangeSupplier<>(path, fileManager)) {
+			TimeStampedFile timeStampedFile = new TimeStampedFile(path.toFile());
+			return new PendingMassChange<>(timeStampedFile.getTimestamp(), timeStampedFile.getRecoverableId(), path);
+		} catch(Throwable t) {
+			return null; //It is expected to fail if this is any other type of change file.
+		}
+	}
+
+	private Recoverable<T> tryLoadingNormalChange(Path path) {
+		try {
+			@SuppressWarnings("unchecked")
+			Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(path);
+			if(change != null) {
+				return change;
+			}
+			return null;
+		} catch (Throwable t) {
+			return null;
+		}
 	}
 
 	public List<File> getCompletedChangeFiles() {
@@ -136,10 +191,19 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public static String getPendingFileName(Recoverable<?> change) {
-		return  String.valueOf(change.getTimeCreated()) + "." + String.valueOf(change.getRecoverableId()) + SUFFIX_PENDING;
+		return getPendingFileName(change.getTimeCreated(), change.getRecoverableId());
+	}
+
+	public static String getPendingFileName(long creationTime, long recoverableId) {
+		return String.valueOf(creationTime) + "." + String.valueOf(recoverableId) + SUFFIX_PENDING;
 	}
 
 	public ChangeHistoryCleaner getChangeHistoryCleaner() {
 		return cleaner;
+	}
+	
+	@FunctionalInterface
+	public static interface EntityToChangeMapper<T extends Serializable> {
+		public IndividualChange<T> map(BlueEntity<T> entityToChange) throws BlueDbException;
 	}
 }

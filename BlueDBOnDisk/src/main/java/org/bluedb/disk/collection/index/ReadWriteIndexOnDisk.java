@@ -6,9 +6,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,13 +20,20 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
+import org.bluedb.disk.FlatMappingIterator;
 import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
+import org.bluedb.disk.file.BlueObjectStreamSorter;
+import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.recovery.InMemorySortedChangeSupplier;
 import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.OnDiskSortedChangeSupplier;
+import org.bluedb.disk.recovery.SortedChangeIterator;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.ReadWriteSegmentManager;
@@ -40,6 +50,8 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 	private final String indexName;
 	private final ReadWriteSegmentManager<BlueKey> segmentManager;
 	private final ReadWriteFileManager fileManager;
+	
+	private AtomicLong nextIndexChangeId = new AtomicLong(0);
 
 	public static <K extends ValueKey, T extends Serializable> ReadWriteIndexOnDisk<K, T> createNew(ReadWriteCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
@@ -106,31 +118,48 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 
 	public void indexNewValues(Collection<BlueEntity<T>> values) throws BlueDbException {
 		List<IndividualChange<BlueKey>> sortedIndexChanges = StreamUtils.stream(values)
-			.flatMap(value -> StreamUtils.stream(getSortedIndexChangesForValueUpdate(value.getKey(), null, value.getValue())))
+			.flatMap(value -> StreamUtils.stream(getSortedIndexChangesForValueChange(value.getKey(), null, value.getValue())))
 			.sorted()
 			.collect(Collectors.toList());
-		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges)); //TODO: Should be passed in
+		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges));
 	}
 
-	public void indexChanges(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = StreamUtils.stream(changes)
-			.flatMap(change -> StreamUtils.stream(getSortedIndexChangesForValueUpdate(change.getKey(), change.getOldValue(), change.getNewValue())))
-			.sorted()
-			.collect(Collectors.toList());
-		/*
-		 * Note that a batch delete passes in null for the old value and the new value. In that case we won't 
-		 * be able to calculate the proper index changes. However, this should be functioning better than it was
-		 * before. It wasn't ever removing any indices, it was only adding the ones for the new values.
-		 */
-		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges)); //TODO: Should be passed in
+	public void indexChanges(SortedChangeSupplier<T> sortedChangeSupplier) throws BlueDbException {
+		long changeId = nextIndexChangeId.getAndIncrement();
+		Path sortedIndexChangesPath = FileUtils.createTempFilePathInDirectory(indexPath, "indexChange-" + changeId);
+		try {
+			SortedChangeIterator<T> sortedChangeIterator = new SortedChangeIterator<>(sortedChangeSupplier);
+			FlatMappingIterator<IndividualChange<T>, IndividualChange<BlueKey>> unsortedIndexChangeIterator = new FlatMappingIterator<>(sortedChangeIterator, this::getSortedIndexChangesForValueChange);
+			
+			Map<BlueFileMetadataKey, String> metadataEntries = new HashMap<>();
+			metadataEntries.put(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));
+			
+			BlueObjectStreamSorter<IndividualChange<BlueKey>> sorter = new BlueObjectStreamSorter<>(unsortedIndexChangeIterator, sortedIndexChangesPath, fileManager, metadataEntries);
+			sorter.sortAndWriteToFile();
+			
+			try(SortedChangeSupplier<BlueKey> onDiskSortedChangeSupplier = new OnDiskSortedChangeSupplier<>(sortedIndexChangesPath, fileManager)) {
+				/*
+				 * Note that a batch delete passes in null for the old value and the new value. In that case we won't 
+				 * be able to calculate the proper index changes. However, this should be functioning better than it was
+				 * before. It wasn't ever removing any indices, it was only adding the ones for the new values.
+				 */
+				getSegmentManager().applyChanges(onDiskSortedChangeSupplier);
+			}
+		} finally {
+			sortedIndexChangesPath.toFile().delete();
+		}
 	}
 
 	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueUpdate(key, oldValue, newValue);
-		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges)); //TODO: Should be passed in
+		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueChange(key, oldValue, newValue);
+		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges));
+	}
+	
+	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(IndividualChange<T> change) {
+		return getSortedIndexChangesForValueChange(change.getKey(), change.getOldValue(), change.getNewValue());
 	}
 
-	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueUpdate(BlueKey valueKey, T oldValue, T newValue) {
+	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(BlueKey valueKey, T oldValue, T newValue) {
 		Set<IndexCompositeKey<I>> oldCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, oldValue))
 				.collect(Collectors.toCollection(HashSet::new));
 		

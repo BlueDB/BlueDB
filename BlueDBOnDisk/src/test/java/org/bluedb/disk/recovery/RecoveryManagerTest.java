@@ -5,14 +5,26 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
-import org.junit.Test;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.bluedb.TestCloseableIterator;
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Updater;
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
+import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.query.QueryOnDisk;
+import org.bluedb.disk.recovery.RecoveryManager.EntityToChangeMapper;
+import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
@@ -69,6 +81,52 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		PendingChange<TestValue> savedChange = (PendingChange<TestValue>) changes.get(0);
 		assertEquals(1, changes.size());
 		assertEquals(value, savedChange.getNewValue());
+	}
+
+	@Test
+	public void test_saveMassChange() throws Exception {
+		List<BlueEntity<TestValue>> sortedEntitiesToUpdate = new LinkedList<>();
+		for(int i = 0; i < 10; i++) {
+			sortedEntitiesToUpdate.add(new BlueEntity<TestValue>(new TimeKey(i, i), new TestValue(String.valueOf(i), i)));
+		}
+		CloseableIterator<BlueEntity<TestValue>> sortedEntitiesToUpdateIterator = new TestCloseableIterator<>(sortedEntitiesToUpdate.iterator());
+		
+		@SuppressWarnings("unchecked")
+		QueryOnDisk<TestValue> mockedQuery = (QueryOnDisk<TestValue>) Mockito.mock(QueryOnDisk.class);
+		Mockito.doReturn(sortedEntitiesToUpdateIterator).when(mockedQuery).getEntityIterator();
+		
+		EntityToChangeMapper<TestValue> entityToChangeMapper = entity -> {
+			TestValue newValue = entity.getValue().cloneWithNewCupcakeCount(entity.getValue().getCupcakes() + 1);
+			return IndividualChange.createUpdateChange(entity.getKey(), entity.getValue(), newValue);
+		};
+
+		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
+		assertEquals(0, changes.size());
+		getRecoveryManager().saveMassChange(mockedQuery, entityToChangeMapper);
+		changes = getRecoveryManager().getPendingChanges();
+		PendingMassChange<TestValue> savedChange = (PendingMassChange<TestValue>) changes.get(0);
+		assertEquals(1, changes.size());
+		
+		List<IndividualChange<TestValue>> expectedChanges = StreamUtils.stream(sortedEntitiesToUpdate)
+			.map(entity -> {
+				try {
+					return entityToChangeMapper.map(entity);
+				} catch (BlueDbException e) {
+					e.printStackTrace();
+					return null;
+				}
+			})
+			.filter(Objects::nonNull)
+			.collect(Collectors.toList());
+		
+		OnDiskSortedChangeSupplier<TestValue> sortedChangeSupplier = new OnDiskSortedChangeSupplier<TestValue>(savedChange.getChangesFilePath(), getFileManager());
+		SortedChangeIterator<TestValue> sortedChangeIterator = new SortedChangeIterator<TestValue>(sortedChangeSupplier);
+		List<IndividualChange<TestValue>> actualChanges = new LinkedList<>();
+		while(sortedChangeIterator.hasNext()) {
+			actualChanges.add(sortedChangeIterator.next());
+		}
+		
+		assertEquals(expectedChanges, actualChanges);
 	}
 
 	@Test

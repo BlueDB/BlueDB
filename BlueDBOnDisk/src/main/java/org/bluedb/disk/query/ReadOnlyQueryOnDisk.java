@@ -10,6 +10,7 @@ import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
@@ -57,6 +58,11 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	public int count() throws BlueDbException {
 		CloseableIterator<T> iter = getIterator();
 		return iter.countRemainderAndClose();
+	}
+	
+	public CloseableIterator<BlueEntity<T>> getEntityIterator() throws BlueDbException {
+		Range range = new Range(min, max);
+		return new CollectionEntityIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions);
 	}
 
 	public List<BlueEntity<T>> getEntities() throws BlueDbException {

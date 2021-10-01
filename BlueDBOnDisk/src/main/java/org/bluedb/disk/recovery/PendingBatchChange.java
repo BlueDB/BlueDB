@@ -32,7 +32,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 		SortedChangeSupplier<T> sortedChangeSupplier = new InMemorySortedChangeSupplier<T>(sortedChanges);
 		ReadWriteSegmentManager<T> segmentManager = collection.getSegmentManager();
 		segmentManager.applyChanges(sortedChangeSupplier);
-		collection.getIndexManager().indexChanges(sortedChanges);
+		collection.getIndexManager().indexChanges(sortedChangeSupplier);
 	}
 
 	@Override

@@ -434,27 +434,27 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		TestValue oldValue = null;
 		TestValue newValue = new TestValue("Fred", 5);
 		
-		assertEquals(Arrays.asList(add1, add3, add5), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		assertEquals(Arrays.asList(add1, add3, add5), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 4);
-		assertEquals(Arrays.asList(add0, remove1, add2, remove3, add4, remove5), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		assertEquals(Arrays.asList(add0, remove1, add2, remove3, add4, remove5), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 4);
-		assertEquals(Arrays.asList(), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		assertEquals(Arrays.asList(), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 2);
-		assertEquals(Arrays.asList(remove4), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		assertEquals(Arrays.asList(remove4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 4);
-		assertEquals(Arrays.asList(add4), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		assertEquals(Arrays.asList(add4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 0);
-		assertEquals(Arrays.asList(remove2, remove4), index.getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		assertEquals(Arrays.asList(remove2, remove4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 	}
 
 	private IndividualChange<BlueKey> createIndexChange(int indexKey, BlueKey valueKey, boolean isAdd) {
