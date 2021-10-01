@@ -1,10 +1,11 @@
 package org.bluedb.disk.file;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 
 import org.bluedb.api.exceptions.BlueDbException;
 
-public interface BlueInputStream extends AutoCloseable {
+public interface BlueInputStream extends Closeable {
 	
 	public String getDescription();
 	

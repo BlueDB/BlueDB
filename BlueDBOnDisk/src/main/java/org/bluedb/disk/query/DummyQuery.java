@@ -1,6 +1,5 @@
 package org.bluedb.disk.query;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +19,7 @@ public class DummyQuery<T extends Serializable> extends ReadOnlyTimeQueryOnDisk<
 		return new CloseableIterator<T>() {
 
 			@Override
-			public void close() throws IOException {
+			public void close() {
 			}
 
 			@Override

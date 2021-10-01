@@ -1,5 +1,6 @@
 package org.bluedb.disk.recovery;
 
+import java.io.Closeable;
 import java.io.Serializable;
 import java.util.Optional;
 import java.util.Set;
@@ -13,7 +14,7 @@ import org.bluedb.disk.segment.Range;
  * methods to search in order for the next changes you want to process.
  * @param <T> - The object type that is being updated.
  */
-public interface SortedChangeSupplier<T extends Serializable> extends AutoCloseable {
+public interface SortedChangeSupplier<T extends Serializable> extends Closeable {
 	
 	/**
 	 * Skips the change at the current cursor location and reads through the changes in order until it finds the next
