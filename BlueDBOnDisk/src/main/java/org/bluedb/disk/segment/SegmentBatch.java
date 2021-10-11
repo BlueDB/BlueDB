@@ -42,7 +42,11 @@ public class SegmentBatch<T extends Serializable> {
 			
 			Range largestEmptyRange = getLargestEmptyRange(possibleNextRanges, existingChunkRanges);
 			Set<Long> changeGroupingNumbersForRange = sortedChanges.findGroupingNumbersForNextChangesBeforeOrAtGroupingNumber(largestEmptyRange.getEnd());
-			return chooseSmallestRangeContainingChanges(possibleNextRanges, changeGroupingNumbersForRange);
+			Optional<Range> nextNewRange = chooseSmallestRangeContainingChanges(possibleNextRanges, changeGroupingNumbersForRange);
+			if(nextNewRange.isPresent()) {
+				existingChunkRanges.add(nextNewRange.get());
+			}
+			return nextNewRange;
 		}
 		
 		return Optional.empty();

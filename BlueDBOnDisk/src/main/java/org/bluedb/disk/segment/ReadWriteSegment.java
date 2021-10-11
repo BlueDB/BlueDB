@@ -19,6 +19,7 @@ import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
+import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.SortedChangeSupplier;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
@@ -112,13 +113,26 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 		
 		SegmentBatch<T> segmentBatch = new SegmentBatch<>(sortedChangeSupplier, this);
 		
-		Optional<Range> chunkRange = segmentBatch.determineNextChunkRange();
+		Optional<Range> chunkRange = determineNextChunkRange(segmentBatch, sortedChangeSupplier);
 		while(chunkRange.isPresent()) {
 			String fileName = chunkRange.get().toUnderscoreDelimitedString();
 			Path path = Paths.get(segmentPath.toString(), fileName);
 			modifyChunk(path, new BatchWriter<T>(sortedChangeSupplier, chunkRange.get()));
-			chunkRange = segmentBatch.determineNextChunkRange();
+			chunkRange = determineNextChunkRange(segmentBatch, sortedChangeSupplier);
 		}
+	}
+
+	private Optional<Range> determineNextChunkRange(SegmentBatch<T> segmentBatch, SortedChangeSupplier<T> sortedChangeSupplier) throws BlueDbException {
+		if(nextChangeExistsAndIsInRange(sortedChangeSupplier)) {
+			return segmentBatch.determineNextChunkRange();
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	private boolean nextChangeExistsAndIsInRange(SortedChangeSupplier<T> sortedChangeSupplier) throws BlueDbException {
+		Optional<IndividualChange<T>> nextChange = sortedChangeSupplier.getNextChange();
+		return nextChange.isPresent() && nextChange.get().overlaps(segmentRange);
 	}
 
 	private void performPreBatchRollups() throws BlueDbException {
