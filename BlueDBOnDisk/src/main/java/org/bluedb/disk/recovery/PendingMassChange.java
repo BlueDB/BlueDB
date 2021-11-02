@@ -5,6 +5,7 @@ import java.nio.file.Path;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.ReadWriteSegmentManager;
 
 public class PendingMassChange<T extends Serializable> implements Serializable, Recoverable<T> {
@@ -23,6 +24,10 @@ public class PendingMassChange<T extends Serializable> implements Serializable, 
 
 	@Override
 	public void apply(ReadWriteCollectionOnDisk<T> collection) throws BlueDbException {
+		if(FileUtils.isEmpty(changesFilePath)) {
+			return;
+		}
+		
 		try(SortedChangeSupplier<T> sortedChangeSupplier = new OnDiskSortedChangeSupplier<>(changesFilePath, collection.getFileManager())) {
 			ReadWriteSegmentManager<T> segmentManager = collection.getSegmentManager();
 			segmentManager.applyChanges(sortedChangeSupplier);

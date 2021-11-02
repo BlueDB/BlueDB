@@ -23,7 +23,6 @@ import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.query.QueryOnDisk;
-import org.bluedb.disk.recovery.RecoveryManager.EntityToChangeMapper;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
@@ -76,7 +75,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 		assertEquals(0, changes.size());
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		changes = getRecoveryManager().getPendingChanges();
 		PendingChange<TestValue> savedChange = (PendingChange<TestValue>) changes.get(0);
 		assertEquals(1, changes.size());
@@ -97,7 +96,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		
 		EntityToChangeMapper<TestValue> entityToChangeMapper = entity -> {
 			TestValue newValue = entity.getValue().cloneWithNewCupcakeCount(entity.getValue().getCupcakes() + 1);
-			return IndividualChange.createUpdateChange(entity.getKey(), entity.getValue(), newValue);
+			return IndividualChange.createChange(entity.getKey(), entity.getValue(), newValue);
 		};
 
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
@@ -135,7 +134,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		TestValue value = createValue("Joe");
 		Recoverable<TestValue> change = PendingChange.createInsert(key, value, serializer);
 
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 		assertEquals(1, changes.size());
 		getRecoveryManager().markComplete(change);
@@ -151,7 +150,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 		assertEquals(0, changes.size());
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		changes = getRecoveryManager().getPendingChanges();
 		assertEquals(1, changes.size());
 		getRecoveryManager().markComplete(change);
@@ -168,7 +167,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		List<File> changes = getRecoveryManager().getPendingChangeFiles();
 		assertEquals(0, changes.size());
 
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		changes = getRecoveryManager().getPendingChangeFiles();
 		assertEquals(1, changes.size());
 		
@@ -212,9 +211,9 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
 		getRecoveryManager().getChangeHistoryCleaner().setWaitBetweenCleanups(100_000);  // to prevent automatic cleanup
 		List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-		getRecoveryManager().saveChange(change30);
-		getRecoveryManager().saveChange(change60);
-		getRecoveryManager().saveChange(change90);
+		getRecoveryManager().saveNewChange(change30);
+		getRecoveryManager().saveNewChange(change60);
+		getRecoveryManager().saveNewChange(change90);
 		List<File> changesAll = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		List<File> changes30to60 = getRecoveryManager().getChangeHistory(sixtyMinutesAgo, thirtyMinutesAgo);
 		List<File> changes30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo, thirtyMinutesAgo);
@@ -236,7 +235,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		TestValue value = createValue("Joe");
 
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(0, allValues.size());
 
@@ -257,7 +256,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 				IndividualChange.createInsertChange(key2at3, value2)
 		);
 		Recoverable<TestValue> change = PendingBatchChange.createBatchChange(sortedChanges);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(0, allValues.size());
 
@@ -275,7 +274,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		getTimeCollection().insert(key,  value);
 		PendingChange<TestValue> duplicateInsert = PendingChange.createInsert(key, value, serializer);
-		getRecoveryManager().saveChange(duplicateInsert);
+		getRecoveryManager().saveNewChange(duplicateInsert);
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(1, allValues.size());
 
@@ -295,7 +294,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(1, allValues.size());
 
 		PendingChange<TestValue> change = PendingChange.createDelete(key, value);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		getRecoveryManager().recover();
 		allValues = getTimeCollection().query().getList();
 		assertEquals(0, allValues.size());
@@ -311,7 +310,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		getTimeCollection().insert(key, originalValue);
 		PendingChange<TestValue> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(1, allValues.size());

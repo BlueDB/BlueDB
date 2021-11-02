@@ -514,7 +514,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 
@@ -539,7 +539,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
@@ -573,7 +573,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
@@ -615,7 +615,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);

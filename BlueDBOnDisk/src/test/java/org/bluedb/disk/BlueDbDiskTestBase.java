@@ -38,11 +38,11 @@ import junit.framework.TestCase;
 
 public abstract class BlueDbDiskTestBase extends TestCase {
 
-	private static String TIME_COLLECTION_NAME = "testing_time";
-	private static String HASH_GROUPED_COLLECTION_NAME = "testing_value";
-	private static String LONG_COLLECTION_NAME = "long_value";
-	private static String INT_COLLECTION_NAME = "int_value";
-	private static String CALL_COLLECTION_NAME = "call_collection";
+	protected static String TIME_COLLECTION_NAME = "testing_time";
+	protected static String HASH_GROUPED_COLLECTION_NAME = "testing_value";
+	protected static String LONG_COLLECTION_NAME = "long_value";
+	protected static String INT_COLLECTION_NAME = "int_value";
+	protected static String CALL_COLLECTION_NAME = "call_collection";
 	ReadWriteDbOnDisk db;
 	ReadWriteTimeCollectionOnDisk<TestValue> timeCollection;
 	ReadWriteCollectionOnDisk<TestValue> hashGroupedCollection;

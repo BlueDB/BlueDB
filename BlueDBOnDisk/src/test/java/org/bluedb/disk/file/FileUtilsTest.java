@@ -178,6 +178,18 @@ public class FileUtilsTest extends TestCase {
 		FileUtils.ensureFileExists(subDir);
 		assertTrue(FileUtils.exists(subDir));
 	}
+	
+	@Test
+	public void test_isEmpty() throws IOException {
+		Path tmpFile = Files.createTempFile("FileUtilsTest-test_isEmpty", null);
+		
+		assertTrue(FileUtils.isEmpty(null));
+		assertTrue(FileUtils.isEmpty(Paths.get("Something-that-doesn't-exist.wat")));
+		assertTrue(FileUtils.isEmpty(tmpFile));
+		
+		Files.write(tmpFile, new byte[10]);
+		assertFalse(FileUtils.isEmpty(tmpFile));
+	}
 
 	@Test
 	public void test_createTempFilePath() {

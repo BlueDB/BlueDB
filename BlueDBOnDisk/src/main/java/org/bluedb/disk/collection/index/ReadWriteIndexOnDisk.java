@@ -139,6 +139,10 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 			BlueObjectStreamSorter<IndividualChange<BlueKey>> sorter = new BlueObjectStreamSorter<>(unsortedIndexChangeIterator, sortedIndexChangesPath, fileManager, metadataEntries);
 			sorter.sortAndWriteToFile();
 			
+			if(FileUtils.isEmpty(sortedIndexChangesPath)) {
+				return;
+			}
+			
 			try(SortedChangeSupplier<BlueKey> onDiskSortedChangeSupplier = new OnDiskSortedChangeSupplier<>(sortedIndexChangesPath, fileManager)) {
 				/*
 				 * Note that a batch delete passes in null for the old value and the new value. In that case we won't 

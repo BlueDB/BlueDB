@@ -50,6 +50,7 @@ public class OnDiskSortedChangeSupplier<T extends Serializable> implements Sorte
 	}
 
 	private void loadDataForUpToDataChangeFile(BlueFileMetadata metadata) throws BlueDbException {
+		changesSeekableInputStream.setCursorPosition(0);
 		this.changesObjectInputStream = fileManager.getBlueInputStream(changeFileReadLock, changesSeekableInputStream);
 		this.firstChangeCursorInfo = getCurrentCursorInfo();
 		this.lastCheckpointCursorInfo = firstChangeCursorInfo;

@@ -124,6 +124,13 @@ public class FileUtils {
 		}
 		return path.toFile().exists();
 	}
+	
+	public static boolean isEmpty(Path path) {
+		if(path == null || !path.toFile().exists()) {
+			return true;
+		}
+		return path.toFile().length() == 0;
+	}
 
 	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
 		Path dst = lock.getKey();

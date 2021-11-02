@@ -20,7 +20,6 @@ import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueReadLock;
-import org.bluedb.disk.recovery.PendingBatchChange;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.recovery.Recoverable;
 import org.bluedb.disk.recovery.RecoveryManager;
@@ -222,10 +221,12 @@ public class BackupManager {
 	}
 
 	private void copyChangeAfterFilteringBasedOnTime(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
-		Recoverable<?> change = (Recoverable<?>) collection.getFileManager().loadObject(file);
+		Recoverable<?> change = collection.getRecoveryManager().loadPendingChange(file);
 		if (shouldCopyChange(includedTimeRange, change)) {
-			collection.getFileManager().saveObjectUnencrypted(destinationPath, change);
-			recoveryManager.markChangePending(destinationPath);
+			collection.getRecoveryManager().copyChange(change, destinationPath, includedTimeRange);
+			if(FileUtils.exists(destinationPath)) {
+				recoveryManager.markChangePending(destinationPath);
+			}
 		}
 	}
 
@@ -234,19 +235,15 @@ public class BackupManager {
 			return ((PendingChange<?>) change).getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd());
 		}
 
-		if (change instanceof PendingBatchChange) {
-			PendingBatchChange<?> batchChange = (PendingBatchChange<?>) change;
-			batchChange.removeChangesOutsideRange(includedTimeRange);
-			return !batchChange.isEmpty();
-		}
-
-		return true; //We don't need to check rollups
+		return true; //We don't need to check rollups. Batch/Mass changes should filter themselves during the copy phase.
 	}
 
 	private void copyChangeStraightOver(ReadWriteCollectionOnDisk<?> collection, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
-		Recoverable<?> change = (Recoverable<?>) collection.getFileManager().loadObject(file);
-		collection.getFileManager().saveObjectUnencrypted(destinationPath, change);
-		recoveryManager.markChangePending(destinationPath);
+		Recoverable<?> change = collection.getRecoveryManager().loadPendingChange(file);
+		collection.getRecoveryManager().copyChange(change, destinationPath, Range.createMaxRange());
+		if(FileUtils.exists(destinationPath)) {
+			recoveryManager.markChangePending(destinationPath);
+		}
 	}
 
 	public static Path translatePath(Path fromPath, Path toPath, Path targetPath) {

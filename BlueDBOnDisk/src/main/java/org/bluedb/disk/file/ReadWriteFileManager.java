@@ -124,17 +124,4 @@ public class ReadWriteFileManager extends ReadFileManager {
 			throw new BlueDbException("error making unencrypted copy from " + srcPath + " to " + destPath, t);
 		}
 	}
-
-	public void saveObjectUnencrypted(Path path, Object o) throws BlueDbException {
-		byte[] bytes = serializer.serializeObjectToByteArray(o);
-		FileUtils.ensureDirectoryExists(path.toFile());
-		Path tmpPath = FileUtils.createTempFilePath(path);
-		try (BlueWriteLock<Path> tempFileLock = lockManager.acquireWriteLock(tmpPath)) {
-			writeBytes(tempFileLock, bytes, true);
-			try (BlueWriteLock<Path> targetFileLock = lockManager.acquireWriteLock(path)) {
-				FileUtils.moveFile(tmpPath, targetFileLock);
-			}
-		}
-	}
-
 }
