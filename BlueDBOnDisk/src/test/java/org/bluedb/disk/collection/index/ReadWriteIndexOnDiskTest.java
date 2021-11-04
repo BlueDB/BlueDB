@@ -4,8 +4,10 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.ReadableBlueCollection;
@@ -48,10 +50,10 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		IntegerKey integerKey2 = new IntegerKey(2);
 		IntegerKey integerKey3 = new IntegerKey(3);
 
-		List<BlueKey> emptyList = Arrays.asList();
-		List<BlueKey> bobAndJoe = Arrays.asList(timeKeyBob3, timeKeyJoe3);
-		List<BlueKey> justBob = Arrays.asList(timeKeyBob3);
-		List<BlueKey> justFred = Arrays.asList(timeKeyFred1);
+		Set<BlueKey> emptyList = new HashSet<>(Arrays.asList());
+		Set<BlueKey> bobAndJoe = new HashSet<>(Arrays.asList(timeKeyBob3, timeKeyJoe3));
+		Set<BlueKey> justBob = new HashSet<>(Arrays.asList(timeKeyBob3));
+		Set<BlueKey> justFred = new HashSet<>(Arrays.asList(timeKeyFred1));
 
 		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
 		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
@@ -86,24 +88,24 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		IntegerKey integerKey2 = new IntegerKey(2);
 		IntegerKey integerKey3 = new IntegerKey(3);
 
-		List<BlueKey> emptyList = Arrays.asList();
-		List<BlueKey> justFred = Arrays.asList(timeKeyFred1);
+		Set<BlueKey> emptySet = new HashSet<>(Arrays.asList());
+		Set<BlueKey> justFred = new HashSet<>(Arrays.asList(timeKeyFred1));
 
-		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
-		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
-		assertEquals(emptyList, indexOnDisk.getKeys(integerKey3));
+		assertEquals(emptySet, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptySet, indexOnDisk.getKeys(integerKey2));
+		assertEquals(emptySet, indexOnDisk.getKeys(integerKey3));
 
 		collection.insert(timeKeyFred1, valueFred1);
 
 		assertEquals(justFred, indexOnDisk.getKeys(integerKey1));
-		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
+		assertEquals(emptySet, indexOnDisk.getKeys(integerKey2));
 		assertEquals(justFred, indexOnDisk.getKeys(integerKey3));
 
 		collection.delete(timeKeyFred1);
 
-		assertEquals(emptyList, indexOnDisk.getKeys(integerKey1));
-		assertEquals(emptyList, indexOnDisk.getKeys(integerKey2));
-		assertEquals(emptyList, indexOnDisk.getKeys(integerKey3));
+		assertEquals(emptySet, indexOnDisk.getKeys(integerKey1));
+		assertEquals(emptySet, indexOnDisk.getKeys(integerKey2));
+		assertEquals(emptySet, indexOnDisk.getKeys(integerKey3));
 	}
 
 	@Test
@@ -150,6 +152,15 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		
 		
 		collection.update(timeKeyBob3, value -> value.addCupcake());
+		assertEquals(emptyList, indexOnDisk.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk.get(integerKey2));
+		assertEquals(emptyList, indexOnDisk.get(integerKey3));
+		
+		/*
+		 * The collection on disk has 4 cupcakes for bob, we're going to deliberately mess up the index
+		 * by making the index think that it has 3 in it. Getting the list of values with 3 cupcakes
+		 * should filter Bob out since he actually has 4. 
+		 */
 		collection.getIndexManager().indexChange(timeKeyBob3, null, valueBob3); //Should make index 3 point to this value even though the indexed value was just changed to 4
 		valueBob3.addCupcake();
 		

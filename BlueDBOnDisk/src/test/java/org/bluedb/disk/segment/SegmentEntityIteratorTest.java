@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -285,7 +286,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 			stringCollection.insert(key, value);
 		}
 		
-		List<ReadWriteSegment<String>> segments = stringCollection.getSegmentManager().getExistingSegments(new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		List<ReadWriteSegment<String>> segments = stringCollection.getSegmentManager().getExistingSegments(new Range(Long.MIN_VALUE, Long.MAX_VALUE), Optional.empty());
 		assertEquals(n, segments.size());
 
 		for (ReadWriteSegment<String> segment: segments) {

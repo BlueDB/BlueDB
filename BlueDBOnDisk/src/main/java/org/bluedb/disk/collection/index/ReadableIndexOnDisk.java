@@ -2,16 +2,18 @@ package org.bluedb.disk.collection.index;
 
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.Set;
 
+import org.bluedb.api.Condition;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
@@ -52,22 +54,31 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 
 	@Override
 	public List<T> get(I key) throws BlueDbException {
-		List<BlueKey> underlyingKeys = getKeys(key);
-		List<T> values = Blutils.map(underlyingKeys, (k) -> collection.get(k));
-		return values.stream()
-				.filter(value -> valueContainsIndexKey(value, key))
-				.collect(Collectors.toCollection(ArrayList::new));
+		Set<BlueKey> underlyingKeys = getKeys(key);
+		return collection.query()
+			.whereKeyIsIn(underlyingKeys)
+			.where(value -> {
+				return valueContainsIndexKey(value, key);
+			})
+			.getList();
 	}
 	
 	private boolean valueContainsIndexKey(T value, I indexKey) {
 		List<I> indexKeys = keyExtractor.extractKeys(value);
 		return indexKeys != null && indexKeys.contains(indexKey);	
 	}
-
-	public List<BlueKey> getKeys(I key) {
-		Range range = new Range(key.getGroupingNumber(), key.getGroupingNumber());
-		List<BlueKey> keys = new ArrayList<>();
-		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<BlueKey>(getSegmentManager(), range, true, new ArrayList<>())) {
+	
+	public Set<BlueKey> getKeys(I targetIndexKey) {
+		Range range = new Range(targetIndexKey.getGroupingNumber(), targetIndexKey.getGroupingNumber());
+		List<Condition<BlueKey>> conditions = new LinkedList<>();
+		List<Condition<BlueKey>> indexKeyConditions = new LinkedList<>();
+		indexKeyConditions.add(key -> {
+			return targetIndexKey.equals(((IndexCompositeKey<?>)key).getIndexKey());	
+		});
+		Optional<Set<Range>> segmentRangesToInclude = Optional.empty();
+		
+		Set<BlueKey> keys = new HashSet<>();
+		try (CollectionEntityIterator<BlueKey> entityIterator = new CollectionEntityIterator<BlueKey>(getSegmentManager(), range, true, conditions, indexKeyConditions, segmentRangesToInclude)) {
 			while (entityIterator.hasNext()) {
 				@SuppressWarnings("unchecked")
 				IndexCompositeKey<I> indexKey = (IndexCompositeKey<I>) entityIterator.next().getKey();

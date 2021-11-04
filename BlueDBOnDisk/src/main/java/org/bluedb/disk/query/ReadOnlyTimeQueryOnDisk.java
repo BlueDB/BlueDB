@@ -1,9 +1,12 @@
 package org.bluedb.disk.query;
 
 import java.io.Serializable;
+import java.util.Set;
 
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueTimeQuery;
+import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 
 public class ReadOnlyTimeQueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> implements ReadBlueTimeQuery<T> {
@@ -15,6 +18,18 @@ public class ReadOnlyTimeQueryOnDisk<T extends Serializable> extends ReadOnlyQue
 	@Override
 	public ReadBlueTimeQuery<T> where(Condition<T> c) {
 		super.where(c);
+		return this;
+	}
+	
+	@Override
+	public ReadBlueTimeQuery<T> whereKeyIsIn(Set<BlueKey> keys) {
+		super.whereKeyIsIn(keys);
+		return this;
+	}
+	
+	@Override
+	public ReadBlueTimeQuery<T> whereKeyIsIn(BlueSimpleSet<BlueKey> keys) {
+		super.whereKeyIsIn(keys);
 		return this;
 	}
 

@@ -1,25 +1,36 @@
 package org.bluedb.disk.query;
 
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
+import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.segment.Range;
+import org.bluedb.disk.segment.ReadableSegmentManager;
+import org.bluedb.disk.segment.path.SegmentPathManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuery<T> {
 
 	protected ReadableCollectionOnDisk<T> collection;
 	protected List<Condition<T>> objectConditions = new LinkedList<>();
+	protected List<Condition<BlueKey>> keyConditions = new LinkedList<>();
+	protected List<BlueSimpleSet<BlueKey>> keySetsToInclude = new LinkedList<>(); 
 	protected long max = Long.MAX_VALUE;
 	protected long min = Long.MIN_VALUE;
 	protected boolean byStartTime = false;
@@ -35,6 +46,15 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 		}
 		return this;
 	}
+	
+	@Override
+	public ReadBlueQuery<T> whereKeyIsIn(BlueSimpleSet<BlueKey> keys) {
+		if(keys != null) {
+			keySetsToInclude.add(keys);
+			keyConditions.add(key -> keys.contains(key));
+		}
+		return this;
+	}
 
 	@Override
 	public List<T> getList() throws BlueDbException {
@@ -44,14 +64,14 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
 		Range range = new Range(min, max);
-		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions);
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions, keyConditions, getSegmentRangesToInclude());
 	}
 
 	@Override
 	public CloseableIterator<T> getIterator(long timeout, TimeUnit timeUnit) throws BlueDbException {
 		Range range = new Range(min, max);
 		long timeoutInMillis = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
-		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, timeoutInMillis, byStartTime, objectConditions);
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, timeoutInMillis, byStartTime, objectConditions, keyConditions, getSegmentRangesToInclude());
 	}
 
 	@Override
@@ -62,16 +82,38 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	
 	public CloseableIterator<BlueEntity<T>> getEntityIterator() throws BlueDbException {
 		Range range = new Range(min, max);
-		return new CollectionEntityIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions);
+		return new CollectionEntityIterator<T>(collection.getSegmentManager(), range, byStartTime, objectConditions, keyConditions, getSegmentRangesToInclude());
 	}
 
 	public List<BlueEntity<T>> getEntities() throws BlueDbException {
-		return collection.findMatches(getRange(), objectConditions, byStartTime);
+		return collection.findMatches(getRange(), objectConditions, keyConditions, byStartTime, getSegmentRangesToInclude());
+	}
+
+	private Optional<Set<Range>> getSegmentRangesToInclude() {
+		Set<Range> segmentRangesToInclude = new HashSet<>();
+		
+		ReadableSegmentManager<T> segmentManager = collection.getSegmentManager();
+		SegmentPathManager pathManager = segmentManager.getPathManager();
+		
+		for(BlueSimpleSet<BlueKey> keysToInclude : keySetsToInclude) {
+			Iterator<BlueKey> keysIterator = keysToInclude.iterator();
+			while(keysIterator.hasNext()) {
+				BlueKey key = keysIterator.next();
+				Path segmentPath = pathManager.getSegmentPath(key);
+				segmentRangesToInclude.add(segmentManager.toRange(segmentPath));
+			}
+		}
+		
+		if(segmentRangesToInclude.isEmpty()) {
+			return Optional.empty();
+		} else {
+			return Optional.of(segmentRangesToInclude);
+		}
 	}
 
 	@Override
 	public String toString() {
-		return "<" + this.getClass().getSimpleName() + " [" + min + ", " + max + "] with " + objectConditions.size() + " conditions>";
+		return "<" + this.getClass().getSimpleName() + " [" + min + ", " + max + "] with " + objectConditions.size() + " conditions and " + keyConditions.size() + " key-conditions>";
 	}
 
 	public Range getRange() {

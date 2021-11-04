@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -314,12 +315,12 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<BlueEntity<TestValue>> allEntities, entitiesWithJoe, entities3to5, entities2to3, entities0to1, entities0to0;
 
 		Condition<TestValue> isJoe = (v) -> v.getName().equals("Joe");
-		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), false);
-		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), Arrays.asList(isJoe), false);
-		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), false);
-		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), false);
-		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), false);
-		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), false);
+		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), Arrays.asList(isJoe), new ArrayList<>(), false, Optional.empty());
+		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
 
 		assertEquals(2, allEntities.size());
 		assertEquals(1, entitiesWithJoe.size());
@@ -340,11 +341,11 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		insertAtTimeFrame(2, 3, valueBob);
 		List<BlueEntity<TestValue>> allEntities, entities3to5, entities2to3, entities0to1, entities0to0;
 
-		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), true);
-		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), true);
-		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), true);
-		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), true);
-		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), true);
+		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
 
 		assertEquals(2, allEntities.size());
 		assertEquals(0, entities3to5.size());

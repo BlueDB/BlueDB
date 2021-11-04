@@ -2,10 +2,13 @@ package org.bluedb.disk.collection;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.lock.AutoCloseCountdown;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegmentManager;
@@ -19,13 +22,13 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 	
 	private AtomicBoolean hasClosed = new AtomicBoolean(false);
 	
-	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
-		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, objectConditions);
+	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, objectConditions, keyConditions, segmentRangesToInclude);
 		timeoutCloser = new AutoCloseCountdown(this, TIMEOUT_DEFAULT_MILLIS);
 	}
 
-	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, long timeout, boolean byStartTime, List<Condition<T>> objectConditions) {
-		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, objectConditions);
+	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, long timeout, boolean byStartTime, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, objectConditions, keyConditions, segmentRangesToInclude);
 		timeoutCloser = new AutoCloseCountdown(this, timeout);
 	}
 

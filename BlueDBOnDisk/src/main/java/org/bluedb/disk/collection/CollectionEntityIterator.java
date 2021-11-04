@@ -4,10 +4,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegment;
@@ -23,15 +26,17 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
 	private final List<Condition<T>> conditions;
+	private final List<Condition<BlueKey>> keyConditions;
 	
 	private AtomicBoolean hasClosed = new AtomicBoolean(false);
 
-	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions) {
+	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
 		this.range = range;
 		this.endGroupingValueOfCompletedSegments = calculateEndGroupingValueOfCompletedSegments(range, byStartTime);
-		segments = segmentManager.getExistingSegments(range);
+		segments = segmentManager.getExistingSegments(range, segmentRangesToInclude);
 		Collections.sort(segments);
 		conditions = objectConditions;
+		this.keyConditions = keyConditions;
 	}
 
 	private long calculateEndGroupingValueOfCompletedSegments(Range range, boolean byStartTime) {
@@ -100,7 +105,8 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 			if (segmentIterator != null) {
 				while(segmentIterator.hasNext()) {
 					BlueEntity<T> result = segmentIterator.next();
-					if (Blutils.meetsConditions(conditions, result.getValue())) {
+					if (Blutils.meetsConditions(conditions, result.getValue()) &&
+							Blutils.meetsConditions(keyConditions, result.getKey())) {
 						return result;
 					}
 				}

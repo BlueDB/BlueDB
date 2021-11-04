@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -21,7 +22,7 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.FlatMappingIterator;
+import org.bluedb.disk.IteratorWrapper;
 import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
@@ -66,7 +67,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 
 	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableCollectionOnDisk<T> collection, ReadWriteIndexOnDisk<K, T> index) throws BlueDbException {
 		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList(), Arrays.asList(), Optional.empty())) {
 			while (iterator.hasNext()) {
 				List<BlueEntity<T>> entities = iterator.next(1000);
 				index.indexNewValues(entities);
@@ -131,7 +132,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		Path sortedIndexChangesPath = FileUtils.createTempFilePathInDirectory(indexPath, "indexChange-" + changeId);
 		try {
 			SortedChangeIterator<T> sortedChangeIterator = new SortedChangeIterator<>(sortedChangeSupplier);
-			FlatMappingIterator<IndividualChange<T>, IndividualChange<BlueKey>> unsortedIndexChangeIterator = new FlatMappingIterator<>(sortedChangeIterator, this::getSortedIndexChangesForValueChange);
+			IteratorWrapper<IndividualChange<T>, IndividualChange<BlueKey>> unsortedIndexChangeIterator = new IteratorWrapper<>(sortedChangeIterator, this::getSortedIndexChangesForValueChange);
 			
 			Map<BlueFileMetadataKey, String> metadataEntries = new HashMap<>();
 			metadataEntries.put(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));

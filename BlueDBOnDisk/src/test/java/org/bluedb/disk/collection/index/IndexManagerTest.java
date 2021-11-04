@@ -1,7 +1,8 @@
 package org.bluedb.disk.collection.index;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
@@ -53,9 +54,9 @@ public class IndexManagerTest extends BlueDbDiskTestBase {
 		collection.insert(timeKeyBob3, valueBob3);
 		collection.insert(timeKeyJoe3, valueJoe3);
 
-		List<BlueKey> emptyList = Arrays.asList();
-		List<BlueKey> bobAndJoe = Arrays.asList(timeKeyBob3, timeKeyJoe3);
-		List<BlueKey> justFred = Arrays.asList(timeKeyFred1);
+		Set<BlueKey> emptyList = new HashSet<>(Arrays.asList());
+		Set<BlueKey> bobAndJoe = new HashSet<>(Arrays.asList(timeKeyBob3, timeKeyJoe3));
+		Set<BlueKey> justFred = new HashSet<>(Arrays.asList(timeKeyFred1));
 
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		ReadWriteIndexManager<TestValue> restoredIndexManager = new ReadWriteIndexManager(collection, collection.getPath());

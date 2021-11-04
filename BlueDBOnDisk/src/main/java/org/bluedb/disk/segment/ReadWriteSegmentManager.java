@@ -3,6 +3,8 @@ package org.bluedb.disk.segment;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -55,13 +57,14 @@ public class ReadWriteSegmentManager<T extends Serializable> extends ReadableSeg
 	@Override
 	public List<ReadWriteSegment<T>> getAllExistingSegments() {
 		Range allValues = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
-		return getExistingSegments(allValues);
+		return getExistingSegments(allValues, Optional.empty());
 	}
 
 	@Override
-	public List<ReadWriteSegment<T>> getExistingSegments(Range range) {
+	public List<ReadWriteSegment<T>> getExistingSegments(Range range, Optional<Set<Range>> segmentRangesToInclude) {
 		return pathManager.getExistingSegmentFiles(range).stream()
 				.map((f) -> (toSegment(f.toPath())))
+				.filter(s -> !segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().contains(s.getRange()))
 				.sorted()
 				.collect(Collectors.toList());
 	}
