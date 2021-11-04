@@ -145,7 +145,7 @@ public class BatchWriterTest {
 		IndividualChange<Call> updateInvalidCall = new IndividualChange<Call>(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue());
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
 		IndividualChange<Call> update4 = new IndividualChange<Call>(call4.getKey(), call4.getValue(), updatedcall4.getValue());
-		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5.getKey());
+		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
 		Range range = new Range(updateInvalidCall.getGroupingNumber(), delete5.getGroupingNumber());
@@ -204,7 +204,7 @@ public class BatchWriterTest {
 		IndividualChange<Call> updateInvalidCall = new IndividualChange<Call>(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue());
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
 		IndividualChange<Call> update4 = new IndividualChange<Call>(call4.getKey(), call4.getValue(), updatedcall4.getValue());
-		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5.getKey());
+		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
 		Range range = new Range(updateInvalidCall.getGroupingNumber(), delete5.getGroupingNumber());
@@ -250,7 +250,7 @@ public class BatchWriterTest {
 		BlueEntity<Call> updatedcall2 = Call.wrapCallAsEntity(call2.getValue().clone());
 		updatedcall2.getValue().setCallingParty("testChange2");
 		
-		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall.getKey());
+		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall);
 		IndividualChange<Call> update4Again = new IndividualChange<Call>(call2.getKey(), call2.getValue(), updatedcall2.getValue());
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(deleteInvalidObject, update4Again));

@@ -18,7 +18,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 
 public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> implements BlueQuery<T> {
 
-	ReadWriteCollectionOnDisk<T> writeableCollection;
+	private ReadWriteCollectionOnDisk<T> writeableCollection;
 
 	public QueryOnDisk(ReadWriteCollectionOnDisk<T> collection) {
 		super(collection);
@@ -45,20 +45,31 @@ public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> 
 
 	@Override
 	public void delete() throws BlueDbException {
-		Runnable deleteAllTask = new DeleteMultipleTask<T>(writeableCollection, clone());
-		writeableCollection.executeTask(deleteAllTask);
+		String description = "Delete using query " + this;
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), IndividualChange::createDeleteChange);
+		writeableCollection.executeTask(task);
 	}
 
 	@Override
 	public void update(Updater<T> updater) throws BlueDbException {
-		Runnable updateMultipleTask = new UpdateMultipleTask<T>(writeableCollection, clone(), updater);
-		writeableCollection.executeTask(updateMultipleTask);
+		EntityToChangeMapper<T> changeMapper = entity -> {
+			return IndividualChange.createUpdateChange(entity, updater, writeableCollection.getSerializer());
+		};
+		
+		String description = "Update using query " + this;
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
+		writeableCollection.executeTask(task);
 	}
 
 	@Override
 	public void replace(Mapper<T> mapper) throws BlueDbException {
-		Runnable updateMultipleTask = new ReplaceMultipleTask<T>(writeableCollection, clone(), mapper);
-		writeableCollection.executeTask(updateMultipleTask);
+		EntityToChangeMapper<T> changeMapper = entity -> {
+			return IndividualChange.createReplaceChange(entity, mapper, writeableCollection.getSerializer());
+		};
+		
+		String description = "Replace using query " + this;
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
+		writeableCollection.executeTask(task);
 	}
 
 	public QueryOnDisk<T> clone() {

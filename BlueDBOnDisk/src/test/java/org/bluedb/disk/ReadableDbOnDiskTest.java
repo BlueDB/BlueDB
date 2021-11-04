@@ -1189,7 +1189,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		for(SelectiveBackupItem item : items) {
 			TestValue updatedValue = serializer.clone(item.getValue());
 			updatedValue.addCupcake();
-			changesForBatch.add(IndividualChange.createUpdateChange(item.getKey(), item.getValue(), updatedValue));
+			changesForBatch.add(IndividualChange.createChange(item.getKey(), item.getValue(), updatedValue));
         }
 		Collections.sort(changesForBatch);
 		

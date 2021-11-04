@@ -21,7 +21,7 @@ public class SortedChangeIteratorTest {
 			BlueKey key = new TimeKey(i, i);
 			TestValue oldValue = new TestValue(String.valueOf(i), i);
 			TestValue newValue = new TestValue(String.valueOf(i), i+1);
-			sortedChanges.add(IndividualChange.createUpdateChange(key, oldValue, newValue));
+			sortedChanges.add(IndividualChange.createChange(key, oldValue, newValue));
 		}
 		
 		SortedChangeSupplier<TestValue> sortedChangeSupplier = new InMemorySortedChangeSupplier<TestValue>(sortedChanges);

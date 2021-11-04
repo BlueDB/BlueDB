@@ -78,7 +78,7 @@ public class BlueObjectStreamSorterTest {
 				BlueKey key = new TimeKey(0, i);
 				TestValue oldValue = new TestValue(String.valueOf(i), i);
 				TestValue newValue = new TestValue(String.valueOf(i), i+1);
-				unsortedChangesList.add(IndividualChange.createUpdateChange(key, oldValue, newValue));
+				unsortedChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
 			} else {
 				unsortedChangesList.add(null);
 			}

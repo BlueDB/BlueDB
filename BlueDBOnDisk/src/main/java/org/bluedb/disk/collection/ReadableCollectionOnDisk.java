@@ -113,16 +113,10 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	public boolean isTimeBased() {
 		return TimeKey.class.isAssignableFrom(getKeyType());
 	}
-
-	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
+	
+	public void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
 		if (!keyType.isAssignableFrom(key.getClass())) {
 			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);
-		}
-	}
-
-	protected void ensureCorrectKeyTypes(Collection<BlueKey> keys) throws BlueDbException {
-		for (BlueKey key: keys) {
-			ensureCorrectKeyType(key);
 		}
 	}
 

@@ -2,8 +2,11 @@ package org.bluedb.api;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
+import org.bluedb.api.datastructures.BlueKeyValuePair;
+import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.IntegerIndexKeyExtractor;
@@ -52,11 +55,21 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	public void insert(BlueKey key, V value) throws BlueDbException;
 	
 	/**
-	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch methods many times. 
+	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch methods many times.
+	 * Using an iterator instead of a map allows you to provide entries without storing all of them in memory at one time. 
 	 * @param values the key value pairs to insert. Key types must match the keyType specified when the collection was created.
 	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
 	 */
 	public void batchUpsert(Map<BlueKey, V> values) throws BlueDbException;
+	
+	/**
+	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch 
+	 * methods many times. 
+	 * @param keyValuePairs the key value pairs to insert. Key types must match the keyType specified when the 
+	 * collection was created.
+	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
+	 */
+	public void batchUpsert(Iterator<BlueKeyValuePair<V>> keyValuePairs) throws BlueDbException;
 
 	/**
 	 * Mutates the value for the given key by passing it to the given updater
@@ -83,10 +96,18 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 
 	/**
 	 * Deletes the values for the given keys. Batch methods are much more efficient than calling non-batch methods many times.
+	 * Using an iterator instead of a collection allows you to provide keys without storing all of them in memory at one time.
 	 * @param keys the keys for the values which will be deleted
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created
 	 */
 	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException;
+
+	/**
+	 * Deletes the values for the given keys. Batch methods are much more efficient than calling non-batch methods many times.
+	 * @param keys the keys for the values which will be deleted
+	 * @throws BlueDbException if type of key is not the type specified when the collection was created
+	 */
+	public void batchDelete(BlueSimpleSet<BlueKey> keys) throws BlueDbException;
 
 	/**
 	 * Creates a {@link BlueQuery} object which can be used to build and execute a query against this collection.

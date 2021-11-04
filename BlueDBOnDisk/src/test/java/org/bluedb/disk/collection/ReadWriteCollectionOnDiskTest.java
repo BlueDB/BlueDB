@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.ReadableBlueCollection;
+import org.bluedb.api.datastructures.BlueKeyValuePair;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
@@ -90,6 +92,36 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		batchInserts.put(key1, value1);
 		batchInserts.put(key2, value2);
 		getLongCollection().batchUpsert(batchInserts);
+		assertEquals(value1, getLongCollection().get(key1));
+		assertEquals(value2, getLongCollection().get(key2));
+	}
+
+	@Test
+	public void test_batchInsertWithIterator() throws Exception {
+		TestValue value1 = new TestValue("Joe");
+		TestValue value2 = new TestValue("Bob");
+		BlueKey key1 = new LongKey(10);
+		BlueKey key2 = new LongKey(20);
+		
+		List<BlueKeyValuePair<TestValue>> batchInserts = new LinkedList<>();
+		batchInserts.add(new BlueKeyValuePair<>(key1, value1));
+		batchInserts.add(new BlueKeyValuePair<>(key2, value2));
+		
+		getLongCollection().batchUpsert(batchInserts.iterator());
+		assertEquals(value1, getLongCollection().get(key1));
+		assertEquals(value2, getLongCollection().get(key2));
+		
+		List<BlueKeyValuePair<TestValue>> batchUpdates = new LinkedList<>();
+		value1.addCupcake();
+		value2.addCupcake();
+		batchUpdates.add(new BlueKeyValuePair<>(key1, value1));
+		batchUpdates.add(new BlueKeyValuePair<>(key2, value2));
+		getLongCollection().batchUpsert(batchUpdates.iterator());
+		assertEquals(value1, getLongCollection().get(key1));
+		assertEquals(value2, getLongCollection().get(key2));
+		
+		List<BlueKeyValuePair<TestValue>> emptyUpdatesList = new LinkedList<>();
+		getLongCollection().batchUpsert(emptyUpdatesList.iterator());
 		assertEquals(value1, getLongCollection().get(key1));
 		assertEquals(value2, getLongCollection().get(key2));
 	}

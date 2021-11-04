@@ -123,6 +123,27 @@ public class RecoveryManager<T extends Serializable> {
 			tmpPath.toFile().delete();
 		}
 	}
+
+	public PendingMassChange<T> saveMassChange(Iterator<IndividualChange<T>> changeIterator) throws BlueDbException {
+		long creationTime = System.currentTimeMillis();
+		long recoverableId = getNewRecoverableId();
+		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		tmpPath.getParent().toFile().mkdirs();
+		
+		Map<BlueFileMetadataKey, String> metadataEntries = new HashMap<>();
+		metadataEntries.put(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));
+		
+		try {
+			BlueObjectStreamSorter<IndividualChange<T>> sorter = new BlueObjectStreamSorter<>(changeIterator, tmpPath, fileManager, metadataEntries);
+			sorter.sortAndWriteToFile();
+		
+			FileUtils.moveWithoutLock(tmpPath, path);
+			return new PendingMassChange<>(creationTime, recoverableId, path);
+		} finally {
+			tmpPath.toFile().delete();
+		}
+	}
 	
 	public Path getHistoryFolder() {
 		return historyFolderPath;
