@@ -107,6 +107,8 @@ public class OnDiskSortedChangeSupplier<T extends Serializable> implements Sorte
 				
 				if(inRangeCount > 1) {
 					return true;
+				} else if(change.getGroupingNumber() > range.getEnd()) {
+					return false; //The changes are sorted so once we are after the range end we can stop looking.
 				}
 			}
 		} finally {

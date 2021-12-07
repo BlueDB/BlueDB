@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -24,6 +25,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.IteratorWrapper;
 import org.bluedb.disk.ReadWriteDbOnDisk;
+import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
 import org.bluedb.disk.collection.index.ReadWriteIndexManager;
 import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
@@ -114,7 +116,8 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 
 	@Override
 	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException {
-		Iterator<IndividualChange<T>> changeIterator = new IteratorWrapper<>(values.entrySet().iterator(), IndividualChange::createInsertChange)
+		IteratorWrapperMapper<Entry<BlueKey, T>, IndividualChange<T>> mapper = IndividualChange::createInsertChange;
+		Iterator<IndividualChange<T>> changeIterator = new IteratorWrapper<>(values.entrySet().iterator(), mapper)
 				.addValidator(keyValuePair -> ensureCorrectKeyType(keyValuePair.getKey()));
 		
 		String description = "BatchUpsert map of size " + values.size();
@@ -124,7 +127,8 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	
 	@Override
 	public void batchUpsert(Iterator<BlueKeyValuePair<T>> keyValuePairIterator) throws BlueDbException {
-		Iterator<IndividualChange<T>> changeIterator = new IteratorWrapper<>(keyValuePairIterator, IndividualChange::createInsertChange)
+		IteratorWrapperMapper<BlueKeyValuePair<T>, IndividualChange<T>> mapper = IndividualChange::createInsertChange;
+		Iterator<IndividualChange<T>> changeIterator = new IteratorWrapper<>(keyValuePairIterator, mapper)
 				.addValidator(keyValuePair -> ensureCorrectKeyType(keyValuePair.getKey()));
 		
 		String description = "BatchUpsert using an iterator of key value pairs";
