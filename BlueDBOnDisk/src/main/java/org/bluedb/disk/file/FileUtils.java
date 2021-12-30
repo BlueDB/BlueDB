@@ -67,8 +67,8 @@ public class FileUtils {
 	}
 	
 	public static DirectoryStream<Path> getTempFolderContentsAsStream(File folder, FileFilter filter) throws IOException {
-		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_TEMP_FILE.accept(p.toFile());
-		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
+		Filter<Path> passesFilterAndIsTempFile = (p) -> filter.accept(p.toFile()) && IS_TEMP_FILE.accept(p.toFile());
+		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsTempFile );
 	}
 
 	public static void ensureFileExists(Path path) throws BlueDbException {
