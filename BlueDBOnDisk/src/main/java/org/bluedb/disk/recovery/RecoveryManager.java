@@ -23,6 +23,7 @@ import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.BlueObjectStreamSorter;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.query.QueryOnDisk;
 import org.bluedb.disk.segment.Range;
@@ -135,7 +136,7 @@ public class RecoveryManager<T extends Serializable> {
 		metadataEntries.put(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));
 		
 		try {
-			BlueObjectStreamSorter<IndividualChange<T>> sorter = new BlueObjectStreamSorter<>(changeIterator, tmpPath, fileManager, metadataEntries);
+			BlueObjectStreamSorter<IndividualChange<T>> sorter = new BlueObjectStreamSorter<>(changeIterator, tmpPath, fileManager, metadataEntries, BlueObjectStreamSorterConfig.createDefault());
 			sorter.sortAndWriteToFile();
 		
 			FileUtils.moveWithoutLock(tmpPath, path);

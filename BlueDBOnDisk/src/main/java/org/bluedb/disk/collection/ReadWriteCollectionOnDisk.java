@@ -20,6 +20,7 @@ import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
+import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
@@ -93,6 +94,11 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	@Override
 	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		return indexManager.getOrCreate(name, keyType, keyExtractor);
+	}
+	
+	@Override
+	public void createIndices(Collection<BlueIndexInfo<? extends ValueKey, T>> indexInfo) throws BlueDbException {
+		indexManager.createIndices(indexInfo);
 	}
 
 	@Override

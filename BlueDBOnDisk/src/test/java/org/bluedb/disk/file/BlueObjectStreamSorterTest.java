@@ -17,6 +17,7 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
+import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.OnDiskSortedChangeSupplier;
@@ -57,23 +58,117 @@ public class BlueObjectStreamSorterTest {
 	}
 
 	@Test
-	public void test_sortSmallBatch() throws BlueDbException {
-		testBatch(50, -1);
+	public void test_sortSmallBatchWithIterator() throws BlueDbException {
+		testUsingIterator(50, -1);
 	}
 
 	@Test
-	public void test_sortLargeBatch() throws BlueDbException {
-		testBatch(11000, -1);
+	public void test_sortSmallBatchWithoutIterator() throws BlueDbException {
+		testWithoutIterator(50, 1000, -1);
 	}
 
 	@Test
-	public void test_nullItemSkippedInSort() throws BlueDbException {
-		testBatch(11000, 10);
+	public void test_sortSmallBatchWithIteratorAndSingleBatch() throws BlueDbException {
+		testUsingIteratorPlusBatch(50, 13, -1);
 	}
 
-	private void testBatch(int batchSize, int nullIndex) throws BlueDbException {
+	@Test
+	public void test_nullItemSkippedInSmallBatchWithIterator() throws BlueDbException {
+		testUsingIterator(50, 10);
+	}
+
+	@Test
+	public void test_nullItemSkippedInSmallBatchWithoutIterator() throws BlueDbException {
+		testWithoutIterator(50, 1000, 10);
+	}
+
+	@Test
+	public void test_nullItemSkippedInSmallBatchWithIteratorAndSingleBatch() throws BlueDbException {
+		testUsingIteratorPlusBatch(50, 13, 10);
+	}
+
+	@Test
+	public void test_sortLargeBatchWithIterator() throws BlueDbException {
+		testUsingIterator(11000, -1);
+	}
+
+	@Test
+	public void test_sortLargeBatchWithoutIterator() throws BlueDbException {
+		testWithoutIterator(11000, 1000, -1);
+	}
+
+	@Test
+	public void test_outputPathCannotBeWrittenTo() throws BlueDbException, IOException {
+		Files.createFile(tmpPath);
+		tmpPath.toFile().setReadOnly();
+		try {
+			testUsingIterator(11000, -1);
+			fail();
+		} catch(BlueDbException e) {
+			//expected
+		}
+	}
+
+	@Test
+	public void test_sortLargeBatchWithIteratorAndSingleBatch() throws BlueDbException {
+		testUsingIteratorPlusBatch(11000, 13, -1);
+	}
+
+	@Test
+	public void test_sortLargeNonMultipleOf1000BatchWithIterator() throws BlueDbException {
+		testUsingIterator(11007, -1);
+	}
+
+	@Test
+	public void test_sortLargeNonMultipleOf1000BatchWithoutIterator() throws BlueDbException {
+		testWithoutIterator(11007, 1000, -1);
+	}
+
+	@Test
+	public void test_sortLargeNonMultipleOf1000WithIteratorAndSingleBatch() throws BlueDbException {
+		testUsingIteratorPlusBatch(11007, 13, -1);
+	}
+
+	private void testUsingIterator(int itemCount, int nullIndex) throws BlueDbException {
 		List<IndividualChange<TestValue>> unsortedChangesList = new ArrayList<>();
+		for(int i = 0; i < itemCount; i++) {
+			if(i != nullIndex) {
+				BlueKey key = new TimeKey(0, i);
+				TestValue oldValue = new TestValue(String.valueOf(i), i);
+				TestValue newValue = new TestValue(String.valueOf(i), i+1);
+				unsortedChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
+			} else {
+				unsortedChangesList.add(null);
+			}
+		}
+		Collections.shuffle(unsortedChangesList);
+
+		BlueObjectStreamSorterConfig config = new BlueObjectStreamSorterConfig(100, 10, 10, 5);
+		BlueObjectStreamSorter<IndividualChange<TestValue>> sorter = new BlueObjectStreamSorter<>(unsortedChangesList.iterator(), tmpPath, fileManager, metadataEntries, config);
+		sorter.sortAndWriteToFile();
+		
+		int expectedCount = (nullIndex >= 0) ? itemCount - 1 : itemCount;
+		
+		validateSortedFile(expectedCount);
+	}
+
+	private void testUsingIteratorPlusBatch(int itemCount, int batchSize, int nullIndex) throws BlueDbException {
+		List<IndividualChange<TestValue>> unsortedBatchChangesList = new ArrayList<>();
+		
 		for(int i = 0; i < batchSize; i++) {
+			if(i != nullIndex) {
+				BlueKey key = new TimeKey(0, i);
+				TestValue oldValue = new TestValue(String.valueOf(i), i);
+				TestValue newValue = new TestValue(String.valueOf(i), i+1);
+				unsortedBatchChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
+			} else {
+				unsortedBatchChangesList.add(null);
+			}
+		}
+		Collections.shuffle(unsortedBatchChangesList);
+		
+		List<IndividualChange<TestValue>> unsortedChangesList = new ArrayList<>();
+		for(int i = batchSize; i < itemCount; i++) {
 			if(i != nullIndex) {
 				BlueKey key = new TimeKey(0, i);
 				TestValue oldValue = new TestValue(String.valueOf(i), i);
@@ -85,10 +180,47 @@ public class BlueObjectStreamSorterTest {
 		}
 		Collections.shuffle(unsortedChangesList);
 		
-		BlueObjectStreamSorter<IndividualChange<TestValue>> sorter = new BlueObjectStreamSorter<>(unsortedChangesList.iterator(), tmpPath, fileManager, metadataEntries);
+		BlueObjectStreamSorterConfig config = new BlueObjectStreamSorterConfig(100, 10, 10, 5);
+		BlueObjectStreamSorter<IndividualChange<TestValue>> sorter = new BlueObjectStreamSorter<>(unsortedChangesList.iterator(), tmpPath, fileManager, metadataEntries, config);
+		sorter.addBatchOfObjectsToBeSorted(unsortedBatchChangesList);
 		sorter.sortAndWriteToFile();
 		
-		int expectedCount = (nullIndex >= 0) ? batchSize - 1 : batchSize;
+		int expectedCount = (nullIndex >= 0) ? itemCount - 1 : itemCount;
+		
+		validateSortedFile(expectedCount);
+	}
+
+	private void testWithoutIterator(int itemCount, int batchSize, int nullIndex) throws BlueDbException {
+		BlueObjectStreamSorterConfig config = new BlueObjectStreamSorterConfig(100, 10, 10, 5);
+		BlueObjectStreamSorter<IndividualChange<TestValue>> sorter = new BlueObjectStreamSorter<>(tmpPath, fileManager, metadataEntries, config);		
+		
+		List<IndividualChange<TestValue>> unsortedChangesList = new ArrayList<>();
+		for(int i = 0; i < itemCount; i++) {
+			if(i != nullIndex) {
+				BlueKey key = new TimeKey(0, i);
+				TestValue oldValue = new TestValue(String.valueOf(i), i);
+				TestValue newValue = new TestValue(String.valueOf(i), i+1);
+				unsortedChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
+			} else {
+				unsortedChangesList.add(null);
+			}
+			
+			if(unsortedChangesList.size() >= batchSize) {
+				Collections.shuffle(unsortedChangesList);
+				sorter.addBatchOfObjectsToBeSorted(unsortedChangesList);
+				unsortedChangesList.clear();
+			}
+		}
+		
+		if(!unsortedChangesList.isEmpty()) {
+			Collections.shuffle(unsortedChangesList);
+			sorter.addBatchOfObjectsToBeSorted(unsortedChangesList);
+			unsortedChangesList.clear();
+		}
+		
+		sorter.sortAndWriteToFile();
+		
+		int expectedCount = (nullIndex >= 0) ? itemCount - 1 : itemCount;
 		
 		validateSortedFile(expectedCount);
 	}
@@ -107,17 +239,6 @@ public class BlueObjectStreamSorterTest {
 			i++;
 		}
 		assertEquals(expectedCount, i);
-	}
-
-	@Test
-	public void test_nullInputThrowsException() {
-		BlueObjectStreamSorter<IndividualChange<TestValue>> sorter = new BlueObjectStreamSorter<>(null, tmpPath, fileManager, metadataEntries);
-		try {
-			sorter.sortAndWriteToFile();
-			fail();
-		} catch (BlueDbException e) {
-			//expected
-		}
 	}
 	
 }

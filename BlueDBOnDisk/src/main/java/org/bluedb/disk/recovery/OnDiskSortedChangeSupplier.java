@@ -38,7 +38,7 @@ public class OnDiskSortedChangeSupplier<T extends Serializable> implements Sorte
 			if(isLegacyFileManagerFile(metadata)) {
 				throw new BlueDbException("Failed to open change file as OnDiskSortedChangeSupplier. It is a legacy file manager file.");
 			}
-			loadDataForUpToDataChangeFile(metadata);
+			loadDataForUpToDateChangeFile(metadata);
 		} catch(Throwable t) {
 			close();
 			throw t;
@@ -49,7 +49,7 @@ public class OnDiskSortedChangeSupplier<T extends Serializable> implements Sorte
 		return metadata == null || !metadata.isTrue(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE);
 	}
 
-	private void loadDataForUpToDataChangeFile(BlueFileMetadata metadata) throws BlueDbException {
+	private void loadDataForUpToDateChangeFile(BlueFileMetadata metadata) throws BlueDbException {
 		changesSeekableInputStream.setCursorPosition(0);
 		this.changesObjectInputStream = fileManager.getBlueInputStream(changeFileReadLock, changesSeekableInputStream);
 		this.firstChangeCursorInfo = getCurrentCursorInfo();

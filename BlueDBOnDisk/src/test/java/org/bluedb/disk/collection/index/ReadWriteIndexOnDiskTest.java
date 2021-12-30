@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,10 +14,12 @@ import org.bluedb.api.BlueCollection;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
+import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
+import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
@@ -307,6 +310,109 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptyList, indexOnDisk.get(integerKey1));
 		assertEquals(emptyList, indexOnDisk.get(integerKey2));
 		assertEquals(justBob, indexOnDisk.get(integerKey3));
+	}
+
+	@Test
+	public void test_createNew_populateNewIndices() throws Exception {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+
+		IntegerKey integerKey1 = new IntegerKey(1);
+		IntegerKey integerKey2 = new IntegerKey(2);
+		IntegerKey integerKey3 = new IntegerKey(3);
+
+		List<TestValue> emptyList = Arrays.asList();
+		List<TestValue> bobAndJoe = Arrays.asList(valueBob3, valueJoe3);
+		List<TestValue> fredBobAndJoe = Arrays.asList(valueFred1, valueBob3, valueJoe3);
+		List<TestValue> justBob = Arrays.asList(valueBob3);
+		List<TestValue> justFred = Arrays.asList(valueFred1);
+
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+		
+		List<BlueIndexInfo<? extends ValueKey, TestValue>> indexInfoList = new LinkedList<>();
+		indexInfoList.add(new BlueIndexInfo<IntegerKey, TestValue>("test_index", IntegerKey.class, new TestRetrievalKeyExtractor()));
+		indexInfoList.add(new BlueIndexInfo<IntegerKey, TestValue>("test_index_2", IntegerKey.class, new TestMultiRetrievalKeyExtractor()));
+		collection.createIndices(indexInfoList);
+		
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk1 = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) collection.getIndex("test_index", IntegerKey.class);
+		assertEquals(justFred, indexOnDisk1.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk1.get(integerKey2));
+		assertEquals(bobAndJoe, indexOnDisk1.get(integerKey3));
+		
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk2 = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) collection.getIndex("test_index_2", IntegerKey.class);
+		assertEquals(justFred, indexOnDisk2.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk2.get(integerKey2));
+		assertEquals(fredBobAndJoe, indexOnDisk2.get(integerKey3));
+
+		collection.delete(timeKeyFred1);
+		collection.delete(timeKeyJoe3);
+
+		assertEquals(emptyList, indexOnDisk1.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk1.get(integerKey2));
+		assertEquals(justBob, indexOnDisk1.get(integerKey3));
+
+		assertEquals(emptyList, indexOnDisk1.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk1.get(integerKey2));
+		assertEquals(justBob, indexOnDisk1.get(integerKey3));
+	}
+
+	@Test
+	public void test_createExisting_doesNotPopulateLegacyIndex() throws Exception {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+
+		IntegerKey integerKey1 = new IntegerKey(1);
+		IntegerKey integerKey2 = new IntegerKey(2);
+		IntegerKey integerKey3 = new IntegerKey(3);
+
+		List<TestValue> emptyList = Arrays.asList();
+		List<TestValue> bobAndJoe = Arrays.asList(valueBob3, valueJoe3);
+		List<TestValue> justFred = Arrays.asList(valueFred1);
+
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
+
+		assertEquals(justFred, indexOnDisk.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk.get(integerKey2));
+		assertEquals(bobAndJoe, indexOnDisk.get(integerKey3));
+		
+		//Delete initialized file and index data
+		Files.delete(indexOnDisk.indexPath.resolve(ReadWriteIndexOnDisk.FILE_KEY_NEEDS_INITIALIZING));
+		Files.list(indexOnDisk.indexPath)
+			.filter(Files::isDirectory)
+			.map(Path::toFile)
+			.forEach(Blutils::recursiveDelete);
+
+		//Confirm data is gone
+		assertEquals(emptyList, indexOnDisk.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk.get(integerKey2));
+		assertEquals(emptyList, indexOnDisk.get(integerKey3));
+		
+		index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
+		
+		//Confirm data wasn't recreated
+		assertEquals(emptyList, indexOnDisk.get(integerKey1));
+		assertEquals(emptyList, indexOnDisk.get(integerKey2));
+		assertEquals(emptyList, indexOnDisk.get(integerKey3));
 	}
 
 	@Test

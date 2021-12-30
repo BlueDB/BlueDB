@@ -4,20 +4,30 @@ import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
+import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.index.MultiIndexCreator.MultiIndexCreatorResult;
+import org.bluedb.disk.collection.index.MultiIndexCreator.IndexManagerService;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
+import org.bluedb.disk.query.QueryOnDisk;
 import org.bluedb.disk.recovery.SortedChangeSupplier;
+import org.bluedb.disk.serialization.BlueEntity;
 
-public class ReadWriteIndexManager<T extends Serializable> extends ReadableIndexManager<T> {
+public class ReadWriteIndexManager<T extends Serializable> extends ReadableIndexManager<T> implements IndexManagerService<T> {
 
 	private final ReadWriteCollectionOnDisk<T> collection;
 	private Map<String, ReadWriteIndexOnDisk<ValueKey, T>> indexesByName;
@@ -28,15 +38,22 @@ public class ReadWriteIndexManager<T extends Serializable> extends ReadableIndex
 	}
 
 	public <K extends ValueKey> BlueIndex<K, T> getOrCreate(String indexName, Class<K> keyType, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
-		if (indexesByName.containsKey(indexName)) {
-			return getIndex(indexName, keyType);
+		List<BlueIndexInfo<? extends ValueKey, T>> indexInfoList = new LinkedList<>();
+		indexInfoList.add(new BlueIndexInfo<>(indexName, keyType, keyExtractor));
+		createIndices(indexInfoList);
+		return getIndex(indexName, keyType);
+	}
+	
+	public void createIndices(Collection<BlueIndexInfo<? extends ValueKey, T>> indicesToCreate) throws BlueDbException {
+		MultiIndexCreator<T> multiIndexCreator = new MultiIndexCreator<>(indicesToCreate, this);
+		MultiIndexCreatorResult<T> result = multiIndexCreator.createIndices();
+		for(ReadWriteIndexOnDisk<ValueKey, T> index : result.getNewlyCreatedIndices()) {
+			indexesByName.put(index.getIndexName(), index);	
 		}
-		Path indexPath = Paths.get(collection.getPath().toString(), INDEXES_SUBFOLDER, indexName);
-		ReadWriteIndexOnDisk<K, T> index = ReadWriteIndexOnDisk.createNew(collection, indexPath, keyExtractor);
-		@SuppressWarnings("unchecked")
-		ReadWriteIndexOnDisk<ValueKey, T> typedIndex = (ReadWriteIndexOnDisk<ValueKey, T>) index;
-		indexesByName.put(indexName, typedIndex);
-		return index;
+		
+		if(!result.getFailedIndexNames().isEmpty()) {
+			throw new BlueDbException("Failed to create " + result.getFailedIndexNames().size() + " indices. See corresponding exceptions for each above in the logs. Failed indices: " + result.getFailedIndexNames());
+		}
 	}
 
 	public ReadWriteIndexOnDisk<?, T> getUntypedIndex(String indexName) throws BlueDbException {
@@ -78,4 +95,28 @@ public class ReadWriteIndexManager<T extends Serializable> extends ReadableIndex
 		}
 		return map;
 	}
+	
+
+	@Override
+	public Optional<ReadWriteIndexOnDisk<ValueKey, T>> lookupExistingIndexByName(String indexName) throws BlueDbException {
+		return Optional.ofNullable(indexesByName.get(indexName));
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public ReadWriteIndexOnDisk<ValueKey, T> createNewIndex(String indexName, KeyExtractor<? extends ValueKey, T> keyExtractor) throws BlueDbException {
+		Path indexPath = Paths.get(collection.getPath().toString(), INDEXES_SUBFOLDER, indexName);
+		return (ReadWriteIndexOnDisk<ValueKey, T>) ReadWriteIndexOnDisk.createNew(collection, indexPath, keyExtractor);
+	}
+
+	@Override
+	public CloseableIterator<BlueEntity<T>> getEntityIteratorForEntireCollection() throws BlueDbException {
+		return new QueryOnDisk<>(collection).getEntityIterator();
+	}
+
+	@Override
+	public int getMaxRecordsInInitializationChunks() {
+		return BlueObjectStreamSorterConfig.createDefault().maxRecordsInInitialChunks;
+	}
+	
 }
