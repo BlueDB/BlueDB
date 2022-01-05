@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -143,8 +144,10 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
         assertEquals(value1, getLongCollection().get(key1));
         assertEquals(value2, getLongCollection().get(key2));
         assertEquals(value3, getLongCollection().get(key3));
-
-		getLongCollection().batchDelete(Arrays.asList(key1, key3));
+        
+		getLongCollection().query()
+			.whereKeyIsIn(new HashSet<>(Arrays.asList(key1, key3)))
+			.delete();
         assertFalse(getLongCollection().contains(key1));
         assertEquals(value2, getLongCollection().get(key2));
         assertFalse(getLongCollection().contains(key3));

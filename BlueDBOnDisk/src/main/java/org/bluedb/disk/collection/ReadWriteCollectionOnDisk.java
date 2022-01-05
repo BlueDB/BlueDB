@@ -2,11 +2,9 @@ package org.bluedb.disk.collection;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -16,8 +14,6 @@ import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
-import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
-import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.BlueIndexInfo;
@@ -25,13 +21,12 @@ import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.IteratorWrapper;
-import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
+import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteIndexManager;
 import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.task.BatchIteratorChangeTask;
-import org.bluedb.disk.collection.task.BatchQueryChangeTask;
 import org.bluedb.disk.collection.task.SingleRecordChangeTask;
 import org.bluedb.disk.collection.task.SingleRecordChangeTask.SingleRecordChangeMode;
 import org.bluedb.disk.executors.BlueExecutor;
@@ -139,22 +134,6 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 		
 		String description = "BatchUpsert using an iterator of key value pairs";
 		Runnable task = new BatchIteratorChangeTask<>(description, this, changeIterator);
-		executeTask(task);
-	} 
-
-	@Override
-	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException {
-		Set<BlueKey> keySet = new HashSet<>(keys);
-		batchDelete(new BlueSimpleInMemorySet<>(keySet));
-	}
-	
-	@Override
-	public void batchDelete(BlueSimpleSet<BlueKey> keys) throws BlueDbException {
-		String description = "BatchDelete keys";
-		QueryOnDisk<T> query = new QueryOnDisk<>(this);
-		query.whereKeyIsIn(keys);
-		
-		Runnable task = new BatchQueryChangeTask<T>(description, this, query, IndividualChange::createDeleteChange);
 		executeTask(task);
 	}
 

@@ -124,7 +124,9 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertValueAtKey(key2, value2);
 		assertValueAtKey(key3, value3);
 
-		getTimeCollection().batchDelete(Arrays.asList(key1, key3));
+		getTimeCollection().query()
+			.whereKeyIsIn(new HashSet<>(Arrays.asList(key1, key3)))
+			.delete();
 		assertValueNotAtKey(key1, value1);
 		assertValueAtKey(key2, value2);
 		assertValueNotAtKey(key3, value3);
