@@ -8,8 +8,8 @@ repositories {
 
 dependencies {
 	testImplementation project(":BlueDB")
-	testImplementation project(":BlueDBOnDisk")
-	testImplementation(testFixtures(project(":BlueDBOnDisk")))
+	testImplementation project(":BlueDBOnDisk")	
+	testImplementation project(":BlueDBOnDisk").sourceSets.test.output
 	testImplementation group: 'org.mockito', name: 'mockito-all', version: mockitoVersion
 	testImplementation group: 'org.jasypt', name: 'jasypt', version: '1.9.0'
 	testImplementation 'junit:junit:4.13.2'
