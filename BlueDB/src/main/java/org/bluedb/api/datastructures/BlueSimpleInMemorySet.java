@@ -1,6 +1,5 @@
 package org.bluedb.api.datastructures;
 
-import java.util.Iterator;
 import java.util.Set;
 
 public class BlueSimpleInMemorySet<T> implements BlueSimpleSet<T> {
@@ -11,8 +10,8 @@ public class BlueSimpleInMemorySet<T> implements BlueSimpleSet<T> {
 	}
 
 	@Override
-	public Iterator<T> iterator() {
-		return set.iterator();
+	public BlueSimpleIterator<T> iterator() {
+		return new BlueSimpleIteratorWrapper<T>(set.iterator());
 	}
 
 	@Override

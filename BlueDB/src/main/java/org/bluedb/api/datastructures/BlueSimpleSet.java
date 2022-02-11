@@ -1,7 +1,5 @@
 package org.bluedb.api.datastructures;
 
-import java.util.Iterator;
-
 /**
  * This simple set abstraction provides a way to iterate over the objects inside of it and to
  * check if it contains an object. This exists in order to provide BlueDB users with an option
@@ -10,6 +8,6 @@ import java.util.Iterator;
  * @param <T> The type of data contained in the simple set.
  */
 public interface BlueSimpleSet<T> {
-	public Iterator<T> iterator();
+	public BlueSimpleIterator<T> iterator();
 	public boolean contains(T object);
 }

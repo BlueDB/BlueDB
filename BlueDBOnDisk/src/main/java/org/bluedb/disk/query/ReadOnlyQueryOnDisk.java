@@ -3,7 +3,6 @@ package org.bluedb.disk.query;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
+import org.bluedb.api.datastructures.BlueSimpleIterator;
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
@@ -96,11 +96,12 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 		SegmentPathManager pathManager = segmentManager.getPathManager();
 		
 		for(BlueSimpleSet<BlueKey> keysToInclude : keySetsToInclude) {
-			Iterator<BlueKey> keysIterator = keysToInclude.iterator();
-			while(keysIterator.hasNext()) {
-				BlueKey key = keysIterator.next();
-				Path segmentPath = pathManager.getSegmentPath(key);
-				segmentRangesToInclude.add(segmentManager.toRange(segmentPath));
+			try(BlueSimpleIterator<BlueKey> keysIterator = keysToInclude.iterator()) {
+				while(keysIterator.hasNext()) {
+					BlueKey key = keysIterator.next();
+					Path segmentPath = pathManager.getSegmentPath(key);
+					segmentRangesToInclude.add(segmentManager.toRange(segmentPath));
+				}
 			}
 		}
 		
