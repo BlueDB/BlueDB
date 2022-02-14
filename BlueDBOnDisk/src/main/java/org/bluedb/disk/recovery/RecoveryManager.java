@@ -21,9 +21,9 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.file.BlueObjectStreamSorter;
+import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.file.ReadWriteFileManager;
-import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.query.QueryOnDisk;
 import org.bluedb.disk.segment.Range;
@@ -89,7 +89,7 @@ public class RecoveryManager<T extends Serializable> {
 		}
 	}
 
-	public PendingMassChange<T> saveMassChange(QueryOnDisk<T> updateQuery, EntityToChangeMapper<T> entityToChangeMapper) throws BlueDbException {
+	public PendingMassChange<T> saveMassChangeForQueryChange(QueryOnDisk<T> updateQuery, EntityToChangeMapper<T> entityToChangeMapper) throws BlueDbException {
 		long creationTime = System.currentTimeMillis();
 		long recoverableId = getNewRecoverableId();
 		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
@@ -108,7 +108,7 @@ public class RecoveryManager<T extends Serializable> {
 					IndividualChange<T> change = entityToChangeMapper.map(entity);
 					output.write(change);
 				} catch(Throwable t) {
-					throw new BlueDbException("Cannot update object " + entity.getKey() + ", it will be skipped.", t);
+					throw new BlueDbException("Update query failed, the update/replace method probably did something weird to the " + entity.getKey() + " entity");
 				}
 			}
 		} catch(Throwable t) {
@@ -125,10 +125,54 @@ public class RecoveryManager<T extends Serializable> {
 		}
 	}
 
-	public PendingMassChange<T> saveMassChange(Iterator<IndividualChange<T>> changeIterator) throws BlueDbException {
+	public PendingMassChange<T> saveMassChangeForBatchUpsert(Iterator<IndividualChange<T>> sortedChangeIterator) throws BlueDbException {
 		long creationTime = System.currentTimeMillis();
 		long recoverableId = getNewRecoverableId();
 		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		tmpPath.getParent().toFile().mkdirs();
+		
+		try(BlueObjectOutput<IndividualChange<T>> output = fileManager.getBlueOutputStreamWithoutLock(tmpPath)) {
+			
+			output.setMetadataValue(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, Boolean.toString(true));
+			
+			while(sortedChangeIterator.hasNext()) {
+				IndividualChange<T> nextChange = sortedChangeIterator.next();
+				try {
+					output.write(nextChange);
+				} catch(Throwable t) {
+					new BlueDbException("Batch upsert failed on object " + (nextChange != null ? nextChange.getKey() : "null") + ". It will be skipped.", t).printStackTrace();
+				}
+			}
+		} catch(Throwable t) {
+			//If there is a problem don't leave the tmp file around but let the exception still be thrown
+			tmpPath.toFile().delete(); 
+			throw t;
+		}
+		
+		try {
+			FileUtils.moveWithoutLock(tmpPath, path);
+			return new PendingMassChange<>(creationTime, recoverableId, path);
+		} finally {
+			tmpPath.toFile().delete();
+		}
+	}
+	
+	public PendingMassChange<T> saveMassChangeForUnorderedChanges(Iterator<IndividualChange<T>> changeIterator) throws BlueDbException {
+		return saveMassChangeForUnorderedChanges(changeIterator, false);
+	}
+	
+	public PendingMassChange<T> saveTempMassChangeForUnorderedChanges(Iterator<IndividualChange<T>> changeIterator) throws BlueDbException {
+		return saveMassChangeForUnorderedChanges(changeIterator, true);
+	}
+
+	private PendingMassChange<T> saveMassChangeForUnorderedChanges(Iterator<IndividualChange<T>> changeIterator, boolean tempFile) throws BlueDbException {
+		long creationTime = System.currentTimeMillis();
+		long recoverableId = getNewRecoverableId();
+		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
+		if(tempFile) {
+			path = FileUtils.createTempFilePath(path);
+		}
 		Path tmpPath = FileUtils.createTempFilePath(path);
 		tmpPath.getParent().toFile().mkdirs();
 		

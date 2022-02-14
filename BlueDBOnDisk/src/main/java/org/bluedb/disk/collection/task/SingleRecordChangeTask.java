@@ -41,7 +41,7 @@ public class SingleRecordChangeTask<T extends Serializable> extends QueryTask {
 		
 		List<IndividualChange<T>> changeList = Arrays.asList(changeMapper.map(key, value));
 		
-		PendingMassChange<T> changeBatch = recoveryManager.saveMassChange(changeList.iterator());
+		PendingMassChange<T> changeBatch = recoveryManager.saveMassChangeForUnorderedChanges(changeList.iterator());
 		changeBatch.apply(collection);
 		recoveryManager.markComplete(changeBatch);
 	}

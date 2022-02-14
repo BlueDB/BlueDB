@@ -5,13 +5,12 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-import org.mockito.Mockito;
 import org.bluedb.TestCloseableIterator;
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Updater;
@@ -26,6 +25,8 @@ import org.bluedb.disk.query.QueryOnDisk;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
@@ -83,7 +84,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_saveMassChange() throws Exception {
+	public void test_saveMassChangeForQueryChange() throws Exception {
 		List<BlueEntity<TestValue>> sortedEntitiesToUpdate = new LinkedList<>();
 		for(int i = 0; i < 10; i++) {
 			sortedEntitiesToUpdate.add(new BlueEntity<TestValue>(new TimeKey(i, i), new TestValue(String.valueOf(i), i)));
@@ -101,7 +102,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 		assertEquals(0, changes.size());
-		getRecoveryManager().saveMassChange(mockedQuery, entityToChangeMapper);
+		getRecoveryManager().saveMassChangeForQueryChange(mockedQuery, entityToChangeMapper);
 		changes = getRecoveryManager().getPendingChanges();
 		PendingMassChange<TestValue> savedChange = (PendingMassChange<TestValue>) changes.get(0);
 		assertEquals(1, changes.size());
@@ -126,6 +127,64 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		}
 		
 		assertEquals(expectedChanges, actualChanges);
+	}
+	
+	@Test
+	public void test_saveMassChangeForBatchUpsert() throws BlueDbException {
+		List<IndividualChange<TestValue>> originalSortedChangeList = new LinkedList<>();
+		originalSortedChangeList.add(null); //Null should be skipped but the rest should go through
+		for(int i = 0; i < 10; i++) {
+			TimeKey key = new TimeKey(i, i);
+			TestValue oldValue = new TestValue(String.valueOf(i), i-1);
+			TestValue newValue = new TestValue(String.valueOf(i), i);
+			
+			if(i % 2 == 0) {
+				originalSortedChangeList.add(IndividualChange.createInsertChange(key, newValue));
+			} else {
+				originalSortedChangeList.add(new IndividualChange<>(key, oldValue, newValue));
+			}
+		}
+		
+		List<Recoverable<TestValue>> pendingChanges = getRecoveryManager().getPendingChanges();
+		assertEquals(0, pendingChanges.size());
+		
+		getRecoveryManager().saveMassChangeForBatchUpsert(originalSortedChangeList.iterator());
+		pendingChanges = getRecoveryManager().getPendingChanges();
+		PendingMassChange<TestValue> savedChange = (PendingMassChange<TestValue>) pendingChanges.get(0);
+		assertEquals(1, pendingChanges.size());
+		
+		OnDiskSortedChangeSupplier<TestValue> sortedChangeSupplier = new OnDiskSortedChangeSupplier<TestValue>(savedChange.getChangesFilePath(), getFileManager());
+		SortedChangeIterator<TestValue> sortedChangeIterator = new SortedChangeIterator<TestValue>(sortedChangeSupplier);
+		List<IndividualChange<TestValue>> actualChanges = new LinkedList<>();
+		while(sortedChangeIterator.hasNext()) {
+			actualChanges.add(sortedChangeIterator.next());
+		}
+		
+		List<IndividualChange<TestValue>> expectedChanges = originalSortedChangeList.subList(1, originalSortedChangeList.size()); //Remove the null since it shouldn't have gone through
+		assertEquals(expectedChanges, actualChanges);
+	}
+	
+	@Test
+	public void test_saveMassChangeForBatchUpsert_invalidIterator() throws BlueDbException {
+		@SuppressWarnings("unchecked")
+		Iterator<IndividualChange<TestValue>> mockedIteratorThatWillThrowException = (Iterator<IndividualChange<TestValue>>) Mockito.mock(Iterator.class);
+		Mockito.doReturn(true).when(mockedIteratorThatWillThrowException).hasNext();
+		Mockito.doThrow(new RuntimeException()).when(mockedIteratorThatWillThrowException).next();
+		
+		List<Recoverable<TestValue>> pendingChanges = getRecoveryManager().getPendingChanges();
+		assertEquals(0, pendingChanges.size());
+		
+		try {
+			getRecoveryManager().saveMassChangeForBatchUpsert(mockedIteratorThatWillThrowException);
+			fail();
+		} catch(RuntimeException e) {
+			//expected
+		}
+		
+		assertTrue(getRecoveryManager().getPendingChangeFiles().isEmpty());
+		
+		pendingChanges = getRecoveryManager().getPendingChanges();
+		assertEquals(0, pendingChanges.size());
 	}
 
 	@Test

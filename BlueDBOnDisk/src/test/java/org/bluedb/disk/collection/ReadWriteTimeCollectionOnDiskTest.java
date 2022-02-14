@@ -34,6 +34,7 @@ import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.index.ReadableIndexOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
@@ -168,6 +169,125 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(listEmpty, index.get(indexKeyFor1and3));
 		getTimeCollection().batchUpsert(batchInserts);
 		assertEquals(list1and3, index.get(indexKeyFor1and3));
+	}
+	
+	@Test
+	public void test_batchUpsert_withIndex() throws BlueDbException {
+		KeyExtractor<IntegerKey, TestValue> keyExtractor = new TestRetrievalKeyExtractor();
+		ReadableIndexOnDisk<IntegerKey, TestValue> index = (ReadableIndexOnDisk<IntegerKey, TestValue>) getTimeCollection().createIndex("test_index", IntegerKey.class, keyExtractor);
+		
+		int indexValue1 = 42;
+		int indexValue2 = 777;
+		int indexValue3 = 9999999;
+		int indexValue4 = 3117;
+		
+		TestValue value1 = new TestValue("Joe", indexValue1);
+		BlueKey key1 = createTimeKey(10, value1);
+		
+		TestValue value2 = new TestValue("Bob", indexValue2);
+		BlueKey key2 = createTimeKey(20, value2);
+		
+		TestValue value3 = new TestValue("Charlie", indexValue1);
+		BlueKey key3 = createTimeKey(30, value3);
+
+		Set<BlueKey> emptyKeySet = new HashSet<>();
+		Set<BlueKey> keys1_3 = new HashSet<>(Arrays.asList(key1, key3));
+		Set<BlueKey> keys2 = new HashSet<>(Arrays.asList(key2));
+		
+		List<TestValue> emptyList = Arrays.asList();
+		List<TestValue> values1_2_3 = Arrays.asList(value1, value2, value3);
+		List<TestValue> values1_3 = Arrays.asList(value1, value3);
+		List<TestValue> values2 = Arrays.asList(value2);
+
+		//Should start empty
+		assertEquals(emptyList, getTimeCollection().query().getList());
+		assertEquals(emptyKeySet, index.getKeys(new IntegerKey(indexValue1)));
+		assertEquals(emptyKeySet, index.getKeys(new IntegerKey(indexValue2)));
+		assertEquals(emptyList, index.get(new IntegerKey(indexValue1)));
+		assertEquals(emptyList, index.get(new IntegerKey(indexValue2)));
+		
+		Map<BlueKey, TestValue> entriesToUpsert = new HashMap<>();
+		entriesToUpsert.put(key1, value1);
+		entriesToUpsert.put(key2, value2);
+		entriesToUpsert.put(key3, value3);
+		getTimeCollection().batchUpsert(entriesToUpsert);
+		
+		//Collection values, index keys, and looking up values by index key should all reflect the inserted items
+		assertEquals(values1_2_3, getTimeCollection().query().getList());
+		assertEquals(keys1_3, index.getKeys(new IntegerKey(indexValue1)));
+		assertEquals(keys2, index.getKeys(new IntegerKey(indexValue2)));
+		assertEquals(values1_3, index.get(new IntegerKey(indexValue1)));
+		assertEquals(values2, index.get(new IntegerKey(indexValue2)));
+		
+		TestValue value4 = new TestValue("Aaron", indexValue1);
+		BlueKey key4 = createTimeKey(5, value4);
+		
+		TestValue value5 = new TestValue("Rodger", indexValue3);
+		BlueKey key5 = createTimeKey(1000000000, value5);
+		
+		TestValue newValue1 = value1.cloneWithNewCupcakeCount(indexValue4);
+		TestValue newValue2 = value1.cloneWithNewCupcakeCount(indexValue4);
+		
+		entriesToUpsert = new HashMap<>();
+		entriesToUpsert.put(key1, newValue1); //Updating cup cake count
+		entriesToUpsert.put(key2, newValue2); //Update cup cake count
+		entriesToUpsert.put(key4, value4); //Insert
+		entriesToUpsert.put(key5, value5); //Insert
+		getTimeCollection().batchUpsert(entriesToUpsert);
+		
+		Set<BlueKey> keys1_2 = new HashSet<>(Arrays.asList(key1, key2));
+		Set<BlueKey> keys3_4 = new HashSet<>(Arrays.asList(key3, key4));
+		Set<BlueKey> keys5 = new HashSet<>(Arrays.asList(key5));
+		
+		List<TestValue> values1_2_3_4_5 = Arrays.asList(value4, newValue1, newValue2, value3, value5);
+		List<TestValue> values1_2 = Arrays.asList(newValue1, newValue2);
+		List<TestValue> values3_4 = Arrays.asList(value4, value3);
+		List<TestValue> values5 = Arrays.asList(value5);
+		
+		/*
+		 * Collection values, index keys, and looking up values by index key should all reflect the inserted/updated items.
+		 * In the past the index keys were not kept up to date properly on batch upserts and values had to be verified and
+		 * removed before returning values by index key.
+		 */
+		assertEquals(values1_2_3_4_5, getTimeCollection().query().getList());
+		assertEquals(keys3_4, index.getKeys(new IntegerKey(indexValue1)));
+		assertEquals(emptyKeySet, index.getKeys(new IntegerKey(indexValue2)));
+		assertEquals(keys5, index.getKeys(new IntegerKey(indexValue3)));
+		assertEquals(keys1_2, index.getKeys(new IntegerKey(indexValue4)));
+		assertEquals(values3_4, index.get(new IntegerKey(indexValue1)));
+		assertEquals(emptyList, index.get(new IntegerKey(indexValue2)));
+		assertEquals(values5, index.get(new IntegerKey(indexValue3)));
+		assertEquals(values1_2, index.get(new IntegerKey(indexValue4)));
+	}
+	
+	@Test
+	public void test_batchUpsert_invalidKeyType() throws BlueDbException {
+		TestValue value1 = new TestValue("Joe", 2);
+		BlueKey key1 = createTimeKey(10, value1);
+		
+		TestValue value2 = new TestValue("Bob", 5);
+		BlueKey key2 = new IntegerKey(15);
+		
+		TestValue value3 = new TestValue("Charlie", 7);
+		BlueKey key3 = createTimeKey(30, value3);
+
+		List<TestValue> emptyList = Arrays.asList();
+
+		assertEquals(emptyList, getTimeCollection().query().getList());
+		
+		Map<BlueKey, TestValue> entriesToUpsert = new HashMap<>();
+		entriesToUpsert.put(key1, value1);
+		entriesToUpsert.put(key2, value2);
+		entriesToUpsert.put(key3, value3);
+		
+		try {
+			getTimeCollection().batchUpsert(entriesToUpsert);
+			fail();
+		} catch(BlueDbException e) {
+			//expected since key2 is of a type that doesn't make sense for the collection
+		}
+		
+		assertEquals(emptyList, getTimeCollection().query().getList());
 	}
 
 	@Test

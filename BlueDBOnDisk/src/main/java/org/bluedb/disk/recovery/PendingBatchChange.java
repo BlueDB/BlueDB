@@ -1,6 +1,7 @@
 package org.bluedb.disk.recovery;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +30,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 
 	@Override
 	public void apply(ReadWriteCollectionOnDisk<T> collection) throws BlueDbException {
+		Collections.sort(sortedChanges); //PendingBatchChange instances don't get created anymore, so this just ensures that if someone updates from an old version of BlueDB that still has one of these in the recovery folder then it'll have any updated sorting.
 		SortedChangeSupplier<T> sortedChangeSupplier = new InMemorySortedChangeSupplier<T>(sortedChanges);
 		ReadWriteSegmentManager<T> segmentManager = collection.getSegmentManager();
 		segmentManager.applyChanges(sortedChangeSupplier);

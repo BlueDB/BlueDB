@@ -1,7 +1,6 @@
 package org.bluedb.disk.recovery;
 
 import java.io.Serializable;
-import java.util.Map.Entry;
 import java.util.Objects;
 
 import org.bluedb.api.Mapper;
@@ -24,10 +23,6 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 
 	public static <T extends Serializable> IndividualChange<T> createInsertChange(BlueKeyValuePair<T> keyValuePair) {
 		return createInsertChange(keyValuePair.getKey(), keyValuePair.getValue());
-	}
-
-	public static <T extends Serializable> IndividualChange<T> createInsertChange(Entry<BlueKey, T> entry) {
-		return createInsertChange(entry.getKey(), entry.getValue());
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createInsertChange(BlueKey key, T value) {
