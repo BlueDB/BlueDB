@@ -222,7 +222,7 @@ public class BackupManager {
 
 	private void copyChangeAfterFilteringBasedOnTime(ReadWriteCollectionOnDisk<?> collection, Range includedTimeRange, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
 		Recoverable<?> change = collection.getRecoveryManager().loadPendingChange(file);
-		if (shouldCopyChange(includedTimeRange, change)) {
+		if (change != null && shouldCopyChange(includedTimeRange, change)) {
 			collection.getRecoveryManager().copyChange(change, destinationPath, includedTimeRange);
 			if(FileUtils.exists(destinationPath)) {
 				recoveryManager.markChangePending(destinationPath);
@@ -240,9 +240,11 @@ public class BackupManager {
 
 	private void copyChangeStraightOver(ReadWriteCollectionOnDisk<?> collection, RecoveryManager<?> recoveryManager, File file, Path destinationPath) throws BlueDbException {
 		Recoverable<?> change = collection.getRecoveryManager().loadPendingChange(file);
-		collection.getRecoveryManager().copyChange(change, destinationPath, Range.createMaxRange());
-		if(FileUtils.exists(destinationPath)) {
-			recoveryManager.markChangePending(destinationPath);
+		if(change != null) {
+			collection.getRecoveryManager().copyChange(change, destinationPath, Range.createMaxRange());
+			if(FileUtils.exists(destinationPath)) {
+				recoveryManager.markChangePending(destinationPath);
+			}
 		}
 	}
 
