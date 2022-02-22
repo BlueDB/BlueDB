@@ -5,17 +5,28 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import org.junit.Test;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.bluedb.TestCloseableIterator;
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Updater;
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
+import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.query.QueryOnDisk;
+import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
@@ -65,11 +76,115 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 		assertEquals(0, changes.size());
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		changes = getRecoveryManager().getPendingChanges();
 		PendingChange<TestValue> savedChange = (PendingChange<TestValue>) changes.get(0);
 		assertEquals(1, changes.size());
 		assertEquals(value, savedChange.getNewValue());
+	}
+
+	@Test
+	public void test_saveMassChangeForQueryChange() throws Exception {
+		List<BlueEntity<TestValue>> sortedEntitiesToUpdate = new LinkedList<>();
+		for(int i = 0; i < 10; i++) {
+			sortedEntitiesToUpdate.add(new BlueEntity<TestValue>(new TimeKey(i, i), new TestValue(String.valueOf(i), i)));
+		}
+		CloseableIterator<BlueEntity<TestValue>> sortedEntitiesToUpdateIterator = new TestCloseableIterator<>(sortedEntitiesToUpdate.iterator());
+		
+		@SuppressWarnings("unchecked")
+		QueryOnDisk<TestValue> mockedQuery = (QueryOnDisk<TestValue>) Mockito.mock(QueryOnDisk.class);
+		Mockito.doReturn(sortedEntitiesToUpdateIterator).when(mockedQuery).getEntityIterator();
+		
+		EntityToChangeMapper<TestValue> entityToChangeMapper = entity -> {
+			TestValue newValue = entity.getValue().cloneWithNewCupcakeCount(entity.getValue().getCupcakes() + 1);
+			return IndividualChange.createChange(entity.getKey(), entity.getValue(), newValue);
+		};
+
+		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
+		assertEquals(0, changes.size());
+		getRecoveryManager().saveMassChangeForQueryChange(mockedQuery, entityToChangeMapper);
+		changes = getRecoveryManager().getPendingChanges();
+		PendingMassChange<TestValue> savedChange = (PendingMassChange<TestValue>) changes.get(0);
+		assertEquals(1, changes.size());
+		
+		List<IndividualChange<TestValue>> expectedChanges = StreamUtils.stream(sortedEntitiesToUpdate)
+			.map(entity -> {
+				try {
+					return entityToChangeMapper.map(entity);
+				} catch (BlueDbException e) {
+					e.printStackTrace();
+					return null;
+				}
+			})
+			.filter(Objects::nonNull)
+			.collect(Collectors.toList());
+		
+		OnDiskSortedChangeSupplier<TestValue> sortedChangeSupplier = new OnDiskSortedChangeSupplier<TestValue>(savedChange.getChangesFilePath(), getFileManager());
+		SortedChangeIterator<TestValue> sortedChangeIterator = new SortedChangeIterator<TestValue>(sortedChangeSupplier);
+		List<IndividualChange<TestValue>> actualChanges = new LinkedList<>();
+		while(sortedChangeIterator.hasNext()) {
+			actualChanges.add(sortedChangeIterator.next());
+		}
+		
+		assertEquals(expectedChanges, actualChanges);
+	}
+	
+	@Test
+	public void test_saveMassChangeForBatchUpsert() throws BlueDbException {
+		List<IndividualChange<TestValue>> originalSortedChangeList = new LinkedList<>();
+		originalSortedChangeList.add(null); //Null should be skipped but the rest should go through
+		for(int i = 0; i < 10; i++) {
+			TimeKey key = new TimeKey(i, i);
+			TestValue oldValue = new TestValue(String.valueOf(i), i-1);
+			TestValue newValue = new TestValue(String.valueOf(i), i);
+			
+			if(i % 2 == 0) {
+				originalSortedChangeList.add(IndividualChange.createInsertChange(key, newValue));
+			} else {
+				originalSortedChangeList.add(new IndividualChange<>(key, oldValue, newValue));
+			}
+		}
+		
+		List<Recoverable<TestValue>> pendingChanges = getRecoveryManager().getPendingChanges();
+		assertEquals(0, pendingChanges.size());
+		
+		getRecoveryManager().saveMassChangeForBatchUpsert(originalSortedChangeList.iterator());
+		pendingChanges = getRecoveryManager().getPendingChanges();
+		PendingMassChange<TestValue> savedChange = (PendingMassChange<TestValue>) pendingChanges.get(0);
+		assertEquals(1, pendingChanges.size());
+		
+		OnDiskSortedChangeSupplier<TestValue> sortedChangeSupplier = new OnDiskSortedChangeSupplier<TestValue>(savedChange.getChangesFilePath(), getFileManager());
+		SortedChangeIterator<TestValue> sortedChangeIterator = new SortedChangeIterator<TestValue>(sortedChangeSupplier);
+		List<IndividualChange<TestValue>> actualChanges = new LinkedList<>();
+		while(sortedChangeIterator.hasNext()) {
+			actualChanges.add(sortedChangeIterator.next());
+		}
+		
+		List<IndividualChange<TestValue>> expectedChanges = originalSortedChangeList.subList(1, originalSortedChangeList.size()); //Remove the null since it shouldn't have gone through
+		assertEquals(expectedChanges, actualChanges);
+	}
+	
+	@Test
+	public void test_saveMassChangeForBatchUpsert_invalidIterator() throws BlueDbException {
+		@SuppressWarnings("unchecked")
+		Iterator<IndividualChange<TestValue>> mockedIteratorThatWillThrowException = (Iterator<IndividualChange<TestValue>>) Mockito.mock(Iterator.class);
+		Mockito.doReturn(true).when(mockedIteratorThatWillThrowException).hasNext();
+		Mockito.doThrow(new RuntimeException()).when(mockedIteratorThatWillThrowException).next();
+		
+		List<Recoverable<TestValue>> pendingChanges = getRecoveryManager().getPendingChanges();
+		assertEquals(0, pendingChanges.size());
+		
+		try {
+			getRecoveryManager().saveMassChangeForBatchUpsert(mockedIteratorThatWillThrowException);
+			fail();
+		} catch(RuntimeException e) {
+			//expected
+		}
+		
+		assertTrue(getRecoveryManager().getPendingChangeFiles().isEmpty());
+		
+		pendingChanges = getRecoveryManager().getPendingChanges();
+		assertEquals(0, pendingChanges.size());
 	}
 
 	@Test
@@ -78,7 +193,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		TestValue value = createValue("Joe");
 		Recoverable<TestValue> change = PendingChange.createInsert(key, value, serializer);
 
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 		assertEquals(1, changes.size());
 		getRecoveryManager().markComplete(change);
@@ -94,7 +209,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
 		assertEquals(0, changes.size());
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		changes = getRecoveryManager().getPendingChanges();
 		assertEquals(1, changes.size());
 		getRecoveryManager().markComplete(change);
@@ -111,7 +226,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		List<File> changes = getRecoveryManager().getPendingChangeFiles();
 		assertEquals(0, changes.size());
 
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		changes = getRecoveryManager().getPendingChangeFiles();
 		assertEquals(1, changes.size());
 		
@@ -155,9 +270,9 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(ninetyMinutesAgo, change90.getTimeCreated());
 		getRecoveryManager().getChangeHistoryCleaner().setWaitBetweenCleanups(100_000);  // to prevent automatic cleanup
 		List<File> changesInitial = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-		getRecoveryManager().saveChange(change30);
-		getRecoveryManager().saveChange(change60);
-		getRecoveryManager().saveChange(change90);
+		getRecoveryManager().saveNewChange(change30);
+		getRecoveryManager().saveNewChange(change60);
+		getRecoveryManager().saveNewChange(change90);
 		List<File> changesAll = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		List<File> changes30to60 = getRecoveryManager().getChangeHistory(sixtyMinutesAgo, thirtyMinutesAgo);
 		List<File> changes30to30 = getRecoveryManager().getChangeHistory(thirtyMinutesAgo, thirtyMinutesAgo);
@@ -179,7 +294,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		TestValue value = createValue("Joe");
 
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(0, allValues.size());
 
@@ -200,7 +315,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 				IndividualChange.createInsertChange(key2at3, value2)
 		);
 		Recoverable<TestValue> change = PendingBatchChange.createBatchChange(sortedChanges);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(0, allValues.size());
 
@@ -218,7 +333,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		getTimeCollection().insert(key,  value);
 		PendingChange<TestValue> duplicateInsert = PendingChange.createInsert(key, value, serializer);
-		getRecoveryManager().saveChange(duplicateInsert);
+		getRecoveryManager().saveNewChange(duplicateInsert);
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(1, allValues.size());
 
@@ -238,7 +353,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		assertEquals(1, allValues.size());
 
 		PendingChange<TestValue> change = PendingChange.createDelete(key, value);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 		getRecoveryManager().recover();
 		allValues = getTimeCollection().query().getList();
 		assertEquals(0, allValues.size());
@@ -254,7 +369,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 
 		getTimeCollection().insert(key, originalValue);
 		PendingChange<TestValue> change = PendingChange.createUpdate(key, originalValue, updater, serializer);
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 
 		List<TestValue> allValues = getTimeCollection().query().getList();
 		assertEquals(1, allValues.size());

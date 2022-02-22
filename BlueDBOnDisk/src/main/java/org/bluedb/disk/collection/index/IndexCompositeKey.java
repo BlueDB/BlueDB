@@ -57,10 +57,20 @@ public class IndexCompositeKey<K extends BlueKey> implements BlueKey {
 	public String toString() {
 		return this.getClass().getSimpleName() + " [" + indexKey + " -> " + valueKey  + "]";
 	}
+	
+	@Override
+	public boolean isBeforeRange(long min, long max) {
+		return indexKey.isBeforeRange(min, max);
+	}
 
 	@Override
 	public boolean isInRange(long min, long max) {
 		return indexKey.isInRange(min, max);
+	}
+	
+	@Override
+	public boolean isAfterRange(long min, long max) {
+		return indexKey.isAfterRange(min, max);
 	}
 
 	public K getIndexKey() {

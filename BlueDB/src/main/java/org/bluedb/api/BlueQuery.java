@@ -1,8 +1,11 @@
 package org.bluedb.api;
 
 import java.io.Serializable;
+import java.util.Set;
 
+import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
 
 /**
  * Allows one to build and execute a query in a stream like way
@@ -12,6 +15,12 @@ public interface BlueQuery<V extends Serializable> extends ReadBlueQuery<V> {
 	
 	@Override
 	BlueQuery<V> where(Condition<V> condition);
+	
+	@Override
+	BlueQuery<V> whereKeyIsIn(Set<BlueKey> keys);
+	
+	@Override
+	BlueQuery<V> whereKeyIsIn(BlueSimpleSet<BlueKey> keys);
 	
 	/**
 	 * Executes the query and deletes any matching values

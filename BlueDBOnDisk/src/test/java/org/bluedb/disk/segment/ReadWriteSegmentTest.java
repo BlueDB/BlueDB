@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -23,8 +22,10 @@ import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.lock.BlueWriteLock;
+import org.bluedb.disk.recovery.InMemorySortedChangeSupplier;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.PendingRollup;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
 
@@ -190,8 +191,8 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		IndividualChange<TestValue> insert2At1 = IndividualChange.createInsertChange(key2At1, value2);
 		IndividualChange<TestValue> insert3At3 = IndividualChange.createInsertChange(key3At3, value3);
 		List<IndividualChange<TestValue>> changes = Arrays.asList(insert1At1, insert2At1, insert3At3);
-		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
-		segment.applyChanges(changesLinkedList);
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<TestValue>(changes, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		segment.applyChanges(sortedChanges);
 
 		assertTrue(segment.contains(key1At1));
 		assertTrue(segment.contains(key2At1));
@@ -228,15 +229,15 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		IndividualChange<TestValue> insert2At2 = IndividualChange.createInsertChange(key2At2, value2);
 		IndividualChange<TestValue> insert4At4 = IndividualChange.createInsertChange(key3At3, value3);
 		List<IndividualChange<TestValue>> changes = Arrays.asList(insert2At2, insert4At4);
-		LinkedList<IndividualChange<TestValue>> changesLinkedList = new LinkedList<>(changes);
-		segment.applyChanges(changesLinkedList);
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<TestValue>(changes, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		segment.applyChanges(sortedChanges);
 		assertEquals(list12And3, getSegmentContents(segment));
 		assertEquals(1, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 
 		IndividualChange<TestValue> inserinset3AtSegmentEnd = IndividualChange.createInsertChange(keySegmentEnd, value4);
 		changes = Arrays.asList(inserinset3AtSegmentEnd);
-		changesLinkedList = new LinkedList<>(changes);
-		segment.applyChanges(changesLinkedList);
+		sortedChanges = new InMemorySortedChangeSupplier<TestValue>(changes, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		segment.applyChanges(sortedChanges);
 		assertEquals(list123And4, getSegmentContents(segment));
 		assertEquals(2, ReadWriteSegment.getAllFileRangesInOrder(segment.getPath()).size());
 	}
@@ -513,7 +514,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 
@@ -538,7 +539,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
@@ -572,7 +573,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);
@@ -614,7 +615,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		Range rollupRange = getTimeCollection().getSegmentManager().getSegmentRange(0);
 		RollupTarget rollupTarget = new RollupTarget(0, rollupRange);
 		PendingRollup<TestValue> pendingRollup = new PendingRollup<TestValue>(rollupTarget);
-		getRecoveryManager().saveChange(pendingRollup);
+		getRecoveryManager().saveNewChange(pendingRollup);
 
 		ReadWriteSegment<TestValue> segment = getTimeCollection().getSegmentManager().getFirstSegment(key1);
 		List<File> filesToRollup = segment.getOrderedFilesInRange(rollupRange);

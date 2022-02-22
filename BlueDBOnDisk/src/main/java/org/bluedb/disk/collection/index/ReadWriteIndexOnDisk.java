@@ -1,14 +1,17 @@
 package org.bluedb.disk.collection.index;
 
 import java.io.Serializable;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,13 +20,20 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.BatchUtils;
+import org.bluedb.disk.IteratorWrapper;
+import org.bluedb.disk.IteratorWrapper.IteratorWrapperFlatMapper;
 import org.bluedb.disk.StreamUtils;
-import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
-import org.bluedb.disk.collection.ReadableCollectionOnDisk;
+import org.bluedb.disk.file.BlueObjectStreamSorter;
+import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
+import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
+import org.bluedb.disk.recovery.InMemorySortedChangeSupplier;
 import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.OnDiskSortedChangeSupplier;
+import org.bluedb.disk.recovery.SortedChangeIterator;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.ReadWriteSegmentManager;
@@ -32,14 +42,16 @@ import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
-import org.bluedb.disk.serialization.BlueEntity;
 
 public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> extends ReadableIndexOnDisk<I, T> implements BlueIndex<I, T>, Rollupable {
+	protected final static String FILE_KEY_NEEDS_INITIALIZING = ".needs-initialization";
 
 	private final RollupScheduler rollupScheduler;
 	private final String indexName;
 	private final ReadWriteSegmentManager<BlueKey> segmentManager;
 	private final ReadWriteFileManager fileManager;
+	
+	private AtomicLong nextIndexChangeId = new AtomicLong(0);
 
 	public static <K extends ValueKey, T extends Serializable> ReadWriteIndexOnDisk<K, T> createNew(ReadWriteCollectionOnDisk<T> collection, Path indexPath, KeyExtractor<K, T> keyExtractor) throws BlueDbException {
 		indexPath.toFile().mkdirs();
@@ -47,18 +59,8 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		Path keyExtractorPath = Paths.get(indexPath.toString(), FILE_KEY_EXTRACTOR);
 		fileManager.saveObject(keyExtractorPath, keyExtractor);
 		ReadWriteIndexOnDisk<K, T> index = new ReadWriteIndexOnDisk<K, T>(collection, indexPath, keyExtractor);
-		populateNewIndex(collection, index);
+		index.markAsNeedsInitialization();
 		return index;
-	}
-
-	private static <K extends ValueKey, T extends Serializable> void populateNewIndex(ReadableCollectionOnDisk<T> collection, ReadWriteIndexOnDisk<K, T> index) throws BlueDbException {
-		Range allTime = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(collection.getSegmentManager(), allTime, false, Arrays.asList())) {
-			while (iterator.hasNext()) {
-				List<BlueEntity<T>> entities = iterator.next(1000);
-				index.indexNewValues(entities);
-			}
-		}
 	}
 
 	public static <K extends ValueKey, T extends Serializable> ReadWriteIndexOnDisk<K, T> fromExisting(ReadWriteCollectionOnDisk<T> collection, Path indexPath) throws BlueDbException {
@@ -76,6 +78,11 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
 		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
 		rollupScheduler = collection.getRollupScheduler();
+		cleanupTempFiles();
+	}
+	
+	public String getIndexName() {
+		return indexName;
 	}
 
 	public ReadWriteSegmentManager<BlueKey> getSegmentManager() {
@@ -104,32 +111,57 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		return new IndexRollupTarget(indexName, rollupTarget.getSegmentGroupingNumber(), rollupTarget.getRange() );
 	}
 
-	public void indexNewValues(Collection<BlueEntity<T>> values) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = StreamUtils.stream(values)
-			.flatMap(value -> StreamUtils.stream(getSortedIndexChangesForValueUpdate(value.getKey(), null, value.getValue())))
-			.sorted()
-			.collect(Collectors.toList());
-		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
+	public void indexChanges(SortedChangeSupplier<T> sortedChangeSupplier) throws BlueDbException {
+		Path sortedIndexChangesPath = createNextIndexChangeStoragePath();
+		try {
+			SortedChangeIterator<T> sortedChangeIterator = new SortedChangeIterator<>(sortedChangeSupplier);
+			IteratorWrapperFlatMapper<IndividualChange<T>, IndividualChange<BlueKey>> flatMapper = this::getSortedIndexChangesForValueChange;
+			Iterator<IndividualChange<BlueKey>> unsortedIndexChangeIterator = new IteratorWrapper<>(sortedChangeIterator, flatMapper);
+			
+			Map<BlueFileMetadataKey, String> metadataEntries = new HashMap<>();
+			metadataEntries.put(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));
+			
+			BlueObjectStreamSorter<IndividualChange<BlueKey>> sorter = createBlueObjectStreamSorter(unsortedIndexChangeIterator, sortedIndexChangesPath);
+			sorter.sortAndWriteToFile();
+			
+			applyIndexChanges(sortedIndexChangesPath);
+		} finally {
+			sortedIndexChangesPath.toFile().delete();
+		}
 	}
-
-	public void indexChanges(Collection<IndividualChange<T>> changes) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = StreamUtils.stream(changes)
-			.flatMap(change -> StreamUtils.stream(getSortedIndexChangesForValueUpdate(change.getKey(), change.getOldValue(), change.getNewValue())))
-			.sorted()
-			.collect(Collectors.toList());
-		/*
-		 * Note that a batch delete passes in null for the old value and the new value. In that case we won't 
-		 * be able to calculate the proper index changes. However, this should be functioning better than it was
-		 * before. It wasn't ever removing any indices, it was only adding the ones for the new values.
-		 */
-		BatchUtils.apply(getSegmentManager(), sortedIndexChanges);
+	
+	public Path createNextIndexChangeStoragePath() throws BlueDbException {
+		long changeId = nextIndexChangeId.getAndIncrement();
+		return FileUtils.createTempFilePathInDirectory(indexPath, "indexChange-" + changeId);
+	}
+	
+	public BlueObjectStreamSorter<IndividualChange<BlueKey>> createBlueObjectStreamSorter(Iterator<IndividualChange<BlueKey>> unsortedIndexChangeIterator, Path sortedIndexChangesPath) {
+		Map<BlueFileMetadataKey, String> metadataEntries = new HashMap<>();
+		metadataEntries.put(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));
+		
+		return new BlueObjectStreamSorter<>(unsortedIndexChangeIterator, sortedIndexChangesPath, fileManager, metadataEntries, BlueObjectStreamSorterConfig.createDefault());
+	}
+	
+	public void applyIndexChanges(Path sortedIndexChangesPath) throws BlueDbException {
+		if(FileUtils.isEmpty(sortedIndexChangesPath)) {
+			return;
+		}
+		
+		try(SortedChangeSupplier<BlueKey> onDiskSortedChangeSupplier = new OnDiskSortedChangeSupplier<>(sortedIndexChangesPath, fileManager)) {
+			getSegmentManager().applyChanges(onDiskSortedChangeSupplier);
+		}
 	}
 
 	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
-		BatchUtils.apply(getSegmentManager(), getSortedIndexChangesForValueUpdate(key, oldValue, newValue));
+		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueChange(key, oldValue, newValue);
+		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges));
+	}
+	
+	public List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(IndividualChange<T> change) {
+		return getSortedIndexChangesForValueChange(change.getKey(), change.getOldValue(), change.getNewValue());
 	}
 
-	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueUpdate(BlueKey valueKey, T oldValue, T newValue) {
+	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(BlueKey valueKey, T oldValue, T newValue) {
 		Set<IndexCompositeKey<I>> oldCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, oldValue))
 				.collect(Collectors.toCollection(HashSet::new));
 		
@@ -162,5 +194,39 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		return StreamUtils.stream(keyExtractor.extractKeys(value))
 				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
 				.collect( Collectors.toList() );
+	}
+
+	protected void cleanupTempFiles() {
+		try {
+			DirectoryStream<Path> tempIndexFileStream = FileUtils.getTempFolderContentsAsStream(indexPath.toFile(), file -> true);
+			tempIndexFileStream.forEach(path -> {
+				path.toFile().delete();	
+			});
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+	}
+
+	protected void markAsNeedsInitialization() throws BlueDbException {
+		Boolean needsInitialization = true;
+		Path needsInitializationPath = indexPath.resolve(FILE_KEY_NEEDS_INITIALIZING);
+		fileManager.saveObject(needsInitializationPath, needsInitialization);
+	}
+
+	public boolean needsInitialization() throws BlueDbException {
+		Path needsInitializationPath = indexPath.resolve(FILE_KEY_NEEDS_INITIALIZING);
+		if(!FileUtils.isEmpty(needsInitializationPath)) {
+			Boolean needsInitialization = (Boolean) fileManager.loadObject(needsInitializationPath);
+			if(needsInitialization != null) {
+				return needsInitialization;
+			}
+		}
+		return false; //Legacy index collections won't have this file but do not need to be initialized
+	}
+
+	public void markInitializationComplete() throws BlueDbException {
+		Boolean needsInitialization = false;
+		Path needsInitializationPath = indexPath.resolve(FILE_KEY_NEEDS_INITIALIZING);
+		fileManager.saveObject(needsInitializationPath, needsInitialization);
 	}
 }

@@ -1,7 +1,10 @@
 package org.bluedb.api;
 
 import java.io.Serializable;
+import java.util.Set;
 
+import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 
@@ -13,7 +16,13 @@ public interface ReadBlueTimeQuery<V extends Serializable> extends ReadBlueQuery
 	
 	@Override
 	ReadBlueTimeQuery<V> where(Condition<V> condition);
-
+	
+	@Override
+	ReadBlueTimeQuery<V> whereKeyIsIn(Set<BlueKey> keys);
+	
+	@Override
+	ReadBlueTimeQuery<V> whereKeyIsIn(BlueSimpleSet<BlueKey> keys);
+	
 	/**
 	 * For queries on a collection with a key type of {@link TimeFrameKey}, this adds a condition that the value starts in the 
 	 * queried interval. Normally, it is only required that the value's time interval overlaps the queried time interval.

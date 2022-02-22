@@ -4,6 +4,12 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.exceptions.DuplicateKeyException;
 
 public abstract class QueryTask implements Runnable {
+	
+	private final String description;
+	
+	public QueryTask(String description) {
+		this.description = description;
+	}
 
 	public abstract void execute() throws BlueDbException;
 
@@ -15,8 +21,12 @@ public abstract class QueryTask implements Runnable {
 			throw new RuntimeException("tried to insert duplicate key: " + e.getKey());
 		} catch (BlueDbException e) {
 			e.printStackTrace();
-			throw new RuntimeException("error executing " + this);
+			throw new RuntimeException("error executing " + this, e);
 		}
 	}
 
+	@Override
+	public String toString() {
+		return description;
+	}
 }

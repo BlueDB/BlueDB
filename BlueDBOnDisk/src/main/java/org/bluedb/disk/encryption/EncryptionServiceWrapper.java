@@ -1,7 +1,6 @@
 package org.bluedb.disk.encryption;
 
 import java.util.Optional;
-import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 
 /**
@@ -62,7 +61,7 @@ public class EncryptionServiceWrapper {
 
 		// Return cached key if one exists
 		if (cachedEncryptionVersionKey != null) {
-			System.out.println("Warning: current encryption version key is invalid, this should be fixed ASAP! Using most recent valid key.");
+			System.out.println("[BlueDb Warning] - current encryption version key is invalid, this should be fixed ASAP! Using most recent valid key.");
 			return cachedEncryptionVersionKey;
 		}
 		// Error only if current key is invalid and no cached key exists

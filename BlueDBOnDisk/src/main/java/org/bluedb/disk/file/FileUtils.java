@@ -1,16 +1,12 @@
 package org.bluedb.disk.file;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.Files;
@@ -30,6 +26,7 @@ public class FileUtils {
 	
 	private final static String TEMP_FILE_PREFIX = "_tmp_";
 	private final static FileFilter IS_NOT_TEMP_FILE = (f) -> !f.getName().startsWith(TEMP_FILE_PREFIX);
+	private final static FileFilter IS_TEMP_FILE = (f) -> f.getName().startsWith(TEMP_FILE_PREFIX);
 
 	protected FileUtils() {}  // just to get test coverage to 100%
 
@@ -68,6 +65,11 @@ public class FileUtils {
 		Filter<Path> passesFilterAndIsNotTempFile = (p) -> filter.accept(p.toFile()) && IS_NOT_TEMP_FILE.accept(p.toFile());
 		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsNotTempFile );
 	}
+	
+	public static DirectoryStream<Path> getTempFolderContentsAsStream(File folder, FileFilter filter) throws IOException {
+		Filter<Path> passesFilterAndIsTempFile = (p) -> filter.accept(p.toFile()) && IS_TEMP_FILE.accept(p.toFile());
+		return Files.newDirectoryStream(Paths.get(folder.getAbsolutePath()), passesFilterAndIsTempFile );
+	}
 
 	public static void ensureFileExists(Path path) throws BlueDbException {
 		File file = path.toFile();
@@ -92,6 +94,12 @@ public class FileUtils {
 			parent.mkdirs();
 		}
 	}
+	
+	public static Path createTempFilePathInDirectory(Path directory, String filename) throws BlueDbException {
+		Path path = directory.resolve(TEMP_FILE_PREFIX + filename);
+		path.toFile().deleteOnExit();
+		return path;
+	}
 
 	public static Path createTempFilePath(Path originalPath) {
 		File parentFile = originalPath.toFile().getParentFile();
@@ -115,6 +123,20 @@ public class FileUtils {
 			return false;
 		}
 		return path.toFile().exists();
+	}
+	
+	public static boolean isEmpty(Path path) {
+		if(path == null || !path.toFile().exists()) {
+			return true;
+		}
+		return path.toFile().length() == 0;
+	}
+
+	public static long size(Path path) {
+		if(path == null || !path.toFile().exists()) {
+			return 0;
+		}
+		return path.toFile().length();
 	}
 
 	public static void moveFile(Path src, BlueWriteLock<Path> lock) throws BlueDbException {
@@ -197,41 +219,6 @@ public class FileUtils {
 	
 	public static DataOutputStream openDataOutputStream(File file) throws IOException {
 		return new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
-	}
-
-	protected static DataInputStream openDataInputStream(File file) throws IOException {
-		return new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
-	}
-
-	/*
-	 * This is a copy of DataInputStream.readInt except that it returns null if the end of the file was reached
-	 * instead of throwing an exception. We noticed that reading through so many files in BlueDB was resulting
-	 * in TONS of EOFExceptions being thrown and caught which is a bit heavy. We could return an optional or
-	 * something but this is a really low level method that is going to be called a TON so I figured that
-	 * it is probably worth just handling a null return rather than creating a new object every time we
-	 * call it.
-	 */
-	public static Integer readInt(DataInputStream dataInputStream) throws IOException {
-		int ch1 = dataInputStream.read();
-		int ch2 = dataInputStream.read();
-		int ch3 = dataInputStream.read();
-		int ch4 = dataInputStream.read();
-		if ((ch1 | ch2 | ch3 | ch4) < 0) {
-			return null;
-		}
-		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
-	}
-
-	public static byte[] readAllBytes(InputStream is) throws IOException {
-		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-		int numBytesRead;
-		byte[] nextBytes = new byte[1024];
-		while ((numBytesRead = is.read(nextBytes, 0, nextBytes.length)) != -1) {
-			buffer.write(nextBytes, 0, numBytesRead);
-		}
-
-		buffer.flush();
-		return buffer.toByteArray();
 	}
 	
 	public static void validateFileBytes(Path file) throws BlueDbException {

@@ -1,6 +1,7 @@
 package org.bluedb.api.keys;
 
 import org.junit.Test;
+
 import junit.framework.TestCase;
 
 public class StringKeyTest extends TestCase {
@@ -117,6 +118,18 @@ public class StringKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_isBeforeRange() {
+		StringKey stringKey = new StringKey("1");
+		long groupingNumber = stringKey.getGroupingNumber();
+		assertFalse(stringKey.isBeforeRange(groupingNumber - 1, groupingNumber - 1));
+		assertFalse(stringKey.isBeforeRange(groupingNumber - 1, groupingNumber));
+		assertFalse(stringKey.isBeforeRange(groupingNumber - 1, groupingNumber + 1));
+		assertFalse(stringKey.isBeforeRange(groupingNumber, groupingNumber));
+		assertFalse(stringKey.isBeforeRange(groupingNumber, groupingNumber + 1));
+		assertTrue(stringKey.isBeforeRange(groupingNumber + 1, groupingNumber + 1));
+	}
+
+	@Test
 	public void test_isInRange() {
 		StringKey stringKey = new StringKey("1");
 		long groupingNumber = stringKey.getGroupingNumber();
@@ -126,5 +139,17 @@ public class StringKeyTest extends TestCase {
 		assertTrue(stringKey.isInRange(groupingNumber, groupingNumber));
 		assertTrue(stringKey.isInRange(groupingNumber, groupingNumber + 1));
 		assertFalse(stringKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+	}
+
+	@Test
+	public void test_isAfterRange() {
+		StringKey stringKey = new StringKey("1");
+		long groupingNumber = stringKey.getGroupingNumber();
+		assertTrue(stringKey.isAfterRange(groupingNumber - 1, groupingNumber - 1));
+		assertFalse(stringKey.isAfterRange(groupingNumber - 1, groupingNumber));
+		assertFalse(stringKey.isAfterRange(groupingNumber - 1, groupingNumber + 1));
+		assertFalse(stringKey.isAfterRange(groupingNumber, groupingNumber));
+		assertFalse(stringKey.isAfterRange(groupingNumber, groupingNumber + 1));
+		assertFalse(stringKey.isAfterRange(groupingNumber + 1, groupingNumber + 1));
 	}
 }

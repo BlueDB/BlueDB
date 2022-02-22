@@ -2,6 +2,8 @@ package org.bluedb.disk.segment;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -41,14 +43,35 @@ public class ReadWriteSegmentManagerTest extends BlueDbDiskTestBase {
 		BlueKey timeFrameKey = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
 		TestValue value = new TestValue("Bob", 0);
 		try {
-			List<ReadWriteSegment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime));
+			List<ReadWriteSegment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), Optional.empty());
 			assertEquals(0, existingSegments.size());
+			
 			getTimeCollection().insert(timeFrameKey, value);
-			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime));
+			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), Optional.empty());
 			assertEquals(3, existingSegments.size());
-			List<ReadWriteSegment<TestValue>> existingSegments0to0 = getSegmentManager().getExistingSegments(new Range(minTime, minTime));
+			
+			Optional<Set<Range>> segmentRangesToInclude = Optional.of(existingSegments.stream()
+				.map(segment -> segment.getRange())
+				.collect(Collectors.toSet()));
+			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), segmentRangesToInclude);
+			assertEquals(3, existingSegments.size());
+			
+			segmentRangesToInclude.get().remove(existingSegments.get(0).getRange());
+			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), segmentRangesToInclude);
+			assertEquals(2, existingSegments.size());
+			
+			segmentRangesToInclude.get().remove(existingSegments.get(0).getRange());
+			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), segmentRangesToInclude);
+			assertEquals(1, existingSegments.size());
+			
+			segmentRangesToInclude.get().remove(existingSegments.get(0).getRange());
+			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), segmentRangesToInclude);
+			assertEquals(0, existingSegments.size());
+			
+			List<ReadWriteSegment<TestValue>> existingSegments0to0 = getSegmentManager().getExistingSegments(new Range(minTime, minTime), Optional.empty());
 			assertEquals(1, existingSegments0to0.size());
-			List<ReadWriteSegment<TestValue>> existingSegmentsOutsideRange = getSegmentManager().getExistingSegments(new Range(maxTime * 2, maxTime * 2));
+			
+			List<ReadWriteSegment<TestValue>> existingSegmentsOutsideRange = getSegmentManager().getExistingSegments(new Range(maxTime * 2, maxTime * 2), Optional.empty());
 			assertEquals(0, existingSegmentsOutsideRange.size());
 		} catch (BlueDbException e) {
 			e.printStackTrace();

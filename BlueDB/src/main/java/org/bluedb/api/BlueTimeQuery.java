@@ -1,6 +1,10 @@
 package org.bluedb.api;
 
 import java.io.Serializable;
+import java.util.Set;
+
+import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.keys.BlueKey;
 
 /**
  * Allows one to build and execute a query in a stream like way
@@ -10,6 +14,12 @@ public interface BlueTimeQuery<V extends Serializable> extends BlueQuery<V>, Rea
 	
 	@Override
 	BlueTimeQuery<V> where(Condition<V> condition);
+	
+	@Override
+	BlueTimeQuery<V> whereKeyIsIn(Set<BlueKey> keys);
+	
+	@Override
+	BlueTimeQuery<V> whereKeyIsIn(BlueSimpleSet<BlueKey> keys);
 	
 	@Override
 	BlueTimeQuery<V> byStartTime();

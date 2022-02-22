@@ -64,6 +64,16 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	}
 
 	/**
+	 * Returns true if this key's grouping number is before the range [min, max] exclusive, else false
+	 * @param min the minimum grouping number
+	 * @param max the maximum grouping number
+	 * @return true if this key's grouping number is before the range [min, max] exclusive, else false
+	 */
+	default boolean isBeforeRange(long min, long max) {
+		return getGroupingNumber() < min;
+	}
+
+	/**
 	 * Returns true if this key's grouping number is in the range [min, max] inclusive, else false
 	 * @param min the minimum grouping number
 	 * @param max the maximum grouping number
@@ -71,6 +81,16 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	 */
 	default boolean isInRange(long min, long max) {
 		return getGroupingNumber() >= min && getGroupingNumber() <= max;
+	}
+
+	/**
+	 * Returns true if this key's grouping number is after the range [min, max] exclusive, else false
+	 * @param min the minimum grouping number
+	 * @param max the maximum grouping number
+	 * @return true if this key's grouping number is after range [min, max] exclusive, else false
+	 */
+	default boolean isAfterRange(long min, long max) {
+		return getGroupingNumber() > max;
 	}
 
 	/**

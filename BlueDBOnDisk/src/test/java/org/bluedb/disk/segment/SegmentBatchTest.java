@@ -5,15 +5,18 @@ import static org.junit.Assert.*;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
-
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.recovery.InMemorySortedChangeSupplier;
 import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
+import org.bluedb.disk.segment.SegmentBatch.ExistingChunkRangeFinder;
 
 public class SegmentBatchTest {
 	
@@ -56,115 +59,136 @@ public class SegmentBatchTest {
 	List<IndividualChange<TestValue>> inserts0and1 = Arrays.asList(insert0At0, insert1At1);
 	List<IndividualChange<TestValue>> inserts0and4 = Arrays.asList(insert0At0, insert4At4);
 	List<IndividualChange<TestValue>> inserts4 = Arrays.asList(insert4At4);
-	SegmentBatch<TestValue> batchInsert1and2at1 = new SegmentBatch<>(inserts1And2At1);
-	SegmentBatch<TestValue> batchInsert0and1and3 = new SegmentBatch<>(inserts0and1and3);
-	SegmentBatch<TestValue> batchInsert0and1and4 = new SegmentBatch<>(inserts0and1and4);
-	SegmentBatch<TestValue> batchInsertEmtpy = new SegmentBatch<>(empty);
 
 	@Test
-	public void test_breakIntoChunks_cappedByExistingChunk() {
+	public void test_breakIntoChunks_cappedByExistingChunk() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|o|
 		// proposed: |x|x|-|-|x|-|-|-|
 		// expected:  ---     -      
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(ranges7to7, segment);
-		assertEquals(2, chunkBatches.size());
-		assertEquals(range0to1, chunkBatches.get(0).getRange());
-		assertEquals(range4to4, chunkBatches.get(1).getRange());
-		assertEquals(inserts0and1, chunkBatches.get(0).getChangesInOrder());
-		assertEquals(inserts4, chunkBatches.get(1).getChangesInOrder());
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<>(inserts0and1and4, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		ExistingChunkRangeFinder existingChunkRangeFinder = () -> ranges7to7;
+		SegmentBatch<TestValue> batchInsert0and1and4 = new SegmentBatch<>(sortedChanges, segment::calculatePossibleChunkRanges, existingChunkRangeFinder);
+		
+		assertEquals(range0to1, batchInsert0and1and4.determineNextChunkRange().orElse(null));
+		assertEquals(insert0At0, sortedChanges.getNextChange().orElse(null));
+		assertTrue(sortedChanges.seekToNextChangeInRange(range0to1));
+		assertEquals(insert1At1, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range0to1));
+		
+		assertEquals(range4to4, batchInsert0and1and4.determineNextChunkRange().orElse(null));
+		assertEquals(insert4At4, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range4to4));
+		
+		assertEquals(null, batchInsert0and1and4.determineNextChunkRange().orElse(null));
 	}
 
 
 	@Test
-	public void test_breakIntoChunks_overlapsExistingChunk() {
+	public void test_breakIntoChunks_overlapsExistingChunk() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |o|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|-|x|-|-|-|
 		// expected:  - -     -      
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(ranges0to0, segment);
-		assertEquals(3, chunkBatches.size());
-		assertEquals(range0to0, chunkBatches.get(0).getRange());
-		assertEquals(range1to1, chunkBatches.get(1).getRange());
-		assertEquals(range4to4, chunkBatches.get(2).getRange());
-		assertEquals(inserts0, chunkBatches.get(0).getChangesInOrder());
-		assertEquals(inserts1, chunkBatches.get(1).getChangesInOrder());
-		assertEquals(inserts4, chunkBatches.get(2).getChangesInOrder());
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<>(inserts0and1and4, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		ExistingChunkRangeFinder existingChunkRangeFinder = () -> ranges0to0;
+		SegmentBatch<TestValue> batchInsert0and1and4 = new SegmentBatch<>(sortedChanges, segment::calculatePossibleChunkRanges, existingChunkRangeFinder);
+		
+		assertEquals(range0to0, batchInsert0and1and4.determineNextChunkRange().orElse(null));
+		assertEquals(insert0At0, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range0to0));
+		
+		assertEquals(range1to1, batchInsert0and1and4.determineNextChunkRange().orElse(null));
+		assertEquals(insert1At1, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range1to1));
+		
+		assertEquals(range4to4, batchInsert0and1and4.determineNextChunkRange().orElse(null));
+		assertEquals(insert4At4, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range4to4));
+		
+		assertEquals(null, batchInsert0and1and4.determineNextChunkRange().orElse(null));
 	}
 
 	@Test
-	public void test_breakIntoChunks_empty() {
+	public void test_breakIntoChunks_empty() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |-|-|-|-|-|-|-|-|
 		// expected:  
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsertEmtpy.breakIntoChunks(Arrays.asList(), segment);
-		assertEquals(0, chunkBatches.size());
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<>(empty, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		ExistingChunkRangeFinder existingChunkRangeFinder = () -> Arrays.asList();
+		SegmentBatch<TestValue> batchInsertEmtpy = new SegmentBatch<>(sortedChanges, segment::calculatePossibleChunkRanges, existingChunkRangeFinder);
+		
+		assertEquals(null, batchInsertEmtpy.determineNextChunkRange().orElse(null));
 	}
 
 	@Test
-	public void test_breakIntoChunks_noExistingChunks() {
+	public void test_breakIntoChunks_noExistingChunks() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|-|x|-|-|-|
 		// expected:  ---------------
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and4.breakIntoChunks(Arrays.asList(), segment);
-		assertEquals(1, chunkBatches.size());
-		assertEquals(range0to7, chunkBatches.get(0).getRange());
-		assertEquals(inserts0and1and4, chunkBatches.get(0).getChangesInOrder());
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<>(inserts0and1and4, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		ExistingChunkRangeFinder existingChunkRangeFinder = () -> Arrays.asList();
+		SegmentBatch<TestValue> batchInsert0and1and4 = new SegmentBatch<>(sortedChanges, segment::calculatePossibleChunkRanges, existingChunkRangeFinder);
+		
+		assertEquals(range0to7, batchInsert0and1and4.determineNextChunkRange().orElse(null));
+		assertEquals(insert0At0, sortedChanges.getNextChange().orElse(null));
+		assertTrue(sortedChanges.seekToNextChangeInRange(range0to7));
+		assertEquals(insert1At1, sortedChanges.getNextChange().orElse(null));
+		assertTrue(sortedChanges.seekToNextChangeInRange(range0to7));
+		assertEquals(insert4At4, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range0to7));
+		
+		assertEquals(null, batchInsert0and1and4.determineNextChunkRange().orElse(null));
 	}
 
 	@Test
-	public void test_breakIntoChunks_noExistingChunks2() {
+	public void test_breakIntoChunks_noExistingChunks2() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |x|x|-|x|-|-|-|-|
 		// expected:  ---------------
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert0and1and3.breakIntoChunks(Arrays.asList(), segment);
-		assertEquals(1, chunkBatches.size());
-		assertEquals(range0to3, chunkBatches.get(0).getRange());
-		assertEquals(inserts0and1and3, chunkBatches.get(0).getChangesInOrder());
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<>(inserts0and1and3, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		ExistingChunkRangeFinder existingChunkRangeFinder = () -> Arrays.asList();
+		SegmentBatch<TestValue> batchInsert0and1and3 = new SegmentBatch<>(sortedChanges, segment::calculatePossibleChunkRanges, existingChunkRangeFinder);
+		
+		assertEquals(range0to3, batchInsert0and1and3.determineNextChunkRange().orElse(null));
+		assertEquals(insert0At0, sortedChanges.getNextChange().orElse(null));
+		assertTrue(sortedChanges.seekToNextChangeInRange(range0to3));
+		assertEquals(insert1At1, sortedChanges.getNextChange().orElse(null));
+		assertTrue(sortedChanges.seekToNextChangeInRange(range0to3));
+		assertEquals(insert3At3, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range0to3));
+		
+		assertEquals(null, batchInsert0and1and3.determineNextChunkRange().orElse(null));
 	}
 
 	@Test
-	public void test_breakIntoChunks_multipleAtOneGroupingNumber() {
+	public void test_breakIntoChunks_multipleAtOneGroupingNumber() throws BlueDbException {
 		//            0 1 2 3 4 5 6 7
 		// existing: |-|-|-|-|-|-|-|-|
 		// proposed: |X|-|-|-|-|-|-|-|
 		// expected:  -
-		List<ChunkBatch<TestValue>> chunkBatches = batchInsert1and2at1.breakIntoChunks(Arrays.asList(), segment);
-		assertEquals(1, chunkBatches.size());
-		assertEquals(range1to1, chunkBatches.get(0).getRange());
-		assertEquals(inserts1And2At1, chunkBatches.get(0).getChangesInOrder());
-	}
-
-	@Test
-	public void test_pollChangesBeforeOrAt() {
-		LinkedList<IndividualChange<TestValue>> inputs;
-		LinkedList<IndividualChange<TestValue>> extracted;
-
-		inputs = new LinkedList<>(inserts0and1and4); 
-		extracted = SegmentBatch.pollChangesBeforeOrAt(inputs, -1);
-		assertEquals(empty, extracted);
-		assertEquals(inserts0and1and4, inputs);
-
-		inputs = new LinkedList<>(inserts0and1and4); 
-		extracted = SegmentBatch.pollChangesBeforeOrAt(inputs, 1);
-		assertEquals(inserts0and1, extracted);
-		assertEquals(inserts4, inputs);
-
-		inputs = new LinkedList<>(inserts0and1and4); 
-		extracted = SegmentBatch.pollChangesBeforeOrAt(inputs, 4);
-		assertEquals(inserts0and1and4, extracted);
-		assertEquals(empty, inputs);
+		SortedChangeSupplier<TestValue> sortedChanges = new InMemorySortedChangeSupplier<>(inserts1And2At1, new Range(Long.MIN_VALUE, Long.MAX_VALUE));
+		ExistingChunkRangeFinder existingChunkRangeFinder = () -> Arrays.asList();
+		SegmentBatch<TestValue> batchInsert1and2at1 = new SegmentBatch<>(sortedChanges, segment::calculatePossibleChunkRanges, existingChunkRangeFinder);
+		
+		assertEquals(range1to1, batchInsert1and2at1.determineNextChunkRange().orElse(null));
+		assertEquals(insert1At1, sortedChanges.getNextChange().orElse(null));
+		assertTrue(sortedChanges.seekToNextChangeInRange(range1to1));
+		assertEquals(insert2At1, sortedChanges.getNextChange().orElse(null));
+		assertFalse(sortedChanges.seekToNextChangeInRange(range1to1));
+		
+		assertEquals(null, batchInsert1and2at1.determineNextChunkRange().orElse(null));
 	}
 
 	@Test
 	public void test_rangeContainsAll() {
-		assertFalse(SegmentBatch.rangeContainsAll(range0to0, inserts0and1and4));
-		assertTrue(SegmentBatch.rangeContainsAll(range0to4, inserts0and1and4));
-		assertTrue(SegmentBatch.rangeContainsAll(range0to7, inserts0and1and4));
-		assertFalse(SegmentBatch.rangeContainsAll(range1to7, inserts0and1and4));
+		assertFalse(SegmentBatch.rangeContainsAll(range0to0, inserts0and1and4.stream().map(change -> change.getGroupingNumber()).collect(Collectors.toSet())));
+		assertTrue(SegmentBatch.rangeContainsAll(range0to4, inserts0and1and4.stream().map(change -> change.getGroupingNumber()).collect(Collectors.toSet())));
+		assertTrue(SegmentBatch.rangeContainsAll(range0to7, inserts0and1and4.stream().map(change -> change.getGroupingNumber()).collect(Collectors.toSet())));
+		assertFalse(SegmentBatch.rangeContainsAll(range1to7, inserts0and1and4.stream().map(change -> change.getGroupingNumber()).collect(Collectors.toSet())));
 	}
 
 	@Test

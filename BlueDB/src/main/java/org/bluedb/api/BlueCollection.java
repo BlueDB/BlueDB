@@ -2,10 +2,13 @@ package org.bluedb.api;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
+import org.bluedb.api.datastructures.BlueKeyValuePair;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
+import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.index.IntegerIndexKeyExtractor;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.index.LongIndexKeyExtractor;
@@ -42,6 +45,25 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	 * @throws BlueDbException if the index exists but is not compatible with these types
 	 */
 	public <K extends ValueKey> BlueIndex<K, V> createIndex(String name, Class<K> keyType, KeyExtractor<K, V> keyExtractor) throws BlueDbException;
+	
+	/**
+	 * Creates one or more {@link BlueIndex} instances which map objects of type {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link IntegerKey}, {@link LongKey}) to values in the collection.
+	 * 
+	 * @param <K> the key type of the index or the type of data that the collection is being indexed on. It must be a concretion of 
+	 * {@link ValueKey} ({@link UUIDKey}, {@link StringKey}, {@link LongKey}, or {@link IntegerKey}). It is much more efficient to
+	 * create many indices at once instead of one at a time. You can call {@link BlueCollection#getIndex(String, Class)} later to
+	 * get and use the indices.
+	 * 
+	 * @param indexInfo A collection of index information for each index that you wish to create. In order to
+	 * create each index we need a name, index key type, and key extractor:<br/>
+	 * ><b>name</b> index name (one index per name per each collection)<br/>
+	 * ><b>keyType</b> the type of each key which is used to lookup a value using the index (this must match the keyType of any existing index with the same name)<br/>
+	 * ><b>keyExtractor</b> a function that maps a value to the keys by which the value should be indexed. The appropriate subclass can be used and would be more
+	 * simple to implement. These include {@link UUIDIndexKeyExtractor}, {@link StringIndexKeyExtractor}, {@link IntegerIndexKeyExtractor}, and {@link LongIndexKeyExtractor}  
+	 * @throws BlueDbException if the index exists but is not compatible with these types. Or if it fails to create or initialize one or more
+	 * of the indices.
+	 */
+	public void createIndices(Collection<BlueIndexInfo<? extends ValueKey, V>> indexInfo) throws BlueDbException;
 
 	/**
 	 * Inserts the given key value pair
@@ -52,11 +74,21 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	public void insert(BlueKey key, V value) throws BlueDbException;
 	
 	/**
-	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch methods many times. 
+	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch methods many times.
+	 * Using an iterator instead of a map allows you to provide entries without storing all of them in memory at one time. 
 	 * @param values the key value pairs to insert. Key types must match the keyType specified when the collection was created.
 	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
 	 */
 	public void batchUpsert(Map<BlueKey, V> values) throws BlueDbException;
+	
+	/**
+	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch 
+	 * methods many times. 
+	 * @param keyValuePairs the key value pairs to insert. Key types must match the keyType specified when the 
+	 * collection was created.
+	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
+	 */
+	public void batchUpsert(Iterator<BlueKeyValuePair<V>> keyValuePairs) throws BlueDbException;
 
 	/**
 	 * Mutates the value for the given key by passing it to the given updater
@@ -80,13 +112,6 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created
 	 */
 	public void delete(BlueKey key) throws BlueDbException;
-
-	/**
-	 * Deletes the values for the given keys. Batch methods are much more efficient than calling non-batch methods many times.
-	 * @param keys the keys for the values which will be deleted
-	 * @throws BlueDbException if type of key is not the type specified when the collection was created
-	 */
-	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException;
 
 	/**
 	 * Creates a {@link BlueQuery} object which can be used to build and execute a query against this collection.

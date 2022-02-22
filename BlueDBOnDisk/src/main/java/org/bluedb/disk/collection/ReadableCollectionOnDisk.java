@@ -4,8 +4,9 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
@@ -82,9 +83,9 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
-	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions, boolean byStartTime) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<Set<Range>> segmentRangesToInclude) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, conditions)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, conditions, keyConditions, segmentRangesToInclude)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
 				results.add(entity);
@@ -112,16 +113,10 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	public boolean isTimeBased() {
 		return TimeKey.class.isAssignableFrom(getKeyType());
 	}
-
-	protected void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
+	
+	public void ensureCorrectKeyType(BlueKey key) throws BlueDbException {
 		if (!keyType.isAssignableFrom(key.getClass())) {
 			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);
-		}
-	}
-
-	protected void ensureCorrectKeyTypes(Collection<BlueKey> keys) throws BlueDbException {
-		for (BlueKey key: keys) {
-			ensureCorrectKeyType(key);
 		}
 	}
 

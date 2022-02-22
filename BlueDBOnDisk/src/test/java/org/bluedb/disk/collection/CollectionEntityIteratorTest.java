@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+
 import org.junit.Test;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
@@ -25,7 +27,7 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
         Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 
         getTimeCollection().insert(key, value);
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertFalse(getLockManager().isLocked(chunkPath));
         iterator.hasNext();  // force it to open the next file
         assertTrue(getLockManager().isLocked(chunkPath));
@@ -63,18 +65,18 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
         getTimeCollection().insert(key1, value1);
         getTimeCollection().insert(key2, value2);
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertFalse(iterator.hasNext());
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertTrue(iterator.hasNext());
         assertTrue(iterator.hasNext()); // make sure doing it twice doesn't break anything
         iterator.next();
         assertFalse(iterator.hasNext());
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertTrue(iterator.hasNext());
         assertEquals(value1, iterator.next().getValue());
         assertTrue(iterator.hasNext());
@@ -92,19 +94,19 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
         getTimeCollection().insert(key1, value1);
         getTimeCollection().insert(key2, value2);
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
     	assertNull(iterator.peek());
     	iterator.keepAlive();
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertEquals(value1, iterator.peek().getValue());
         assertEquals(value1, iterator.peek().getValue()); // make sure doing it twice doesn't break anything
         assertEquals(value1, iterator.next().getValue());
     	assertNull(iterator.peek());
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertEquals(value1, iterator.peek().getValue());
         assertEquals(value1, iterator.next().getValue());
         assertEquals(value2, iterator.peek().getValue());
@@ -123,18 +125,18 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
         getTimeCollection().insert(key1, value1);
         getTimeCollection().insert(key2, value2);
 
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         List<BlueEntity<TestValue>> iteratorContents = toList(iterator);
         iterator.close();
         assertEquals(0, iteratorContents.size());
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 1), false, new ArrayList<>());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         iteratorContents = toList(iterator);
         iterator.close();
         assertEquals(1, iteratorContents.size());
 
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 2), false, new ArrayList<>());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
         iteratorContents = new ArrayList<>();
         iteratorContents.add(iterator.next());
         iteratorContents.add(iterator.next());  // make sure next work right after a next
@@ -164,7 +166,7 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 		List<TestValue> valuesFromFirstSegment = toValueList(firstSegmentIterator);
 		SegmentEntityIterator<TestValue> secondSegmentIterator = secondSegment.getIterator(0, segmentSize * 2 - 1);
 		List<TestValue> valuesFromSecondSegment = toValueList(secondSegmentIterator);
-		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, segmentSize * 2 - 1), false, new ArrayList<>());
+		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, segmentSize * 2 - 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
 		List<TestValue> valuesFromEitherSegment = toValueList(collectionIterator);
 
 		assertEquals(valuesExpectedInFirstSegment, valuesFromFirstSegment);

@@ -82,7 +82,7 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 	
 	protected void validateObjectBeforeSerializing(Object o) throws SerializationException {
 		try {
-			validateObject(o);
+			ObjectValidation.validateFieldValueTypesForObject(o);
 		} catch(Throwable t) {
 			throw new SerializationException("Cannot serialize an invalid object", t);
 		}
@@ -110,7 +110,7 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		while(retryCount < MAX_ATTEMPTS) {
 			try {
 				Object obj = toObject(bytes);
-				validateObject(obj);
+				ObjectValidation.validateFieldValueTypesForObject(obj);
 				return obj;
 			} catch(Throwable t) {
 				failureCause = t;
@@ -130,14 +130,6 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		}
 	}
 
-	private void validateObject(Object obj) throws SerializationException {
-		try {
-			ObjectValidation.validateFieldValueTypesForObject(obj);
-		} catch(Throwable t) {
-			throw new SerializationException("Invalid Object Identified", t); //Don't try to put the object details in the message since any usage of the invalid field will throw an exception. The caused by will contain some good detail
-		}
-	}
-	
 	@SuppressWarnings("unchecked")
 	@Deprecated
 	/** Should only be used by tests */

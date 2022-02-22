@@ -221,7 +221,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		TestValue value2 = createValue("Bob");
 		getTimeCollection().insert(key1At1, value1);
 		Recoverable<TestValue> change = PendingChange.createInsert(key2At2, value2, getTimeCollection().getSerializer());
-		getRecoveryManager().saveChange(change);
+		getRecoveryManager().saveNewChange(change);
 
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
@@ -244,7 +244,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		Range range = new Range(0, getTimeCollection().getSegmentManager().getSegmentSize() - 1);
 		RollupTarget rollupTarget = new RollupTarget(0, range);
 		Recoverable<TestValue> rollup = new PendingRollup<>(rollupTarget);
-		getRecoveryManager().saveChange(rollup);
+		getRecoveryManager().saveNewChange(rollup);
 
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(getTimeCollection());
 		Path backedUpPath = createTempFolder().toPath();
@@ -275,7 +275,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		Range range = new Range(0, timeCollection.getSegmentManager().getSegmentSize() - 1);
 		IndexRollupTarget rollupTarget = new IndexRollupTarget(indexName, 0, range);
 		Recoverable<TestValue> indexRollup = new PendingIndexRollup<>(indexName, rollupTarget);
-		timeCollection.getRecoveryManager().saveChange(indexRollup);
+		timeCollection.getRecoveryManager().saveNewChange(indexRollup);
 
 		// backup
 		List<ReadWriteCollectionOnDisk<?>> collectionsToBackup = Arrays.asList(timeCollection);

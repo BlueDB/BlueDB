@@ -8,14 +8,26 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
-import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.file.BlueObjectOutput;
+import org.bluedb.disk.file.BlueObjectStreamSorter;
+import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.file.ReadWriteFileManager;
+import org.bluedb.disk.metadata.BlueFileMetadataKey;
+import org.bluedb.disk.query.QueryOnDisk;
+import org.bluedb.disk.segment.Range;
+import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 
 public class RecoveryManager<T extends Serializable> {
@@ -42,13 +54,142 @@ public class RecoveryManager<T extends Serializable> {
 		cleaner = new ChangeHistoryCleaner(this);
 	}
 
-	public void saveChange(Recoverable<?> change) throws BlueDbException {
+	public void saveNewChange(Recoverable<?> change) throws BlueDbException {
 		change.setRecoverableId(getNewRecoverableId());
 		String filename = getPendingFileName(change);
 		Path historyPath = Paths.get(historyFolderPath.toString(), filename);
 		fileManager.saveObject(historyPath, change);
 	}
+	
+	@SuppressWarnings("unchecked")
+	public void copyChange(Recoverable<?> change, Path destination, Range includedTimeRange) throws BlueDbException {
+		if(change instanceof PendingMassChange<?>) {
+			PendingMassChange<?> massChange = (PendingMassChange<?>) change;
+			try(SortedChangeSupplier<BlueKey> onDiskSortedChangeSupplier = new OnDiskSortedChangeSupplier<>(massChange.getChangesFilePath(), fileManager);
+					BlueObjectOutput<IndividualChange<T>> output = fileManager.getBlueOutputStreamWithoutLock(destination)) {
+				
+				output.setMetadataValue(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));
+				
+				SortedChangeIterator<?> sortedChangeIterator = new SortedChangeIterator<>(onDiskSortedChangeSupplier);
+				while(sortedChangeIterator.hasNext()) {
+					IndividualChange<?> nextChange = sortedChangeIterator.next();
+					if(nextChange.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
+						output.write((IndividualChange<T>) nextChange);
+					}
+				}
+			}
+		} else if(change instanceof PendingBatchChange) {
+				PendingBatchChange<?> batchChange = (PendingBatchChange<?>) change;
+				batchChange.removeChangesOutsideRange(includedTimeRange);
+				if(!batchChange.isEmpty()) {
+					fileManager.saveObject(destination, change);
+				}
+		} else {
+			fileManager.saveObject(destination, change);
+		}
+	}
 
+	public PendingMassChange<T> saveMassChangeForQueryChange(QueryOnDisk<T> updateQuery, EntityToChangeMapper<T> entityToChangeMapper) throws BlueDbException {
+		long creationTime = System.currentTimeMillis();
+		long recoverableId = getNewRecoverableId();
+		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		tmpPath.getParent().toFile().mkdirs();
+		
+		try(
+				CloseableIterator<BlueEntity<T>> entitiesToUpdateIterator = updateQuery.getEntityIterator();
+				BlueObjectOutput<IndividualChange<T>> output = fileManager.getBlueOutputStreamWithoutLock(tmpPath)) {
+			
+			output.setMetadataValue(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, Boolean.toString(true));
+			
+			while(entitiesToUpdateIterator.hasNext()) {
+				BlueEntity<T> entity = entitiesToUpdateIterator.next();
+				try {
+					IndividualChange<T> change = entityToChangeMapper.map(entity);
+					output.write(change);
+				} catch(Throwable t) {
+					throw new BlueDbException("Update query failed, the update/replace method probably did something weird to the " + entity.getKey() + " entity");
+				}
+			}
+		} catch(Throwable t) {
+			//If there is a problem don't leave the tmp file around but let the exception still be thrown
+			tmpPath.toFile().delete(); 
+			throw t;
+		}
+		
+		try {
+			FileUtils.moveWithoutLock(tmpPath, path);
+			return new PendingMassChange<>(creationTime, recoverableId, path);
+		} finally {
+			tmpPath.toFile().delete();
+		}
+	}
+
+	public PendingMassChange<T> saveMassChangeForBatchUpsert(Iterator<IndividualChange<T>> sortedChangeIterator) throws BlueDbException {
+		long creationTime = System.currentTimeMillis();
+		long recoverableId = getNewRecoverableId();
+		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		tmpPath.getParent().toFile().mkdirs();
+		
+		try(BlueObjectOutput<IndividualChange<T>> output = fileManager.getBlueOutputStreamWithoutLock(tmpPath)) {
+			
+			output.setMetadataValue(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, Boolean.toString(true));
+			
+			while(sortedChangeIterator.hasNext()) {
+				IndividualChange<T> nextChange = sortedChangeIterator.next();
+				try {
+					output.write(nextChange);
+				} catch(Throwable t) {
+					new BlueDbException("Batch upsert failed on object " + (nextChange != null ? nextChange.getKey() : "null") + ". It will be skipped.", t).printStackTrace();
+				}
+			}
+		} catch(Throwable t) {
+			//If there is a problem don't leave the tmp file around but let the exception still be thrown
+			tmpPath.toFile().delete(); 
+			throw t;
+		}
+		
+		try {
+			FileUtils.moveWithoutLock(tmpPath, path);
+			return new PendingMassChange<>(creationTime, recoverableId, path);
+		} finally {
+			tmpPath.toFile().delete();
+		}
+	}
+	
+	public PendingMassChange<T> saveMassChangeForUnorderedChanges(Iterator<IndividualChange<T>> changeIterator) throws BlueDbException {
+		return saveMassChangeForUnorderedChanges(changeIterator, false);
+	}
+	
+	public PendingMassChange<T> saveTempMassChangeForUnorderedChanges(Iterator<IndividualChange<T>> changeIterator) throws BlueDbException {
+		return saveMassChangeForUnorderedChanges(changeIterator, true);
+	}
+
+	private PendingMassChange<T> saveMassChangeForUnorderedChanges(Iterator<IndividualChange<T>> changeIterator, boolean tempFile) throws BlueDbException {
+		long creationTime = System.currentTimeMillis();
+		long recoverableId = getNewRecoverableId();
+		Path path = historyFolderPath.resolve(getPendingFileName(creationTime, recoverableId));
+		if(tempFile) {
+			path = FileUtils.createTempFilePath(path);
+		}
+		Path tmpPath = FileUtils.createTempFilePath(path);
+		tmpPath.getParent().toFile().mkdirs();
+		
+		Map<BlueFileMetadataKey, String> metadataEntries = new HashMap<>();
+		metadataEntries.put(BlueFileMetadataKey.SORTED_MASS_CHANGE_FILE, String.valueOf(true));
+		
+		try {
+			BlueObjectStreamSorter<IndividualChange<T>> sorter = new BlueObjectStreamSorter<>(changeIterator, tmpPath, fileManager, metadataEntries, BlueObjectStreamSorterConfig.createDefault());
+			sorter.sortAndWriteToFile();
+		
+			FileUtils.moveWithoutLock(tmpPath, path);
+			return new PendingMassChange<>(creationTime, recoverableId, path);
+		} finally {
+			tmpPath.toFile().delete();
+		}
+	}
+	
 	public Path getHistoryFolder() {
 		return historyFolderPath;
 	}
@@ -90,20 +231,46 @@ public class RecoveryManager<T extends Serializable> {
 	public List<Recoverable<T>> getPendingChanges() throws BlueDbException {
 		List<Recoverable<T>> changes = new ArrayList<>();
 		for (File file: getPendingChangeFiles()) {
-			try {
-				@SuppressWarnings("unchecked")
-				Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(file.toPath());
-				if(change != null) {
-					changes.add(change);
-				} else {
-					System.out.println("BlueDB ignoring empty or missing recovery file: " + file.getAbsolutePath());
-				}
-			} catch (Throwable t) {
-				System.out.println("BlueDB ignoring corrupt recovery file: " + file.getAbsolutePath());
+			Recoverable<T> change = loadPendingChange(file);
+			
+			if(change != null) {
+				changes.add(change);
+			} else {
+				System.out.println("BlueDB ignoring empty, missing, or corrupt recovery file: " + file.getAbsolutePath());
 			}
 		}
 		Collections.sort(changes);
 		return changes;
+	}
+
+	public Recoverable<T> loadPendingChange(File file) throws BlueDbException {
+		Recoverable<T> change = tryLoadingMassChange(file.toPath());
+		if(change == null) {
+			change = tryLoadingNormalChange(file.toPath());
+		}
+		return change;
+	}
+
+	private PendingMassChange<T> tryLoadingMassChange(Path path) throws BlueDbException {
+		try(OnDiskSortedChangeSupplier<T> onDiskSortedChangeSupplier = new OnDiskSortedChangeSupplier<>(path, fileManager)) {
+			TimeStampedFile timeStampedFile = new TimeStampedFile(path.toFile());
+			return new PendingMassChange<>(timeStampedFile.getTimestamp(), timeStampedFile.getRecoverableId(), path);
+		} catch(Throwable t) {
+			return null; //It is expected to fail if this is any other type of change file.
+		}
+	}
+
+	private Recoverable<T> tryLoadingNormalChange(Path path) {
+		try {
+			@SuppressWarnings("unchecked")
+			Recoverable<T> change = (Recoverable<T>) fileManager.loadObject(path);
+			if(change != null) {
+				return change;
+			}
+			return null;
+		} catch (Throwable t) {
+			return null;
+		}
 	}
 
 	public DirectoryStream<Path> getCompletedChangeFilesAsStream() throws IOException {
@@ -138,7 +305,11 @@ public class RecoveryManager<T extends Serializable> {
 	}
 
 	public static String getPendingFileName(Recoverable<?> change) {
-		return  String.valueOf(change.getTimeCreated()) + "." + String.valueOf(change.getRecoverableId()) + SUFFIX_PENDING;
+		return getPendingFileName(change.getTimeCreated(), change.getRecoverableId());
+	}
+
+	public static String getPendingFileName(long creationTime, long recoverableId) {
+		return String.valueOf(creationTime) + "." + String.valueOf(recoverableId) + SUFFIX_PENDING;
 	}
 
 	public ChangeHistoryCleaner getChangeHistoryCleaner() {

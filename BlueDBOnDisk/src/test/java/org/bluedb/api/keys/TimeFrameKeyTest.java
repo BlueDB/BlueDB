@@ -165,6 +165,19 @@ public class TimeFrameKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_isBeforeRange() {
+		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
+		assertFalse(_2_to_4.isBeforeRange(0, 1));
+		assertFalse(_2_to_4.isBeforeRange(0, 2));
+		assertFalse(_2_to_4.isBeforeRange(0, 3));
+		assertFalse(_2_to_4.isBeforeRange(3, 3));
+		assertFalse(_2_to_4.isBeforeRange(0, 6));
+		assertFalse(_2_to_4.isBeforeRange(3, 6));
+		assertFalse(_2_to_4.isBeforeRange(4, 6));
+		assertTrue(_2_to_4.isBeforeRange(5, 6));
+	}
+
+	@Test
 	public void test_isInRange() {
 		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
 		assertFalse(_2_to_4.isInRange(0, 1));
@@ -175,5 +188,18 @@ public class TimeFrameKeyTest extends TestCase {
 		assertTrue(_2_to_4.isInRange(3, 6));
 		assertTrue(_2_to_4.isInRange(4, 6));
 		assertFalse(_2_to_4.isInRange(5, 6));
+	}
+
+	@Test
+	public void test_isAfterRange() {
+		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
+		assertTrue(_2_to_4.isAfterRange(0, 1));
+		assertFalse(_2_to_4.isAfterRange(0, 2));
+		assertFalse(_2_to_4.isAfterRange(0, 3));
+		assertFalse(_2_to_4.isAfterRange(3, 3));
+		assertFalse(_2_to_4.isAfterRange(0, 6));
+		assertFalse(_2_to_4.isAfterRange(3, 6));
+		assertFalse(_2_to_4.isAfterRange(4, 6));
+		assertFalse(_2_to_4.isAfterRange(5, 6));
 	}
 }

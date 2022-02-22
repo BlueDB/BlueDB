@@ -95,7 +95,7 @@ public class ObjectValidationTest {
 		
 		try {
 			ObjectValidation.validateFieldValueTypesForObject(basicValidObjectWithBoxedValuesSwappedAndCollectionsSet);
-		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+		} catch (SerializationException e) {
 			e.printStackTrace();
 			fail();
 		}
@@ -120,21 +120,21 @@ public class ObjectValidationTest {
 
 		try {
 			ObjectValidation.validateFieldValueTypesForObject(selfReferencingObject);
-		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+		} catch (SerializationException e) {
 			e.printStackTrace();
 			fail();
 		}
 		
 		try {
 			ObjectValidation.validateFieldValueTypesForObject(validTestValuesListWithNull);
-		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+		} catch (SerializationException e) {
 			e.printStackTrace();
 			fail();
 		}
 		
 		try {
 			ObjectValidation.validateFieldValueTypesForObject(validTestValuesArrayWithNull);
-		} catch (IllegalArgumentException | IllegalAccessException | SerializationException e) {
+		} catch (SerializationException e) {
 			e.printStackTrace();
 			fail();
 		}

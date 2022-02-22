@@ -3,17 +3,23 @@ package org.bluedb.disk.metadata;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class BlueFileMetadata implements Serializable {
-
+	private static final long serialVersionUID = 1L;
+	
 	private final Map<BlueFileMetadataKey, String> metadataMap;
 
 	public BlueFileMetadata() {
 		metadataMap = new HashMap<>();
 	}
 
-	public String get(BlueFileMetadataKey key) {
-		return metadataMap.get(key);
+	public Optional<String> get(BlueFileMetadataKey key) {
+		return Optional.ofNullable(metadataMap.get(key));
+	}
+	
+	public boolean isTrue(BlueFileMetadataKey key) {
+		return Boolean.valueOf(metadataMap.get(key));
 	}
 
 	public String put(BlueFileMetadataKey key, String value) {

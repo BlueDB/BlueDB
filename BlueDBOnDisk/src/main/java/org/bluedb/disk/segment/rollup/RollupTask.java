@@ -27,7 +27,7 @@ public class RollupTask<T extends Serializable> implements Runnable {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 		Recoverable<T> change = new PendingRollup<>(rollupTarget);
 		try {
-			recoveryManager.saveChange(change);
+			recoveryManager.saveNewChange(change);
 			change.apply(collection);
 			recoveryManager.markComplete(change);
 		} catch (BlueDbException e) {

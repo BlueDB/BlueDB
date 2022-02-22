@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -22,9 +21,6 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
-import org.bluedb.disk.ReadWriteDbOnDisk;
-import org.bluedb.disk.BlueDbOnDiskBuilder;
-import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
@@ -42,11 +38,11 @@ import junit.framework.TestCase;
 
 public abstract class BlueDbDiskTestBase extends TestCase {
 
-	private static String TIME_COLLECTION_NAME = "testing_time";
-	private static String HASH_GROUPED_COLLECTION_NAME = "testing_value";
-	private static String LONG_COLLECTION_NAME = "long_value";
-	private static String INT_COLLECTION_NAME = "int_value";
-	private static String CALL_COLLECTION_NAME = "call_collection";
+	protected static String TIME_COLLECTION_NAME = "testing_time";
+	protected static String HASH_GROUPED_COLLECTION_NAME = "testing_value";
+	protected static String LONG_COLLECTION_NAME = "long_value";
+	protected static String INT_COLLECTION_NAME = "int_value";
+	protected static String CALL_COLLECTION_NAME = "call_collection";
 	ReadWriteDbOnDisk db;
 	ReadWriteTimeCollectionOnDisk<TestValue> timeCollection;
 	ReadWriteCollectionOnDisk<TestValue> hashGroupedCollection;
@@ -78,10 +74,7 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 
 	@Override
 	public void tearDown() throws Exception {
-		Files.walk(dbPath)
-		.sorted(Comparator.reverseOrder())
-		.map(Path::toFile)
-		.forEach(File::delete);
+		Blutils.recursiveDelete(dbPath.toFile());
 		for (File file: filesToDelete) {
 			Blutils.recursiveDelete(file);
 		}

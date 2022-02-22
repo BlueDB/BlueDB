@@ -2,9 +2,12 @@ package org.bluedb.disk.query;
 
 import java.io.Serializable;
 import java.util.LinkedList;
+import java.util.Set;
 
 import org.bluedb.api.BlueTimeQuery;
 import org.bluedb.api.Condition;
+import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 
@@ -19,7 +22,19 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 		super.where(c);
 		return this;
 	}
-
+	
+	@Override
+	public BlueTimeQuery<T> whereKeyIsIn(Set<BlueKey> keys) {
+		super.whereKeyIsIn(keys);
+		return this;
+	}
+	
+	@Override
+	public BlueTimeQuery<T> whereKeyIsIn(BlueSimpleSet<BlueKey> keys) {
+		super.whereKeyIsIn(keys);
+		return this;
+	}
+	
 	@Override
 	public BlueTimeQuery<T> afterTime(long time) {
 		super.afterTime(time);
@@ -53,6 +68,8 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 	public TimeQueryOnDisk<T> clone() {
 		TimeQueryOnDisk<T> clone = new TimeQueryOnDisk<T>((ReadWriteTimeCollectionOnDisk<T>)collection);
 		clone.objectConditions = new LinkedList<>(objectConditions);
+		clone.keyConditions = new LinkedList<>(keyConditions);
+		clone.keySetsToInclude = new LinkedList<>(keySetsToInclude);
 		clone.min = min;
 		clone.max = max;
 		clone.byStartTime = byStartTime;

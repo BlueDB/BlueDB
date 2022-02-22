@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
@@ -25,7 +26,6 @@ public class FileUtilsTest extends TestCase {
 	LockManager<Path> lockManager;
 	private List<File> filesToDelete;
 	private Path testPath;
-	private Path testingFolderPath;
 
 	@Override
 	protected void setUp() throws Exception {
@@ -34,8 +34,7 @@ public class FileUtilsTest extends TestCase {
 		ReadWriteFileManager fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
 		filesToDelete = new ArrayList<>();
-		testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
-		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
+		testPath = Files.createTempDirectory("test_" + this.getClass().getSimpleName());
 		filesToDelete.add(testPath.toFile());
 	}
 
@@ -77,6 +76,22 @@ public class FileUtilsTest extends TestCase {
 		assertListContainsFile(filesWithSuffix, fileWithSuffix);
 		assertListContainsFile(filesWithSuffix, fileWithSuffix2);
 		assertListDoesNotContainFile(filesWithSuffix,tempFile);
+	}
+	
+	@Test
+	public void test_getTempFolderContents() throws IOException {
+		Files.createDirectories(testPath);
+		
+		List<Path> filesForTest = new ArrayList<>();
+		filesForTest.add(Files.createFile(testPath.resolve("test_getTempFolderContents_0")));
+		filesForTest.add(Files.createFile(testPath.resolve("_tmp_test_getTempFolderContents_1")));
+		filesForTest.add(Files.createFile(testPath.resolve("test_getTempFolderContents_2")));
+		filesForTest.add(Files.createFile(testPath.resolve("_tmp_test_getTempFolderContents_3")));
+		
+		Iterator<Path> matchingFileIterator = FileUtils.getTempFolderContentsAsStream(testPath.toFile(), file -> file.getName().contains("test_getTempFolderContents")).iterator();
+		assertEquals(filesForTest.get(1).toAbsolutePath(), matchingFileIterator.next().toAbsolutePath());
+		assertEquals(filesForTest.get(3).toAbsolutePath(), matchingFileIterator.next().toAbsolutePath());
+		assertFalse(matchingFileIterator.hasNext());
 	}
 	
 	private void assertListContainsFile(List<File> filteredResult, File fileInQuestion) {
@@ -156,10 +171,36 @@ public class FileUtilsTest extends TestCase {
 	
 	@Test
 	public void test_exists() throws BlueDbException {
+		Path subDir = testPath.resolve("test_exists_subdir");
+		
 		assertFalse(FileUtils.exists(null));
-		assertFalse(FileUtils.exists(testPath));
-		FileUtils.ensureFileExists(testPath);
-		assertTrue(FileUtils.exists(testPath));
+		assertFalse(FileUtils.exists(subDir));
+		FileUtils.ensureFileExists(subDir);
+		assertTrue(FileUtils.exists(subDir));
+	}
+	
+	@Test
+	public void test_isEmpty() throws IOException {
+		Path tmpFile = Files.createTempFile("FileUtilsTest-test_isEmpty", null);
+		
+		assertTrue(FileUtils.isEmpty(null));
+		assertTrue(FileUtils.isEmpty(Paths.get("Something-that-doesn't-exist.wat")));
+		assertTrue(FileUtils.isEmpty(tmpFile));
+		
+		Files.write(tmpFile, new byte[10]);
+		assertFalse(FileUtils.isEmpty(tmpFile));
+	}
+	
+	@Test
+	public void test_size() throws IOException {
+		Path tmpFile = Files.createTempFile("FileUtilsTest-test_size", null);
+		
+		assertEquals(0, FileUtils.size(null));
+		assertEquals(0, FileUtils.size(Paths.get("Something-that-doesn't-exist.wat")));
+		assertEquals(0, FileUtils.size(tmpFile));
+		
+		Files.write(tmpFile, new byte[10]);
+		assertEquals(10, FileUtils.size(tmpFile));
 	}
 
 	@Test
@@ -173,6 +214,17 @@ public class FileUtilsTest extends TestCase {
 		Path tempWithoutParent = FileUtils.createTempFilePath(withoutParent);
 		Path expectedTempWithoutParent = Paths.get("_tmp_target");
 		assertEquals(expectedTempWithoutParent, tempWithoutParent);
+	}
+	
+	@Test
+	public void test_createTempFilePathInDirectory() throws IOException, BlueDbException {
+		Path tempDirectory = Files.createTempDirectory("FileUtils#test_createTempFileInDirectory");
+		filesToDelete.add(tempDirectory.toFile());
+		
+		Path tmpFile = FileUtils.createTempFilePathInDirectory(tempDirectory, "my-test-tmp-file");
+		assertFalse(Files.exists(tmpFile));
+		assertEquals(tempDirectory, tmpFile.getParent());
+		assertEquals("_tmp_my-test-tmp-file", tmpFile.getFileName().toString());
 	}
 
 	@Test
@@ -416,15 +468,6 @@ public class FileUtilsTest extends TestCase {
 		}  catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	@Test
-	public void test_openDataInputStream() {
-		File nonExistentFile = Paths.get(testingFolderPath.toString(), "Santa_Clause").toFile();
-		try {
-			FileUtils.openDataInputStream(nonExistentFile);
-			fail();
-		} catch (IOException e) {}
 	}
 
 	private File createTempFile(File parentFolder, String fileName) throws IOException {

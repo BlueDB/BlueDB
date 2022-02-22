@@ -1,23 +1,21 @@
 package org.bluedb.disk.file;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
-import org.bluedb.disk.serialization.validation.SerializationException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class ReadFileManagerTest {
 
 	@Test
-	public void test_readMetadata_objectSuccessfullyParsesIntoUnexpectedType_returnsNullAndResetsInputStream() throws IOException, SerializationException {
+	public void test_readMetadata_objectSuccessfullyParsesIntoUnexpectedType_returnsNullAndResetsInputStream() throws Exception {
 		// Arrange
 		Path testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
 		BlueSerializer serializer = new ThreadLocalFstSerializer();
@@ -30,11 +28,11 @@ public class ReadFileManagerTest {
 		ReadFileManager fileManager = new ReadWriteFileManager(serializer, new EncryptionServiceWrapper(null));
 
 		// Act
-		try (DataInputStream inputStream = FileUtils.openDataInputStream(testPath.toFile())) {
+		try (BlueInputStream inputStream = new BlueDataInputStream(testPath.toFile())) {
 			BlueFileMetadata actual = fileManager.readMetadata(inputStream);
 
 			// Assert
-			assertEquals("InputStream position was not reset as expected", valueBytes.length, inputStream.readInt());
+			assertEquals("InputStream position was not reset as expected", (Integer) valueBytes.length, inputStream.readNextFourBytesAsInt());
 			assertNull(actual);
 		}
 	}

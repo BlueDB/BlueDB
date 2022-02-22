@@ -23,7 +23,10 @@ import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.models.calls.Call;
+import org.bluedb.disk.recovery.InMemorySortedChangeSupplier;
 import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.SortedChangeSupplier;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.bluedb.disk.serialization.validation.ObjectValidation;
@@ -64,8 +67,11 @@ public class BatchWriterTest {
 		List<BlueEntity<String>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<String>> mockOutput = createMockOutput(serializer, results);
 
-		List<IndividualChange<String>> deletes2and3and5and8 = Arrays.asList(delete2, delete3, delete5, delete8);
-		BatchWriter<String> batchDeletes2and3and5and8 = new BatchWriter<>(deletes2and3and5and8);
+		SortedChangeSupplier<String> sortedChangeSupplier = new InMemorySortedChangeSupplier<>(Arrays.asList(delete2, delete3, delete5, delete8));
+		Range range = new Range(delete2.getGroupingNumber(), delete8.getGroupingNumber());
+		sortedChangeSupplier.seekToNextChangeInRange(range);
+		
+		BatchWriter<String> batchDeletes2and3and5and8 = new BatchWriter<>(sortedChangeSupplier, range);
 		batchDeletes2and3and5and8.process(mockInput, mockOutput);
 		
 		assertEquals(Arrays.asList(value7at7), results);
@@ -79,8 +85,11 @@ public class BatchWriterTest {
 		List<BlueEntity<String>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<String>> mockOutput = createMockOutput(serializer, results);
 
-		List<IndividualChange<String>> insert1andUpdate5 = Arrays.asList(insert1, update5bAt5);
-		BatchWriter<String> batchInsert1andUpdate5 = new BatchWriter<>(insert1andUpdate5);
+		SortedChangeSupplier<String> sortedChangeSupplier = new InMemorySortedChangeSupplier<>(Arrays.asList(insert1, update5bAt5));
+		Range range = new Range(insert1.getGroupingNumber(), update5bAt5.getGroupingNumber());
+		sortedChangeSupplier.seekToNextChangeInRange(range);
+		
+		BatchWriter<String> batchInsert1andUpdate5 = new BatchWriter<>(sortedChangeSupplier, range);
 		batchInsert1andUpdate5.process(mockInput, mockOutput);
 		
 		assertEquals(Arrays.asList(value1at1, value3at3, value5bAt5, value7at7), results);
@@ -98,8 +107,11 @@ public class BatchWriterTest {
 		outputMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, "output-key");
 		Mockito.when(mockOutput.getMetadata()).thenReturn(outputMetadata);
 
-		List<IndividualChange<String>> insert1andUpdate5 = Arrays.asList(insert1, update5bAt5);
-		BatchWriter<String> batchInsert1andUpdate5 = new BatchWriter<>(insert1andUpdate5);
+		SortedChangeSupplier<String> sortedChangeSupplier = new InMemorySortedChangeSupplier<>(Arrays.asList(insert1, update5bAt5));
+		Range range = new Range(insert1.getGroupingNumber(), update5bAt5.getGroupingNumber());
+		sortedChangeSupplier.seekToNextChangeInRange(range);
+		
+		BatchWriter<String> batchInsert1andUpdate5 = new BatchWriter<>(sortedChangeSupplier, range);
 		batchInsert1andUpdate5.process(mockInput, mockOutput);
 
 		assertEquals(Arrays.asList(value1at1, value3at3, value5bAt5, value7at7), results);
@@ -133,9 +145,13 @@ public class BatchWriterTest {
 		IndividualChange<Call> updateInvalidCall = new IndividualChange<Call>(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue());
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
 		IndividualChange<Call> update4 = new IndividualChange<Call>(call4.getKey(), call4.getValue(), updatedcall4.getValue());
-		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5.getKey());
+		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
 		
-		BatchWriter<Call> batchWriter = new BatchWriter<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
+		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
+		Range range = new Range(updateInvalidCall.getGroupingNumber(), delete5.getGroupingNumber());
+		sortedChangeSupplier.seekToNextChangeInRange(range);
+		
+		BatchWriter<Call> batchWriter = new BatchWriter<Call>(sortedChangeSupplier, range);
 		batchWriter.process(mockInput, mockOutput);
 		
 		BlueEntity<Call> resultingCall1 = results.stream().filter(callEntity -> callEntity.getKey().equals(call1.getKey())).findAny().orElse(null);
@@ -188,9 +204,13 @@ public class BatchWriterTest {
 		IndividualChange<Call> updateInvalidCall = new IndividualChange<Call>(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue());
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
 		IndividualChange<Call> update4 = new IndividualChange<Call>(call4.getKey(), call4.getValue(), updatedcall4.getValue());
-		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5.getKey());
+		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
+		
+		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
+		Range range = new Range(updateInvalidCall.getGroupingNumber(), delete5.getGroupingNumber());
+		sortedChangeSupplier.seekToNextChangeInRange(range);
 
-		BatchWriter<Call> batchWriter = new BatchWriter<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
+		BatchWriter<Call> batchWriter = new BatchWriter<Call>(sortedChangeSupplier, range);
 		batchWriter.process(mockInput, mockOutput);
 
 		BlueEntity<Call> resultingCall1 = results.stream().filter(callEntity -> callEntity.getKey().equals(call1.getKey())).findAny().orElse(null);
@@ -230,10 +250,14 @@ public class BatchWriterTest {
 		BlueEntity<Call> updatedcall2 = Call.wrapCallAsEntity(call2.getValue().clone());
 		updatedcall2.getValue().setCallingParty("testChange2");
 		
-		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall.getKey());
+		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall);
 		IndividualChange<Call> update4Again = new IndividualChange<Call>(call2.getKey(), call2.getValue(), updatedcall2.getValue());
 		
-		BatchWriter<Call> batchWriter = new BatchWriter<Call>(Arrays.asList(deleteInvalidObject, update4Again));
+		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(deleteInvalidObject, update4Again));
+		Range range = new Range(deleteInvalidObject.getGroupingNumber(), update4Again.getGroupingNumber());
+		sortedChangeSupplier.seekToNextChangeInRange(range);
+		
+		BatchWriter<Call> batchWriter = new BatchWriter<Call>(sortedChangeSupplier, range);
 		batchWriter.process(mockInput, mockOutput);
 		
 		BlueEntity<Call> resultingInvalidCall = results.stream().filter(callEntity -> callEntity.getKey().equals(invalidCall.getKey())).findAny().orElse(null);
@@ -266,7 +290,11 @@ public class BatchWriterTest {
 		IndividualChange<Call> insertInvalidObject = IndividualChange.createInsertChange(invalidCall.getKey(), invalidCall.getValue());
 		IndividualChange<Call> updateCall4AThirdTime = new IndividualChange<Call>(call2.getKey(), updatedcall2.getValue(), updatedcall2.getValue());
 		
-		BatchWriter<Call> batchWriter = new BatchWriter<Call>(Arrays.asList(insertInvalidObject, updateCall4AThirdTime));
+		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(insertInvalidObject, updateCall4AThirdTime));
+		Range range = new Range(insertInvalidObject.getGroupingNumber(), updateCall4AThirdTime.getGroupingNumber());
+		sortedChangeSupplier.seekToNextChangeInRange(range);
+		
+		BatchWriter<Call> batchWriter = new BatchWriter<Call>(sortedChangeSupplier, range);
 		batchWriter.process(mockInput, mockOutput);
 		
 		BlueEntity<Call> resultingInvalidCall = results.stream().filter(callEntity -> callEntity.getKey().equals(invalidCall.getKey())).findAny().orElse(null);
@@ -306,6 +334,7 @@ public class BatchWriterTest {
 			return null;
 		};
 		
+		@SuppressWarnings({ "deprecation", "unchecked" })
 		Answer<T> writeBytesMethod = (InvocationOnMock invocation) -> {
 			byte[] outputValueBytes = (byte[]) invocation.getArguments()[0];
 			results.add((T)serializer.deserializeObjectFromByteArrayWithoutChecks(outputValueBytes));

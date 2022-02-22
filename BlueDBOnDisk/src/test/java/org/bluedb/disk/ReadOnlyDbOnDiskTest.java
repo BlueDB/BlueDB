@@ -67,7 +67,7 @@ public class ReadOnlyDbOnDiskTest extends BlueDbDiskTestBase {
 		TestValue valueBob = createValue("Bob");
 		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key2, valueBob, serializer);
-		readWriteCollection.getRecoveryManager().saveChange(change);
+		readWriteCollection.getRecoveryManager().saveNewChange(change);
 		newDigest = hashDirectory(readWriteCollection.getPath());
 		assertThat(newDigest, IsNot.not(IsEqual.equalTo(digest)));
 		digest = newDigest;

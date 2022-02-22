@@ -2,8 +2,10 @@ package org.bluedb.disk.collection;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -11,24 +13,27 @@ import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
+import org.bluedb.api.datastructures.BlueKeyValuePair;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
+import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
+import org.bluedb.disk.IteratorWrapper;
+import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
 import org.bluedb.disk.ReadWriteDbOnDisk;
-import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteIndexManager;
+import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
-import org.bluedb.disk.collection.task.BatchChangeTask;
-import org.bluedb.disk.collection.task.BatchDeleteTask;
-import org.bluedb.disk.collection.task.DeleteTask;
-import org.bluedb.disk.collection.task.InsertTask;
-import org.bluedb.disk.collection.task.ReplaceTask;
-import org.bluedb.disk.collection.task.UpdateTask;
+import org.bluedb.disk.collection.task.BatchUpsertChangeTask;
+import org.bluedb.disk.collection.task.SingleRecordChangeTask;
+import org.bluedb.disk.collection.task.SingleRecordChangeTask.SingleRecordChangeMode;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.query.QueryOnDisk;
+import org.bluedb.disk.recovery.IndividualChange;
+import org.bluedb.disk.recovery.KeyValueToChangeMapper;
 import org.bluedb.disk.recovery.RecoveryManager;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
@@ -37,6 +42,7 @@ import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
 import org.bluedb.disk.segment.rollup.Rollupable;
+import org.bluedb.disk.serialization.validation.ObjectValidation;
 
 public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableCollectionOnDisk<T> implements BlueCollection<T>, Rollupable {
 
@@ -84,6 +90,11 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	public <I extends ValueKey> BlueIndex<I, T> createIndex(String name, Class<I> keyType, KeyExtractor<I, T> keyExtractor) throws BlueDbException {
 		return indexManager.getOrCreate(name, keyType, keyExtractor);
 	}
+	
+	@Override
+	public void createIndices(Collection<BlueIndexInfo<? extends ValueKey, T>> indexInfo) throws BlueDbException {
+		indexManager.createIndices(indexInfo);
+	}
 
 	@Override
 	public BlueQuery<T> query() {
@@ -93,43 +104,67 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		ensureCorrectKeyType(key);
-		Runnable insertTask = new InsertTask<T>(this, key, value);
-		executeTask(insertTask);
+		ObjectValidation.validateFieldValueTypesForObject(value);
+		
+		KeyValueToChangeMapper<T> changeMapper = (originalKey, originalvalue) -> {
+			return IndividualChange.createInsertChange(key, value);
+		};
+		
+		String description = "Insert [key]" + key + " [value]" + value;
+		Runnable task = new SingleRecordChangeTask<>(description, this, key, changeMapper, SingleRecordChangeMode.REQUIRE_DOES_NOT_ALREADY_EXIST);
+		executeTask(task);
 	}
 
 	@Override
 	public void batchUpsert(Map<BlueKey, T> values) throws BlueDbException {
-		ensureCorrectKeyTypes(values.keySet());
-		Runnable insertTask = new BatchChangeTask<T>(this, values);
-		executeTask(insertTask);
+		IteratorWrapperMapper<Entry<BlueKey, T>, BlueKeyValuePair<T>> mapper = entry -> new BlueKeyValuePair<T>(entry.getKey(), entry.getValue());
+		Iterator<BlueKeyValuePair<T>> keyValuePairIterator = new IteratorWrapper<>(values.entrySet().iterator(), mapper);
+		
+		String description = "BatchUpsert map of size " + values.size();
+		Runnable task = new BatchUpsertChangeTask<>(description, this, keyValuePairIterator);
+		executeTask(task);
 	}
-
+	
 	@Override
-	public void batchDelete(Collection<BlueKey> keys) throws BlueDbException {
-		ensureCorrectKeyTypes(keys);
-		Runnable deleteTask = new BatchDeleteTask<T>(this, keys);
-		executeTask(deleteTask);
+	public void batchUpsert(Iterator<BlueKeyValuePair<T>> keyValuePairIterator) throws BlueDbException {
+		String description = "BatchUpsert using an iterator of key value pairs";
+		Runnable task = new BatchUpsertChangeTask<T>(description, this, keyValuePairIterator);
+		executeTask(task);
 	}
 
 	@Override
 	public void replace(BlueKey key, Mapper<T> mapper) throws BlueDbException {
 		ensureCorrectKeyType(key);
-		Runnable updateTask = new ReplaceTask<T>(this, key, mapper);
-		executeTask(updateTask);
+		
+		KeyValueToChangeMapper<T> changeMapper = (originalKey, originalvalue) -> {
+			return IndividualChange.createReplaceChange(originalKey, originalvalue, mapper, serializer);
+		};
+		
+		String description = "Replace [key]" + key;
+		Runnable task = new SingleRecordChangeTask<>(description, this, key, changeMapper, SingleRecordChangeMode.REQUIRE_ALREADY_EXISTS);
+		executeTask(task);
 	}
 
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
 		ensureCorrectKeyType(key);
-		Runnable updateTask = new UpdateTask<T>(this, key, updater);
-		executeTask(updateTask);
+		
+		KeyValueToChangeMapper<T> changeMapper = (originalKey, originalvalue) -> {
+			return IndividualChange.createUpdateChange(originalKey, originalvalue, updater, serializer);
+		};
+		
+		String description = "Update [key]" + key;
+		Runnable task = new SingleRecordChangeTask<>(description, this, key, changeMapper, SingleRecordChangeMode.REQUIRE_ALREADY_EXISTS);
+		executeTask(task);
 	}
 
 	@Override
 	public void delete(BlueKey key) throws BlueDbException {
 		ensureCorrectKeyType(key);
-		Runnable deleteTask = new DeleteTask<T>(this, key);
-		executeTask(deleteTask);
+		
+		String description = "Delete [key]" + key;
+		Runnable task = new SingleRecordChangeTask<T>(description, this, key, IndividualChange::createDeleteChange, SingleRecordChangeMode.NO_REQUIREMENTS);
+		executeTask(task);
 	}
 
 	public int getQueuedTaskCount() {

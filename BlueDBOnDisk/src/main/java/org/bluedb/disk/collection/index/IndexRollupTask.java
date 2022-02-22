@@ -25,7 +25,7 @@ public class IndexRollupTask<T extends Serializable> implements Runnable {
 		String indexName = rollupTarget.getIndexName();
 		Recoverable<T> change = new PendingIndexRollup<>(indexName, rollupTarget);
 		try {
-			recoveryManager.saveChange(change);
+			recoveryManager.saveNewChange(change);
 			change.apply(collection);
 			recoveryManager.markComplete(change);
 		} catch (BlueDbException e) {

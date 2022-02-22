@@ -148,6 +148,16 @@ public class TimeKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_isBeforeRange() {
+		BlueKey _4 = new TimeKey(4, 4);
+		assertFalse(_4.isBeforeRange(0, 3));
+		assertFalse(_4.isBeforeRange(0, 4));
+		assertFalse(_4.isBeforeRange(0, 6));
+		assertFalse(_4.isBeforeRange(4, 6));
+		assertTrue(_4.isBeforeRange(5, 6));
+	}
+
+	@Test
 	public void test_isInRange() {
 		BlueKey _4 = new TimeKey(4, 4);
 		assertFalse(_4.isInRange(0, 3));
@@ -155,5 +165,15 @@ public class TimeKeyTest extends TestCase {
 		assertTrue(_4.isInRange(0, 6));
 		assertTrue(_4.isInRange(4, 6));
 		assertFalse(_4.isInRange(5, 6));
+	}
+
+	@Test
+	public void test_isAfterRange() {
+		BlueKey _4 = new TimeKey(4, 4);
+		assertTrue(_4.isAfterRange(0, 3));
+		assertFalse(_4.isAfterRange(0, 4));
+		assertFalse(_4.isAfterRange(0, 6));
+		assertFalse(_4.isAfterRange(4, 6));
+		assertFalse(_4.isAfterRange(5, 6));
 	}
 }

@@ -15,8 +15,12 @@ public class ObjectValidation {
 	
 	protected ObjectValidation() {} // just to get 100% test coverage
 
-	public static void validateFieldValueTypesForObject(Object obj) throws IllegalArgumentException, IllegalAccessException, SerializationException {
-		validateFieldValueTypesForObject(obj, Collections.newSetFromMap(new IdentityHashMap<>()));
+	public static void validateFieldValueTypesForObject(Object obj) throws SerializationException {
+		try {
+			validateFieldValueTypesForObject(obj, Collections.newSetFromMap(new IdentityHashMap<>()));
+		} catch (Throwable t) {
+			throw new SerializationException("Invalid Object Identified", t); //Don't try to put the object details in the message since any usage of the invalid field will throw an exception. The caused by will contain some good detail
+		}
 	}
 	
 	private static void validateFieldValueTypesForObject(Object obj, Set<Object> previouslyValidatedObjects) throws IllegalArgumentException, IllegalAccessException, SerializationException {

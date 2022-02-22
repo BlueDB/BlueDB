@@ -126,6 +126,18 @@ public class LongKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_isBeforeRange() {
+		LongKey longKey = new LongKey(1);
+		long groupingNumber = longKey.getGroupingNumber();
+		assertFalse(longKey.isBeforeRange(groupingNumber - 1, groupingNumber - 1));
+		assertFalse(longKey.isBeforeRange(groupingNumber - 1, groupingNumber));
+		assertFalse(longKey.isBeforeRange(groupingNumber - 1, groupingNumber + 1));
+		assertFalse(longKey.isBeforeRange(groupingNumber, groupingNumber));
+		assertFalse(longKey.isBeforeRange(groupingNumber, groupingNumber + 1));
+		assertTrue(longKey.isBeforeRange(groupingNumber + 1, groupingNumber + 1));
+	}
+
+	@Test
 	public void test_isInRange() {
 		LongKey longKey = new LongKey(1);
 		long groupingNumber = longKey.getGroupingNumber();
@@ -135,5 +147,17 @@ public class LongKeyTest extends TestCase {
 		assertTrue(longKey.isInRange(groupingNumber, groupingNumber));
 		assertTrue(longKey.isInRange(groupingNumber, groupingNumber + 1));
 		assertFalse(longKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+	}
+
+	@Test
+	public void test_isAfterRange() {
+		LongKey longKey = new LongKey(1);
+		long groupingNumber = longKey.getGroupingNumber();
+		assertTrue(longKey.isAfterRange(groupingNumber - 1, groupingNumber - 1));
+		assertFalse(longKey.isAfterRange(groupingNumber - 1, groupingNumber));
+		assertFalse(longKey.isAfterRange(groupingNumber - 1, groupingNumber + 1));
+		assertFalse(longKey.isAfterRange(groupingNumber, groupingNumber));
+		assertFalse(longKey.isAfterRange(groupingNumber, groupingNumber + 1));
+		assertFalse(longKey.isAfterRange(groupingNumber + 1, groupingNumber + 1));
 	}
 }

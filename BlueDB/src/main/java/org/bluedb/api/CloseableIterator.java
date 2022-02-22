@@ -26,4 +26,6 @@ public interface CloseableIterator<V> extends Closeable, Iterator<V> {
 			throw new BlueDbException(t.getMessage(), t);
 		}
 	}
+	
+	@Override void close();
 }

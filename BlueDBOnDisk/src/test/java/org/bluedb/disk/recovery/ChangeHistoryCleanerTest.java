@@ -30,11 +30,11 @@ public class ChangeHistoryCleanerTest extends BlueDbDiskTestBase {
 		getRecoveryManager().getChangeHistoryCleaner().setWaitBetweenCleanups(100_000);  // to prevent automatic cleanup
 //		getRecoveryManager().cleanupHistory(); // to reset timer and prevent automatic cleanup
 		List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
-		getRecoveryManager().saveChange(changePending);
-		getRecoveryManager().saveChange(change30);
-		getRecoveryManager().saveChange(change60);
-		getRecoveryManager().saveChange(change90);
-		getRecoveryManager().saveChange(change100);
+		getRecoveryManager().saveNewChange(changePending);
+		getRecoveryManager().saveNewChange(change30);
+		getRecoveryManager().saveNewChange(change60);
+		getRecoveryManager().saveNewChange(change90);
+		getRecoveryManager().saveNewChange(change100);
 		getRecoveryManager().markComplete(change30);
 		getRecoveryManager().markComplete(change60);
 		getRecoveryManager().markComplete(change90);
@@ -72,7 +72,7 @@ public class ChangeHistoryCleanerTest extends BlueDbDiskTestBase {
 		List<File> changesBeforeInsert = getRecoveryManager().getChangeHistory(Long.MIN_VALUE, Long.MAX_VALUE);
 		
 		Recoverable<TestValue> changePending = createRecoverable(testStartTime - minutesInMillis(30));
-		getRecoveryManager().saveChange(changePending);
+		getRecoveryManager().saveNewChange(changePending);
 		
 		List<Recoverable<TestValue>> recoverables = IntStream.rangeClosed(1, 100)
 			.mapToObj((i)-> minutesInMillis(i))
@@ -108,7 +108,7 @@ public class ChangeHistoryCleanerTest extends BlueDbDiskTestBase {
 	
 	private void saveChange(Recoverable<TestValue> rec) {
 		try {
-			getRecoveryManager().saveChange(rec);
+			getRecoveryManager().saveNewChange(rec);
 		} catch (BlueDbException e) {
 			e.printStackTrace();
 		}

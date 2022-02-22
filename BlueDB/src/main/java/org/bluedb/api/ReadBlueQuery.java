@@ -2,9 +2,13 @@ package org.bluedb.api;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
+import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
 
 /**
  * Allows one to build and execute a query in a stream like way
@@ -18,6 +22,30 @@ public interface ReadBlueQuery<V extends Serializable> {
 	 * @return itself, with the condition added to the query
 	 */
 	ReadBlueQuery<V> where(Condition<V> condition);
+	
+	/**
+	 * Adds a condition that results in only matching values for the given keys.
+	 * BlueDB can optimize this search much better than if you used a standard
+	 * {@link Condition} that checks your own set of keys. You can use the overloaded
+	 * method if you want the same functionality without having to have all of the
+	 * keys in memory at once.
+	 * @param keys the keys that a value has to have in order to match the query.
+	 * @return itself, with the condition added to the query
+	 */
+	default ReadBlueQuery<V> whereKeyIsIn(Set<BlueKey> keys) {
+		return whereKeyIsIn(new BlueSimpleInMemorySet<BlueKey>(keys));
+	}
+	
+	/**
+	 * Adds a condition that results in only matching values for the given keys.
+	 * BlueDB can optimize this search much better than if you used a standard
+	 * {@link Condition} that checks your own set of keys. This method exists in
+	 * order to allow you to have access to this functionality without having to
+	 * store all of the keys in memory at once.
+	 * @param keys the keys that a value has to have in order to match the query.
+	 * @return itself, with the condition added to the query
+	 */
+	ReadBlueQuery<V> whereKeyIsIn(BlueSimpleSet<BlueKey> keys);
 
 	/**
 	 * Executes the query and returns the results as a list. Use getIterator if you don't want to load all matching 

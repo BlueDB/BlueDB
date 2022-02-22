@@ -1177,7 +1177,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		for(SelectiveBackupItem item : items) {
 			Updater<TestValue> updater = value -> value.addCupcake();
 			PendingChange<TestValue> change = PendingChange.createUpdate(item.getKey(), item.getValue(), updater, serializer);
-			collection.getRecoveryManager().saveChange(change);
+			collection.getRecoveryManager().saveNewChange(change);
         }
 	}
 
@@ -1189,18 +1189,18 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		for(SelectiveBackupItem item : items) {
 			TestValue updatedValue = serializer.clone(item.getValue());
 			updatedValue.addCupcake();
-			changesForBatch.add(IndividualChange.createUpdateChange(item.getKey(), item.getValue(), updatedValue));
+			changesForBatch.add(IndividualChange.createChange(item.getKey(), item.getValue(), updatedValue));
         }
 		Collections.sort(changesForBatch);
 		
 		PendingBatchChange<TestValue> batchChange = PendingBatchChange.createBatchChange(changesForBatch);
-		collection.getRecoveryManager().saveChange(batchChange);
+		collection.getRecoveryManager().saveNewChange(batchChange);
 	}
 
 	private void createPendingRollupFile() throws BlueDbException {
 		RollupTarget rollupTarget = new RollupTarget(0, timeCollection.getSegmentManager().getSegment(0).getRange());
 		PendingRollup<TestValue> rollupTask = new PendingRollup<>(rollupTarget);
-		timeCollection.getRecoveryManager().saveChange(rollupTask);
+		timeCollection.getRecoveryManager().saveNewChange(rollupTask);
 	}
 
 	private void validateItems(List<SelectiveBackupItem> items, ReadWriteTimeCollectionOnDisk<TestValue> collection) throws BlueDbException {

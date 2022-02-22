@@ -126,14 +126,38 @@ public class IntegerKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_isBeforeRange() {
+		IntegerKey integerKey = new IntegerKey(1);
+		long groupingNumber = integerKey.getGroupingNumber();
+		assertFalse(integerKey.isBeforeRange(groupingNumber - 1, groupingNumber - 1));
+		assertFalse(integerKey.isBeforeRange(groupingNumber - 1, groupingNumber));
+		assertFalse(integerKey.isBeforeRange(groupingNumber - 1, groupingNumber + 1));
+		assertFalse(integerKey.isBeforeRange(groupingNumber, groupingNumber));
+		assertFalse(integerKey.isBeforeRange(groupingNumber, groupingNumber + 1));
+		assertTrue(integerKey.isBeforeRange(groupingNumber + 1, groupingNumber + 1));
+	}
+
+	@Test
 	public void test_isInRange() {
-		LongKey longKey = new LongKey(1);
-		long groupingNumber = longKey.getGroupingNumber();
-		assertFalse(longKey.isInRange(groupingNumber - 1, groupingNumber - 1));
-		assertTrue(longKey.isInRange(groupingNumber - 1, groupingNumber));
-		assertTrue(longKey.isInRange(groupingNumber - 1, groupingNumber + 1));
-		assertTrue(longKey.isInRange(groupingNumber, groupingNumber));
-		assertTrue(longKey.isInRange(groupingNumber, groupingNumber + 1));
-		assertFalse(longKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+		IntegerKey integerKey = new IntegerKey(1);
+		long groupingNumber = integerKey.getGroupingNumber();
+		assertFalse(integerKey.isInRange(groupingNumber - 1, groupingNumber - 1));
+		assertTrue(integerKey.isInRange(groupingNumber - 1, groupingNumber));
+		assertTrue(integerKey.isInRange(groupingNumber - 1, groupingNumber + 1));
+		assertTrue(integerKey.isInRange(groupingNumber, groupingNumber));
+		assertTrue(integerKey.isInRange(groupingNumber, groupingNumber + 1));
+		assertFalse(integerKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+	}
+
+	@Test
+	public void test_isAfterRange() {
+		IntegerKey integerKey = new IntegerKey(1);
+		long groupingNumber = integerKey.getGroupingNumber();
+		assertTrue(integerKey.isAfterRange(groupingNumber - 1, groupingNumber - 1));
+		assertFalse(integerKey.isAfterRange(groupingNumber - 1, groupingNumber));
+		assertFalse(integerKey.isAfterRange(groupingNumber - 1, groupingNumber + 1));
+		assertFalse(integerKey.isAfterRange(groupingNumber, groupingNumber));
+		assertFalse(integerKey.isAfterRange(groupingNumber, groupingNumber + 1));
+		assertFalse(integerKey.isAfterRange(groupingNumber + 1, groupingNumber + 1));
 	}
 }

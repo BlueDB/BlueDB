@@ -101,7 +101,7 @@ public class EncryptionServiceWrapperTest {
 		System.setOut(new PrintStream(outputStreamCaptor));
 
 		String expected = "cached-key";
-		String expectedWarningMsg = "Warning: current encryption version key is invalid, this should be fixed ASAP! Using most recent valid key.";
+		String expectedWarningMsg = "[BlueDb Warning] - current encryption version key is invalid, this should be fixed ASAP! Using most recent valid key.";
 		EncryptionService mockEncryptionService = Mockito.mock(EncryptionService.class);
 		when(mockEncryptionService.isEncryptionEnabled()).thenReturn(true);
 		when(mockEncryptionService.getCurrentEncryptionVersionKey())

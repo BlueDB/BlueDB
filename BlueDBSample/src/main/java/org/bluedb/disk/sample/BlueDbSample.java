@@ -3,6 +3,7 @@ package org.bluedb.disk.sample;
 import java.io.Serializable;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,10 +13,12 @@ import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
+import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
+import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.sample.model.nontime.NonTimeObject;
 import org.bluedb.disk.sample.model.nontime.concrete.NonTimeObjectV1;
@@ -29,6 +32,7 @@ public class BlueDbSample {
 	private static final String NON_TIME_COLLECTION_NAME = "non-time-objects";
 	private static final String TIME_COLLECTION_NAME = "time-objects";
 	private static final String TIME_COLLECTION_INDEX_NAME = "data-index";
+	private static final String TIME_COLLECTION_INDEX_NAME_2 = "data-index-2";
 	private static final String TIMEFRAME_COLLECTION_NAME = "timeframe-objects";
 	
 	private BlueDb db;
@@ -48,7 +52,10 @@ public class BlueDbSample {
 			.withOptimizedClasses(getTimeframeObjectClassesToRegister())
 			.build();
 		
-		getTimeCollection().createIndex(TIME_COLLECTION_INDEX_NAME, StringKey.class, new TimeObjectDataIndexExtractor());
+		List<BlueIndexInfo<? extends ValueKey, TimeObject>> indexInfo = new LinkedList<>();
+		indexInfo.add(new BlueIndexInfo<>(TIME_COLLECTION_INDEX_NAME, StringKey.class, new TimeObjectDataIndexExtractor()));
+		indexInfo.add(new BlueIndexInfo<>(TIME_COLLECTION_INDEX_NAME_2, UUIDKey.class, new TimeObjectIdIndexExtractor()));
+		getTimeCollection().createIndices(indexInfo);
 	}
 
 	private List<Class<? extends Serializable>> getNonTimeObjectClassesToRegister() {

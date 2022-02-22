@@ -1,4 +1,4 @@
 dependencies{
-	compile project(":BlueDB")
-    compile project(":BlueDBOnDisk")
+	implementation project(":BlueDB")
+    implementation project(":BlueDBOnDisk")
 }
