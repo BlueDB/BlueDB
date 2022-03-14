@@ -109,6 +109,9 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			try {
 				Object obj = toObject(bytes);
 				validateObject(obj);
+				if(retryCount > 0) {
+					System.out.println("BlueDB just identified an invalid read but was able to correct it.");
+				}
 				return obj;
 			} catch(Throwable t) {
 				failureCause = t;
