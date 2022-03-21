@@ -21,11 +21,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
-import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.bluedb.disk.serialization.validation.SerializationException;
@@ -44,7 +44,7 @@ public class ReadWriteFileManagerTest extends TestCase {
 
 	@Override
 	protected void setUp() throws Exception {
-		serializer = new ThreadLocalFstSerializer(new Class[] {});
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[] {});
 		encryptionService = new EncryptionServiceWrapper(null);
 		fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();

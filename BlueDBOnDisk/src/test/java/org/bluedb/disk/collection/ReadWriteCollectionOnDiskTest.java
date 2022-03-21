@@ -210,6 +210,8 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_invalid() throws BlueDbException, URISyntaxException, IOException {
+		turnOnObjectValidation();
+		
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		
 		try {

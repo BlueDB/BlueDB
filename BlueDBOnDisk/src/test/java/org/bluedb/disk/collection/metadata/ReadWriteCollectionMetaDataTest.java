@@ -19,6 +19,7 @@ import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
 import org.bluedb.disk.TestValueSub;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
@@ -79,7 +80,7 @@ public class ReadWriteCollectionMetaDataTest extends BlueDbDiskTestBase {
 	public void test_getSerializedClassList_throwsClassCastException_wrapsWithBlueDbException() throws Exception {
 		// Arrange
 		ClassCastException expected = new ClassCastException("I'm broken!");
-		ReadableCollectionMetadata metadata = new ReadWriteCollectionMetaData(targetFilePath, new EncryptionServiceWrapper(null));
+		ReadableCollectionMetadata metadata = new ReadWriteCollectionMetaData(targetFilePath, new TestDefaultConfigurationService(), new EncryptionServiceWrapper(null));
 		ReadableCollectionMetadata metadataSpy = Mockito.spy(metadata);
 		Mockito.doThrow(expected).when(metadataSpy).getFileManager();
 		// Act
@@ -195,6 +196,6 @@ public class ReadWriteCollectionMetaDataTest extends BlueDbDiskTestBase {
 
 	private ReadWriteCollectionMetaData createNewMetaData() {
 		Path tempPath = createTempFolder().toPath();
-		return new ReadWriteCollectionMetaData(tempPath, new EncryptionServiceWrapper(null));
+		return new ReadWriteCollectionMetaData(tempPath, new TestDefaultConfigurationService(), new EncryptionServiceWrapper(null));
 	}
 }

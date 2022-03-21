@@ -1,5 +1,9 @@
 package org.bluedb.disk.helpers;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -13,6 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
@@ -28,6 +33,7 @@ import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.models.calls.Call;
@@ -35,9 +41,7 @@ import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.SegmentEntityIterator;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.serialization.BlueEntity;
-import static org.junit.Assert.*;
 
-@SuppressWarnings({"ResultOfMethodCallIgnored", "unused"})
 public class BlueDbOnDiskWrapper implements Closeable {
 
 	private static final String TIME_COLLECTION_NAME = "testing_time";
@@ -65,11 +69,19 @@ public class BlueDbOnDiskWrapper implements Closeable {
 
 		switch (startupOption) {
 			case EncryptionEnabled:
-				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).withEncryptionService(encryptionService).build();
+				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder()
+					.withPath(dbPath)
+					.withConfigurationService(new TestDefaultConfigurationService())
+					.withEncryptionService(encryptionService)
+					.build();
 				break;
 			case EncryptionDisabled:
 				encryptionService.setEncryptionEnabled(false);
-				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).withEncryptionService(encryptionService).build();
+				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder()
+						.withPath(dbPath)
+						.withConfigurationService(new TestDefaultConfigurationService())
+						.withEncryptionService(encryptionService)
+						.build();
 				break;
 			default:
 				throw new IllegalStateException("Unexpected value: " + startupOption);
@@ -90,11 +102,19 @@ public class BlueDbOnDiskWrapper implements Closeable {
 
 		switch (startupOption) {
 			case EncryptionEnabled:
-				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).withEncryptionService(encryptionService).build();
+				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder()
+					.withPath(dbPath)
+					.withConfigurationService(new TestDefaultConfigurationService())
+					.withEncryptionService(encryptionService)
+					.build();
 				break;
 			case EncryptionDisabled:
 				encryptionService.setEncryptionEnabled(false);
-				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).withEncryptionService(encryptionService).build();
+				db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder()
+						.withPath(dbPath)
+						.withConfigurationService(new TestDefaultConfigurationService())
+						.withEncryptionService(encryptionService)
+						.build();
 				break;
 			default:
 				throw new IllegalStateException("Unexpected value: " + startupOption);

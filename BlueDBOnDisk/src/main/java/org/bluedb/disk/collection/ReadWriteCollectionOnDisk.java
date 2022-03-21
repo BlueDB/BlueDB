@@ -104,7 +104,9 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	@Override
 	public void insert(BlueKey key, T value) throws BlueDbException {
 		ensureCorrectKeyType(key);
-		ObjectValidation.validateFieldValueTypesForObject(value);
+		if(configurationService.shouldValidateObjects()) {
+			ObjectValidation.validateFieldValueTypesForObject(value);
+		}
 		
 		KeyValueToChangeMapper<T> changeMapper = (originalKey, originalvalue) -> {
 			return IndividualChange.createInsertChange(key, value);
@@ -216,7 +218,7 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	@Override
 	protected ReadWriteCollectionMetaData getOrCreateMetadata() {
 		if (metadata == null) {
-			metadata = new ReadWriteCollectionMetaData(getPath(), this.encryptionService);
+			metadata = new ReadWriteCollectionMetaData(getPath(), this.configurationService, this.encryptionService);
 		}
 		return metadata;
 	}

@@ -15,6 +15,7 @@ import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ByteUtils;
 import org.bluedb.disk.collection.index.IndexCompositeKey;
+import org.bluedb.disk.config.ConfigurationService;
 import org.bluedb.disk.recovery.PendingChange;
 import org.bluedb.disk.serialization.validation.ObjectValidation;
 import org.bluedb.disk.serialization.validation.SerializationException;
@@ -24,9 +25,11 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 	
 	private static final int MAX_ATTEMPTS = 5;
 
+	private ConfigurationService configurationService;
 	private Class<?>[] registeredSerializableClasses;
 
-	public ThreadLocalFstSerializer(Class<?>...registeredSerializableClasses) {
+	public ThreadLocalFstSerializer(ConfigurationService configurationService, Class<?>...registeredSerializableClasses) {
+		this.configurationService = configurationService;
 		this.registeredSerializableClasses = registeredSerializableClasses;
 	}
 
@@ -81,10 +84,12 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 	}
 	
 	protected void validateObjectBeforeSerializing(Object o) throws SerializationException {
-		try {
-			ObjectValidation.validateFieldValueTypesForObject(o);
-		} catch(Throwable t) {
-			throw new SerializationException("Cannot serialize an invalid object", t);
+		if(configurationService.shouldValidateObjects()) {
+			try {
+				ObjectValidation.validateFieldValueTypesForObject(o);
+			} catch(Throwable t) {
+				throw new SerializationException("Cannot serialize an invalid object", t);
+			}
 		}
 	}
 
@@ -96,12 +101,6 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		}
 	}
 	
-	@Deprecated
-	/** Should only be used by tests */
-	public Object deserializeObjectFromByteArrayWithoutChecks(byte[] bytes) {
-		return toObject(bytes);
-	}
-
 	@Override
 	public Object deserializeObjectFromByteArray(byte[] bytes) throws SerializationException {
 		Throwable failureCause = null;
@@ -110,9 +109,12 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 		while(retryCount < MAX_ATTEMPTS) {
 			try {
 				Object obj = toObject(bytes);
-				ObjectValidation.validateFieldValueTypesForObject(obj);
+				if(configurationService.shouldValidateObjects()) {
+					ObjectValidation.validateFieldValueTypesForObject(obj);
+				}
 				return obj;
 			} catch(Throwable t) {
+				System.out.println("[BlueDB Warning] - BlueDB just identified an invalid read and will attempt to correct it.");
 				failureCause = t;
 				retryCount++;
 			}
@@ -128,13 +130,6 @@ public class ThreadLocalFstSerializer extends ThreadLocal<DefaultCoder> implemen
 			byte[] bytesToTry = ByteUtils.replaceClassPathBytes(bytes, "io.bluedb", "org.bluedb");
 			return get().toObject(bytesToTry);
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	@Deprecated
-	/** Should only be used by tests */
-	public <T extends Serializable> T cloneWithoutChecks(T object) {
-		return (T) deserializeObjectFromByteArrayWithoutChecks(serializeObjectToByteArrayWithoutChecks(object));
 	}
 
 	@SuppressWarnings("unchecked")
