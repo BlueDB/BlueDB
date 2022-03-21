@@ -8,6 +8,7 @@ import java.util.Objects;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.config.ConfigurationService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
@@ -19,10 +20,10 @@ public class ReadWriteCollectionMetaData extends ReadableCollectionMetadata {
 
 	final ReadWriteFileManager fileManager;
 
-	public ReadWriteCollectionMetaData(Path collectionPath, EncryptionServiceWrapper encryptionService) {
+	public ReadWriteCollectionMetaData(Path collectionPath, ConfigurationService configurationService, EncryptionServiceWrapper encryptionService) {
 		super(collectionPath);
 		// meta data needs its own serializer because collection doesn't know which classes to register until metadata deserializes them from disk
-		BlueSerializer serializer = new ThreadLocalFstSerializer();
+		BlueSerializer serializer = new ThreadLocalFstSerializer(configurationService);
 		fileManager = new ReadWriteFileManager(serializer, encryptionService);  
 	}
 

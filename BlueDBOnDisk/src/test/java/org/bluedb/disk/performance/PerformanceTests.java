@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.bluedb.disk.serialization.validation.SerializationException;
@@ -41,10 +42,10 @@ public class PerformanceTests {
 		file = tempDir.resolve("test.bin");
 
 		if(registerClass) {
-			serializer = new ThreadLocalFstSerializer(TestValue.class);
+			serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), TestValue.class);
 		}
 		else {
-			serializer = new ThreadLocalFstSerializer();
+			serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService());
 		}
 		
 		Random r = new Random();

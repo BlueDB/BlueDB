@@ -20,6 +20,7 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.query.QueryOnDisk;
 import org.bluedb.disk.serialization.BlueEntity;
@@ -35,14 +36,14 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		serializer = new ThreadLocalFstSerializer(new Class[] {});
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[] {});
 	}
 
 	@Test
 	public void test_getPendingFileName() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		String fileName1 = RecoveryManager.getPendingFileName(change);
 
@@ -57,7 +58,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 	public void test_getCompletedFileName() throws Exception {
 		BlueKey key = createKey(1, 2);
 		TestValue value = createValue("Joe");
-		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key, value, serializer);
 		String pendingFileName = RecoveryManager.getPendingFileName(change);
 		String completedFileName = RecoveryManager.getCompletedFileName(change);

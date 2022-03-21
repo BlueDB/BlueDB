@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -18,7 +19,7 @@ public class ReadFileManagerTest {
 	public void test_readMetadata_objectSuccessfullyParsesIntoUnexpectedType_returnsNullAndResetsInputStream() throws Exception {
 		// Arrange
 		Path testPath = Paths.get(".", "test_" + this.getClass().getSimpleName());
-		BlueSerializer serializer = new ThreadLocalFstSerializer();
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService());
 		TestValue value = new TestValue("Sandra Bowl of Grits");
 		byte[] valueBytes = serializer.serializeObjectToByteArray(value);
 		try (DataOutputStream outputStream = FileUtils.openDataOutputStream(testPath.toFile())) {

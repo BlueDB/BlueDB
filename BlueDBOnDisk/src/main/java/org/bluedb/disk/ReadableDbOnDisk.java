@@ -19,18 +19,23 @@ import org.bluedb.disk.collection.FacadeTimeCollection;
 import org.bluedb.disk.collection.NoSuchCollectionException;
 import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 import org.bluedb.disk.collection.ReadOnlyTimeCollectionOnDisk;
+import org.bluedb.disk.config.ConfigurationService;
+import org.bluedb.disk.config.ConfigurationServiceWrapper;
 import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
+import org.bluedb.disk.time.StandardTimeService;
 
 public class ReadableDbOnDisk implements ReadableBlueDb {
 
 	protected final Path path;
+	protected final ConfigurationServiceWrapper configurationService;
 	protected final EncryptionServiceWrapper encryptionService;
 
 	private final Map<String, ReadOnlyCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 	
-	ReadableDbOnDisk(Path path, EncryptionService encryptionService) {
+	ReadableDbOnDisk(Path path, ConfigurationService configurationService, EncryptionService encryptionService) {
 		this.path = path;
+		this.configurationService = new ConfigurationServiceWrapper(configurationService, new StandardTimeService(), 60_000);
 		this.encryptionService = new EncryptionServiceWrapper(encryptionService);
 	}
 	
@@ -114,6 +119,8 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	public Path getPath() {
 		return path;
 	}
+	
+	public ConfigurationServiceWrapper getConfigurationService() { return configurationService; }
 
 	public EncryptionServiceWrapper getEncryptionService() { return encryptionService; }
 

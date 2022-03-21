@@ -24,6 +24,7 @@ import org.bluedb.api.keys.UUIDKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.config.ConfigurationService;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.models.calls.Call;
@@ -34,6 +35,10 @@ import org.bluedb.disk.segment.ReadWriteSegmentManager;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
 import junit.framework.TestCase;
 
 public abstract class BlueDbDiskTestBase extends TestCase {
@@ -55,12 +60,21 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 	ReadWriteCollectionMetaData metaData;
 	List<File> filesToDelete;
 	ReadWriteCollectionMetaData timeCollectionMetaData;
+	
+	@Mock
+	protected ConfigurationService mockedConfigurationService;
 
 	@Override
 	protected void setUp() throws Exception {
+		MockitoAnnotations.initMocks(this);
+		Mockito.doReturn(false).when(mockedConfigurationService).shouldValidateObjects();
+		
 		filesToDelete = new ArrayList<>();
 		dbPath = createTempFolder().toPath();
-		db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder().withPath(dbPath).build();
+		db = (ReadWriteDbOnDisk) new BlueDbOnDiskBuilder()
+				.withPath(dbPath)
+				.withConfigurationService(mockedConfigurationService)
+				.build();
 		timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
 		hashGroupedCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
 		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
@@ -70,6 +84,11 @@ public abstract class BlueDbDiskTestBase extends TestCase {
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
 		timeCollectionMetaData = getTimeCollection().getMetaData();
+	}
+	
+	public void turnOnObjectValidation() {
+		Mockito.doReturn(true).when(mockedConfigurationService).shouldValidateObjects();
+		db().getConfigurationService().resetNextTimeToCheck();
 	}
 
 	@Override

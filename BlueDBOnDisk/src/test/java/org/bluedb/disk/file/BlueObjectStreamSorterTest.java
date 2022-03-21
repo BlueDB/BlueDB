@@ -16,6 +16,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.BlueObjectStreamSorter.BlueObjectStreamSorterConfig;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
@@ -44,7 +45,7 @@ public class BlueObjectStreamSorterTest {
 		tmpDir.toFile().deleteOnExit();
 		tmpPath = tmpDir.resolve("results");
 		
-		serializer = new ThreadLocalFstSerializer();
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService());
 		encryptionService = new EncryptionServiceWrapper(null);
 		fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		

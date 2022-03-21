@@ -11,6 +11,7 @@ import java.util.List;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
@@ -29,7 +30,7 @@ public class FileUtilsTest extends TestCase {
 
 	@Override
 	protected void setUp() throws Exception {
-		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[] {});
 		EncryptionServiceWrapper encryptionService = new EncryptionServiceWrapper(null);
 		ReadWriteFileManager fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
