@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 
 /**
@@ -15,6 +16,9 @@ public interface BlueQuery<V extends Serializable> extends ReadBlueQuery<V> {
 	
 	@Override
 	BlueQuery<V> where(Condition<V> condition);
+
+	@Override
+	BlueQuery<V> where(BlueIndexCondition<?> indexCondition);
 	
 	@Override
 	BlueQuery<V> whereKeyIsIn(Set<BlueKey> keys);

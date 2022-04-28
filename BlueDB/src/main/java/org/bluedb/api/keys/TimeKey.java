@@ -115,4 +115,14 @@ public class TimeKey implements BlueKey {
 	public Long getLongIdIfPresent() {
 		return id.getLongIdIfPresent();
 	}
+	
+	@Override
+	public String getStringIdIfPresent() {
+		return id.getStringIdIfPresent();
+	}
+
+	@Override
+	public UUID getUUIDIdIfPresent() {
+		return id.getUUIDIdIfPresent();
+	}
 }

@@ -148,6 +148,23 @@ public class TimeKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_getStringIdIfPresent() {
+		TimeKey uuidInTimeKey = new TimeKey(UUID.randomUUID(), 1);
+		TimeKey stringInTimeKey = new TimeKey("whatever", 1);
+		assertNull(uuidInTimeKey.getStringIdIfPresent());
+		assertEquals("whatever", stringInTimeKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		UUID uuid = UUID.randomUUID();
+		TimeKey uuidInTimeKey = new TimeKey(uuid, 1);
+		TimeKey stringInTimeKey = new TimeKey("whatever", 1);
+		assertNull(stringInTimeKey.getUUIDIdIfPresent());
+		assertEquals(uuid, uuidInTimeKey.getUUIDIdIfPresent());
+	}
+
+	@Test
 	public void test_isBeforeRange() {
 		BlueKey _4 = new TimeKey(4, 4);
 		assertFalse(_4.isBeforeRange(0, 3));

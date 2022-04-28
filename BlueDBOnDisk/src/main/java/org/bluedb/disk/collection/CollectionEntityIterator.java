@@ -11,6 +11,7 @@ import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegment;
 import org.bluedb.disk.segment.ReadableSegmentManager;
@@ -24,17 +25,20 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	private long endGroupingValueOfCompletedSegments;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
+	private final List<OnDiskIndexCondition<?, T>> indexConditions;
 	private final List<Condition<T>> conditions;
 	private final List<Condition<BlueKey>> keyConditions;
 	
 	private AtomicBoolean hasClosed = new AtomicBoolean(false);
 
-	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
+	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<OnDiskIndexCondition<?, T>> indexConditions, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
 		this.range = range;
 		this.endGroupingValueOfCompletedSegments = calculateEndGroupingValueOfCompletedSegments(range, byStartTime);
-		segments = segmentManager.getExistingSegments(range, segmentRangesToInclude);
+		this.indexConditions = indexConditions;
+		Optional<Set<Range>> segmentRangesToIncludeAfterApplyingIndexConditions = getSegmentRangesToIncludeAfterApplyingIndexConditions(segmentRangesToInclude);
+		this.segments = segmentManager.getExistingSegments(range, segmentRangesToIncludeAfterApplyingIndexConditions);
 		Collections.sort(segments);
-		conditions = objectConditions;
+		this.conditions = objectConditions;
 		this.keyConditions = keyConditions;
 	}
 
@@ -44,6 +48,32 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 		}
 		
 		return range.getStart() - 1;
+	}
+
+	private Optional<Set<Range>> getSegmentRangesToIncludeAfterApplyingIndexConditions(Optional<Set<Range>> originalSegmentRangesToInclude) {
+		if(indexConditions == null || indexConditions.isEmpty()) {
+			return originalSegmentRangesToInclude;
+		}
+		
+		Set<Range> rangesToInclude = null;
+		for(OnDiskIndexCondition<?, T> indexCondition : indexConditions) {
+			Set<Range> matchingRanges = indexCondition.getSegmentRangesToIncludeInCollectionQuery();
+			if(rangesToInclude == null) {
+				rangesToInclude = matchingRanges;
+			} else {
+				rangesToInclude.retainAll(matchingRanges);
+			}
+		}
+		
+		if(rangesToInclude == null) {
+			return originalSegmentRangesToInclude;
+		}
+		
+		if(originalSegmentRangesToInclude.isPresent()) {
+			rangesToInclude.retainAll(originalSegmentRangesToInclude.get());
+		}
+		
+		return Optional.of(rangesToInclude);
 	}
 
 	@Override
@@ -97,7 +127,8 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 				while(segmentIterator.hasNext()) {
 					BlueEntity<T> result = segmentIterator.next();
 					if (Blutils.meetsConditions(conditions, result.getValue()) &&
-							Blutils.meetsConditions(keyConditions, result.getKey())) {
+							Blutils.meetsConditions(keyConditions, result.getKey()) &&
+							Blutils.meetsIndexConditions(indexConditions, result)) {
 						return result;
 					}
 				}

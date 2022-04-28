@@ -23,4 +23,9 @@ public final class UUIDKey extends HashGroupedKey<UUID> {
 	public UUID getId() {
 		return id;
 	}
+	
+	@Override
+	public UUID getUUIDIdIfPresent() {
+		return id;
+	}
 }

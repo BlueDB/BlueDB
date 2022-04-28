@@ -1,10 +1,13 @@
 package org.bluedb.api.index;
 
 import java.io.Serializable;
-import java.util.List;
 
 import org.bluedb.api.BlueCollection;
-import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.UnsupportedIndexConditionTypeException;
+import org.bluedb.api.index.conditions.IntegerIndexCondition;
+import org.bluedb.api.index.conditions.LongIndexCondition;
+import org.bluedb.api.index.conditions.StringIndexCondition;
+import org.bluedb.api.index.conditions.UUIDIndexCondition;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
@@ -24,14 +27,47 @@ import org.bluedb.api.keys.ValueKey;
 public interface BlueIndex<K extends ValueKey, V extends Serializable> {
 
 	/**
-	 * @param key a key that maps to the desired value(s)
-	 * @return all the values in the collection for the given index key
-	 * @throws BlueDbException if any problems occur
-	 */
-	public List<V> get(K key) throws BlueDbException;
-
-	/**
 	 * @return the index key with the highest grouping number
 	 */
 	public K getLastKey();
+	
+	/**
+	 * Creates an integer index condition that can be modified and added to the where clause of a collection
+	 * query. Using a condition on indexed information can greatly increase the efficiency of a query by
+	 * allowing BlueDB to more quickly identify what segments it needs to load the full record data from.
+	 * @return an integer index condition that can be modified and added to a collection query's where
+	 * clause. 
+	 * @throws UnsupportedIndexConditionTypeException if this index is not the correct type for this index condition
+	 */
+	public IntegerIndexCondition createIntegerIndexCondition() throws UnsupportedIndexConditionTypeException;
+	
+	/**
+	 * Creates a long index condition that can be modified and added to the where clause of a collection
+	 * query. Using a condition on indexed information can greatly increase the efficiency of a query by
+	 * allowing BlueDB to more quickly identify what segments it needs to load the full record data from.
+	 * @return an integer index condition that can be modified and added to a collection query's where
+	 * clause. 
+	 * @throws UnsupportedIndexConditionTypeException if this index is not the correct type for this index condition
+	 */
+	public LongIndexCondition createLongIndexCondition() throws UnsupportedIndexConditionTypeException;
+	
+	/**
+	 * Creates a string index condition that can be modified and added to the where clause of a collection
+	 * query. Using a condition on indexed information can greatly increase the efficiency of a query by
+	 * allowing BlueDB to more quickly identify what segments it needs to load the full record data from.
+	 * @return an integer index condition that can be modified and added to a collection query's where
+	 * clause. 
+	 * @throws UnsupportedIndexConditionTypeException if this index is not the correct type for this index condition
+	 */
+	public StringIndexCondition createStringIndexCondition() throws UnsupportedIndexConditionTypeException;
+	
+	/**
+	 * Creates a UUID index condition that can be modified and added to the where clause of a collection
+	 * query. Using a condition on indexed information can greatly increase the efficiency of a query by
+	 * allowing BlueDB to more quickly identify what segments it needs to load the full record data from.
+	 * @return an integer index condition that can be modified and added to a collection query's where
+	 * clause. 
+	 * @throws UnsupportedIndexConditionTypeException if this index is not the correct type for this index condition
+	 */
+	public UUIDIndexCondition createUUIDIndexCondition() throws UnsupportedIndexConditionTypeException;
 }

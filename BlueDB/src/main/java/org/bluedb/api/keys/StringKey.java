@@ -21,4 +21,9 @@ public final class StringKey extends HashGroupedKey<String> {
 	public String getId() {
 		return id;
 	}
+	
+	@Override
+	public String getStringIdIfPresent() {
+		return id;
+	}
 }

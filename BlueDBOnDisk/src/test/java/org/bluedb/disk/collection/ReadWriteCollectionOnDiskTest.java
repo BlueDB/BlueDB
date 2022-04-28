@@ -4,7 +4,9 @@ import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URISyntaxException;
+import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,15 +14,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.Condition;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
+import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
@@ -32,6 +38,8 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.collection.index.TestRetrievalLongKeyExtractor;
+import org.bluedb.disk.collection.index.conditions.dummy.DummyUUIDIndexCondition;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
@@ -175,9 +183,9 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<TestValue> listEmpty = Arrays.asList();
 		List<TestValue> list1and3 = Arrays.asList(value1, value3);
 
-		assertEquals(listEmpty, index.get(indexKeyFor1and3));
+		assertEquals(listEmpty, getValuesByIndexForTargetIndexedInteger(getLongCollection(), index, indexKeyFor1and3));
 		getLongCollection().batchUpsert(batchInserts);
-		assertEquals(list1and3, index.get(indexKeyFor1and3));
+		assertEquals(list1and3, getValuesByIndexForTargetIndexedInteger(getLongCollection(), index, indexKeyFor1and3));
 	}
 
 	@Test
@@ -409,7 +417,44 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		BlueKey key = insertAtLong(1, value);
 		assertEquals(value, getLongCollection().get(key));
 	}
-
+	
+	@Test
+	public void test_isIndexConditionCompatible() throws BlueDbException {
+		BlueIndexCondition<TestValue> anonomysInnerIndexConditionDefinition = new BlueIndexCondition<TestValue>() {
+			@Override public BlueIndexCondition<TestValue> isEqualTo(TestValue value) { return this; }
+			@Override public BlueIndexCondition<TestValue> isIn(Set<TestValue> values) { return this; }
+			@Override public BlueIndexCondition<TestValue> isIn(BlueSimpleSet<TestValue> values) { return this; }
+			@Override public BlueIndexCondition<TestValue> meets(Condition<TestValue> condition) { return this; }
+		};
+		assertFalse("You have to use an index condition that is an instance of OnDiskIndexCondition", getTimeCollection().isCompatibleIndexCondition(anonomysInnerIndexConditionDefinition));
+		
+		DummyUUIDIndexCondition<Serializable> dummyIndexConditionOfWrongType = new DummyUUIDIndexCondition<Serializable>(Serializable.class);
+		assertFalse("You have to use an index for the same value type as the collection", getTimeCollection().isCompatibleIndexCondition(dummyIndexConditionOfWrongType));
+		
+		DummyUUIDIndexCondition<TestValue> dummyIndexCondition = new DummyUUIDIndexCondition<TestValue>(TestValue.class);
+		assertTrue("Dummy indices don't return anything, so I'm not too worried aobut checking all of the details for those", getTimeCollection().isCompatibleIndexCondition(dummyIndexCondition));
+		
+		BlueIndex<IntegerKey, TestValue> index1OnTimeCollection = getTimeCollection().createIndex("index-1", IntegerKey.class, new TestRetrievalKeyExtractor());
+		BlueIndex<LongKey, TestValue> index2OnTimeCollection = getTimeCollection().createIndex("index-2", LongKey.class, new TestRetrievalLongKeyExtractor());
+		BlueIndex<IntegerKey, TestValue> index3OnTimeCollection = getTimeCollection().createIndex("index-3", IntegerKey.class, new TestRetrievalKeyExtractor());
+		BlueIndex<IntegerKey, TestValue> index1OnIntCollection = getIntCollection().createIndex("index-1", IntegerKey.class, new TestRetrievalKeyExtractor());
+		
+		assertTrue(getTimeCollection().isCompatibleIndexCondition(index1OnTimeCollection.createIntegerIndexCondition()));
+		assertTrue(getTimeCollection().isCompatibleIndexCondition(index2OnTimeCollection.createLongIndexCondition()));
+		assertTrue(getIntCollection().isCompatibleIndexCondition(index1OnIntCollection.createIntegerIndexCondition()));
+		
+		assertFalse("Wrong collection", getIntCollection().isCompatibleIndexCondition(index1OnTimeCollection.createIntegerIndexCondition()));
+		assertFalse("Wrong collection", getIntCollection().isCompatibleIndexCondition(index2OnTimeCollection.createLongIndexCondition()));
+		assertFalse("Wrong collection", getTimeCollection().isCompatibleIndexCondition(index1OnIntCollection.createIntegerIndexCondition()));
+		
+		assertFalse("Index name and type doesn't exist on this collection", getIntCollection().isCompatibleIndexCondition(index3OnTimeCollection.createIntegerIndexCondition()));
+		
+		try {
+			getTimeCollection().query().where(index1OnIntCollection.createIntegerIndexCondition());
+			fail("Trying to use an invalid index condition in a where clause should have resulted in an exception being thrown.");
+		} catch(InvalidParameterException e) { }
+	}
+	
 	@Test
 	public void test_rollup_ValueKey_invalid_size() throws Exception {
 		long segmentSize = getHashGroupedCollection().getSegmentManager().getSegmentSize();
@@ -466,5 +511,11 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();
 		assertEquals(1, segmentDirectoryContents.length);
 
+	}
+
+	private List<TestValue> getValuesByIndexForTargetIndexedInteger(ReadableBlueCollection<TestValue> collection, BlueIndex<IntegerKey, TestValue> index, IntegerKey targetIntegerKey) throws BlueDbException {
+		return collection.query()
+				.where(index.createIntegerIndexCondition().isEqualTo(targetIntegerKey.getId()))
+				.getList();
 	}
 }

@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bluedb.api.BlueCollection;
@@ -14,6 +15,7 @@ import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.BlueIndexInfo;
+import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
@@ -31,9 +33,11 @@ import org.bluedb.disk.sample.model.timeframe.concrete.TimeFrameObjectV1;
 public class BlueDbSample {
 	private static final String NON_TIME_COLLECTION_NAME = "non-time-objects";
 	private static final String TIME_COLLECTION_NAME = "time-objects";
-	private static final String TIME_COLLECTION_INDEX_NAME = "data-index";
-	private static final String TIME_COLLECTION_INDEX_NAME_2 = "data-index-2";
 	private static final String TIMEFRAME_COLLECTION_NAME = "timeframe-objects";
+	
+	private static final String TIME_COLLECTION_DATA_INDEX_NAME = "data-index";
+	private static final String TIME_COLLECTION_ID_INDEX_NAME = "id-index";
+	private static final String TIME_COLLECTION_START_INDEX_NAME = "start-index";
 	
 	private BlueDb db;
 	
@@ -53,8 +57,9 @@ public class BlueDbSample {
 			.build();
 		
 		List<BlueIndexInfo<? extends ValueKey, TimeObject>> indexInfo = new LinkedList<>();
-		indexInfo.add(new BlueIndexInfo<>(TIME_COLLECTION_INDEX_NAME, StringKey.class, new TimeObjectDataIndexExtractor()));
-		indexInfo.add(new BlueIndexInfo<>(TIME_COLLECTION_INDEX_NAME_2, UUIDKey.class, new TimeObjectIdIndexExtractor()));
+		indexInfo.add(new BlueIndexInfo<>(TIME_COLLECTION_DATA_INDEX_NAME, StringKey.class, new TimeObjectDataIndexExtractor()));
+		indexInfo.add(new BlueIndexInfo<>(TIME_COLLECTION_ID_INDEX_NAME, UUIDKey.class, new TimeObjectIdIndexExtractor()));
+		indexInfo.add(new BlueIndexInfo<>(TIME_COLLECTION_START_INDEX_NAME, LongKey.class, new TimeObjectStartIndexExtractor()));
 		getTimeCollection().createIndices(indexInfo);
 	}
 
@@ -92,8 +97,12 @@ public class BlueDbSample {
 		return db.getTimeCollection(TIME_COLLECTION_NAME, TimeFrameObject.class);
 	}
 
-	private BlueIndex<StringKey, TimeObject> getTimeIndex() throws BlueDbException {
-		return getTimeCollection().getIndex(TIME_COLLECTION_INDEX_NAME, StringKey.class);
+	private BlueIndex<StringKey, TimeObject> getTimeCollectionDataIndex() throws BlueDbException {
+		return getTimeCollection().getIndex(TIME_COLLECTION_DATA_INDEX_NAME, StringKey.class);
+	}
+
+	private BlueIndex<LongKey, TimeObject> getTimeCollectionStartIndex() throws BlueDbException {
+		return getTimeCollection().getIndex(TIME_COLLECTION_START_INDEX_NAME, LongKey.class);
 	}
 	
 	public void insertNonTimeObject(NonTimeObject obj) throws BlueDbException {
@@ -121,7 +130,54 @@ public class BlueDbSample {
 	}
 	
 	public List<TimeObject> getTimeObjectsByIndex(String data) throws BlueDbException {
-		return getTimeIndex().get(new StringKey(data));
+		return getTimeCollection().query()
+				.where(getTimeCollectionDataIndex().createStringIndexCondition()
+						.isEqualTo(data))
+				.getList();
+	}
+	
+	public void printTimeObjectsInTimeframeUsingIndex(long start, long end) {
+		try(CloseableIterator<TimeObject> iterator = getTimeCollection().query()
+				.where(getTimeCollectionStartIndex().createLongIndexCondition()
+						.isGreaterThanOrEqualTo(start)
+						.isLessThan(end))
+				.getIterator()) {
+			while(iterator.hasNext()) {
+				System.out.println(iterator.next());
+			}
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void printTimeObjectsUsingCustomIndexCondition() {
+		try(CloseableIterator<TimeObject> iterator = getTimeCollection().query()
+				.where(getTimeCollectionDataIndex().createStringIndexCondition()
+						.meets(data -> data.contains("something weird") && !data.endsWith("temp")))
+				.getIterator()) {
+			while(iterator.hasNext()) {
+				System.out.println(iterator.next());
+			}
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void printTimeObjectsUsingWhereClauseAndMultipleIndexConditions(long start, long end, Set<String> validData) {
+		try(CloseableIterator<TimeObject> iterator = getTimeCollection().query()
+				.where(getTimeCollectionDataIndex().createStringIndexCondition()
+						.isIn(validData))
+				.where(getTimeCollectionStartIndex().createLongIndexCondition()
+						.isGreaterThanOrEqualTo(start)
+						.isLessThan(end))
+				.where(timeObject -> timeObject.getId() != null)
+				.getIterator()) {
+			while(iterator.hasNext()) {
+				System.out.println(iterator.next());
+			}
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public CloseableIterator<TimeFrameObject> queryExample() throws BlueDbException {

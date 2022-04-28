@@ -74,7 +74,7 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 				} catch (BlueDbException e2) {
 					return null;
 				}
-			});
+			}, getType());
 		}
 	}
 

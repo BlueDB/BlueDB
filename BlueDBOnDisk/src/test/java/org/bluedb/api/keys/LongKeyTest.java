@@ -126,6 +126,18 @@ public class LongKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_getStringIdIfPresent() {
+		LongKey longKey = new LongKey(1);
+		assertNull(longKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		LongKey longKey = new LongKey(1);
+		assertNull(longKey.getUUIDIdIfPresent());
+	}
+
+	@Test
 	public void test_isBeforeRange() {
 		LongKey longKey = new LongKey(1);
 		long groupingNumber = longKey.getGroupingNumber();

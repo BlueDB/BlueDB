@@ -4,17 +4,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import org.junit.Test;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
+import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.SegmentEntityIterator;
-import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
@@ -27,7 +31,7 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
         Path chunkPath = Paths.get(segment.getPath().toString(), range.toUnderscoreDelimitedString());
 
         getTimeCollection().insert(key, value);
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertFalse(getLockManager().isLocked(chunkPath));
         iterator.hasNext();  // force it to open the next file
         assertTrue(getLockManager().isLocked(chunkPath));
@@ -65,18 +69,18 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
         getTimeCollection().insert(key1, value1);
         getTimeCollection().insert(key2, value2);
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertFalse(iterator.hasNext());
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertTrue(iterator.hasNext());
         assertTrue(iterator.hasNext()); // make sure doing it twice doesn't break anything
         iterator.next();
         assertFalse(iterator.hasNext());
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertTrue(iterator.hasNext());
         assertEquals(value1, iterator.next().getValue());
         assertTrue(iterator.hasNext());
@@ -94,19 +98,19 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 
         getTimeCollection().insert(key1, value1);
         getTimeCollection().insert(key2, value2);
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
     	assertNull(iterator.peek());
     	iterator.keepAlive();
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 1), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertEquals(value1, iterator.peek().getValue());
         assertEquals(value1, iterator.peek().getValue()); // make sure doing it twice doesn't break anything
         assertEquals(value1, iterator.next().getValue());
     	assertNull(iterator.peek());
         iterator.close();
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(1, 2), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         assertEquals(value1, iterator.peek().getValue());
         assertEquals(value1, iterator.next().getValue());
         assertEquals(value2, iterator.peek().getValue());
@@ -125,18 +129,18 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
         getTimeCollection().insert(key1, value1);
         getTimeCollection().insert(key2, value2);
 
-        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        CollectionEntityIterator<TestValue> iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 0), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         List<BlueEntity<TestValue>> iteratorContents = toList(iterator);
         iterator.close();
         assertEquals(0, iteratorContents.size());
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 1), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         iteratorContents = toList(iterator);
         iterator.close();
         assertEquals(1, iteratorContents.size());
 
 
-        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 2), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+        iterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, 2), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
         iteratorContents = new ArrayList<>();
         iteratorContents.add(iterator.next());
         iteratorContents.add(iterator.next());  // make sure next work right after a next
@@ -166,11 +170,88 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 		List<TestValue> valuesFromFirstSegment = toValueList(firstSegmentIterator);
 		SegmentEntityIterator<TestValue> secondSegmentIterator = secondSegment.getIterator(0, segmentSize * 2 - 1);
 		List<TestValue> valuesFromSecondSegment = toValueList(secondSegmentIterator);
-		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, segmentSize * 2 - 1), false, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), new Range(0, segmentSize * 2 - 1), false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Optional.empty());
 		List<TestValue> valuesFromEitherSegment = toValueList(collectionIterator);
 
 		assertEquals(valuesExpectedInFirstSegment, valuesFromFirstSegment);
 		assertEquals(valuesExpectedInSecondSegment, valuesFromSecondSegment);
 		assertEquals(valuesExpectedInEitherSegment, valuesFromEitherSegment);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void test_getNext_multipleTimeFramesWithIndexConditions() {
+		long segmentSize = getTimeCollection().getSegmentManager().getSegmentSize();
+		ReadWriteSegment<TestValue> firstSegment = getSegment(0);
+		ReadWriteSegment<TestValue> thirdSegment = getSegment(segmentSize * 2);
+		ReadWriteSegment<TestValue> fourthSegment = getSegment(segmentSize * 3);
+		
+		Set<Range> firstThirdAndFourthRanges = new HashSet<>(Arrays.asList(firstSegment.getRange(), thirdSegment.getRange(), fourthSegment.getRange()));
+		Set<Range> firstAndFourthRanges = new HashSet<>(Arrays.asList(firstSegment.getRange(), fourthSegment.getRange()));
+		Set<Range> fourthRangeOnly = new HashSet<>(Arrays.asList(fourthSegment.getRange()));
+		
+		TestValue valueInFirstSegment = new TestValue("first");
+		TestValue valueInFirstAndSecondSegments = new TestValue("firstAndSecond");
+		TestValue valueInSecondSegment = new TestValue("second");
+		TestValue valueInThirdSegment = new TestValue("third");
+		TestValue valueInFourthSegment = new TestValue("fourth");
+		
+		insertAtTimeFrame(0, 1, valueInFirstSegment);
+		insertAtTimeFrame(1, segmentSize, valueInFirstAndSecondSegments);
+		insertAtTimeFrame(segmentSize + 1, segmentSize + 1, valueInSecondSegment);
+		insertAtTimeFrame(segmentSize * 2, segmentSize * 2 + 1, valueInThirdSegment);
+		insertAtTimeFrame(segmentSize * 3, segmentSize * 3 + 1, valueInFourthSegment);
+		
+		List<TestValue> valuesExpectedInFourthSegment = Arrays.asList(valueInFourthSegment);
+		List<TestValue> valuesExpectedInFirstThirdAndFourthSegment = Arrays.asList(valueInFirstSegment, valueInFirstAndSecondSegments, valueInThirdSegment, valueInFourthSegment);
+		List<TestValue> valuesExpectedInFirstAndFourthSegment = Arrays.asList(valueInFirstSegment, valueInFirstAndSecondSegments, valueInFourthSegment);
+
+		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingNullRanges = Mockito.mock(OnDiskIndexCondition.class);
+		Mockito.doReturn(null).when(indexConditionSpecifyingNullRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(true).when(indexConditionSpecifyingNullRanges).test(Mockito.any());
+		
+		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingFirstThirdAndFourthRanges = Mockito.mock(OnDiskIndexCondition.class);
+		Mockito.doReturn(firstThirdAndFourthRanges).when(indexConditionSpecifyingFirstThirdAndFourthRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(true).when(indexConditionSpecifyingFirstThirdAndFourthRanges).test(Mockito.any());
+		
+		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingFirstAndFourthRanges = Mockito.mock(OnDiskIndexCondition.class);
+		Mockito.doReturn(firstAndFourthRanges).when(indexConditionSpecifyingFirstAndFourthRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(true).when(indexConditionSpecifyingFirstAndFourthRanges).test(Mockito.any());
+		
+		//Verify ranges to include works and isn't thrown off if the index condition returns null for its ranges to include
+		List<OnDiskIndexCondition<?, TestValue>> indexConditions = Arrays.asList(indexConditionSpecifyingNullRanges);
+		Optional<Set<Range>> rangesToInclude = Optional.of(fourthRangeOnly);
+		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditions, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		List<TestValue> results = toValueList(collectionIterator);
+		assertEquals(valuesExpectedInFourthSegment, results);
+		
+		//Verify an index condition works on its own
+		indexConditions = Arrays.asList(indexConditionSpecifyingFirstThirdAndFourthRanges);
+		rangesToInclude = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditions, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		results = toValueList(collectionIterator);
+		assertEquals(valuesExpectedInFirstThirdAndFourthSegment, results);
+		
+		//Verify two index condition work together
+		indexConditions = Arrays.asList(indexConditionSpecifyingFirstThirdAndFourthRanges, indexConditionSpecifyingFirstAndFourthRanges);
+		rangesToInclude = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditions, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		results = toValueList(collectionIterator);
+		assertEquals(valuesExpectedInFirstAndFourthSegment, results);
+		
+		//Verify two index conditions and ranges to include work together
+		indexConditions = Arrays.asList(indexConditionSpecifyingFirstThirdAndFourthRanges, indexConditionSpecifyingFirstAndFourthRanges);
+		rangesToInclude = Optional.of(fourthRangeOnly);
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditions, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		results = toValueList(collectionIterator);
+		assertEquals(valuesExpectedInFourthSegment, results);
+		
+		//Verify that if an index condition return false in the test method that it will keep anything from being returned
+		Mockito.doReturn(false).when(indexConditionSpecifyingFirstThirdAndFourthRanges).test(Mockito.any());
+		indexConditions = Arrays.asList(indexConditionSpecifyingFirstThirdAndFourthRanges);
+		rangesToInclude = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditions, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		results = toValueList(collectionIterator);
+		assertEquals(Arrays.asList(), results);
 	}
 }

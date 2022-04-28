@@ -7,6 +7,7 @@ import java.util.Set;
 import org.bluedb.api.BlueTimeQuery;
 import org.bluedb.api.Condition;
 import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
@@ -20,6 +21,12 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 	@Override
 	public BlueTimeQuery<T> where(Condition<T> c) {
 		super.where(c);
+		return this;
+	}
+	
+	@Override
+	public BlueTimeQuery<T> where(BlueIndexCondition<?> indexCondition) {
+		super.where(indexCondition);
 		return this;
 	}
 	

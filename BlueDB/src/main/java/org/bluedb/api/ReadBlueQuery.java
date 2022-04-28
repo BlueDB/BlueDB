@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 
 /**
@@ -22,6 +23,14 @@ public interface ReadBlueQuery<V extends Serializable> {
 	 * @return itself, with the condition added to the query
 	 */
 	ReadBlueQuery<V> where(Condition<V> condition);
+
+	/**
+	 * Adds an index condition to the query before returning itself.
+	 * @param indexCondition a filter function. Records that don't have indexed values 
+	 * matching the condition will be excluded from the query.
+	 * @return itself, with the index condition added to the query
+	 */
+	ReadBlueQuery<V> where(BlueIndexCondition<?> indexCondition);
 	
 	/**
 	 * Adds a condition that results in only matching values for the given keys.

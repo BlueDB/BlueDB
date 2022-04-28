@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Set;
 
 import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 
 /**
@@ -14,6 +15,9 @@ public interface BlueTimeQuery<V extends Serializable> extends BlueQuery<V>, Rea
 	
 	@Override
 	BlueTimeQuery<V> where(Condition<V> condition);
+
+	@Override
+	BlueTimeQuery<V> where(BlueIndexCondition<?> indexCondition);
 	
 	@Override
 	BlueTimeQuery<V> whereKeyIsIn(Set<BlueKey> keys);

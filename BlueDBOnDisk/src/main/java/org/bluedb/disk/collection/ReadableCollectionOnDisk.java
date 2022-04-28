@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -13,10 +14,14 @@ import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadableDbOnDisk;
+import org.bluedb.disk.collection.index.ReadableIndexOnDisk;
+import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
+import org.bluedb.disk.collection.index.conditions.dummy.OnDiskDummyIndexCondition;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.metadata.ReadableCollectionMetadata;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
@@ -83,9 +88,9 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
-	public List<BlueEntity<T>> findMatches(Range range, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<Set<Range>> segmentRangesToInclude) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(Range range, List<OnDiskIndexCondition<?, T>> indexConditions, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<Set<Range>> segmentRangesToInclude) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, conditions, keyConditions, segmentRangesToInclude)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, indexConditions, conditions, keyConditions, segmentRangesToInclude)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
 				results.add(entity);
@@ -155,6 +160,31 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		} else {
 			return providedKeyType;
 		}
+	}
+	
+	//Full integration tests to verify this. Also for facade collections/indices
+	public boolean isCompatibleIndexCondition(BlueIndexCondition<?> indexCondition) {
+		if(indexCondition instanceof OnDiskIndexCondition) {
+			OnDiskIndexCondition<?, ?> onDiskIndexCondition = (OnDiskIndexCondition<?, ?>) indexCondition;
+			
+			if(!valueType.isAssignableFrom(onDiskIndexCondition.getIndexedCollectionType())) {
+				return false;
+			}
+			
+			if(onDiskIndexCondition instanceof OnDiskDummyIndexCondition) {
+				return true;
+			}
+			
+			try {
+				BlueIndex<? extends ValueKey, T> actualIndex = getIndex(onDiskIndexCondition.getIndexName(), onDiskIndexCondition.getIndexKeyType());
+				if(actualIndex instanceof ReadableIndexOnDisk) {
+					return Objects.equals(onDiskIndexCondition.getIndexPath(), ((ReadableIndexOnDisk<?,?>)actualIndex).getIndexPath());
+				}
+			} catch (BlueDbException e) {
+				return false;
+			}
+		}
+		return false;
 	}
 
 }

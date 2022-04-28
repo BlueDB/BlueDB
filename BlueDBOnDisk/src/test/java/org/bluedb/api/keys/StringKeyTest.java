@@ -101,20 +101,26 @@ public class StringKeyTest extends TestCase {
 
 	@Test
 	public void test_getLongIdIfPresent() {
-		StringKey one = new StringKey("1");
-		StringKey empty = new StringKey("");
-		StringKey _null = new StringKey(null);
-		assertNull(one.getLongIdIfPresent());
-		assertNull(empty.getLongIdIfPresent());
-		assertNull(_null.getLongIdIfPresent());
+		StringKey stringKey = new StringKey("whatever");
+		assertNull(stringKey.getLongIdIfPresent());
 	}
 
 	@Test
 	public void test_getIntegerIdIfPresent() {
-		TimeKey fourLongAtOne = new TimeKey(4L, 1);
-		TimeKey fourIntegerAtOne = new TimeKey(new IntegerKey(4), 1);
-		assertNull(fourLongAtOne.getIntegerIdIfPresent());
-		assertEquals(Integer.valueOf(4), fourIntegerAtOne.getIntegerIdIfPresent());
+		StringKey stringKey = new StringKey("whatever");
+		assertNull(stringKey.getIntegerIdIfPresent());
+	}
+
+	@Test
+	public void test_getStringIdIfPresent() {
+		StringKey stringKey = new StringKey("whatever");
+		assertEquals("whatever", stringKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		StringKey stringKey = new StringKey("whatever");
+		assertNull(stringKey.getUUIDIdIfPresent());
 	}
 
 	@Test

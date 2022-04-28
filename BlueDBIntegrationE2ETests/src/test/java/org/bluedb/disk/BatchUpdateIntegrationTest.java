@@ -52,7 +52,9 @@ public class BatchUpdateIntegrationTest {
 			assertEquals(valuesToInsert, queryResults.size());
 			
 			int targetCookieCount = 0;
-			queryResults = cookieIndex.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(cookieIndex.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(1, queryResults.size());
 			assertEquals(String.valueOf(0), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());
@@ -61,7 +63,9 @@ public class BatchUpdateIntegrationTest {
 				.update(value -> value.addCupcake());
 			
 			targetCookieCount = 1;
-			queryResults = cookieIndex.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(cookieIndex.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(1, queryResults.size());
 			assertEquals(String.valueOf(0), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());

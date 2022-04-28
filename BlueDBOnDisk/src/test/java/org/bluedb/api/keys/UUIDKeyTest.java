@@ -91,18 +91,26 @@ public class UUIDKeyTest extends TestCase {
 
 	@Test
 	public void test_getLongIdIfPresent() {
-		UUIDKey one = new UUIDKey(new UUID(0, 1));
-		UUIDKey _null = new UUIDKey(null);
-		assertNull(one.getLongIdIfPresent());
-		assertNull(_null.getLongIdIfPresent());
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
+		assertNull(uuidKey.getLongIdIfPresent());
 	}
 
 	@Test
 	public void test_getIntegerIdIfPresent() {
-		UUIDKey one = new UUIDKey(new UUID(0, 1));
-		UUIDKey _null = new UUIDKey(null);
-		assertNull(one.getIntegerIdIfPresent());
-		assertNull(_null.getIntegerIdIfPresent());
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
+		assertNull(uuidKey.getIntegerIdIfPresent());
+	}
+
+	@Test
+	public void test_getStringIdIfPresent() {
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
+		assertNull(uuidKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		UUIDKey uuidKey = new UUIDKey(UUID.randomUUID());
+		assertEquals(uuidKey.getId(), uuidKey.getUUIDIdIfPresent());
 	}
 
 	@Test

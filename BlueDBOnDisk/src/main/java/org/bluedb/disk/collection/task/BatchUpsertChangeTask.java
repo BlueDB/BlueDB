@@ -16,6 +16,7 @@ import org.bluedb.disk.IteratorWrapper;
 import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.OnDiskSortedChangeSupplier;
@@ -104,10 +105,11 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 
 	private CollectionEntityIterator<T> createIteratorForAllEntitiesInIncludedRanges() {
 		Range range = new Range(minIncludedRangeTime, maxIncludedRangeTime);
+		List<OnDiskIndexCondition<?, T>> indexConditions = new LinkedList<>();
 		List<Condition<T>> objectConditions = new LinkedList<>();
 		List<Condition<BlueKey>> keyConditions = new LinkedList<>();
 		
-		return new CollectionEntityIterator<T>(segmentManager, range, true, objectConditions, keyConditions, Optional.of(includedSegmentRanges));
+		return new CollectionEntityIterator<T>(segmentManager, range, true, indexConditions, objectConditions, keyConditions, Optional.of(includedSegmentRanges));
 	}
 	
 	private IndividualChange<T> findMatchingEntityAndMapInsertToUpdateIfSuccessful(CollectionEntityIterator<T> entitiesInRangeIterator, IndividualChange<T> insertChange) {

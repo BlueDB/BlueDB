@@ -68,12 +68,16 @@ public class IndexInitializationIntegrationTest {
 			ReadWriteIndexOnDisk<IntegerKey, TestValue> index2 = timeCollection.getIndex("COOKIE_INDEX2", IntegerKey.class);
 			
 			int targetCookieCount = new Random().nextInt(valuesToInsert-2);
-			queryResults = index1.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(index1.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(1, queryResults.size());
 			assertEquals(String.valueOf(targetCookieCount), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());
 			
-			queryResults = index2.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(index2.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(2, queryResults.size());
 			assertEquals(String.valueOf(targetCookieCount), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());

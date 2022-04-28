@@ -2,6 +2,7 @@ package org.bluedb.api.keys;
 
 import java.io.Serializable;
 import java.util.Comparator;
+import java.util.UUID;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.index.BlueIndex;
@@ -60,6 +61,22 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	 * @return the underlying Integer value if this is a IntegerKey
 	 */
 	default public Integer getIntegerIdIfPresent() {
+		return null;
+	}
+
+	/**
+	 * Convenience method to get the underlying Integer value if this is a IntegerKey
+	 * @return the underlying Integer value if this is a IntegerKey
+	 */
+	default public String getStringIdIfPresent() {
+		return null;
+	}
+
+	/**
+	 * Convenience method to get the underlying Integer value if this is a IntegerKey
+	 * @return the underlying Integer value if this is a IntegerKey
+	 */
+	default public UUID getUUIDIdIfPresent() {
 		return null;
 	}
 

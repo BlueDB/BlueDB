@@ -9,16 +9,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.UnsupportedIndexConditionTypeException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
+import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
+import org.bluedb.api.keys.UUIDKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
@@ -32,6 +36,7 @@ import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.rollup.IndexRollupTarget;
 import org.bluedb.disk.segment.rollup.RollupScheduler;
 import org.bluedb.disk.segment.rollup.RollupTarget;
+import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
 
 public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
@@ -110,6 +115,21 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptySet, indexOnDisk.getKeys(integerKey2));
 		assertEquals(emptySet, indexOnDisk.getKeys(integerKey3));
 	}
+	
+	@Test
+	public void test_extractIndexKeys() throws BlueDbException {
+
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		BlueEntity<TestValue> fredEntity = new BlueEntity<>(timeKeyFred1, valueFred1);
+		
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		assertEquals(Arrays.asList(new IntegerKey(valueFred1.getCupcakes())), indexOnDisk.extractIndexKeys(fredEntity));
+		
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> nullExtractingIndexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) collection.createIndex("test_index2", IntegerKey.class, new TestRetrievalKeyNullExtractor());
+		assertEquals(Arrays.asList(), nullExtractingIndexOnDisk.extractIndexKeys(fredEntity));
+	}
 
 	@Test
 	public void test_get() throws Exception {
@@ -134,30 +154,30 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		List<TestValue> justBob = Arrays.asList(valueBob3);
 		List<TestValue> justFred = Arrays.asList(valueFred1);
 
-		assertEquals(emptyList, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(emptyList, indexOnDisk.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 
 		collection.insert(timeKeyFred1, valueFred1);
 		collection.insert(timeKeyBob3, valueBob3);
 		collection.insert(timeKeyJoe3, valueJoe3);
 
-		assertEquals(justFred, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(bobAndJoe, indexOnDisk.get(integerKey3));
+		assertEquals(justFred, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(bobAndJoe, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 
 		collection.delete(timeKeyFred1);
 		collection.delete(timeKeyJoe3);
 
-		assertEquals(emptyList, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(justBob, indexOnDisk.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(justBob, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 		
 		
 		collection.update(timeKeyBob3, value -> value.addCupcake());
-		assertEquals(emptyList, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(emptyList, indexOnDisk.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 		
 		/*
 		 * The collection on disk has 4 cupcakes for bob, we're going to deliberately mess up the index
@@ -167,8 +187,8 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		collection.getIndexManager().indexChange(timeKeyBob3, null, valueBob3); //Should make index 3 point to this value even though the indexed value was just changed to 4
 		valueBob3.addCupcake();
 		
-		assertEquals(emptyList, indexOnDisk.get(integerKey3)); //3 should point to the value, but since the value doesn't contain 3 it shouldn't return it.
-		assertEquals(justBob, indexOnDisk.get(integerKey4));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3)); //3 should point to the value, but since the value doesn't contain 3 it shouldn't return it.
+		assertEquals(justBob, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey4));
 	}
 	
 	@Test
@@ -182,7 +202,7 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		collection.getIndexManager().indexChange(timeKeyFred1, null, valueFred1);
 		List<TestValue> emptyList = Arrays.asList();
 		
-		assertEquals(emptyList, index.get(new IntegerKey(1)));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, index, new IntegerKey(1)));
 	}
 
 	@Test
@@ -208,13 +228,32 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		ReadableBlueCollection<TestValue> readOnlyCollection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
 		BlueIndex<IntegerKey, TestValue> facadeIndex = readOnlyCollection.getIndex(indexName, IntegerKey.class);
 
-		assertNull(facadeIndex.get(indexKey));
+		readOnlyCollection.query()
+		.where(facadeIndex.createIntegerIndexCondition().isEqualTo(indexKey.getId()))
+		.getList();
+		
+		assertEquals(0, readOnlyCollection.query()
+				.where(facadeIndex.createIntegerIndexCondition().isEqualTo(indexKey.getId()))
+				.getList()
+				.size());
+		assertEquals(0, readOnlyCollection.query()
+				.where(facadeIndex.createLongIndexCondition().isEqualTo(10L))
+				.getList()
+				.size());
+		assertEquals(0, readOnlyCollection.query()
+				.where(facadeIndex.createStringIndexCondition().isEqualTo("Anything"))
+				.getList()
+				.size());
+		assertEquals(0, readOnlyCollection.query()
+				.where(facadeIndex.createUUIDIndexCondition().isEqualTo(UUID.randomUUID()))
+				.getList()
+				.size());
 		assertNull(facadeIndex.getLastKey());
 
 		getTimeCollection().createIndex(indexName, IntegerKey.class, keyExtractor);
 		getTimeCollection().insert(key, value);
 
-		assertEquals(Arrays.asList(value), facadeIndex.get(indexKey));
+		assertEquals(Arrays.asList(value), getValuesByIndexForTargetIndexedInteger(readOnlyCollection, facadeIndex, indexKey));
 		assertEquals(indexKey, facadeIndex.getLastKey());
 	}
 
@@ -253,24 +292,24 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		List<TestValue> justBob = Arrays.asList(valueBob3);
 		List<TestValue> justFred = Arrays.asList(valueFred1);
 
-		assertEquals(emptyList, readOnlyIndex.get(integerKey1));
-		assertEquals(emptyList, readOnlyIndex.get(integerKey2));
-		assertEquals(emptyList, readOnlyIndex.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey2));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey3));
 
 		collection.insert(timeKeyFred1, valueFred1);
 		collection.insert(timeKeyBob3, valueBob3);
 		collection.insert(timeKeyJoe3, valueJoe3);
 
-		assertEquals(justFred, readOnlyIndex.get(integerKey1));
-		assertEquals(emptyList, readOnlyIndex.get(integerKey2));
-		assertEquals(bobAndJoe, readOnlyIndex.get(integerKey3));
+		assertEquals(justFred, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey2));
+		assertEquals(bobAndJoe, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey3));
 
 		collection.delete(timeKeyFred1);
 		collection.delete(timeKeyJoe3);
 
-		assertEquals(emptyList, readOnlyIndex.get(integerKey1));
-		assertEquals(emptyList, readOnlyIndex.get(integerKey2));
-		assertEquals(justBob, readOnlyIndex.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey2));
+		assertEquals(justBob, getValuesByIndexForTargetIndexedInteger(readOnlyCollection, readOnlyIndex, integerKey3));
 	}
 
 	@Test
@@ -300,16 +339,16 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
 
-		assertEquals(justFred, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(bobAndJoe, indexOnDisk.get(integerKey3));
+		assertEquals(justFred, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(bobAndJoe, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 
 		collection.delete(timeKeyFred1);
 		collection.delete(timeKeyJoe3);
 
-		assertEquals(emptyList, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(justBob, indexOnDisk.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(justBob, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 	}
 
 	@Test
@@ -343,25 +382,25 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		collection.createIndices(indexInfoList);
 		
 		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk1 = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) collection.getIndex("test_index", IntegerKey.class);
-		assertEquals(justFred, indexOnDisk1.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk1.get(integerKey2));
-		assertEquals(bobAndJoe, indexOnDisk1.get(integerKey3));
+		assertEquals(justFred, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey2));
+		assertEquals(bobAndJoe, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey3));
 		
 		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk2 = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) collection.getIndex("test_index_2", IntegerKey.class);
-		assertEquals(justFred, indexOnDisk2.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk2.get(integerKey2));
-		assertEquals(fredBobAndJoe, indexOnDisk2.get(integerKey3));
+		assertEquals(justFred, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk2, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk2, integerKey2));
+		assertEquals(fredBobAndJoe, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk2, integerKey3));
 
 		collection.delete(timeKeyFred1);
 		collection.delete(timeKeyJoe3);
 
-		assertEquals(emptyList, indexOnDisk1.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk1.get(integerKey2));
-		assertEquals(justBob, indexOnDisk1.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey2));
+		assertEquals(justBob, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey3));
 
-		assertEquals(emptyList, indexOnDisk1.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk1.get(integerKey2));
-		assertEquals(justBob, indexOnDisk1.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey2));
+		assertEquals(justBob, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk1, integerKey3));
 	}
 
 	@Test
@@ -390,9 +429,9 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
 
-		assertEquals(justFred, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(bobAndJoe, indexOnDisk.get(integerKey3));
+		assertEquals(justFred, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(bobAndJoe, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 		
 		//Delete initialized file and index data
 		Files.delete(indexOnDisk.indexPath.resolve(ReadWriteIndexOnDisk.FILE_KEY_NEEDS_INITIALIZING));
@@ -402,17 +441,17 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 			.forEach(Blutils::recursiveDelete);
 
 		//Confirm data is gone
-		assertEquals(emptyList, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(emptyList, indexOnDisk.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 		
 		index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
 		indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
 		
 		//Confirm data wasn't recreated
-		assertEquals(emptyList, indexOnDisk.get(integerKey1));
-		assertEquals(emptyList, indexOnDisk.get(integerKey2));
-		assertEquals(emptyList, indexOnDisk.get(integerKey3));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey1));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey2));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3));
 	}
 
 	@Test
@@ -443,6 +482,184 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		Blutils.recursiveDelete(indexPath.toFile());
 		assertFalse(Files.exists(indexPath));
 		index.cleanupTempFiles(); //Shouldn't throw and exception if deleting the tmp files fails
+	}
+	
+	@Test
+	public void test_integerIndexCondition() throws BlueDbException {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueIndex<IntegerKey, TestValue> index = collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+		
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+		
+		
+		List<TestValue> results = collection.query()
+			.where(index.createIntegerIndexCondition().isGreaterThan(1))
+			.getList();
+		assertEquals(2, results.size());
+		assertEquals(valueBob3, results.get(0));
+		assertEquals(valueJoe3, results.get(1));
+		
+		try {
+			index.createLongIndexCondition();
+			fail("You shouldn't be able to create a long index condition from an integer index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createStringIndexCondition();
+			fail("You shouldn't be able to create a String index condition from an integer index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createUUIDIndexCondition();
+			fail("You shouldn't be able to create a UUID index condition from an integer index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+	}
+	
+	@Test
+	public void test_longIndexCondition() throws BlueDbException {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueIndex<LongKey, TestValue> index = collection.createIndex("test_index", LongKey.class, new TestRetrievalLongKeyExtractor());
+		
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+		
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+		
+		
+		List<TestValue> results = collection.query()
+			.where(index.createLongIndexCondition().isGreaterThan(1))
+			.getList();
+		assertEquals(2, results.size());
+		assertEquals(valueBob3, results.get(0));
+		assertEquals(valueJoe3, results.get(1));
+		
+		try {
+			index.createIntegerIndexCondition();
+			fail("You shouldn't be able to create a integer index condition from an long index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createStringIndexCondition();
+			fail("You shouldn't be able to create a String index condition from an long index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createUUIDIndexCondition();
+			fail("You shouldn't be able to create a UUID index condition from an long index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+	}
+	
+	@Test
+	public void test_stringIndexCondition() throws BlueDbException {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueIndex<StringKey, TestValue> index = collection.createIndex("test_index", StringKey.class, new TestRetrievalStringKeyExtractor());
+		
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+		
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+		
+		
+		List<TestValue> results = collection.query()
+			.where(index.createStringIndexCondition().isEqualTo("3"))
+			.getList();
+		assertEquals(2, results.size());
+		assertEquals(valueBob3, results.get(0));
+		assertEquals(valueJoe3, results.get(1));
+		
+		try {
+			index.createIntegerIndexCondition();
+			fail("You shouldn't be able to create an integer index condition from an string index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createLongIndexCondition();
+			fail("You shouldn't be able to create a long index condition from a string index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createUUIDIndexCondition();
+			fail("You shouldn't be able to create a UUID index condition from an string index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+	}
+	
+	@Test
+	public void test_uuidIndexCondition() throws BlueDbException {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		BlueIndex<UUIDKey, TestValue> index = collection.createIndex("test_index", UUIDKey.class, new TestRetrievalUUIDKeyExtractor());
+		
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TestValue valueBob3 = new TestValue("Bob", 3);
+		TestValue valueJoe3 = new TestValue("Joe", 3);
+		
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		TimeKey timeKeyBob3 = createTimeKey(2, valueBob3);
+		TimeKey timeKeyJoe3 = createTimeKey(3, valueJoe3);
+		
+		collection.insert(timeKeyFred1, valueFred1);
+		collection.insert(timeKeyBob3, valueBob3);
+		collection.insert(timeKeyJoe3, valueJoe3);
+		
+		
+		List<TestValue> results = collection.query()
+			.where(index.createUUIDIndexCondition().isEqualTo(new UUID(3, 3)))
+			.getList();
+		assertEquals(2, results.size());
+		assertEquals(valueBob3, results.get(0));
+		assertEquals(valueJoe3, results.get(1));
+		
+		try {
+			index.createIntegerIndexCondition();
+			fail("You shouldn't be able to create an integer index condition from an UUID index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createLongIndexCondition();
+			fail("You shouldn't be able to create a long index condition from a UUID index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+		
+		try {
+			index.createStringIndexCondition();
+			fail("You shouldn't be able to create a String index condition from an UUID index");
+		} catch (UnsupportedIndexConditionTypeException e) { }
+	}
+	
+	@Test
+	public void test_getIndexSegmentRanges() throws Exception {
+		ReadWriteTimeCollectionOnDisk<TestValue> collection = getTimeCollection();
+		ReadableIndexOnDisk<IntegerKey, TestValue> index = (ReadableIndexOnDisk<IntegerKey, TestValue>) collection.createIndex("test_index", IntegerKey.class, new TestRetrievalKeyExtractor());
+		ReadWriteIndexOnDisk<IntegerKey, TestValue> indexOnDisk = (ReadWriteIndexOnDisk<IntegerKey, TestValue>) index;
+		
+		TestValue valueFred1 = new TestValue("Fred", 1);
+		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
+		ValueKey indexKey = new IntegerKey(1);
+		
+		assertEquals(indexOnDisk.getSegmentManager().getSegmentRange(indexKey.getGroupingNumber()), index.getIndexSegmentRangeForIndexKey(indexKey));
+		assertEquals(indexOnDisk.getSegmentManagerForIndexedCollection().getSegmentRange(timeKeyFred1.getGroupingNumber()), index.getCollectionSegmentRangeForValueKey(timeKeyFred1));
 	}
 
 	@Test
@@ -613,5 +830,11 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		} else {
 			return new IndividualChange<BlueKey>(new IndexCompositeKey<BlueKey>(new IntegerKey(indexKey), valueKey), valueKey, null);
 		}
+	}
+
+	private List<TestValue> getValuesByIndexForTargetIndexedInteger(ReadableBlueCollection<TestValue> collection, BlueIndex<IntegerKey, TestValue> index, IntegerKey targetIntegerKey) throws BlueDbException {
+		return collection.query()
+				.where(index.createIntegerIndexCondition().isEqualTo(targetIntegerKey.getId()))
+				.getList();
 	}
 }

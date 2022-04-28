@@ -126,6 +126,18 @@ public class IntegerKeyTest extends TestCase {
 	}
 
 	@Test
+	public void test_getStringIdIfPresent() {
+		IntegerKey integerKey = new IntegerKey(1);
+		assertNull(integerKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		IntegerKey integerKey = new IntegerKey(1);
+		assertNull(integerKey.getUUIDIdIfPresent());
+	}
+
+	@Test
 	public void test_isBeforeRange() {
 		IntegerKey integerKey = new IntegerKey(1);
 		long groupingNumber = integerKey.getGroupingNumber();

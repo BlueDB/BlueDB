@@ -13,11 +13,15 @@ import org.bluedb.disk.query.DummyQuery;
 
 public class DummyReadOnlyCollectionOnDisk<T extends Serializable> implements ReadableBlueTimeCollection<T> {
 
-	public DummyReadOnlyCollectionOnDisk() {}
+	private final Class<T> valueType;
+
+	public DummyReadOnlyCollectionOnDisk(Class<T> valueType) {
+		this.valueType = valueType;
+	}
 
 	@Override
 	public <K extends ValueKey> BlueIndex<K, T> getIndex(String name, Class<K> keyType) throws BlueDbException {
-		return new DummyIndexOnDisk<>();
+		return new DummyIndexOnDisk<>(valueType);
 	}
 
 	@Override
