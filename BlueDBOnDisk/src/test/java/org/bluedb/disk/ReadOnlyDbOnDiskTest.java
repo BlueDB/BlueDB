@@ -30,6 +30,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.collection.index.TestMultiRetrievalKeyExtractor;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.file.FileUtils;
@@ -70,7 +71,7 @@ public class ReadOnlyDbOnDiskTest extends BlueDbDiskTestBase {
 		// add a recoverable
 		TimeKey key2 = new TimeKey(2L, 2L);
 		TestValue valueBob = createValue("Bob");
-		BlueSerializer serializer = new ThreadLocalFstSerializer(new Class[] {});
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[] {});
 		PendingChange<TestValue> change = PendingChange.createInsert(key2, valueBob, serializer);
 		readWriteCollection.getRecoveryManager().saveNewChange(change);
 		newDigest = hashDirectory(readWriteCollection.getPath());

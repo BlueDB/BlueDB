@@ -31,9 +31,9 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
-import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.ReadableIndexOnDisk;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
@@ -334,6 +334,8 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 	@Test
 	public void test_insert_invalid() throws BlueDbException, URISyntaxException, IOException {
+		turnOnObjectValidation();
+		
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		
 		try {

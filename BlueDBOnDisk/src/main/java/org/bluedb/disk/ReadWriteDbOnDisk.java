@@ -21,12 +21,12 @@ import org.bluedb.disk.backup.BackupManager;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
+import org.bluedb.disk.config.ConfigurationService;
 import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.executors.BlueExecutor;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.SegmentSizeSetting;
-import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 
@@ -35,8 +35,8 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	private final Map<String, ReadWriteCollectionOnDisk<? extends Serializable>> collections = new HashMap<>();
 
 
-	public ReadWriteDbOnDisk(Path path, EncryptionService encryptionService) {
-		super(path, encryptionService);
+	public ReadWriteDbOnDisk(Path path, ConfigurationService configurationService, EncryptionService encryptionService) {
+		super(path, configurationService, encryptionService);
 		this.backupManager = new BackupManager(this, this.encryptionService);
 		this.sharedExecutor = new BlueExecutor(path.getFileName().toString());
 	}

@@ -39,6 +39,7 @@ import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.UUIDKey;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 import org.bluedb.disk.serialization.BlueSerializer;
@@ -205,7 +206,7 @@ public class SegmentSizeSettingsTest {
 	@Test
 	public void testDeserialization() throws URISyntaxException, IOException, SerializationException {
 		Path serializedSettingsPath = TestUtils.getResourcePath("segment_size_settings.bin");
-		BlueSerializer serializer = new ThreadLocalFstSerializer();
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService());
 		
 		List<SegmentSizeSetting> allValuesInCodeInAlphabeticalOrder = Arrays.asList(SegmentSizeSetting.values());
 		Collections.sort(allValuesInCodeInAlphabeticalOrder, Comparator.comparing(SegmentSizeSetting::name));

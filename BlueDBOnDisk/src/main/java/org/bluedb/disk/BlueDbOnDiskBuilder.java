@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.ReadableBlueDb;
+import org.bluedb.disk.config.ConfigurationService;
+import org.bluedb.disk.config.DefaultConfigurationService;
 import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.encryption.EncryptionUtils;
 
@@ -13,6 +15,7 @@ import org.bluedb.disk.encryption.EncryptionUtils;
  */
 public class BlueDbOnDiskBuilder {
 	private Path path = Paths.get(".", "bluedb");
+	private ConfigurationService configurationService = new DefaultConfigurationService();
 	private EncryptionService encryptionService = null;
 
 	/**
@@ -22,6 +25,14 @@ public class BlueDbOnDiskBuilder {
 	 */
 	public BlueDbOnDiskBuilder withPath(Path path) {
 		this.path = path;
+		return this;
+	}
+
+	public BlueDbOnDiskBuilder withConfigurationService(ConfigurationService configurationService) {
+		if (configurationService == null) {
+			throw new IllegalArgumentException("configurationService cannot be null");
+		}
+		this.configurationService = configurationService;
 		return this;
 	}
 
@@ -45,13 +56,13 @@ public class BlueDbOnDiskBuilder {
 		this.encryptionService = encryptionService;
 		return this;
 	}
-
+	
 	/**
 	 * Builds the {@link BlueDb} object
 	 * @return the {@link BlueDb} built
 	 */
 	public BlueDb build() {
-		return new ReadWriteDbOnDisk(path, encryptionService);
+		return new ReadWriteDbOnDisk(path, configurationService, encryptionService);
 	}
 
 	/**
@@ -59,7 +70,7 @@ public class BlueDbOnDiskBuilder {
 	 * @return the {@link ReadableBlueDb} built
 	 */
 	public ReadableBlueDb buildReadOnly() {
-		return new ReadableDbOnDisk(path, encryptionService);
+		return new ReadableDbOnDisk(path, configurationService, encryptionService);
 	}
 	
 	/**

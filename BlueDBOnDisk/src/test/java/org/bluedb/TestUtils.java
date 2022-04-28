@@ -16,9 +16,11 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.IndexableTestValue;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
+import org.bluedb.disk.serialization.validation.SerializationException;
 
 public class TestUtils {
 	public static Path getResourcePath(String relativePath) throws URISyntaxException, IOException {
@@ -29,11 +31,11 @@ public class TestUtils {
 		return pathToStartFrom.resolve("src/test/resources").resolve(relativePath);
 	}
 
-	public static BlueEntity<Call> loadCorruptCall() throws URISyntaxException, IOException {
-		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+	public static BlueEntity<Call> loadCorruptCall() throws URISyntaxException, IOException, SerializationException {
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), Call.getClassesToRegister());
 		Path invalidObjectPath = TestUtils.getResourcePath("corruptCall-1.bin");
-		@SuppressWarnings({ "deprecation", "unchecked" })
-		BlueEntity<Call> invalidCall = (BlueEntity<Call>) serializer.deserializeObjectFromByteArrayWithoutChecks(Files.readAllBytes(invalidObjectPath));
+		@SuppressWarnings("unchecked")
+		BlueEntity<Call> invalidCall = (BlueEntity<Call>) serializer.deserializeObjectFromByteArray(Files.readAllBytes(invalidObjectPath));
 		return invalidCall;
 	}
 

@@ -19,6 +19,8 @@ import org.bluedb.TestUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
+import org.bluedb.disk.collection.config.TestValidationConfigurationService;
 import org.bluedb.disk.lock.BlueReadLock;
 import org.bluedb.disk.lock.BlueWriteLock;
 import org.bluedb.disk.lock.LockManager;
@@ -42,7 +44,7 @@ public class BlueObjectInputTest extends TestCase {
 		testingFolderPath = Files.createTempDirectory(this.getClass().getSimpleName());
 		targetFilePath = Paths.get(testingFolderPath.toString(), "BlueObjectOutputStreamTest.test_junk");
 		tempFilePath = FileUtils.createTempFilePath(targetFilePath);
-		serializer = new ThreadLocalFstSerializer(new Class[]{});
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[]{});
 		encryptionService = new EncryptionServiceWrapper(null);
 		fileManager = new ReadWriteFileManager(serializer, encryptionService);
 		lockManager = fileManager.getLockManager();
@@ -252,7 +254,7 @@ public class BlueObjectInputTest extends TestCase {
 
 	@Test
 	public void test_nextValidObjectFromFile_invalid() throws Exception {
-		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestValidationConfigurationService(), Call.getClassesToRegister());
 		
 		Path garbagePath = TestUtils.getResourcePath("good-bad-good-stream.bin");
 		BlueReadLock<Path> readLock = lockManager.acquireReadLock(garbagePath);

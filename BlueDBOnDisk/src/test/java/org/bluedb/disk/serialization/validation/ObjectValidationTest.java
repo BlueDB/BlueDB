@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import org.bluedb.TestUtils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestValidationConfigurationService;
 import org.bluedb.disk.models.Blob;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.models.calls.CallV2;
@@ -29,6 +30,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class ObjectValidationTest {
+	
+	@Test
+	public void testNull_doesNotThrowException() throws SerializationException {
+		ObjectValidation.validateFieldValueTypesForObject(null);
+	}
 
 	@Test
 	public void testValidateFieldValueTypesForValidObjects() {
@@ -102,7 +108,7 @@ public class ObjectValidationTest {
 		
 		try {
 			//Ensure that cycles are caught after serializing and deserializing an object that has a cycle
-			ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer();
+			ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestValidationConfigurationService());
 			byte[] bytes = serializer.serializeObjectToByteArray(basicValidObjectWithBoxedValuesSwappedAndCollectionsSet);
 			TypeValidationTestObject serializedClone = (TypeValidationTestObject) serializer.deserializeObjectFromByteArray(bytes);
 			assertEquals(basicValidObjectWithBoxedValuesSwappedAndCollectionsSet, serializedClone);
@@ -186,13 +192,13 @@ public class ObjectValidationTest {
 
 	@Test
 	public void testCorruptCall() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
-		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestValidationConfigurationService(), Call.getClassesToRegister());
 		testCorruptObject(serializer, "corruptCall-1.bin");
 	}
 
 	@Test
 	public void testCorruptCallInArray() throws SerializationException, IllegalArgumentException, IllegalAccessException, IOException, URISyntaxException {
-		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestValidationConfigurationService(), Call.getClassesToRegister());
 		testCorruptObject(serializer, "corruptCallArrayList-1.bin");
 	}
 

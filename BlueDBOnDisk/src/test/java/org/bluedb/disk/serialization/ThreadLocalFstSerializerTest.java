@@ -16,6 +16,8 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.TestValue2;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
+import org.bluedb.disk.collection.config.TestValidationConfigurationService;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.models.calls.CallEvent;
 import org.bluedb.disk.models.calls.CallRecording;
@@ -36,12 +38,12 @@ public class ThreadLocalFstSerializerTest {
 		 * use FST a little bit. This test keeps someone from changing it back to the other way
 		 * since that way has an issue.
 		 */
-		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer(TestValue.class);
+		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), TestValue.class);
 		TestValue value1 = new TestValue("Derek", 1);
 		TestValue clone1 = s1.clone(value1);
 		assertEquals(value1, clone1);
 		
-		ThreadLocalFstSerializer s2 = new ThreadLocalFstSerializer(TestValue2.class);
+		ThreadLocalFstSerializer s2 = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), TestValue2.class);
 		TestValue value2 = new TestValue("Derek2", 2);
 		TestValue clone2 = s2.clone(value2);
 		assertEquals(value2, clone2);
@@ -53,8 +55,8 @@ public class ThreadLocalFstSerializerTest {
 	
 	@Test
 	public void testAddingRegisteredClass() throws SerializationException {
-		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer();
-		ThreadLocalFstSerializer s2 = new ThreadLocalFstSerializer(TestValue.class);
+		ThreadLocalFstSerializer s1 = new ThreadLocalFstSerializer(new TestDefaultConfigurationService());
+		ThreadLocalFstSerializer s2 = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), TestValue.class);
 		
 		TestValue originalValue = new TestValue("Derek", 3);
 		byte[] bytes = s1.serializeObjectToByteArray(originalValue);
@@ -65,7 +67,7 @@ public class ThreadLocalFstSerializerTest {
 	
 	@Test
 	public void testSerializingInvalidObject() throws URISyntaxException, BlueDbException, IOException {
-		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestValidationConfigurationService(), Call.getClassesToRegister());
 		Object invalidObject = TestUtils.loadCorruptCall();
 		
 		try {
@@ -102,7 +104,7 @@ public class ThreadLocalFstSerializerTest {
 		int callCountPerTest = 100;
 		Random random = new Random();
 		
-		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestValidationConfigurationService(), Call.getClassesToRegister());
 		
 		for(int i = 0; i < testCount; i++) {
 			try {

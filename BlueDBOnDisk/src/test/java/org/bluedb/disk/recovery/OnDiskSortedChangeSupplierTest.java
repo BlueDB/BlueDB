@@ -10,6 +10,7 @@ import java.util.Comparator;
 
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.encryption.EncryptionService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.BlueObjectOutput;
@@ -38,7 +39,7 @@ public class OnDiskSortedChangeSupplierTest extends SortedChangeSupplierTest {
 		
 		supplierFilePath = tmpDir.resolve("supplier.bin");
 		
-		serializer = new ThreadLocalFstSerializer();
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService());
 		
 		encryptionService = Mockito.mock(EncryptionService.class);
 		when(encryptionService.isEncryptionEnabled()).thenReturn(false);

@@ -18,6 +18,7 @@ import org.bluedb.TestUtils;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.file.BlueObjectInput;
 import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.metadata.BlueFileMetadata;
@@ -57,7 +58,7 @@ public class BatchWriterTest {
 
 	private static IndividualChange<String> update5bAt5 = new IndividualChange<>(key5, "5", "5b");
 	
-	private ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new Class<?>[] { });
+	private ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class<?>[] { });
 
 	@Test
 	public void testDeletes() throws Exception {
@@ -119,7 +120,7 @@ public class BatchWriterTest {
 	
 	@Test
 	public void testUpdatingInvalidObjectThenMakingOtherChanges() throws BlueDbException, IOException, URISyntaxException {
-		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), Call.getClassesToRegister());
 		
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
@@ -129,8 +130,7 @@ public class BatchWriterTest {
 		BlueEntity<Call> call4 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
 		BlueEntity<Call> call5 = Call.generateBasicTestCallEntity(invalidCallStart + 30);
 		
-		@SuppressWarnings("deprecation")
-		BlueEntity<Call> updatedInvalidCall = serializer.cloneWithoutChecks(invalidCall);
+		BlueEntity<Call> updatedInvalidCall = serializer.clone(invalidCall);
 		updatedInvalidCall.getValue().setReceivingParty("testChange");
 		
 		BlueEntity<Call> updatedcall4 = Call.wrapCallAsEntity(call4.getValue().clone());
@@ -175,7 +175,7 @@ public class BatchWriterTest {
 
 	@Test
 	public void testUpdatingInvalidObjectThenMakingOtherChanges_changedMetadata() throws BlueDbException, IOException, URISyntaxException {
-		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), Call.getClassesToRegister());
 
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
@@ -185,8 +185,7 @@ public class BatchWriterTest {
 		BlueEntity<Call> call4 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
 		BlueEntity<Call> call5 = Call.generateBasicTestCallEntity(invalidCallStart + 30);
 
-		@SuppressWarnings("deprecation")
-		BlueEntity<Call> updatedInvalidCall = serializer.cloneWithoutChecks(invalidCall);
+		BlueEntity<Call> updatedInvalidCall = serializer.clone(invalidCall);
 		updatedInvalidCall.getValue().setReceivingParty("testChange");
 
 		BlueEntity<Call> updatedcall4 = Call.wrapCallAsEntity(call4.getValue().clone());
@@ -234,7 +233,7 @@ public class BatchWriterTest {
 	
 	@Test
 	public void testDeletingInvalidObjectThenMakingOtherChanges() throws URISyntaxException, IOException, BlueDbException {
-		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), Call.getClassesToRegister());
 		
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
@@ -271,7 +270,7 @@ public class BatchWriterTest {
 	
 	@Test
 	public void testInsertingInvalidObjectThenMakingOtherUpdates() throws BlueDbException, IOException, URISyntaxException {
-		serializer = new ThreadLocalFstSerializer(Call.getClassesToRegister());
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), Call.getClassesToRegister());
 		
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
@@ -306,15 +305,14 @@ public class BatchWriterTest {
 		assertEquals("testChange3", resultingCall2.getValue().getCallingParty()); //Update should still happen
 	}
 
-	@SuppressWarnings("deprecation")
 	private static <T extends Serializable> BlueObjectInput<T> createMockInput(ThreadLocalFstSerializer serializer, List<T> values) throws BlueDbException {
 		final LinkedList<T> inputValues = new LinkedList<>(values);
 		@SuppressWarnings("unchecked")
 		BlueObjectInput<T> mockInput = Mockito.mock(BlueObjectInput.class);
 		Mockito.doAnswer((x) -> !inputValues.isEmpty()).when(mockInput).hasNext();
 		Mockito.doAnswer((x) -> inputValues.poll()).when(mockInput).next();
-		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextUnencryptedBytesWithoutDeserializing();
-		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArrayWithoutChecks(inputValues.poll())).when(mockInput).nextRawBytesWithoutDeserializing();
+		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArray(inputValues.poll())).when(mockInput).nextUnencryptedBytesWithoutDeserializing();
+		Mockito.doAnswer((x) -> serializer.serializeObjectToByteArray(inputValues.poll())).when(mockInput).nextRawBytesWithoutDeserializing();
 		Mockito.doAnswer((x) -> inputValues.peek()).when(mockInput).peek();
 		Mockito.when(mockInput.getMetadata()).thenReturn(new BlueFileMetadata());
 		return mockInput;
@@ -334,10 +332,10 @@ public class BatchWriterTest {
 			return null;
 		};
 		
-		@SuppressWarnings({ "deprecation", "unchecked" })
+		@SuppressWarnings({ "unchecked" })
 		Answer<T> writeBytesMethod = (InvocationOnMock invocation) -> {
 			byte[] outputValueBytes = (byte[]) invocation.getArguments()[0];
-			results.add((T)serializer.deserializeObjectFromByteArrayWithoutChecks(outputValueBytes));
+			results.add((T)serializer.deserializeObjectFromByteArray(outputValueBytes));
 			return null;
 		};
 		

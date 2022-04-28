@@ -1,5 +1,5 @@
 apply plugin: 'java'
-version = '3.0.0'
+version = '3.0.1'
    	    
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -11,6 +11,7 @@ subprojects {
     
     repositories {
         mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
     
     sourceCompatibility = 1.8
