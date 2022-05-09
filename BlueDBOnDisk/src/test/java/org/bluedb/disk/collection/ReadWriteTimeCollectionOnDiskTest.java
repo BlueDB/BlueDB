@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
@@ -567,7 +568,6 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		RollupTarget target_3600000 = new RollupTarget(0, new Range(0, 3599999));
 		Set<RollupTarget> targets_none = new HashSet<>();
 		Set<RollupTarget> targets_mid_and_top = new HashSet<>(Arrays.asList(target_6000, target_3600000));
-//		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
 		
 		rollupTimes = scheduler.getRollupTimes();
 		assertEquals(targets_none, rollupTimes.keySet());
@@ -600,9 +600,14 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
 		Map<RollupTarget, Long> rollupTimes = scheduler.getRollupTimes();
-		long rollupTime = rollupTimes.get(rollupTarget);
-		assertTrue(rollupTime > now + rollupDelay - 10_000);
-		assertTrue(rollupTime < now + rollupDelay + 10_000);
+		Long rollupTime = rollupTimes.get(rollupTarget);
+		
+		if(BlueCollectionVersion.getDefault() == BlueCollectionVersion.VERSION_1) {
+			assertTrue(rollupTime > now + rollupDelay - 10_000);
+			assertTrue(rollupTime < now + rollupDelay + 10_000);
+		} else {
+			assertNull(rollupTime); //There is no pre-segment in other versions
+		}
 
 		assertEquals(Arrays.asList(value), getTimeCollection().query().getList());
 	}

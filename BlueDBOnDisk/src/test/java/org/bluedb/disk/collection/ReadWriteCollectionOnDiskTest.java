@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
@@ -32,6 +34,7 @@ import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
@@ -40,15 +43,66 @@ import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.collection.index.TestRetrievalLongKeyExtractor;
 import org.bluedb.disk.collection.index.conditions.dummy.DummyUUIDIndexCondition;
+import org.bluedb.disk.collection.metadata.ReadOnlyCollectionMetadata;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.ReadWriteSegmentManager;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
-
+	
+	@Test
+	public void test_getSegmentSizeSettings() throws BlueDbException {
+		assertEquals(SegmentSizeSetting.getDefaultSettingsFor(TimeKey.class).getConfig(), getTimeCollection().getSegmentSizeSettings().getConfig());
+	}
+	
+	@Test
+	public void test_getVersion() throws BlueDbException {
+		assertEquals(BlueCollectionVersion.getDefault(), getTimeCollection().getVersion());
+	}
+	
+	@Test
+	public void test_determineCollectionVersion() throws BlueDbException {
+		
+		ArrayList<ReadOnlyCollectionMetadata> metaDataReturningValidVersions = new ArrayList<>();
+		for(BlueCollectionVersion version : BlueCollectionVersion.values()) {
+			ReadOnlyCollectionMetadata versionReturningMetadata = Mockito.mock(ReadOnlyCollectionMetadata.class);
+			Mockito.doReturn(version).when(versionReturningMetadata).getCollectionVersion();
+			metaDataReturningValidVersions.add(versionReturningMetadata);
+		}
+		
+		ArrayList<Boolean> booleanOptions = new ArrayList<>(Arrays.asList(Boolean.TRUE, Boolean.FALSE));
+		
+		for(ReadOnlyCollectionMetadata metaDataReturningValidVersion : metaDataReturningValidVersions) {
+			for(BlueCollectionVersion requestedVersion : BlueCollectionVersion.values()) {
+				for(Boolean isNewCollection : booleanOptions) {
+					assertEquals("If the meta data returns a current collection version then that is what we should always use", 
+							metaDataReturningValidVersion.getCollectionVersion(), ReadableCollectionOnDisk.determineCollectionVersion(metaDataReturningValidVersion, requestedVersion, isNewCollection));
+				}
+			}
+		}
+		
+		ReadOnlyCollectionMetadata nullReturningMetadata = Mockito.mock(ReadOnlyCollectionMetadata.class);
+		Mockito.doReturn(null).when(nullReturningMetadata).getCollectionVersion();
+		
+		for(BlueCollectionVersion requestedVersion : BlueCollectionVersion.values()) {
+			assertEquals("If there is no current collection version and it is not a new collection then that means this is a legacy version 1 collection from before we saved the version", 
+					BlueCollectionVersion.VERSION_1, ReadableCollectionOnDisk.determineCollectionVersion(nullReturningMetadata, requestedVersion, false));
+		}
+		
+		for(BlueCollectionVersion requestedVersion : BlueCollectionVersion.values()) {
+			assertEquals("If there is no current collection version and it is a new collection then we will use the requested version", 
+					requestedVersion, ReadableCollectionOnDisk.determineCollectionVersion(nullReturningMetadata, requestedVersion, true));
+		}
+		
+		assertEquals("If there is no current collection version and it is a new collection and there is no requested version then we will return the default version", 
+				BlueCollectionVersion.getDefault(), ReadableCollectionOnDisk.determineCollectionVersion(nullReturningMetadata, null, true));
+	}
+	
 	@Test
 	public void test_query() throws Exception {
 		TestValue value = new TestValue("Joe");

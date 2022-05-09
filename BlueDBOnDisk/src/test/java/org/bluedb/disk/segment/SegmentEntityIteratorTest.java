@@ -4,10 +4,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
@@ -259,7 +261,10 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		insertAtTimeFrame(segmentSize + 1, segmentSize + 1, valueInSecondSegment);
 		insertAtTimeFrame(segmentSize * 2, segmentSize * 2 + 1, valueAfterSecondSegment);
 		List<TestValue> valuesExpectedInFirstSegment = Arrays.asList(valueInFirstSegment, valueInBothSegments);
-		List<TestValue> valuesExpectedInSecondSegment = Arrays.asList(valueInBothSegments, valueInSecondSegment);
+		List<TestValue> valuesExpectedInSecondSegment = new LinkedList<>(Arrays.asList(valueInSecondSegment));
+		if(BlueCollectionVersion.getDefault() == BlueCollectionVersion.VERSION_1) {
+			valuesExpectedInSecondSegment.add(0, valueInBothSegments); //Version 1 will include a duplicate record if it overlaps with the segment
+		}
 		List<TestValue> valuesExpectedInSecondSegmentOnly = Arrays.asList(valueInSecondSegment);
 
 		SegmentEntityIterator<TestValue> firstSegmentIterator = firstSegment.getIterator(0, segmentSize - 1);

@@ -3,6 +3,7 @@ package org.bluedb.disk.segment.rollup;
 import java.io.File;
 import java.util.List;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
@@ -84,24 +85,39 @@ public class RollupTaskTest extends BlueDbDiskTestBase {
 		values = collection.query().afterOrAtTime(startOfNextSegment).getList();
 		assertEquals(2, values.size());
 		
-		File segmentFolder = segmentX.getPath().toFile();
-		File[] segmentXDirectoryContents = segmentFolder.listFiles();
-		assertEquals(2, segmentXDirectoryContents.length);
-
-		RollupTarget segment0rollupTarget = new RollupTarget(0, segment0range);
-		RollupTarget segmentXrollupTarget = new RollupTarget(startOfNextSegment, segment0range);
-		RollupTask<TestValue> rollup0task = new RollupTask<>(collection, segment0rollupTarget);
-		RollupTask<TestValue> rollupXtask = new RollupTask<>(collection, segmentXrollupTarget);
-
-		rollup0task.run();
-		segmentXDirectoryContents = segmentFolder.listFiles();
-		assertEquals(2, segmentXDirectoryContents.length);
-
-		rollupXtask.run();
-		values = collection.query().afterOrAtTime(startOfNextSegment).getList();
-		assertEquals(2, values.size());
-		segmentXDirectoryContents = segmentFolder.listFiles();
-		assertEquals(1, segmentXDirectoryContents.length);
+		if(BlueCollectionVersion.getDefault() == BlueCollectionVersion.VERSION_1) {
+			assertEquals(2, segmentX.getPath().toFile().listFiles().length);
+	
+			RollupTarget segment0rollupTarget = new RollupTarget(0, segment0range);
+			RollupTarget segmentXrollupTarget = new RollupTarget(startOfNextSegment, segment0range);
+			RollupTask<TestValue> rollup0task = new RollupTask<>(collection, segment0rollupTarget);
+			RollupTask<TestValue> rollupXtask = new RollupTask<>(collection, segmentXrollupTarget);
+	
+			rollup0task.run();
+			assertEquals(2, segmentX.getPath().toFile().listFiles().length);
+	
+			rollupXtask.run();
+			values = collection.query().afterOrAtTime(startOfNextSegment).getList();
+			assertEquals(2, values.size());
+			assertEquals(1, segmentX.getPath().toFile().listFiles().length);
+		} else {
+			//Version 2 and on don't store duplicate records in each segment they overlap, so the results will be a bit different
+			assertEquals(2, segment0.getPath().toFile().listFiles().length);
+			assertNull(segmentX.getPath().toFile().listFiles());
+	
+			RollupTarget segment0rollupTarget = new RollupTarget(0, segment0range);
+			RollupTarget segmentXrollupTarget = new RollupTarget(startOfNextSegment, segment0range);
+			RollupTask<TestValue> rollup0task = new RollupTask<>(collection, segment0rollupTarget);
+			RollupTask<TestValue> rollupXtask = new RollupTask<>(collection, segmentXrollupTarget);
+	
+			rollupXtask.run();
+			assertEquals(2, segment0.getPath().toFile().listFiles().length);
+	
+			rollup0task.run();
+			values = collection.query().afterOrAtTime(startOfNextSegment).getList();
+			assertEquals(2, values.size());
+			assertEquals(1, segment0.getPath().toFile().listFiles().length);
+		}
 	}
 
 	@Test

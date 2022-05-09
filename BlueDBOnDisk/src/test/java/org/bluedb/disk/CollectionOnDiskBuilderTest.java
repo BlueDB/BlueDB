@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.SegmentSize;
+import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
@@ -17,6 +19,31 @@ import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.junit.Test;
 
 public class CollectionOnDiskBuilderTest extends BlueDbDiskTestBase {
+	
+	@Test
+	public void test_differentVersions() throws BlueDbException {
+		ReadWriteCollectionOnDisk<TestValue> version1Collection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder("version-1-a", TimeKey.class, TestValue.class)
+				.withCollectionVersion(BlueCollectionVersion.VERSION_1)
+				.build();
+		
+		ReadWriteCollectionOnDisk<TestValue> version2Collection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder("version-2-a", TimeKey.class, TestValue.class)
+				.withCollectionVersion(BlueCollectionVersion.VERSION_2)
+				.build();
+		
+		assertEquals(BlueCollectionVersion.VERSION_1, version1Collection.getVersion());
+		assertEquals(BlueCollectionVersion.VERSION_2, version2Collection.getVersion());
+		
+		version1Collection = (ReadWriteCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder("version-1-b", TimeKey.class, TestValue.class)
+				.withCollectionVersion(BlueCollectionVersion.VERSION_1)
+				.build();
+		
+		version2Collection = (ReadWriteCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder("version-2-b", TimeKey.class, TestValue.class)
+				.withCollectionVersion(BlueCollectionVersion.VERSION_2)
+				.build();
+		
+		assertEquals(BlueCollectionVersion.VERSION_1, version1Collection.getVersion());
+		assertEquals(BlueCollectionVersion.VERSION_2, version2Collection.getVersion());
+	}
 
     @Test
     public void test_differentSegmentSizes() throws Exception {

@@ -51,4 +51,13 @@ public class ReadOnlySegmentManager<T extends Serializable> extends ReadableSegm
 				.sorted()
 				.collect(Collectors.toList());
 	}
+
+	@Override
+	public List<Range> getExistingSegmentRanges(Range range, Optional<Set<Range>> segmentRangesToInclude) {
+		return pathManager.getExistingSegmentFiles(range).stream()
+				.map((f) -> (toRange(f.toPath())))
+				.filter(r -> !segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().contains(r))
+				.sorted()
+				.collect(Collectors.toList());
+	}
 }

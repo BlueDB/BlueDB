@@ -76,7 +76,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		this.indexName = indexPath.toFile().getName();
 		this.fileManager = collection.getFileManager();
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
-		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
+		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig(), false);
 		rollupScheduler = collection.getRollupScheduler();
 		cleanupTempFiles();
 	}
@@ -191,7 +191,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 			return new ArrayList<>();
 		}
 		
-		return StreamUtils.stream(keyExtractor.extractKeys(value))
+		return StreamUtils.stream(extractIndexKeys(destination, value))
 				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
 				.collect( Collectors.toList() );
 	}

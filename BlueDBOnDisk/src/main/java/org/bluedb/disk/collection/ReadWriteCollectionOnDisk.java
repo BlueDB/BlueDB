@@ -3,6 +3,7 @@ package org.bluedb.disk.collection;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.bluedb.api.BlueCollection;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
@@ -19,12 +21,14 @@ import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.IteratorWrapper;
 import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
 import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteIndexManager;
 import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
+import org.bluedb.disk.collection.index.extractors.OverlappingTimeSegmentsKeyExtractor;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
 import org.bluedb.disk.collection.task.BatchUpsertChangeTask;
 import org.bluedb.disk.collection.task.SingleRecordChangeTask;
@@ -54,12 +58,12 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	private final ReadWriteSegmentManager<T> segmentManager;
 	protected final ReadWriteIndexManager<T> indexManager;
 
-	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
-		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, BlueCollectionVersion requestedVersion, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+		this(db, name, requestedVersion, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
-	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
-		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
+	public ReadWriteCollectionOnDisk(ReadWriteDbOnDisk db, String name, BlueCollectionVersion requestedVersion, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+		super(db, name, requestedVersion, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		sharedExecutor = db.getSharedExecutor();
 		collectionKey = getPath().toString();
 		rollupScheduler = new RollupScheduler(this);
@@ -68,8 +72,14 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 		recoveryManager = new RecoveryManager<T>(this, getFileManager(), getSerializer());
 		Rollupable rollupable = this;
 		indexManager = new ReadWriteIndexManager<T>(this, collectionPath);
-		segmentManager = new ReadWriteSegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig());
+		segmentManager = new ReadWriteSegmentManager<T>(collectionPath, fileManager, rollupable, segmentSizeSettings.getConfig(), !utilizesDefaultTimeIndex());
 		recoveryManager.recover();  // everything else has to be in place before running this
+		
+		if(utilizesDefaultTimeIndex()) {
+			LinkedList<BlueIndexInfo<? extends ValueKey, T>> defaultIndices = new LinkedList<BlueIndexInfo<? extends ValueKey,T>>();
+			defaultIndices.add(new BlueIndexInfo<>(OVERLAPPING_TIME_SEGMENTS_INDEX_NAME, LongTimeKey.class, new OverlappingTimeSegmentsKeyExtractor<>()));
+			createIndices(defaultIndices);
+		}
 	}
 	
 	@Override

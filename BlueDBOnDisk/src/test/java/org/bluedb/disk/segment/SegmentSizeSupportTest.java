@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.IntegerIndexKeyExtractor;
 import org.bluedb.api.index.LongIndexKeyExtractor;
@@ -79,7 +80,7 @@ public class SegmentSizeSupportTest {
 				.build();
 		
 		this.segmentSize = segmentSize;
-		collection = new ReadWriteCollectionOnDisk<>(db, "seg-size-support-test-collection", segmentSize.getKeyType(), IndexableTestValue.class, 
+		collection = new ReadWriteCollectionOnDisk<>(db, "seg-size-support-test-collection", BlueCollectionVersion.getDefault(), segmentSize.getKeyType(), IndexableTestValue.class, 
 				Arrays.asList(UUID.class, IndexableTestValue.class), segmentSize);
 		
 		LongIndexKeyExtractor<IndexableTestValue> longExtractor = value -> Arrays.asList(value.getLongValue());

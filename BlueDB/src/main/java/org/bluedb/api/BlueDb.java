@@ -13,39 +13,6 @@ import org.bluedb.api.keys.BlueKey;
 public interface BlueDb extends ReadableBlueDb {
 	
 	/**
-	 * Creates a {@link BlueCollection}, or returns the existing one of the same name, if one exists. 
-	 * Deprecated. Use getCollectionBuilder or getTimeCollectionBuilder instead.
-	 * 
-	 * @param <V> the object type of values to be serialized into the collection
-	 * 
-	 * @param name the unique name of the collection
-	 * @param keyType the class type of the collection's keys
-	 * @param valueType the class type of the values stored in the collection
-	 * @param additionalClassesToRegister classes to optimize for in the serializer (should be classes that will be stored in collection keys or values)
-	 * 
-	 * @return a new BlueCollection, or the existing one if it exists
-	 * 
-	 * @throws BlueDbException if any problems are encountered, such as the collection already existing with a different type 
-	 */
-	@Deprecated
-	public <V extends Serializable> BlueCollection<V> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<V> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException;
-
-	/**
-	 * Creates a {@link BlueCollectionBuilder} object for this {@link BlueDb}. 
-	 * Deprecated. Use getCollectionBuilder or getTimeCollectionBuilder instead.
-	 * 
-	 * @param <K> the key type of the collection
-	 * @param <V> the object type of values to be serialized into the collection
-	 * 
-	 * @param name The unique name of the collection
-	 * @param keyType the class type of the collection's keys
-	 * @param valueType the class type of the values stored in the collection
-	 * @return a new {@link BlueCollectionBuilder} object for this {@link BlueDb}
-	 */
-	@Deprecated
-	public <K extends BlueKey, V extends Serializable> BlueCollectionBuilder<K, V> collectionBuilder(String name, Class<K> keyType, Class<V> valueType);
-	
-	/**
 	 * Creates a {@link BlueCollectionBuilder} object for this {@link BlueDb}
 	 * 
 	 * @param <K> the key type of the collection

@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeFrameKey;
@@ -35,18 +36,37 @@ public class ReadWriteSegmentManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_getExistingSegments() {
-		emptyAndDelete(getTimeCollection().getPath().toFile());
+	public void test_getExistingSegments() throws InterruptedException {
 		long minTime = 0;
 		long segmentSize = getSegmentManager().getSegmentSize();
 		long maxTime = segmentSize * 2;
-		BlueKey timeFrameKey = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
-		TestValue value = new TestValue("Bob", 0);
+		
+		BlueKey timeFrameKey1 = new TimeFrameKey(1, minTime, maxTime);  // should barely span 3 segments
+		TestValue value1 = new TestValue("Bob", 0);
+		
+		BlueKey timeFrameKey2 = new TimeFrameKey(2, minTime + segmentSize, maxTime); //In Segment 2
+		TestValue value2 = new TestValue("Frank", 1);
+		
+		BlueKey timeFrameKey3 = new TimeFrameKey(3, maxTime, maxTime);  //In Segment 3
+		TestValue value3 = new TestValue("Joe", 2);
+		
 		try {
 			List<ReadWriteSegment<TestValue>> existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), Optional.empty());
 			assertEquals(0, existingSegments.size());
 			
-			getTimeCollection().insert(timeFrameKey, value);
+			getTimeCollection().insert(timeFrameKey1, value1);
+			
+			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), Optional.empty());
+			if(BlueCollectionVersion.getDefault() != BlueCollectionVersion.VERSION_1) {
+				/*
+				 * Version 2 and on won't store a single value in multiple segments, so verify there is only one segment and
+				 * add additional records so that it brings it up to the expected count of 3.
+				 */
+				assertEquals(1, existingSegments.size());
+				getTimeCollection().insert(timeFrameKey2, value2);
+				getTimeCollection().insert(timeFrameKey3, value3);
+			}
+			
 			existingSegments = getSegmentManager().getExistingSegments(new Range(minTime, maxTime), Optional.empty());
 			assertEquals(3, existingSegments.size());
 			
@@ -77,7 +97,6 @@ public class ReadWriteSegmentManagerTest extends BlueDbDiskTestBase {
 			e.printStackTrace();
 			fail();
 		}
-		emptyAndDelete(getTimeCollection().getPath().toFile());
 	}
 
 	@Test

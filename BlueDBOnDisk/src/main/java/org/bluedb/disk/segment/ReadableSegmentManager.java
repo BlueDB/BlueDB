@@ -18,6 +18,7 @@ public abstract class ReadableSegmentManager<T extends Serializable> {
 	public abstract ReadableSegment<T> getSegment(long groupingNumber);
 	public abstract List<? extends ReadableSegment<T>> getAllExistingSegments();
 	public abstract List<? extends ReadableSegment<T>> getExistingSegments(Range range, Optional<Set<Range>> segmentRangesToInclude);
+	public abstract List<Range> getExistingSegmentRanges(Range range, Optional<Set<Range>> segmentRangesToInclude);
 
 
 	public ReadableSegmentManager(Path collectionPath, SegmentSizeConfiguration sizeConfig) {

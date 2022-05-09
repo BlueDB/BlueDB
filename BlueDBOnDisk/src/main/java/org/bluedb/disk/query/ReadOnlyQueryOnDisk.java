@@ -3,6 +3,7 @@ package org.bluedb.disk.query;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.security.InvalidParameterException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.bluedb.disk.Blutils;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
+import org.bluedb.disk.collection.index.conditions.AllSegmentsInRangeAcceptingIndexCondition;
 import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegmentManager;
@@ -31,7 +33,7 @@ import org.bluedb.disk.serialization.BlueEntity;
 public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuery<T> {
 
 	protected ReadableCollectionOnDisk<T> collection;
-	List<OnDiskIndexCondition<?, T>> indexConditions = new LinkedList<>();
+	protected List<QueryIndexConditionGroup<T>> indexConditionGroups = new LinkedList<>();
 	protected List<Condition<T>> objectConditions = new LinkedList<>();
 	protected List<Condition<BlueKey>> keyConditions = new LinkedList<>();
 	protected List<BlueSimpleSet<BlueKey>> keySetsToInclude = new LinkedList<>(); 
@@ -55,7 +57,7 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	@Override
 	public ReadBlueQuery<T> where(BlueIndexCondition<?> indexCondition) {
 		if(collection.isCompatibleIndexCondition(indexCondition)) {
-			indexConditions.add((OnDiskIndexCondition<?, T>) indexCondition);
+			indexConditionGroups.add(new QueryIndexConditionGroup<T>(true, Arrays.asList((OnDiskIndexCondition<?, T>) indexCondition)));
 		} else {
 			throw new InvalidParameterException("The given indexCondition is invalid for this query. Queries and index conditions need to be created using the same collection in order to be compatible.");
 		}
@@ -78,15 +80,15 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
-		Range range = new Range(min, max);
-		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, byStartTime, indexConditions, objectConditions, keyConditions, getSegmentRangesToInclude());
+		finalizeParametersBeforeExecution();
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), getRange(), byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangesToInclude());
 	}
 
 	@Override
 	public CloseableIterator<T> getIterator(long timeout, TimeUnit timeUnit) throws BlueDbException {
-		Range range = new Range(min, max);
 		long timeoutInMillis = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
-		return new CollectionValueIterator<T>(collection.getSegmentManager(), range, timeoutInMillis, byStartTime, indexConditions, objectConditions, keyConditions, getSegmentRangesToInclude());
+		finalizeParametersBeforeExecution();
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), getRange(), timeoutInMillis, byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangesToInclude());
 	}
 
 	@Override
@@ -96,12 +98,53 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	}
 	
 	public CloseableIterator<BlueEntity<T>> getEntityIterator() throws BlueDbException {
-		Range range = new Range(min, max);
-		return new CollectionEntityIterator<T>(collection.getSegmentManager(), range, byStartTime, indexConditions, objectConditions, keyConditions, getSegmentRangesToInclude());
+		finalizeParametersBeforeExecution();
+		return new CollectionEntityIterator<T>(collection.getSegmentManager(), getRange(), byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangesToInclude());
 	}
 
 	public List<BlueEntity<T>> getEntities() throws BlueDbException {
-		return collection.findMatches(getRange(), indexConditions, objectConditions, keyConditions, byStartTime, getSegmentRangesToInclude());
+		finalizeParametersBeforeExecution();
+		return collection.findMatches(getRange(), indexConditionGroups, objectConditions, keyConditions, byStartTime, getSegmentRangesToInclude());
+	}
+
+	@SuppressWarnings("unchecked")
+	private void finalizeParametersBeforeExecution() throws BlueDbException {
+		if(!collection.utilizesDefaultTimeIndex() || byStartTime || min == Long.MIN_VALUE) {
+			/*
+			 * If it doesn't utilize the default time index then we have to fallback on the default behavior.
+			 * If it is by start time or already looking from the dawn of time then we don't need to worry about 
+			 * finding overlapping records from the past.
+			 */
+			return;
+		}
+		
+		Range timeRange = getRange();
+		SegmentPathManager pm = collection.getSegmentManager().getPathManager();
+		
+		long startSegmentGroupingNumber = pm.getSegmentStartGroupingNumber(timeRange.getStart());
+		
+		QueryIndexConditionGroup<T> defaultTimeIndexConditionOrGroup = new QueryIndexConditionGroup<>(false);
+		
+		/*
+		 * Utilize the time segments index to find all records that overlap the start segment. This will find
+		 * all records that started before the start segment and ended during or after the start segment.
+		 */
+		defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isEqualTo(startSegmentGroupingNumber));
+		
+		/*
+		 * Or with the all segments in range accepting index condition since it doesn't really save time trying to 
+		 * narrow down what segments inside the range to search. We already know that everything stored in the
+		 * timeframe started in the timeframe.
+		 */
+		defaultTimeIndexConditionOrGroup.addIndexCondition(new AllSegmentsInRangeAcceptingIndexCondition<>(collection, timeRange));
+		
+		indexConditionGroups.add(defaultTimeIndexConditionOrGroup);
+		
+		//The indices will find the right segments to search, but not all keys in the segments will match the target range.
+		keyConditions.add(key -> key.isInRange(timeRange.getStart(), timeRange.getEnd()));
+		
+		//Let the index conditions limit where we start searching from
+		min = Long.MIN_VALUE;
 	}
 
 	private Optional<Set<Range>> getSegmentRangesToInclude() {
@@ -132,7 +175,7 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 		return "<" + this.getClass().getSimpleName() + " [" + min + ", " + max + "] with " + objectConditions.size() + " conditions and " + keyConditions.size() + " key-conditions>";
 	}
 
-	public Range getRange() {
+	private Range getRange() {
 		return new Range(min, max);
 	}
 

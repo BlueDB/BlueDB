@@ -58,17 +58,30 @@ public class SegmentPathManager {
 	}
 
 	public List<Path> getAllPossibleSegmentPaths(BlueKey key) {
-		long segmentSize = getSegmentSize();
 		List<Path> paths = new ArrayList<>();
 		long groupingNumber = key.getGroupingNumber();
-		long minTime = Blutils.roundDownToMultiple(groupingNumber, segmentSize);
-		long i = minTime;
+		long i = getSegmentStartGroupingNumber(groupingNumber);
 		while (key.isInRange(i, i + segmentSize - 1)) {
 			Path path = getSegmentPath(i);
 			paths.add(path);
 			i += segmentSize;
 		}
 		return paths;
+	}
+
+	public List<Long> getAllPossibleSegmentStartGroupingNumbers(BlueKey key) {
+		List<Long> segmentStartGroupingNumbers = new ArrayList<>();
+		long groupingNumber = key.getGroupingNumber();
+		long currentSegmentStartGroupingNumber = getSegmentStartGroupingNumber(groupingNumber);
+		while (key.isInRange(currentSegmentStartGroupingNumber, currentSegmentStartGroupingNumber + segmentSize - 1)) {
+			segmentStartGroupingNumbers.add(currentSegmentStartGroupingNumber);
+			currentSegmentStartGroupingNumber += segmentSize;
+		}
+		return segmentStartGroupingNumbers;
+	}
+	
+	public long getSegmentStartGroupingNumber(long groupingNumber) {
+		return Blutils.roundDownToMultiple(groupingNumber, segmentSize);
 	}
 
 	public List<File> getExistingSegmentFiles(Range range) {

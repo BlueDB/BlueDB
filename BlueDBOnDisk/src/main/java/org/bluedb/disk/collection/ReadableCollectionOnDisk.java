@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.ReadableBlueCollection;
@@ -16,6 +17,7 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadableDbOnDisk;
@@ -38,6 +40,8 @@ import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 
 public abstract class ReadableCollectionOnDisk<T extends Serializable> implements ReadableBlueCollection<T> {
+	
+	public static final String OVERLAPPING_TIME_SEGMENTS_INDEX_NAME = "overlapping-time-segments-index";
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
@@ -46,6 +50,8 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	protected final BlueSerializer serializer;
 	protected final Path collectionPath;
 	protected final SegmentSizeSetting segmentSizeSettings;
+	protected final BlueCollectionVersion version;
+	private final boolean utilizesDefaultTimeIndex;
 
 	protected abstract ReadableCollectionMetadata getOrCreateMetadata();
 	protected abstract Class<? extends Serializable>[] getClassesToRegister(List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException;
@@ -53,7 +59,7 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	public abstract ReadableSegmentManager<T> getSegmentManager();
 	public abstract <I extends ValueKey> BlueIndex<I, T> getIndex(String indexName, Class<I> keyType) throws BlueDbException;
 
-	public ReadableCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+	public ReadableCollectionOnDisk(ReadableDbOnDisk db, String name, BlueCollectionVersion requestedVersion, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
 		this.valueType = valueType;
 		collectionPath = Paths.get(db.getPath().toString(), name);
 		boolean isNewCollection = !collectionPath.toFile().exists();
@@ -65,6 +71,8 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		serializer = new ThreadLocalFstSerializer(db.getConfigurationService(), classesToRegister);
 		keyType = determineKeyType(metaData, requestedKeyType);
 		segmentSizeSettings = determineSegmentSize(metaData, keyType, segmentSize, isNewCollection);
+		version = determineCollectionVersion(metaData, requestedVersion, isNewCollection);
+		this.utilizesDefaultTimeIndex = isTimeBased() && version.utilizesDefaultTimeIndex();
 	}
 
 	@Override
@@ -106,6 +114,14 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	public Path getPath() {
 		return collectionPath;
 	}
+	
+	public SegmentSizeSetting getSegmentSizeSettings() {
+		return segmentSizeSettings;
+	}
+	
+	public BlueCollectionVersion getVersion() {
+		return version;
+	}
 
 	public BlueSerializer getSerializer() {
 		return serializer;
@@ -128,7 +144,15 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 			throw new BlueDbException("wrong key type (" + key.getClass() + ") for Collection with key type " + keyType);
 		}
 	}
-
+	
+	public boolean utilizesDefaultTimeIndex() {
+		return utilizesDefaultTimeIndex;
+	}
+	
+	public BlueIndex<LongTimeKey, T> getOverlappingTimeSegmentsIndex() throws BlueDbException {
+		return getIndex(OVERLAPPING_TIME_SEGMENTS_INDEX_NAME, LongTimeKey.class);
+	}
+	
 	protected static SegmentSizeSetting determineSegmentSize(ReadableCollectionMetadata metaData, Class<? extends BlueKey> keyType, SegmentSizeSetting requestedSegmentSize, boolean isNewCollection) throws BlueDbException {
 		SegmentSizeSetting segmentSize = metaData.getSegmentSize();
 		if (segmentSize == null) {
@@ -143,6 +167,22 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 			}
 		}
 		return segmentSize;
+	}
+
+	protected static BlueCollectionVersion determineCollectionVersion(ReadableCollectionMetadata metaData, BlueCollectionVersion requestedCollectionVersion, boolean isNewCollection) throws BlueDbException {
+		BlueCollectionVersion collectionVersion = metaData.getCollectionVersion();
+		if (collectionVersion == null) {
+			if (!isNewCollection) {
+				collectionVersion = BlueCollectionVersion.VERSION_1; //The version of all legacy collections that don't have version meta data
+			} else {
+				collectionVersion = (requestedCollectionVersion != null) ? requestedCollectionVersion : BlueCollectionVersion.getDefault();
+			}
+			
+			if (metaData instanceof ReadWriteCollectionMetaData) {
+				((ReadWriteCollectionMetaData)metaData).saveCollectionVersion(collectionVersion);
+			}
+		}
+		return collectionVersion;
 	}
 
 	protected static Class<? extends BlueKey> determineKeyType(ReadableCollectionMetadata metaData, Class<? extends BlueKey> providedKeyType) throws BlueDbException {

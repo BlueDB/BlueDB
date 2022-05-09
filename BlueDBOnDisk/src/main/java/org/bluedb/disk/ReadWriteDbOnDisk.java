@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueCollectionBuilder;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.BlueTimeCollectionBuilder;
@@ -42,12 +43,6 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 	}
 
 	@Override
-	@Deprecated
-	public <K extends BlueKey, T extends Serializable> BlueCollectionBuilder<K, T> collectionBuilder(String name, Class <K> keyType, Class<T> valueType) {
-		return getCollectionBuilder(name, keyType, valueType);
-	}
-
-	@Override
 	public <K extends BlueKey, V extends Serializable> BlueCollectionBuilder<K, V> getCollectionBuilder(String name, Class<K> keyType, Class<V> valueType) {
 		return new CollectionOnDiskBuilder<>(this, name, keyType, valueType);
 	}
@@ -57,22 +52,16 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		return new TimeCollectionOnDiskBuilder<>(this, name, keyType, valueType); //TODO: Should this restrict key type to only TimeKey and/or throw exception if it isn't a TimeKey?
 	}
 
-	@Deprecated
-	@Override
-	public <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, @SuppressWarnings("unchecked") Class<? extends Serializable>... additionalClassesToRegister) throws BlueDbException {
-		return initializeCollection(name, keyType, valueType, Arrays.asList(additionalClassesToRegister));
+	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, BlueCollectionVersion version, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister) throws BlueDbException {
+		return initializeCollection(name, version, keyType, valueType, additionalClassesToRegister, null);
 	}
 
-	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister) throws BlueDbException {
-		return initializeCollection(name, keyType, valueType, additionalClassesToRegister, null);
-	}
-
-	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
+	protected <T extends Serializable> BlueCollection<T> initializeCollection(String name, BlueCollectionVersion version, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new ReadWriteCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
+				collection = new ReadWriteCollectionOnDisk<T>(this, name, version, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
@@ -87,12 +76,12 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		}
 	}
 	
-	protected <T extends Serializable> BlueTimeCollection<T> initializeTimeCollection(String name, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
+	protected <T extends Serializable> BlueTimeCollection<T> initializeTimeCollection(String name, BlueCollectionVersion version, Class<? extends BlueKey> keyType, Class<T> valueType, List<Class<? extends Serializable>> additionalClassesToRegister, SegmentSizeSetting segmentSize) throws BlueDbException {
 		synchronized (collections) {
 			@SuppressWarnings("unchecked")
 			ReadWriteCollectionOnDisk<T> collection = (ReadWriteCollectionOnDisk<T>) collections.get(name);
 			if(collection == null) {
-				collection = new ReadWriteTimeCollectionOnDisk<T>(this, name, keyType, valueType, additionalClassesToRegister, segmentSize);
+				collection = new ReadWriteTimeCollectionOnDisk<T>(this, name, version, keyType, valueType, additionalClassesToRegister, segmentSize);
 				collections.put(name, collection);
 			} else if(!collection.getType().equals(valueType)) {
 				throw new BlueDbException("The " + name + " collection already exists for a different type [collectionType=" + collection.getType() + " invalidType=" + valueType + "]");
@@ -185,7 +174,7 @@ public class ReadWriteDbOnDisk extends ReadableDbOnDisk implements BlueDb {
 		}
 		if (collection == null) {
 			try {
-				collection = new ReadWriteCollectionOnDisk(this, folderName, null, Serializable.class, Arrays.asList());
+				collection = new ReadWriteCollectionOnDisk(this, folderName, null, null, Serializable.class, Arrays.asList());
 			} catch(Throwable t) {
 				t.printStackTrace();
 			}

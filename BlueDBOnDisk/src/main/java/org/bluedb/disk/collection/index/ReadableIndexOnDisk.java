@@ -32,6 +32,7 @@ import org.bluedb.disk.collection.index.conditions.OnDiskIntegerIndexCondition;
 import org.bluedb.disk.collection.index.conditions.OnDiskLongIndexCondition;
 import org.bluedb.disk.collection.index.conditions.OnDiskStringIndexCondition;
 import org.bluedb.disk.collection.index.conditions.OnDiskUUIDIndexCondition;
+import org.bluedb.disk.collection.index.extractors.DefaultTimeKeyExtractor;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.SegmentSizeSetting;
@@ -43,7 +44,7 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 
 	private final ReadableCollectionOnDisk<T> collection;
 	protected final Path indexPath;
-	protected final KeyExtractor<I, T> keyExtractor;
+	private final KeyExtractor<I, T> keyExtractor;
 
 	public abstract ReadableSegmentManager<BlueKey> getSegmentManager();
 	
@@ -83,13 +84,23 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 		return SegmentSizeSetting.getOriginalDefaultSettingsFor(keyType);
 	}
 
-	public List<? extends ValueKey> extractIndexKeys(BlueEntity<T> entity) {
-		List<I> extractedKeys = keyExtractor.extractKeys(entity.getValue());
-		if(extractedKeys != null) {
-			return extractedKeys;
+	public List<I> extractIndexKeys(BlueEntity<T> entity) {
+		return extractIndexKeys(entity.getKey(), entity.getValue());
+	}
+
+	public List<I> extractIndexKeys(BlueKey key, T value) {
+		List<I> extractedKeys;
+		if(keyExtractor instanceof DefaultTimeKeyExtractor) {
+			extractedKeys = extractKeysForDefaultTimeIndex(key);
 		} else {
-			return new LinkedList<>();
+			extractedKeys = keyExtractor.extractKeys(value);
 		}
+		
+		return extractedKeys != null ? extractedKeys : new LinkedList<>();
+	}
+	
+	private List<I> extractKeysForDefaultTimeIndex(BlueKey key) {
+		return ((DefaultTimeKeyExtractor<I, T>)keyExtractor).extractKeys(key, getSegmentManagerForIndexedCollection());
 	}
 
 	/**
