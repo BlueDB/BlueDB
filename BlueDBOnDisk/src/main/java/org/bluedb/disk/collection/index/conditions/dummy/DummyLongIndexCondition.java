@@ -34,6 +34,11 @@ public class DummyLongIndexCondition<T extends Serializable> implements LongInde
 	public LongIndexCondition isIn(BlueSimpleSet<Long> values) {
 		return this;
 	}
+	
+	@Override
+	public LongIndexCondition isInRange(long minValue, long maxValue) {
+		return this;
+	}
 
 	@Override
 	public LongIndexCondition meets(Condition<Long> condition) {

@@ -2,6 +2,7 @@ package org.bluedb.disk.collection;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -11,7 +12,9 @@ import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
+import org.bluedb.disk.query.QueryIndexConditionGroup;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegment;
 import org.bluedb.disk.segment.ReadableSegmentManager;
@@ -25,16 +28,16 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	private long endGroupingValueOfCompletedSegments;
 	private SegmentEntityIterator<T> segmentIterator;
 	private BlueEntity<T> next;
-	private final List<OnDiskIndexCondition<?, T>> indexConditions;
+	private final List<QueryIndexConditionGroup<T>> indexConditionGroups;
 	private final List<Condition<T>> conditions;
 	private final List<Condition<BlueKey>> keyConditions;
 	
 	private AtomicBoolean hasClosed = new AtomicBoolean(false);
 
-	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<OnDiskIndexCondition<?, T>> indexConditions, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
+	public CollectionEntityIterator(final ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
 		this.range = range;
 		this.endGroupingValueOfCompletedSegments = calculateEndGroupingValueOfCompletedSegments(range, byStartTime);
-		this.indexConditions = indexConditions;
+		this.indexConditionGroups = indexConditionGroups;
 		Optional<Set<Range>> segmentRangesToIncludeAfterApplyingIndexConditions = getSegmentRangesToIncludeAfterApplyingIndexConditions(segmentRangesToInclude);
 		this.segments = segmentManager.getExistingSegments(range, segmentRangesToIncludeAfterApplyingIndexConditions);
 		Collections.sort(segments);
@@ -51,17 +54,31 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 	}
 
 	private Optional<Set<Range>> getSegmentRangesToIncludeAfterApplyingIndexConditions(Optional<Set<Range>> originalSegmentRangesToInclude) {
-		if(indexConditions == null || indexConditions.isEmpty()) {
+		if(!StreamUtils.stream(indexConditionGroups)
+			.flatMap(indexConditionGroup -> StreamUtils.stream(indexConditionGroup.getIndexConditions()))
+			.findAny()
+			.isPresent()) {
 			return originalSegmentRangesToInclude;
 		}
 		
 		Set<Range> rangesToInclude = null;
-		for(OnDiskIndexCondition<?, T> indexCondition : indexConditions) {
-			Set<Range> matchingRanges = indexCondition.getSegmentRangesToIncludeInCollectionQuery();
+		for(QueryIndexConditionGroup<T> indexConditionGroup : indexConditionGroups) {
+			Set<Range> groupRangesToInclude = null;
+			for(OnDiskIndexCondition<?, T> indexCondition : indexConditionGroup.getIndexConditions()) {
+				Set<Range> rangesMatchingCondition = indexCondition.getSegmentRangesToIncludeInCollectionQuery();
+				if(groupRangesToInclude == null) {
+					groupRangesToInclude = rangesMatchingCondition != null ? new HashSet<>(rangesMatchingCondition) : null;
+				} else if(indexConditionGroup.isShouldAnd()) {
+					groupRangesToInclude.retainAll(rangesMatchingCondition);
+				} else {
+					groupRangesToInclude.addAll(rangesMatchingCondition);
+				}
+			}
+			
 			if(rangesToInclude == null) {
-				rangesToInclude = matchingRanges;
+				rangesToInclude = groupRangesToInclude != null ? new HashSet<>(groupRangesToInclude) : null;
 			} else {
-				rangesToInclude.retainAll(matchingRanges);
+				rangesToInclude.retainAll(groupRangesToInclude);
 			}
 		}
 		
@@ -128,7 +145,7 @@ public class CollectionEntityIterator<T extends Serializable> implements Closeab
 					BlueEntity<T> result = segmentIterator.next();
 					if (Blutils.meetsConditions(conditions, result.getValue()) &&
 							Blutils.meetsConditions(keyConditions, result.getKey()) &&
-							Blutils.meetsIndexConditions(indexConditions, result)) {
+							Blutils.meetsIndexConditions(indexConditionGroups, result)) {
 						return result;
 					}
 				}

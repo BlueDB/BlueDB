@@ -40,6 +40,7 @@ public class DummyLongIndexConditionTest {
 		indexCondition.isEqualTo(null);
 		indexCondition.isIn(new HashSet<>());
 		indexCondition.meets(longValue -> longValue == 0);
+		indexCondition.isInRange(0, 1);
 		indexCondition.isLessThan(0);
 		indexCondition.isLessThanOrEqualTo(0);
 		indexCondition.isGreaterThan(0);

@@ -143,6 +143,11 @@ public class OnDiskLongIndexConditionTest {
 		} catch(IllegalStateException e) { }
 		
 		try {
+			indexCondition.isInRange(0, 1);
+			fail();
+		} catch(IllegalStateException e) { }
+		
+		try {
 			indexCondition.isLessThan(10);
 			fail();
 		} catch(IllegalStateException e) { }
@@ -183,6 +188,14 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.meets(value -> valuesToMatch.contains(value));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
+		assertEquals(toRangeSet(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+	}
+	
+	@Test
+	public void test_isInRange() {
+		indexCondition.isInRange(10, 29);
+		
+		assertTestMethod(entity2, entity3, entity4, entity5, entity6, entity7);
 		assertEquals(toRangeSet(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
 	}
 	

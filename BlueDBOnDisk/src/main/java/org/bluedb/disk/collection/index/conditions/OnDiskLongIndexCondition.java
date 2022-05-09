@@ -7,6 +7,7 @@ import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.index.conditions.LongIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
+import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.collection.index.ReadableIndexOnDisk;
 
@@ -22,6 +23,19 @@ public class OnDiskLongIndexCondition<T extends Serializable> extends OnDiskInde
 	@Override
 	public LongIndexCondition isEqualTo(Long value) {
 		super.isEqualTo(value);
+		return this;
+	}
+	
+	@Override
+	public LongIndexCondition isInRange(long minValue, long maxValue) {
+		if(hasIsEqualToBeenCalledAlready()) {
+			throw new IllegalStateException("You cannot call LongIndexCondition#isInRange if you have already called LongIndexCondition#isEqualTo");
+		}
+		
+		min = Math.max(min, minValue); // last part to avoid overflow errors
+		max = Math.min(max, maxValue);
+		updateRange(min, max);
+		meets(indexedInt -> indexedInt >= minValue && indexedInt <= maxValue);
 		return this;
 	}
 
@@ -87,14 +101,23 @@ public class OnDiskLongIndexCondition<T extends Serializable> extends OnDiskInde
 	
 	@Override
 	protected ValueKey createKeyForIndexValue(Long value) {
+		if(LongTimeKey.class.isAssignableFrom(getIndexKeyType())) {
+			return new LongTimeKey(value);
+		}
+		
 		return new LongKey(value);
 	}
 	
 	@Override
 	protected Long extractIndexValueFromKey(BlueKey indexKey) {
+		if(indexKey instanceof LongTimeKey) {
+			return ((LongTimeKey)indexKey).getId();
+		}
+		
 		if(indexKey instanceof LongKey) {
 			return ((LongKey)indexKey).getId();
 		}
+		
 		return null;
 	}
 

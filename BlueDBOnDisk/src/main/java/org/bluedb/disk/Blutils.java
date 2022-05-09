@@ -11,26 +11,18 @@ import java.util.function.Predicate;
 
 import org.bluedb.api.Condition;
 import org.bluedb.api.exceptions.BlueDbException;
-import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
+import org.bluedb.disk.query.QueryIndexConditionGroup;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public class Blutils {
-	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X object) {
-		for (Condition<X> condition: conditions) {
-			if (!condition.test(object)) {
-				return false;
-			}
-		}
-		return true;
+	public static <X extends Serializable> boolean meetsConditions(List<Condition<X>> conditions, X objectToTest) {
+		return StreamUtils.stream(conditions)
+				.allMatch(condition -> condition.test(objectToTest));
 	}
 
-	public static <T extends Serializable> boolean meetsIndexConditions(List<OnDiskIndexCondition<?, T>> indexConditions, BlueEntity<T> result) {
-		for (OnDiskIndexCondition<?, T> indexCondition : indexConditions) {
-			if (!indexCondition.test(result)) {
-				return false;
-			}
-		}
-		return true;
+	public static <T extends Serializable> boolean meetsIndexConditions(List<QueryIndexConditionGroup<T>> indexConditionGroups, BlueEntity<T> entityToTest) {
+		return StreamUtils.stream(indexConditionGroups)
+			.allMatch(indexConditionGroup -> indexConditionGroup.test(entityToTest));
 	}
 
 	public static long roundDownToMultiple(long value, long multiple) {

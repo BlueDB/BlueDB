@@ -39,6 +39,11 @@ public class DummyIntegerIndexCondition<T extends Serializable> implements Integ
 	public IntegerIndexCondition meets(Condition<Integer> condition) {
 		return this;
 	}
+	
+	@Override
+	public IntegerIndexCondition isInRange(int minValue, int maxValue) {
+		return this;
+	}
 
 	@Override
 	public IntegerIndexCondition isLessThan(int value) {

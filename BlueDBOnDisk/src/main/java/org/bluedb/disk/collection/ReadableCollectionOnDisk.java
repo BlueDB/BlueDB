@@ -27,6 +27,7 @@ import org.bluedb.disk.collection.metadata.ReadableCollectionMetadata;
 import org.bluedb.disk.config.ConfigurationService;
 import org.bluedb.disk.encryption.EncryptionServiceWrapper;
 import org.bluedb.disk.file.ReadFileManager;
+import org.bluedb.disk.query.QueryIndexConditionGroup;
 import org.bluedb.disk.query.ReadOnlyQueryOnDisk;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegment;
@@ -91,9 +92,9 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
-	public List<BlueEntity<T>> findMatches(Range range, List<OnDiskIndexCondition<?, T>> indexConditions, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<Set<Range>> segmentRangesToInclude) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(Range range, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<Set<Range>> segmentRangesToInclude) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, indexConditions, conditions, keyConditions, segmentRangesToInclude)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, indexConditionGroups, conditions, keyConditions, segmentRangesToInclude)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
 				results.add(entity);

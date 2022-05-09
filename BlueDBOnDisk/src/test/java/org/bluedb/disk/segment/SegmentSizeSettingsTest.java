@@ -35,6 +35,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
+import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
@@ -117,6 +118,7 @@ public class SegmentSizeSettingsTest {
 	public void testGetDefaultIndexSettingsFor() throws Exception {
 		assertEquals(SegmentSizeSetting.TIME_1_DAY, SegmentSizeSetting.getDefaultIndexSettingsFor(TimeKey.class));
 		assertEquals(SegmentSizeSetting.TIME_1_DAY, SegmentSizeSetting.getDefaultIndexSettingsFor(TimeFrameKey.class));
+		assertEquals(SegmentSizeSetting.TIME_1_DAY, SegmentSizeSetting.getDefaultIndexSettingsFor(LongTimeKey.class));
 		assertEquals(SegmentSizeSetting.LONG_512, SegmentSizeSetting.getDefaultIndexSettingsFor(LongKey.class));
 		assertEquals(SegmentSizeSetting.INT_512, SegmentSizeSetting.getDefaultIndexSettingsFor(IntegerKey.class));
 		assertEquals(SegmentSizeSetting.HASH_2M, SegmentSizeSetting.getDefaultIndexSettingsFor(StringKey.class));
@@ -132,6 +134,7 @@ public class SegmentSizeSettingsTest {
 	public void testGetDefaultSettingsFor() throws Exception {
 		assertEquals(SegmentSizeSetting.TIME_1_HOUR, SegmentSizeSetting.getDefaultSettingsFor(TimeKey.class));
 		assertEquals(SegmentSizeSetting.TIME_1_HOUR, SegmentSizeSetting.getDefaultSettingsFor(TimeFrameKey.class));
+		assertEquals(SegmentSizeSetting.TIME_1_HOUR, SegmentSizeSetting.getDefaultSettingsFor(LongTimeKey.class));
 		assertEquals(SegmentSizeSetting.LONG_256, SegmentSizeSetting.getDefaultSettingsFor(LongKey.class));
 		assertEquals(SegmentSizeSetting.INT_256, SegmentSizeSetting.getDefaultSettingsFor(IntegerKey.class));
 		assertEquals(SegmentSizeSetting.HASH_1M, SegmentSizeSetting.getDefaultSettingsFor(StringKey.class));
@@ -147,6 +150,7 @@ public class SegmentSizeSettingsTest {
 	public void testGetOriginalDefaultSettingsFor() throws Exception {
 		assertEquals(SegmentSizeSetting.TIME_1_HOUR, SegmentSizeSetting.getOriginalDefaultSettingsFor(TimeKey.class));
 		assertEquals(SegmentSizeSetting.TIME_1_HOUR, SegmentSizeSetting.getOriginalDefaultSettingsFor(TimeFrameKey.class));
+		assertEquals(SegmentSizeSetting.TIME_1_HOUR, SegmentSizeSetting.getOriginalDefaultSettingsFor(LongTimeKey.class));
 		assertEquals(SegmentSizeSetting.LONG_128, SegmentSizeSetting.getOriginalDefaultSettingsFor(LongKey.class));
 		assertEquals(SegmentSizeSetting.INT_256, SegmentSizeSetting.getOriginalDefaultSettingsFor(IntegerKey.class));
 		assertEquals(SegmentSizeSetting.HASH_512K, SegmentSizeSetting.getOriginalDefaultSettingsFor(StringKey.class));

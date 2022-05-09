@@ -25,6 +25,16 @@ public interface IntegerIndexCondition extends BlueIndexCondition<Integer> {
 	
 	@Override
 	public IntegerIndexCondition meets(Condition<Integer> condition);
+
+	/**
+	 * Only records with an indexed value within the given range will be included in the query.
+	 * @param minValue - The min that an indexed value can be in order for the records that contain them to be
+	 * included in the query.
+	 * @param maxValue - The max that an indexed value can be in order for the records that contain them to be
+	 * included in the query.
+	 * @return
+	 */
+	public IntegerIndexCondition isInRange(int minValue, int maxValue);
 	
 	/**
 	 * Only records with an indexed value less than the given value will be included in the query.

@@ -24,6 +24,19 @@ public class OnDiskIntegerIndexCondition<T extends Serializable> extends OnDiskI
 		super.isEqualTo(value);
 		return this;
 	}
+	
+	@Override
+	public IntegerIndexCondition isInRange(int minValue, int maxValue) {
+		if(hasIsEqualToBeenCalledAlready()) {
+			throw new IllegalStateException("You cannot call IntegerIndexCondition#isInRange if you have already called IntegerIndexCondition#isEqualTo");
+		}
+		
+		min = Math.max(min, minValue); // last part to avoid overflow errors
+		max = Math.min(max, maxValue);
+		updateRange(min, max);
+		meets(indexedInt -> indexedInt >= minValue && indexedInt <= maxValue);
+		return this;
+	}
 
 	@Override
 	public IntegerIndexCondition isLessThan(int value) {

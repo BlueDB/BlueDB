@@ -22,6 +22,7 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
+import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 
@@ -122,7 +123,7 @@ public enum SegmentSizeSetting {
 	}
 
 	public static SegmentSizeSetting getDefaultIndexSettingsFor(Class<? extends BlueKey> keyType) throws BlueDbException {
-		if (TimeKey.class.isAssignableFrom(keyType)) {
+		if (TimeKey.class.isAssignableFrom(keyType) || LongTimeKey.class.isAssignableFrom(keyType)) {
 			return TIME_1_DAY;
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
 			return LONG_512;
@@ -136,7 +137,7 @@ public enum SegmentSizeSetting {
 	}
 
 	public static SegmentSizeSetting getDefaultSettingsFor(Class<? extends BlueKey> keyType) throws BlueDbException {
-		if (TimeKey.class.isAssignableFrom(keyType)) {
+		if (TimeKey.class.isAssignableFrom(keyType) || LongTimeKey.class.isAssignableFrom(keyType)) {
 			return TIME_1_HOUR;
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
 			return LONG_256;
@@ -150,7 +151,7 @@ public enum SegmentSizeSetting {
 	}
 
 	public static SegmentSizeSetting getOriginalDefaultSettingsFor(Class<? extends BlueKey> keyType) throws BlueDbException {
-		if (TimeKey.class.isAssignableFrom(keyType)) {
+		if (TimeKey.class.isAssignableFrom(keyType) || LongTimeKey.class.isAssignableFrom(keyType)) {
 			return TIME_1_HOUR;
 		} else if (LongKey.class.isAssignableFrom(keyType)) {
 			return LONG_128;

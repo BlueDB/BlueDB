@@ -21,6 +21,7 @@ import org.bluedb.api.index.conditions.UUIDIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
+import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.UUIDKey;
 import org.bluedb.api.keys.ValueKey;
@@ -141,7 +142,7 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 	
 	@Override
 	public LongIndexCondition createLongIndexCondition() throws UnsupportedIndexConditionTypeException {
-		if(LongKey.class.isAssignableFrom(keyExtractor.getType())) {
+		if(LongKey.class.isAssignableFrom(keyExtractor.getType()) || LongTimeKey.class.isAssignableFrom(keyExtractor.getType())) {
 			return new OnDiskLongIndexCondition<T>(this);
 		}
 		throw new UnsupportedIndexConditionTypeException("LongIndexCondition is unsupported for an index with a key type of " + keyExtractor.getType().getCanonicalName());
