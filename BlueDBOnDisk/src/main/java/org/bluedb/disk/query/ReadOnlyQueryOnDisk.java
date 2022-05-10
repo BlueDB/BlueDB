@@ -122,6 +122,7 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 		SegmentPathManager pm = collection.getSegmentManager().getPathManager();
 		
 		long startSegmentGroupingNumber = pm.getSegmentStartGroupingNumber(timeRange.getStart());
+		long endSegmentGroupingNumber = startSegmentGroupingNumber + pm.getSegmentSize() - 1;
 		
 		QueryIndexConditionGroup<T> defaultTimeIndexConditionOrGroup = new QueryIndexConditionGroup<>(false);
 		
@@ -129,7 +130,7 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 		 * Utilize the time segments index to find all records that overlap the start segment. This will find
 		 * all records that started before the start segment and ended during or after the start segment.
 		 */
-		defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isEqualTo(startSegmentGroupingNumber));
+		defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isInRange(startSegmentGroupingNumber, endSegmentGroupingNumber));
 		
 		/*
 		 * Or with the all segments in range accepting index condition since it doesn't really save time trying to 

@@ -69,17 +69,6 @@ public class SegmentPathManager {
 		return paths;
 	}
 
-	public List<Long> getAllPossibleSegmentStartGroupingNumbers(BlueKey key) {
-		List<Long> segmentStartGroupingNumbers = new ArrayList<>();
-		long groupingNumber = key.getGroupingNumber();
-		long currentSegmentStartGroupingNumber = getSegmentStartGroupingNumber(groupingNumber);
-		while (key.isInRange(currentSegmentStartGroupingNumber, currentSegmentStartGroupingNumber + segmentSize - 1)) {
-			segmentStartGroupingNumbers.add(currentSegmentStartGroupingNumber);
-			currentSegmentStartGroupingNumber += segmentSize;
-		}
-		return segmentStartGroupingNumbers;
-	}
-	
 	public long getSegmentStartGroupingNumber(long groupingNumber) {
 		return Blutils.roundDownToMultiple(groupingNumber, segmentSize);
 	}

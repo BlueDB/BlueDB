@@ -32,7 +32,7 @@ public class OnDiskLongIndexCondition<T extends Serializable> extends OnDiskInde
 			throw new IllegalStateException("You cannot call LongIndexCondition#isInRange if you have already called LongIndexCondition#isEqualTo");
 		}
 		
-		min = Math.max(min, minValue); // last part to avoid overflow errors
+		min = Math.max(min, minValue);
 		max = Math.min(max, maxValue);
 		updateRange(min, max);
 		meets(indexedInt -> indexedInt >= minValue && indexedInt <= maxValue);
