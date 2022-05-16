@@ -26,14 +26,20 @@ public class OverlappingTimeSegmentsKeyExtractorTest {
 	@Test
 	public void test_extractKeys() {
 		SegmentPathManager segPathManagerMock = Mockito.mock(SegmentPathManager.class);
-		Mockito.doReturn(Arrays.asList(10L, 11L, 12L)).when(segPathManagerMock).getAllPossibleSegmentStartGroupingNumbers(Mockito.any());
+		Mockito.doReturn(10L).when(segPathManagerMock).getSegmentSize();
+		Mockito.doReturn(60L).when(segPathManagerMock).getSegmentStartGroupingNumber(65L);
 		
 		ReadableSegmentManager<TestValue> segManagerMock = (ReadableSegmentManager<TestValue>) Mockito.mock(ReadableSegmentManager.class);
 		Mockito.doReturn(segPathManagerMock).when(segManagerMock).getPathManager();
 		
-		TimeFrameKey key = new TimeFrameKey(UUID.randomUUID(), 0, 1);
+		TimeFrameKey key = new TimeFrameKey(UUID.randomUUID(), 55, 100);
 		OverlappingTimeSegmentsKeyExtractor<TestValue> extractor = new OverlappingTimeSegmentsKeyExtractor<TestValue>();
-		assertEquals(Arrays.asList(new LongTimeKey(11), new LongTimeKey(12)), extractor.extractKeys(key, segManagerMock));
+		assertEquals(Arrays.asList(
+				new LongTimeKey(65), 
+				new LongTimeKey(75), 
+				new LongTimeKey(85), 
+				new LongTimeKey(95),
+				new LongTimeKey(105)), extractor.extractKeys(key, segManagerMock));
 	}
 
 	@Test
