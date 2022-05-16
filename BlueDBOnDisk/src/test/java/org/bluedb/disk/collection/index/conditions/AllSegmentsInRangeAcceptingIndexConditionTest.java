@@ -58,7 +58,7 @@ public class AllSegmentsInRangeAcceptingIndexConditionTest {
 		ReadableSegmentManager<TestValue> segmentManagerMock = (ReadableSegmentManager<TestValue>) Mockito.mock(ReadableSegmentManager.class);
 		Mockito.doReturn(segmentManagerMock).when(collectionMock).getSegmentManager();
 		
-		Range groupingNumberRangeToAccept = new Range(0, 29);
+		Range groupingNumberRangeToAccept = new Range(-2, 25);
 		List<Range> segmentRangesForGroupingNumberRange = Arrays.asList(
 				new Range(0, 9),
 				new Range(10, 19),
@@ -67,7 +67,13 @@ public class AllSegmentsInRangeAcceptingIndexConditionTest {
 		Mockito.doReturn(segmentRangesForGroupingNumberRange).when(segmentManagerMock).getExistingSegmentRanges(groupingNumberRangeToAccept, Optional.empty());
 
 		AllSegmentsInRangeAcceptingIndexCondition<Long,TestValue> condition = new AllSegmentsInRangeAcceptingIndexCondition<>(collectionMock, groupingNumberRangeToAccept);
-		assertEquals(new HashSet<>(segmentRangesForGroupingNumberRange), condition.getSegmentRangesToIncludeInCollectionQuery());
+		
+		IncludedSegmentRangeInfo expectedIncludedSegmentRangeInfo = new IncludedSegmentRangeInfo();
+		expectedIncludedSegmentRangeInfo.addIncludedSegmentRangeInfo(new Range(0, 9), new Range(0, 9));
+		expectedIncludedSegmentRangeInfo.addIncludedSegmentRangeInfo(new Range(10, 19), new Range(10, 19));
+		expectedIncludedSegmentRangeInfo.addIncludedSegmentRangeInfo(new Range(20, 29), new Range(20, 29));
+		
+		assertEquals(expectedIncludedSegmentRangeInfo, condition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 
 	@SuppressWarnings("unchecked")

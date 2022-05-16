@@ -53,12 +53,12 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 		return segmentRange;
 	}
 
-	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, Range range) {
-		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, range.getStart(), range.getEnd());
+	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, Range range, boolean enforceRangeStart) {
+		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, range.getStart(), range.getEnd(), enforceRangeStart);
 	}
 
-	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, long rangeMin, long rangeMax) {
-		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, rangeMin, rangeMax);
+	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, long rangeMin, long rangeMax, boolean enforceRangeStart) {
+		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, rangeMin, rangeMax, enforceRangeStart);
 	}
 
 	public SegmentEntityIterator<T> getIterator(long min, long max) {

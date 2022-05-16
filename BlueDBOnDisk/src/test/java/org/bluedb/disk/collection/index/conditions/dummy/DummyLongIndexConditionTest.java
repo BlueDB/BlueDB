@@ -3,6 +3,7 @@ package org.bluedb.disk.collection.index.conditions.dummy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
 
@@ -25,7 +26,7 @@ public class DummyLongIndexConditionTest {
 		assertEquals(LongKey.class, indexCondition.getIndexKeyType());
 		assertEquals(OnDiskDummyIndexCondition.DUMMY_INDEX_NAME, indexCondition.getIndexName());
 		assertNull(indexCondition.getIndexPath());
-		assertEquals(0, indexCondition.getSegmentRangesToIncludeInCollectionQuery().size());
+		assertTrue(indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery().isEmpty());
 	}
 
 	@Test

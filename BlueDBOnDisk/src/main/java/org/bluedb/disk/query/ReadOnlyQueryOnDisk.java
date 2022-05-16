@@ -1,14 +1,11 @@
 package org.bluedb.disk.query;
 
 import java.io.Serializable;
-import java.nio.file.Path;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.CloseableIterator;
@@ -24,6 +21,7 @@ import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.CollectionValueIterator;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
 import org.bluedb.disk.collection.index.conditions.AllSegmentsInRangeAcceptingIndexCondition;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadableSegmentManager;
@@ -81,14 +79,14 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
 		finalizeParametersBeforeExecution();
-		return new CollectionValueIterator<T>(collection.getSegmentManager(), getRange(), byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangesToInclude());
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), getRange(), byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangeInfoToInclude());
 	}
 
 	@Override
 	public CloseableIterator<T> getIterator(long timeout, TimeUnit timeUnit) throws BlueDbException {
 		long timeoutInMillis = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 		finalizeParametersBeforeExecution();
-		return new CollectionValueIterator<T>(collection.getSegmentManager(), getRange(), timeoutInMillis, byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangesToInclude());
+		return new CollectionValueIterator<T>(collection.getSegmentManager(), getRange(), timeoutInMillis, byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangeInfoToInclude());
 	}
 
 	@Override
@@ -99,74 +97,86 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	
 	public CloseableIterator<BlueEntity<T>> getEntityIterator() throws BlueDbException {
 		finalizeParametersBeforeExecution();
-		return new CollectionEntityIterator<T>(collection.getSegmentManager(), getRange(), byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangesToInclude());
+		return new CollectionEntityIterator<T>(collection.getSegmentManager(), getRange(), byStartTime, indexConditionGroups, objectConditions, keyConditions, getSegmentRangeInfoToInclude());
 	}
 
 	public List<BlueEntity<T>> getEntities() throws BlueDbException {
 		finalizeParametersBeforeExecution();
-		return collection.findMatches(getRange(), indexConditionGroups, objectConditions, keyConditions, byStartTime, getSegmentRangesToInclude());
+		return collection.findMatches(getRange(), indexConditionGroups, objectConditions, keyConditions, byStartTime, getSegmentRangeInfoToInclude());
 	}
 
 	@SuppressWarnings("unchecked")
 	private void finalizeParametersBeforeExecution() throws BlueDbException {
-		if(!collection.utilizesDefaultTimeIndex() || byStartTime || min == Long.MIN_VALUE) {
+		/*
+		 * If we're not searching from the dawn of time and we want to include overlapping records
+		 * that start before the timeframe and we're a version 2 or later collection then we have
+		 * to utilize the default index to identify what pre timeframe segments need to be searched.
+		 */
+		if(collection.utilizesDefaultTimeIndex() && !byStartTime && min > Long.MIN_VALUE) {
+			Range timeRange = getRange();
+			SegmentPathManager pm = collection.getSegmentManager().getPathManager();
+			
+			long startSegmentGroupingNumber = pm.getSegmentStartGroupingNumber(timeRange.getStart());
+			
+			QueryIndexConditionGroup<T> defaultTimeIndexConditionOrGroup = new QueryIndexConditionGroup<>(false);
+			
 			/*
-			 * If it doesn't utilize the default time index then we have to fallback on the default behavior.
-			 * If it is by start time or already looking from the dawn of time then we don't need to worry about 
-			 * finding overlapping records from the past.
+			 * Utilize the time segments index to find all records that overlap the start segment. This will find
+			 * all records that started before the start segment and ended during or after the start segment.
 			 */
-			return;
+			defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isEqualTo(startSegmentGroupingNumber));
+			
+			/*
+			 * Or with the all segments in range accepting index condition since it doesn't really save time trying to 
+			 * narrow down what segments inside the range to search. We already know that everything stored in the
+			 * timeframe started in the timeframe.
+			 */
+			defaultTimeIndexConditionOrGroup.addIndexCondition(new AllSegmentsInRangeAcceptingIndexCondition<>(collection, timeRange));
+			
+			indexConditionGroups.add(defaultTimeIndexConditionOrGroup);
+			
+			//The indices will find the right segments to search, but not all keys in the segments will match the target range.
+			keyConditions.add(key -> key.isInRange(timeRange.getStart(), timeRange.getEnd()));
+			
+			//Let the index conditions limit where we start searching from
+			min = Long.MIN_VALUE;
 		}
-		
-		Range timeRange = getRange();
-		SegmentPathManager pm = collection.getSegmentManager().getPathManager();
-		
-		long startSegmentGroupingNumber = pm.getSegmentStartGroupingNumber(timeRange.getStart());
-		
-		QueryIndexConditionGroup<T> defaultTimeIndexConditionOrGroup = new QueryIndexConditionGroup<>(false);
-		
-		/*
-		 * Utilize the time segments index to find all records that overlap the start segment. This will find
-		 * all records that started before the start segment and ended during or after the start segment.
-		 */
-		defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isEqualTo(startSegmentGroupingNumber));
-		
-		/*
-		 * Or with the all segments in range accepting index condition since it doesn't really save time trying to 
-		 * narrow down what segments inside the range to search. We already know that everything stored in the
-		 * timeframe started in the timeframe.
-		 */
-		defaultTimeIndexConditionOrGroup.addIndexCondition(new AllSegmentsInRangeAcceptingIndexCondition<>(collection, timeRange));
-		
-		indexConditionGroups.add(defaultTimeIndexConditionOrGroup);
-		
-		//The indices will find the right segments to search, but not all keys in the segments will match the target range.
-		keyConditions.add(key -> key.isInRange(timeRange.getStart(), timeRange.getEnd()));
-		
-		//Let the index conditions limit where we start searching from
-		min = Long.MIN_VALUE;
 	}
 
-	private Optional<Set<Range>> getSegmentRangesToInclude() {
-		Set<Range> segmentRangesToInclude = new HashSet<>();
+	private Optional<IncludedSegmentRangeInfo> getSegmentRangeInfoToInclude() {
+		IncludedSegmentRangeInfo segmentRangeInfoToInclude = new IncludedSegmentRangeInfo();
 		
 		ReadableSegmentManager<T> segmentManager = collection.getSegmentManager();
 		SegmentPathManager pathManager = segmentManager.getPathManager();
+		
+		Range queryTimeframe = new Range(min, max);
+		Range firstSegmentRangeInQueryTimeframe = segmentManager.toRange(pathManager.getSegmentPath(min));
 		
 		for(BlueSimpleSet<BlueKey> keysToInclude : keySetsToInclude) {
 			try(BlueSimpleIterator<BlueKey> keysIterator = keysToInclude.iterator()) {
 				while(keysIterator.hasNext()) {
 					BlueKey key = keysIterator.next();
-					Path segmentPath = pathManager.getSegmentPath(key);
-					segmentRangesToInclude.add(segmentManager.toRange(segmentPath));
+					if(key.isInRange(queryTimeframe.getStart(), queryTimeframe.getEnd())) {
+						Range segmentRangeContainingKey = segmentManager.toRange(pathManager.getSegmentPath(key.getGroupingNumber()));
+						if(!collection.utilizesDefaultTimeIndex() && segmentRangeContainingKey.getEnd() < firstSegmentRangeInQueryTimeframe.getStart()) {
+							/*
+							 * If this is a version 1 collection, the key overlaps the query timeframe but starts before
+							 * the query timeframe, then the system will want to find that record in the pre-segment
+							 * file of the first segment in the query timeframe. 
+							 */
+							segmentRangeInfoToInclude.addIncludedSegmentRangeInfo(firstSegmentRangeInQueryTimeframe, key.getGroupingNumber());
+						} else {
+							segmentRangeInfoToInclude.addIncludedSegmentRangeInfo(segmentRangeContainingKey, key.getGroupingNumber());
+						}
+					}
 				}
 			}
 		}
 		
-		if(segmentRangesToInclude.isEmpty()) {
+		if(segmentRangeInfoToInclude.isEmpty()) {
 			return Optional.empty();
 		} else {
-			return Optional.of(segmentRangesToInclude);
+			return Optional.of(segmentRangeInfoToInclude);
 		}
 	}
 

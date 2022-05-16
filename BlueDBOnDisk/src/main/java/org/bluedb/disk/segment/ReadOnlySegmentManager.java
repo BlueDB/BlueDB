@@ -4,10 +4,10 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.file.ReadOnlyFileManager;
 import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
 
@@ -44,19 +44,19 @@ public class ReadOnlySegmentManager<T extends Serializable> extends ReadableSegm
 	}
 
 	@Override
-	public List<ReadOnlySegment<T>> getExistingSegments(Range range, Optional<Set<Range>> segmentRangesToInclude) {
+	public List<ReadOnlySegment<T>> getExistingSegments(Range range, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) {
 		return pathManager.getExistingSegmentFiles(range).stream()
 				.map((f) -> (toSegment(f.toPath())))
-				.filter(s -> !segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().contains(s.getRange()))
+				.filter(s -> !includedSegmentRangeInfo.isPresent() || includedSegmentRangeInfo.get().containsSegment(s.getRange()))
 				.sorted()
 				.collect(Collectors.toList());
 	}
 
 	@Override
-	public List<Range> getExistingSegmentRanges(Range range, Optional<Set<Range>> segmentRangesToInclude) {
+	public List<Range> getExistingSegmentRanges(Range range, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) {
 		return pathManager.getExistingSegmentFiles(range).stream()
 				.map((f) -> (toRange(f.toPath())))
-				.filter(r -> !segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().contains(r))
+				.filter(r -> !includedSegmentRangeInfo.isPresent() || includedSegmentRangeInfo.get().containsSegment(r))
 				.sorted()
 				.collect(Collectors.toList());
 	}

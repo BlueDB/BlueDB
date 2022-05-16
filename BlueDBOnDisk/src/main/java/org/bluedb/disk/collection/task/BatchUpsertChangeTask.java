@@ -1,12 +1,10 @@
 package org.bluedb.disk.collection.task;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.bluedb.api.Condition;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
@@ -16,6 +14,7 @@ import org.bluedb.disk.IteratorWrapper;
 import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.file.FileUtils;
 import org.bluedb.disk.query.QueryIndexConditionGroup;
 import org.bluedb.disk.recovery.IndividualChange;
@@ -37,7 +36,7 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 	
 	private final Iterator<BlueKeyValuePair<T>> keyValuePairIterator;
 	
-	private final Set<Range> includedSegmentRanges = new HashSet<>();
+	private final IncludedSegmentRangeInfo includedSegmentRangeInfo = new IncludedSegmentRangeInfo();
 	private long minIncludedRangeTime = Long.MAX_VALUE;
 	private long maxIncludedRangeTime = Long.MIN_VALUE;
 	
@@ -85,13 +84,13 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 	}
 	
 	private IndividualChange<T> createInsertChangeAndUpdateIncludedSegmentInfo(BlueKeyValuePair<T> keyValuePair) {
-		Range rangeForKey = segmentManager.toRange(pathManager.getSegmentPath(keyValuePair.getKey()));
-		includedSegmentRanges.add(rangeForKey);
-		if(rangeForKey.getStart() < minIncludedRangeTime) {
-			minIncludedRangeTime = rangeForKey.getStart();
+		Range segmentRangeForKey = segmentManager.toRange(pathManager.getSegmentPath(keyValuePair.getKey()));
+		includedSegmentRangeInfo.addIncludedSegmentRangeInfo(segmentRangeForKey, keyValuePair.getKey().getGroupingNumber());
+		if(segmentRangeForKey.getStart() < minIncludedRangeTime) {
+			minIncludedRangeTime = segmentRangeForKey.getStart();
 		}
-		if(rangeForKey.getEnd() > maxIncludedRangeTime) {
-			maxIncludedRangeTime = rangeForKey.getEnd();
+		if(segmentRangeForKey.getEnd() > maxIncludedRangeTime) {
+			maxIncludedRangeTime = segmentRangeForKey.getEnd();
 		}
 		
 		return IndividualChange.createInsertChange(keyValuePair);
@@ -109,7 +108,7 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 		List<Condition<T>> objectConditions = new LinkedList<>();
 		List<Condition<BlueKey>> keyConditions = new LinkedList<>();
 		
-		return new CollectionEntityIterator<T>(segmentManager, range, true, indexConditionGroups, objectConditions, keyConditions, Optional.of(includedSegmentRanges));
+		return new CollectionEntityIterator<T>(segmentManager, range, true, indexConditionGroups, objectConditions, keyConditions, Optional.of(includedSegmentRangeInfo));
 	}
 	
 	private IndividualChange<T> findMatchingEntityAndMapInsertToUpdateIfSuccessful(CollectionEntityIterator<T> entitiesInRangeIterator, IndividualChange<T> insertChange) {

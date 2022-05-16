@@ -18,6 +18,9 @@ public interface BlueTimeCollectionBuilder<K extends BlueKey, V extends Serializ
 	@Override
 	BlueTimeCollectionBuilder<K, V> withSegmentSize(SegmentSize<K> segmentSize) throws BlueDbException;
 
+	@Override
+	BlueTimeCollectionBuilder<K, V> withCollectionVersion(BlueCollectionVersion version);
+
 	/**
 	 * @return the existing {@link BlueTimeCollection} or else builds a new one if none exists
 	 * @throws BlueDbException if any problems are encountered, such as the collection already existing with a different type 

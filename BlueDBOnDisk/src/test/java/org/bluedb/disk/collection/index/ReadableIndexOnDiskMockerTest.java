@@ -6,11 +6,9 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bluedb.api.CloseableIterator;
@@ -21,6 +19,7 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.TestSegmentRangeCalculator;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
@@ -92,9 +91,12 @@ public class ReadableIndexOnDiskMockerTest {
 	
 	@Test
 	public void testGetEntities_customSegmentRangesToInclude() {
-		Optional<Set<Range>> segmentRangesToInclude = Optional.of(new HashSet<Range>(Arrays.asList(new Range(2147483650L, 2147483659L), new Range(2147483670L, 2147483679L))));
+		Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo = Optional.of(new IncludedSegmentRangeInfo());
+		includedSegmentRangeInfo.get().addIncludedSegmentRangeInfo(new Range(2147483650L, 2147483659L), new Range(2147483650L, 2147483659L));
+		includedSegmentRangeInfo.get().addIncludedSegmentRangeInfo(new Range(2147483670L, 2147483679L), new Range(2147483670L, 2147483679L));
+		
 		assertEquals(toIndexEntityList(entity1, entity2, entity5, entity6, entity7), 
-				toList(indexMocker.getIndex().getEntities(maxRange, new LinkedList<>(), new LinkedList<>(), segmentRangesToInclude)));
+				toList(indexMocker.getIndex().getEntities(maxRange, new LinkedList<>(), new LinkedList<>(), includedSegmentRangeInfo)));
 	}
 	
 	@Test

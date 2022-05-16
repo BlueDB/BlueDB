@@ -13,7 +13,9 @@ import java.util.Set;
 import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
+import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
 import org.bluedb.disk.query.QueryIndexConditionGroup;
 import org.bluedb.disk.segment.Range;
@@ -210,6 +212,16 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 		insertAtTimeFrame(segmentSize * 2, segmentSize * 2 + 1, valueInThirdSegment);
 		insertAtTimeFrame(segmentSize * 3, segmentSize * 3 + 1, valueInFourthSegment);
 		
+		long maxTimeToAllow = segmentSize * 3 + 1;
+		TestValue ignoredValue = new TestValue("ignored)");
+		insertAtTimeFrame(maxTimeToAllow + 1, maxTimeToAllow + 2, ignoredValue);
+		
+		IncludedSegmentRangeInfo firstThirdAndFourthRangesIncludedSegmentInfo = createFullIncludedSegmentInfoForRanges(firstThirdAndFourthRanges, maxTimeToAllow);
+		IncludedSegmentRangeInfo firstAndFourthRangesIncludedSegmentInfo = createFullIncludedSegmentInfoForRanges(firstAndFourthRanges, maxTimeToAllow);
+		IncludedSegmentRangeInfo fourthRangeOnlyIncludedSegmentInfo = createFullIncludedSegmentInfoForRanges(fourthRangeOnly, maxTimeToAllow);
+		IncludedSegmentRangeInfo firstAndThirdRangesIncludedSegmentInfo = createFullIncludedSegmentInfoForRanges(firstAndThirdRanges, maxTimeToAllow);
+		IncludedSegmentRangeInfo thirdAndFourthRangesIncludedSegmentInfo = createFullIncludedSegmentInfoForRanges(thirdAndFourthRanges, maxTimeToAllow);
+		
 		List<TestValue> valuesExpectedInFourthSegment = Arrays.asList(valueInFourthSegment);
 		List<TestValue> valuesExpectedInFirstAndThirdSegment = Arrays.asList(valueInFirstSegment, valueInFirstAndSecondSegments, valueInThirdSegment);
 		List<TestValue> valuesExpectedInThirdAndFourthSegment = Arrays.asList(valueInThirdSegment, valueInFourthSegment);
@@ -217,38 +229,38 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 		List<TestValue> valuesExpectedInFirstThirdAndFourthSegment = Arrays.asList(valueInFirstSegment, valueInFirstAndSecondSegments, valueInThirdSegment, valueInFourthSegment);
 
 		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingNullRanges = Mockito.mock(OnDiskIndexCondition.class);
-		Mockito.doReturn(null).when(indexConditionSpecifyingNullRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(null).when(indexConditionSpecifyingNullRanges).getSegmentRangeInfoToIncludeInCollectionQuery();
 		Mockito.doReturn(true).when(indexConditionSpecifyingNullRanges).test(Mockito.any());
 		
 		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingFirstThirdAndFourthRanges = Mockito.mock(OnDiskIndexCondition.class);
-		Mockito.doReturn(firstThirdAndFourthRanges).when(indexConditionSpecifyingFirstThirdAndFourthRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(firstThirdAndFourthRangesIncludedSegmentInfo).when(indexConditionSpecifyingFirstThirdAndFourthRanges).getSegmentRangeInfoToIncludeInCollectionQuery();
 		Mockito.doReturn(true).when(indexConditionSpecifyingFirstThirdAndFourthRanges).test(Mockito.any());
 		
 		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingFirstAndFourthRanges = Mockito.mock(OnDiskIndexCondition.class);
-		Mockito.doReturn(firstAndFourthRanges).when(indexConditionSpecifyingFirstAndFourthRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(firstAndFourthRangesIncludedSegmentInfo).when(indexConditionSpecifyingFirstAndFourthRanges).getSegmentRangeInfoToIncludeInCollectionQuery();
 		Mockito.doReturn(true).when(indexConditionSpecifyingFirstAndFourthRanges).test(Mockito.any());
 		
 		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingFirstAndThirdRanges = Mockito.mock(OnDiskIndexCondition.class);
-		Mockito.doReturn(firstAndThirdRanges).when(indexConditionSpecifyingFirstAndThirdRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(firstAndThirdRangesIncludedSegmentInfo).when(indexConditionSpecifyingFirstAndThirdRanges).getSegmentRangeInfoToIncludeInCollectionQuery();
 		Mockito.doReturn(true).when(indexConditionSpecifyingFirstAndThirdRanges).test(Mockito.any());
 		
 		OnDiskIndexCondition<?, TestValue> indexConditionSpecifyingThirdAndFourthRanges = Mockito.mock(OnDiskIndexCondition.class);
-		Mockito.doReturn(thirdAndFourthRanges).when(indexConditionSpecifyingThirdAndFourthRanges).getSegmentRangesToIncludeInCollectionQuery();
+		Mockito.doReturn(thirdAndFourthRangesIncludedSegmentInfo).when(indexConditionSpecifyingThirdAndFourthRanges).getSegmentRangeInfoToIncludeInCollectionQuery();
 		Mockito.doReturn(true).when(indexConditionSpecifyingThirdAndFourthRanges).test(Mockito.any());
 		
 		//Verify ranges to include works and isn't thrown off if the index condition returns null for its ranges to include
 		List<QueryIndexConditionGroup<TestValue>> indexConditionGroups = Arrays.asList(
 				new QueryIndexConditionGroup<>(true, Arrays.asList(
 						indexConditionSpecifyingNullRanges)));
-		Optional<Set<Range>> rangesToInclude = Optional.of(fourthRangeOnly);
-		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo = Optional.of(fourthRangeOnlyIncludedSegmentInfo);
+		CollectionEntityIterator<TestValue> collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		List<TestValue> results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInFourthSegment, results);
 		
 		//Verify first and third index works on its own
 		indexConditionGroups = Arrays.asList(new QueryIndexConditionGroup<>(true, Arrays.asList(indexConditionSpecifyingFirstAndThirdRanges)));
-		rangesToInclude = Optional.empty();
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInFirstAndThirdSegment, results);
 		
@@ -256,8 +268,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 		indexConditionGroups = Arrays.asList(
 				new QueryIndexConditionGroup<>(true, Arrays.asList(
 						indexConditionSpecifyingThirdAndFourthRanges)));
-		rangesToInclude = Optional.empty();
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInThirdAndFourthSegment, results);
 		
@@ -266,8 +278,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 				new QueryIndexConditionGroup<>(true, Arrays.asList(
 						indexConditionSpecifyingFirstAndThirdRanges, 
 						indexConditionSpecifyingThirdAndFourthRanges)));
-		rangesToInclude = Optional.empty();
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInThirdSegment, results);
 		
@@ -277,8 +289,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 						indexConditionSpecifyingFirstAndThirdRanges)), 
 				new QueryIndexConditionGroup<>(true, Arrays.asList(
 						indexConditionSpecifyingThirdAndFourthRanges)));
-		rangesToInclude = Optional.empty();
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInThirdSegment, results);
 		
@@ -287,8 +299,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 				new QueryIndexConditionGroup<>(false, Arrays.asList(
 						indexConditionSpecifyingFirstAndThirdRanges, 
 						indexConditionSpecifyingThirdAndFourthRanges)));
-		rangesToInclude = Optional.empty();
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInFirstThirdAndFourthSegment, results);
 		
@@ -298,8 +310,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 						indexConditionSpecifyingFirstAndThirdRanges, 
 						indexConditionSpecifyingThirdAndFourthRanges)), 
 				new QueryIndexConditionGroup<>(true, Arrays.asList(indexConditionSpecifyingFirstAndThirdRanges)));
-		rangesToInclude = Optional.empty();
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInFirstAndThirdSegment, results);
 		
@@ -308,8 +320,8 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 				new QueryIndexConditionGroup<>(false, Arrays.asList(
 						indexConditionSpecifyingFirstAndThirdRanges, 
 						indexConditionSpecifyingThirdAndFourthRanges)));
-		rangesToInclude = Optional.of(firstAndThirdRanges);
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.of(firstAndThirdRangesIncludedSegmentInfo);
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(valuesExpectedInFirstAndThirdSegment, results); //Fourth range gets excluded due to rangesToInclude value
 		
@@ -318,9 +330,20 @@ public class CollectionEntityIteratorTest extends BlueDbDiskTestBase {
 		indexConditionGroups = Arrays.asList(
 				new QueryIndexConditionGroup<>(true, Arrays.asList(
 						indexConditionSpecifyingFirstThirdAndFourthRanges)));
-		rangesToInclude = Optional.empty();
-		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), rangesToInclude);
+		includedSegmentRangeInfo = Optional.empty();
+		collectionIterator = new CollectionEntityIterator<>(getTimeSegmentManager(), Range.createMaxRange(), false, indexConditionGroups, new ArrayList<>(), new ArrayList<>(), includedSegmentRangeInfo);
 		results = toValueList(collectionIterator);
 		assertEquals(Arrays.asList(), results);
+	}
+
+	private IncludedSegmentRangeInfo createFullIncludedSegmentInfoForRanges(Set<Range> ranges, long maxTimeToAllow) {
+		IncludedSegmentRangeInfo includedSegmentInfo = new IncludedSegmentRangeInfo();
+		StreamUtils.stream(ranges)
+			.forEach(range -> { 
+				long groupingNumberStart = Math.min(range.getStart(), maxTimeToAllow);
+				long groupingNumberEnd = Math.min(range.getEnd(), maxTimeToAllow);
+				includedSegmentInfo.addIncludedSegmentRangeInfo(range, new Range(groupingNumberStart, groupingNumberEnd));
+			});
+		return includedSegmentInfo;
 	}
 }

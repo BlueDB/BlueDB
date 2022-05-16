@@ -147,7 +147,7 @@ public class OnDiskUUIDIndexConditionTest {
 	@Test
 	public void test_allEntitiesContainingIndexValueMatchByDefault() {
 		assertTestMethod(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8);
-		assertEquals(toRangeSet(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -155,7 +155,7 @@ public class OnDiskUUIDIndexConditionTest {
 		indexCondition.isIn(new HashSet<UUID>(Arrays.asList(new UUID(10,10), new UUID(24,24), new UUID(29,29))));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
-		assertEquals(toRangeSet(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -164,7 +164,7 @@ public class OnDiskUUIDIndexConditionTest {
 		indexCondition.meets(value -> valuesToMatch.contains(value));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
-		assertEquals(toRangeSet(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -172,7 +172,7 @@ public class OnDiskUUIDIndexConditionTest {
 		indexCondition.isEqualTo(new UUID(24,24));
 		
 		assertTestMethod(entity5, entity6);
-		assertEquals(toRangeSet(entity5, entity6), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	private ValueKey toIndexKey(BlueEntity<TestValue> collectionEntity) {
@@ -198,10 +198,16 @@ public class OnDiskUUIDIndexConditionTest {
 	}
 
 	@SafeVarargs
-	private final Set<Range> toRangeSet(BlueEntity<TestValue>...entities) {
-		return StreamUtils.stream(entities)
-			.map(entity -> segmentRangeCalculator.calculateRange(entity.getKey().getGroupingNumber()))
-			.collect(Collectors.toCollection(HashSet::new));
+	private final IncludedSegmentRangeInfo toIncludedSegmentRangeInfo(BlueEntity<TestValue>...entities) {
+		IncludedSegmentRangeInfo includedSegmentRangeInfo = new IncludedSegmentRangeInfo();
+		
+		StreamUtils.stream(entities)
+			.forEach(entity -> {
+				Range segmentRange = segmentRangeCalculator.calculateRange(entity.getKey().getGroupingNumber());
+				includedSegmentRangeInfo.addIncludedSegmentRangeInfo(segmentRange, entity.getKey().getGroupingNumber());
+			});
+		
+		return includedSegmentRangeInfo;
 	}
 
 	@SafeVarargs

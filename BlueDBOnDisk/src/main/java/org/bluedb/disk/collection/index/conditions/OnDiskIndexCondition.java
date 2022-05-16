@@ -2,11 +2,9 @@ package org.bluedb.disk.collection.index.conditions;
 
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.util.Set;
 
 import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 
 public interface OnDiskIndexCondition<I extends Serializable, T extends Serializable> extends BlueIndexCondition<I> {
@@ -19,7 +17,7 @@ public interface OnDiskIndexCondition<I extends Serializable, T extends Serializ
 	
 	public Path getIndexPath(); 
 	
-	public Set<Range> getSegmentRangesToIncludeInCollectionQuery();
+	public IncludedSegmentRangeInfo getSegmentRangeInfoToIncludeInCollectionQuery();
 	
 	public boolean test(BlueEntity<T> entity);
 	

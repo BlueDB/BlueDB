@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.Condition;
@@ -22,6 +21,7 @@ import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.collection.index.ReadableIndexOnDisk;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.collection.index.conditions.OnDiskIndexCondition;
 import org.bluedb.disk.collection.index.conditions.dummy.OnDiskDummyIndexCondition;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
@@ -100,9 +100,9 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
-	public List<BlueEntity<T>> findMatches(Range range, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<Set<Range>> segmentRangesToInclude) throws BlueDbException {
+	public List<BlueEntity<T>> findMatches(Range range, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
-		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, indexConditionGroups, conditions, keyConditions, segmentRangesToInclude)) {
+		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, indexConditionGroups, conditions, keyConditions, includedSegmentRangeInfo)) {
 			while (iterator.hasNext()) {
 				BlueEntity<T> entity = iterator.next();
 				results.add(entity);

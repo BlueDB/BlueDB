@@ -271,7 +271,7 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		List<TestValue> valuesFromFirstSegment = toValueList(firstSegmentIterator);
 		SegmentEntityIterator<TestValue> secondSegmentIterator = secondSegment.getIterator(0, segmentSize * 2 - 1);
 		List<TestValue> valuesFromSecondSegment = toValueList(secondSegmentIterator);
-		SegmentEntityIterator<TestValue> secondSegmentIteratorOnly = secondSegment.getIterator(segmentSize - 1, 0, segmentSize * 2 - 1);
+		SegmentEntityIterator<TestValue> secondSegmentIteratorOnly = secondSegment.getIterator(segmentSize - 1, 0, segmentSize * 2 - 1, false);
 		List<TestValue> valuesFromSecondSegmentOnly = toValueList(secondSegmentIteratorOnly);
 
 		assertEquals(valuesExpectedInFirstSegment, valuesFromFirstSegment);
@@ -295,15 +295,15 @@ public class SegmentEntityIteratorTest extends BlueDbDiskTestBase {
 		assertEquals(n, segments.size());
 
 		for (ReadWriteSegment<String> segment: segments) {
-			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
+			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE, false);
 			List<String> strings = toValueList(iterator);
 			assertEquals(1, strings.size());
 		}
 		for (ReadWriteSegment<String> segment: segments) {
-			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
+			SegmentEntityIterator<String> iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE, false);
 			List<String> strings = toValueList(iterator);
 			if (strings.size() < 1) {
-				iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE);
+				iterator = segment.getIterator(segment.getRange().getStart() - 1, Long.MIN_VALUE, Long.MAX_VALUE, false);
 				toValueList(iterator);
 			}
 		}

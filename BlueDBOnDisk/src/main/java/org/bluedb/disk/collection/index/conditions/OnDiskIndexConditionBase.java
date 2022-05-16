@@ -3,12 +3,10 @@ package org.bluedb.disk.collection.index.conditions;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.security.InvalidParameterException;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
@@ -107,7 +105,8 @@ public abstract class OnDiskIndexConditionBase<I extends Serializable, T extends
 	}
 
 	@Override
-	public Set<Range> getSegmentRangesToIncludeInCollectionQuery() {
+	public IncludedSegmentRangeInfo getSegmentRangeInfoToIncludeInCollectionQuery() {
+		IncludedSegmentRangeInfo includedCollectionSegmentRangeInfo = new IncludedSegmentRangeInfo();
 		
 		List<Condition<BlueKey>> indexKeyConditions = new LinkedList<>();
 		indexKeyConditions.add(this::doesIndexKeyMatch);
@@ -115,19 +114,19 @@ public abstract class OnDiskIndexConditionBase<I extends Serializable, T extends
 		//We're looking at the index key, not the key of the original object
 		List<Condition<BlueKey>> objectConditions = new LinkedList<>();
 		
-		Optional<Set<Range>> indexSegmentRangesToInclude = getIndexSegmentRangesToInclude();
-		
-		Set<Range> segmentRangesToInclude = new HashSet<>();
-		try (CloseableIterator<BlueEntity<BlueKey>> entityIterator = index.getEntities(range, indexKeyConditions, objectConditions, indexSegmentRangesToInclude)) {
+		Optional<IncludedSegmentRangeInfo> includedIndexSegmentRangeInfo = getIndexSegmentRangesToInclude();
+		try (CloseableIterator<BlueEntity<BlueKey>> entityIterator = index.getEntities(range, indexKeyConditions, objectConditions, includedIndexSegmentRangeInfo)) {
 			while (entityIterator.hasNext()) {
 				BlueKey key = entityIterator.next().getKey();
 				if(key instanceof IndexCompositeKey) {
 					IndexCompositeKey<?> indexCompositeKey = (IndexCompositeKey<?>) key;
-					segmentRangesToInclude.add(index.getCollectionSegmentRangeForValueKey(indexCompositeKey.getValueKey()));
+					BlueKey valueKey = indexCompositeKey.getValueKey();
+					Range collectionSegmentRange = index.getCollectionSegmentRangeForValueKey(valueKey);
+					includedCollectionSegmentRangeInfo.addIncludedSegmentRangeInfo(collectionSegmentRange, valueKey.getGroupingNumber());
 				}
 			}
 		}
-		return segmentRangesToInclude;
+		return includedCollectionSegmentRangeInfo;
 	}
 	
 	private boolean doesIndexKeyMatch(BlueKey key) {
@@ -160,24 +159,26 @@ public abstract class OnDiskIndexConditionBase<I extends Serializable, T extends
 	
 	protected abstract I extractIndexValueFromKey(BlueKey indexKey);
 
-	private Optional<Set<Range>> getIndexSegmentRangesToInclude() {
-		Set<Range> segmentRangesToInclude = new HashSet<>();
+	private Optional<IncludedSegmentRangeInfo> getIndexSegmentRangesToInclude() {
+		IncludedSegmentRangeInfo includedSegmentRangeInfo = new IncludedSegmentRangeInfo();
 		
 		for(BlueSimpleSet<I> validValueSet : validValueSets) {
 			try(BlueSimpleIterator<I> validValueIterator = validValueSet.iterator()) {
 				while(validValueIterator.hasNext()) {
 					I validValue = validValueIterator.next();
 					if(validValue != null) {
-						segmentRangesToInclude.add(index.getIndexSegmentRangeForIndexKey(createKeyForIndexValue(validValue)));
+						ValueKey keyForIndexValue = createKeyForIndexValue(validValue);
+						Range indexSegmentRange = index.getIndexSegmentRangeForIndexKey(keyForIndexValue);
+						includedSegmentRangeInfo.addIncludedSegmentRangeInfo(indexSegmentRange, keyForIndexValue.getGroupingNumber());
 					}
 				}
 			}
 		}
 		
-		if(segmentRangesToInclude.isEmpty()) {
+		if(includedSegmentRangeInfo.isEmpty()) {
 			return Optional.empty();
 		} else {
-			return Optional.of(segmentRangesToInclude);
+			return Optional.of(includedSegmentRangeInfo);
 		}
 	}
 	

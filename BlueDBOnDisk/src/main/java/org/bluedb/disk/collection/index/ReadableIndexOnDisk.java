@@ -28,6 +28,7 @@ import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.LastEntityFinder;
 import org.bluedb.disk.collection.ReadableCollectionOnDisk;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.collection.index.conditions.OnDiskIntegerIndexCondition;
 import org.bluedb.disk.collection.index.conditions.OnDiskLongIndexCondition;
 import org.bluedb.disk.collection.index.conditions.OnDiskStringIndexCondition;
@@ -114,10 +115,10 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 		indexKeyConditions.add(key -> {
 			return targetIndexKey.equals(((IndexCompositeKey<?>)key).getIndexKey());	
 		});
-		Optional<Set<Range>> segmentRangesToInclude = Optional.empty();
+		Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo = Optional.empty();
 		
 		Set<BlueKey> keys = new HashSet<>();
-		try (CloseableIterator<BlueEntity<BlueKey>> entityIterator = getEntities(range, indexKeyConditions, valueKeyConditions, segmentRangesToInclude)) {
+		try (CloseableIterator<BlueEntity<BlueKey>> entityIterator = getEntities(range, indexKeyConditions, valueKeyConditions, includedSegmentRangeInfo)) {
 			while (entityIterator.hasNext()) {
 				@SuppressWarnings("unchecked")
 				IndexCompositeKey<I> indexKey = (IndexCompositeKey<I>) entityIterator.next().getKey();
@@ -127,8 +128,8 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 		return keys;
 	}
 
-	public CloseableIterator<BlueEntity<BlueKey>> getEntities(Range range, List<Condition<BlueKey>> indexKeyConditions, List<Condition<BlueKey>> valueKeyConditions, Optional<Set<Range>> segmentRangesToInclude) {
-		return new CollectionEntityIterator<BlueKey>(getSegmentManager(), range, true, new LinkedList<>(), valueKeyConditions, indexKeyConditions, segmentRangesToInclude);
+	public CloseableIterator<BlueEntity<BlueKey>> getEntities(Range range, List<Condition<BlueKey>> indexKeyConditions, List<Condition<BlueKey>> valueKeyConditions, Optional<IncludedSegmentRangeInfo> includedIndexSegmentRangeInfo) {
+		return new CollectionEntityIterator<BlueKey>(getSegmentManager(), range, true, new LinkedList<>(), valueKeyConditions, indexKeyConditions, includedIndexSegmentRangeInfo);
 	}
 
 	@Override

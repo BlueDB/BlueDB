@@ -51,6 +51,7 @@ public class WhereKeyIsInIntegrationTest {
 			Set<BlueKey> keySet4 = new HashSet<>(Arrays.asList(keys.get(4)));
 			Set<BlueKey> keySet5 = new HashSet<>(Arrays.asList(keys.get(5)));
 			Set<BlueKey> keySet1_5 = new HashSet<>(Arrays.asList(keys.get(1), keys.get(5)));
+			Set<BlueKey> keySet2_3 = new HashSet<>(Arrays.asList(keys.get(2), keys.get(3)));
 			Set<BlueKey> keySet2_4 = new HashSet<>(Arrays.asList(keys.get(2), keys.get(4)));
 			Set<BlueKey> keySet0_3 = new HashSet<>(Arrays.asList(keys.get(0), keys.get(3)));
 			Set<BlueKey> keySet0_3_5 = new HashSet<>(Arrays.asList(keys.get(0), keys.get(3), keys.get(5)));
@@ -123,6 +124,22 @@ public class WhereKeyIsInIntegrationTest {
 					.whereKeyIsIn(keySet0_3_5)
 					.getList();
 			assertQueryResults(queryResults, 0, 0, 3, 5);
+			
+			//Verify that we can find keys that start before the timeframe but do overlap it.
+			queryResults = timeCollection.query()
+					.whereKeyIsIn(keySet2_3)
+					.afterOrAtTime(sevenHoursAgo)
+					.beforeTime(now)
+					.getList();
+			assertQueryResults(queryResults, 0, 2, 3);
+			
+			//Verify that keys in the whereKeyIsIn that don't match other criteria are still ignored
+			queryResults = timeCollection.query()
+					.whereKeyIsIn(keySet2_3)
+					.afterOrAtTime(threeHoursAgo)
+					.beforeTime(now)
+					.getList();
+			assertQueryResults(queryResults, 0, 3);
 		}
 	}
 

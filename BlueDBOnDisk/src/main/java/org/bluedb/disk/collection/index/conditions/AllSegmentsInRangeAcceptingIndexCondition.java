@@ -1,10 +1,8 @@
 package org.bluedb.disk.collection.index.conditions;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.conditions.BlueIndexCondition;
@@ -29,9 +27,13 @@ public class AllSegmentsInRangeAcceptingIndexCondition<I extends Serializable, T
 	}
 	
 	@Override
-	public Set<Range> getSegmentRangesToIncludeInCollectionQuery() {
-		return StreamUtils.stream(collectionSegmentManager.getExistingSegmentRanges(groupingNumberRangeToAccept, Optional.empty()))
-				.collect(Collectors.toCollection(HashSet::new));
+	public IncludedSegmentRangeInfo getSegmentRangeInfoToIncludeInCollectionQuery() {
+		IncludedSegmentRangeInfo includedSegmentRangeInfo = new IncludedSegmentRangeInfo();
+		StreamUtils.stream(collectionSegmentManager.getExistingSegmentRanges(groupingNumberRangeToAccept, Optional.empty()))
+			.forEach(segmentRange -> { 
+				includedSegmentRangeInfo.addIncludedSegmentRangeInfo(segmentRange, segmentRange);
+			});
+		return includedSegmentRangeInfo;
 	}
 	
 	@Override

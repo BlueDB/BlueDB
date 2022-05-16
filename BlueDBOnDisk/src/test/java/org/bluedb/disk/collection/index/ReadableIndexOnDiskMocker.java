@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 
 import org.bluedb.TestCloseableIterator;
@@ -14,6 +13,7 @@ import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.mockito.Mock;
@@ -87,14 +87,14 @@ public class ReadableIndexOnDiskMocker<I extends ValueKey, T extends Serializabl
 			Range range = (Range) invocation.getArguments()[0];
 			List<Condition<BlueKey>> indexKeyConditions = (List<Condition<BlueKey>>) invocation.getArguments()[1];
 			List<Condition<BlueKey>> objectConditions = (List<Condition<BlueKey>>) invocation.getArguments()[2];
-			Optional<Set<Range>> segmentRangesToInclude = (Optional<Set<Range>>) invocation.getArguments()[3];
+			Optional<IncludedSegmentRangeInfo> segmentRangesToInclude = (Optional<IncludedSegmentRangeInfo>) invocation.getArguments()[3];
 			
 			List<BlueEntity<BlueKey>> matchingEntities = new LinkedList<>();
 			
 			for(Entry<IndexCompositeKey<BlueKey>, BlueKey> entry : indexData.entrySet()) {
 				long groupingNumber = entry.getKey().getGroupingNumber();
 				if(range.containsInclusive(groupingNumber) &&
-						(!segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().stream().anyMatch(rangeToInclude -> rangeToInclude.containsInclusive(groupingNumber))) &&
+						(!segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().getSegmentRangeGroupingNumberRangePairs().stream().anyMatch(rangeEntry -> rangeEntry.getKey().containsInclusive(groupingNumber) && rangeEntry.getValue().containsInclusive(groupingNumber))) &&
 						indexKeyConditions.stream().allMatch(condition -> condition.test(entry.getKey())) &&
 						objectConditions.stream().allMatch(condition -> condition.test(entry.getValue()))) {
 					matchingEntities.add(new BlueEntity<BlueKey>(entry.getKey(), entry.getValue()));

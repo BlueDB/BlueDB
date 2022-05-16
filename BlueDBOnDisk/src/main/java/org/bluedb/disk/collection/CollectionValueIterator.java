@@ -3,12 +3,12 @@ package org.bluedb.disk.collection;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.lock.AutoCloseCountdown;
 import org.bluedb.disk.query.QueryIndexConditionGroup;
 import org.bluedb.disk.segment.Range;
@@ -23,13 +23,13 @@ public class CollectionValueIterator<T extends Serializable> implements Closeabl
 	
 	private AtomicBoolean hasClosed = new AtomicBoolean(false);
 	
-	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
-		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, indexConditionGroups, objectConditions, keyConditions, segmentRangesToInclude);
+	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, boolean byStartTime, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, indexConditionGroups, objectConditions, keyConditions, includedSegmentRangeInfo);
 		timeoutCloser = new AutoCloseCountdown(this, TIMEOUT_DEFAULT_MILLIS);
 	}
 
-	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, long timeout, boolean byStartTime, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<Set<Range>> segmentRangesToInclude) {
-		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, indexConditionGroups, objectConditions, keyConditions, segmentRangesToInclude);
+	public CollectionValueIterator(ReadableSegmentManager<T> segmentManager, Range range, long timeout, boolean byStartTime, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> objectConditions, List<Condition<BlueKey>> keyConditions, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) {
+		entityIterator = new CollectionEntityIterator<T>(segmentManager, range, byStartTime, indexConditionGroups, objectConditions, keyConditions, includedSegmentRangeInfo);
 		timeoutCloser = new AutoCloseCountdown(this, timeout);
 	}
 

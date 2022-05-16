@@ -17,10 +17,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollectionVersion;
+import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
@@ -34,6 +36,7 @@ import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
+import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
@@ -573,5 +576,50 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		return collection.query()
 				.where(index.createIntegerIndexCondition().isEqualTo(targetIntegerKey.getId()))
 				.getList();
+	}
+	
+	@Test
+	public void test_query_whereKeyIsIn_version1IncludesPreSegmentRange() throws Exception {
+		/*
+		 * The where key is in method for version 1 collections needs to include pre-segment keys
+		 * in the first segment included range info.
+		 */
+		BlueTimeCollection<TestValue> timeCollection = db().getTimeCollectionBuilder("my-time-collection", TimeKey.class, TestValue.class)
+			.withCollectionVersion(BlueCollectionVersion.VERSION_1)
+			.build();
+		
+		long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
+		long now = System.currentTimeMillis();
+		long fourHoursAgo = now - oneHour*4;
+		long fiveHoursAgo = now - oneHour*5;
+		long sevenHoursAgo = now - oneHour*7;
+		long eightHoursAgo = now - oneHour*8;
+
+		ArrayList<BlueKey> keys = new ArrayList<>();
+		keys.add(new TimeFrameKey(0, eightHoursAgo + 10, fourHoursAgo));
+		keys.add(new TimeFrameKey(1, sevenHoursAgo, now));
+		
+		Map<BlueKey, TestValue> keyValuePairs = new HashMap<>();
+		for(int i = 0; i < keys.size(); i++) {
+			keyValuePairs.put(keys.get(i), new TestValue(String.valueOf(i), i));
+		}
+		
+		timeCollection.batchUpsert(keyValuePairs);
+		
+		List<TestValue> queryResults = timeCollection.query()
+				.whereKeyIsIn(new HashSet<>(Arrays.asList(keys.get(0), keys.get(1))))
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.getList();
+		assertQueryResults(queryResults, 0, 0, 1);
+	}
+
+	private void assertQueryResults(List<TestValue> actualValues, int cupcakeModifier, int...expectedValueIndicies) {
+		List<TestValue> expectedValues = new LinkedList<>();
+		for(int i = 0; i < expectedValueIndicies.length; i++) {
+			int expectedIndex = expectedValueIndicies[i];
+			expectedValues.add(new TestValue(String.valueOf(expectedIndex), expectedIndex + cupcakeModifier));
+		}
+		assertEquals(expectedValues, actualValues);
 	}
 }

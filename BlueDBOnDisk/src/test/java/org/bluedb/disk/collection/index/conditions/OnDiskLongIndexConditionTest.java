@@ -171,7 +171,7 @@ public class OnDiskLongIndexConditionTest {
 	@Test
 	public void test_allEntitiesContainingIndexValueMatchByDefault() {
 		assertTestMethod(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8);
-		assertEquals(toRangeSet(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -179,7 +179,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isIn(new HashSet<Long>(Arrays.asList(10L, 24L, 29L)));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
-		assertEquals(toRangeSet(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -188,7 +188,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.meets(value -> valuesToMatch.contains(value));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
-		assertEquals(toRangeSet(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -196,7 +196,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isInRange(10, 29);
 		
 		assertTestMethod(entity2, entity3, entity4, entity5, entity6, entity7);
-		assertEquals(toRangeSet(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity3, entity4, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -204,7 +204,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isEqualTo(24L);
 		
 		assertTestMethod(entity5, entity6);
-		assertEquals(toRangeSet(entity5, entity6), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -212,7 +212,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isLessThan(24);
 		
 		assertTestMethod(entity1, entity2, entity3, entity4);
-		assertEquals(toRangeSet(entity1, entity2, entity3, entity4), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -220,7 +220,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isLessThanOrEqualTo(24);
 		
 		assertTestMethod(entity1, entity2, entity3, entity4, entity5, entity6);
-		assertEquals(toRangeSet(entity1, entity2, entity3, entity4, entity5, entity6), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -228,7 +228,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isGreaterThan(24);
 		
 		assertTestMethod(entity7, entity8);
-		assertEquals(toRangeSet(entity7, entity8), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -236,7 +236,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isGreaterThanOrEqualTo(24);
 		
 		assertTestMethod(entity5, entity6, entity7, entity8);
-		assertEquals(toRangeSet(entity5, entity6, entity7, entity8), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6, entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
@@ -244,7 +244,7 @@ public class OnDiskLongIndexConditionTest {
 		indexCondition.isGreaterThan(10).isLessThan(24);
 		
 		assertTestMethod(entity3, entity4);
-		assertEquals(toRangeSet(entity3, entity4), indexCondition.getSegmentRangesToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity3, entity4), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	private ValueKey toIndexKey(BlueEntity<TestValue> collectionEntity) {
@@ -270,10 +270,16 @@ public class OnDiskLongIndexConditionTest {
 	}
 
 	@SafeVarargs
-	private final Set<Range> toRangeSet(BlueEntity<TestValue>...entities) {
-		return StreamUtils.stream(entities)
-			.map(entity -> segmentRangeCalculator.calculateRange(entity.getKey().getGroupingNumber()))
-			.collect(Collectors.toCollection(HashSet::new));
+	private final IncludedSegmentRangeInfo toIncludedSegmentRangeInfo(BlueEntity<TestValue>...entities) {
+		IncludedSegmentRangeInfo includedSegmentRangeInfo = new IncludedSegmentRangeInfo();
+		
+		StreamUtils.stream(entities)
+			.forEach(entity -> {
+				Range segmentRange = segmentRangeCalculator.calculateRange(entity.getKey().getGroupingNumber());
+				includedSegmentRangeInfo.addIncludedSegmentRangeInfo(segmentRange, entity.getKey().getGroupingNumber());
+			});
+		
+		return includedSegmentRangeInfo;
 	}
 
 	@SafeVarargs
