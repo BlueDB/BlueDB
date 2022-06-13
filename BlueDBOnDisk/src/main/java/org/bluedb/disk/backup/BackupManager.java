@@ -163,7 +163,7 @@ public class BackupManager {
 				boolean shouldSkipEncryptionForUnchangedData = EncryptionUtils.shouldWriterSkipEncryptionForUnchangedDataUsingRawBytes(input.getMetadata(), output.getMetadata());
 				while (input.hasNext()) {
 					BlueEntity<?> next = (BlueEntity<?>) input.next();
-					if (next.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
+					if (next.getKey().overlapsRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
 						if (shouldSkipEncryptionForUnchangedData) {
 							output.writeBytesAndForceSkipEncryption(input.getLastRawBytes());
 						} else {
@@ -232,7 +232,7 @@ public class BackupManager {
 
 	private boolean shouldCopyChange(Range includedTimeRange, Recoverable<?> change) {
 		if (change instanceof PendingChange) {
-			return ((PendingChange<?>) change).getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd());
+			return ((PendingChange<?>) change).getKey().overlapsRange(includedTimeRange.getStart(), includedTimeRange.getEnd());
 		}
 
 		return true; //We don't need to check rollups. Batch/Mass changes should filter themselves during the copy phase.

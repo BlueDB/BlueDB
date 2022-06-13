@@ -81,22 +81,14 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	}
 
 	/**
-	 * Returns true if this key's grouping number is before the range [min, max] exclusive, else false
-	 * @param min the minimum grouping number
-	 * @param max the maximum grouping number
-	 * @return true if this key's grouping number is before the range [min, max] exclusive, else false
-	 */
-	default boolean isBeforeRange(long min, long max) {
-		return getGroupingNumber() < min;
-	}
-
-	/**
-	 * Returns true if this key's grouping number is in the range [min, max] inclusive, else false
+	 * Returns true if this key overlaps the grouping number range [min, max] inclusive, else false.
+	 * This is the same as isInRange except for some time based keys that can start before the range
+	 * and still be considered active during the range. 
 	 * @param min the minimum grouping number
 	 * @param max the maximum grouping number
 	 * @return true if this key's grouping number is in the range [min, max] inclusive, else false
 	 */
-	default boolean isInRange(long min, long max) {
+	default boolean overlapsRange(long min, long max) {
 		return getGroupingNumber() >= min && getGroupingNumber() <= max;
 	}
 
@@ -108,6 +100,15 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	 */
 	default boolean isAfterRange(long min, long max) {
 		return getGroupingNumber() > max;
+	}
+
+	/**
+	 * Returns true if this key represents an active time based value. That means that it will be
+	 * considered overlapping with any range after its start time.
+	 * @return true if this key represents an active time based value.
+	 */
+	default boolean isActiveTimeKey() {
+		return false;
 	}
 
 	/**

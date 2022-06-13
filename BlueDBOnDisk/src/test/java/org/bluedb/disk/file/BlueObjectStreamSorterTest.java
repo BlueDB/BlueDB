@@ -136,8 +136,7 @@ public class BlueObjectStreamSorterTest {
 			if(i != nullIndex) {
 				BlueKey key = new TimeKey(0, i);
 				TestValue oldValue = new TestValue(String.valueOf(i), i);
-				TestValue newValue = new TestValue(String.valueOf(i), i+1);
-				unsortedChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
+				unsortedChangesList.add(IndividualChange.createUpdateChange(key, oldValue, value -> value.addCupcake(), serializer));
 			} else {
 				unsortedChangesList.add(null);
 			}
@@ -160,8 +159,7 @@ public class BlueObjectStreamSorterTest {
 			if(i != nullIndex) {
 				BlueKey key = new TimeKey(0, i);
 				TestValue oldValue = new TestValue(String.valueOf(i), i);
-				TestValue newValue = new TestValue(String.valueOf(i), i+1);
-				unsortedBatchChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
+				unsortedBatchChangesList.add(IndividualChange.createUpdateChange(key, oldValue, value -> value.addCupcake(), serializer));
 			} else {
 				unsortedBatchChangesList.add(null);
 			}
@@ -173,8 +171,7 @@ public class BlueObjectStreamSorterTest {
 			if(i != nullIndex) {
 				BlueKey key = new TimeKey(0, i);
 				TestValue oldValue = new TestValue(String.valueOf(i), i);
-				TestValue newValue = new TestValue(String.valueOf(i), i+1);
-				unsortedChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
+				unsortedChangesList.add(IndividualChange.createUpdateChange(key, oldValue, value -> value.addCupcake(), serializer));
 			} else {
 				unsortedChangesList.add(null);
 			}
@@ -200,8 +197,7 @@ public class BlueObjectStreamSorterTest {
 			if(i != nullIndex) {
 				BlueKey key = new TimeKey(0, i);
 				TestValue oldValue = new TestValue(String.valueOf(i), i);
-				TestValue newValue = new TestValue(String.valueOf(i), i+1);
-				unsortedChangesList.add(IndividualChange.createChange(key, oldValue, newValue));
+				unsortedChangesList.add(IndividualChange.createUpdateChange(key, oldValue, value -> value.addCupcake(), serializer));
 			} else {
 				unsortedChangesList.add(null);
 			}

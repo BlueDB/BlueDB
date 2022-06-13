@@ -1,6 +1,8 @@
 package org.bluedb.disk.recovery;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -9,6 +11,9 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.TestValue;
+import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
+import org.bluedb.disk.serialization.BlueSerializer;
+import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -16,12 +21,13 @@ public class SortedChangeIteratorTest {
 
 	@Test
 	public void test_iteration() throws BlueDbException {
+		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class[] {});
+		
 		List<IndividualChange<TestValue>> sortedChanges = new LinkedList<>();
 		for(int i = 0; i < 10; i++) {
 			BlueKey key = new TimeKey(i, i);
 			TestValue oldValue = new TestValue(String.valueOf(i), i);
-			TestValue newValue = new TestValue(String.valueOf(i), i+1);
-			sortedChanges.add(IndividualChange.createChange(key, oldValue, newValue));
+			sortedChanges.add(IndividualChange.createUpdateChange(key, oldValue, value -> value.addCupcake(), serializer));
 		}
 		
 		SortedChangeSupplier<TestValue> sortedChangeSupplier = new InMemorySortedChangeSupplier<TestValue>(sortedChanges);

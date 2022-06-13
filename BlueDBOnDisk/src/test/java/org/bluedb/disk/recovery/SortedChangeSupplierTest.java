@@ -37,14 +37,14 @@ public abstract class SortedChangeSupplierTest {
 	protected static final TestValue value7 = new TestValue("Sam", 7);
 	protected static final TestValue value8 = new TestValue("Jared", 8);
 	
-	protected static final IndividualChange<TestValue> change1_1To50 = new IndividualChange<>(key1_1To50, value1, value1.cloneWithNewCupcakeCount(10));
-	protected static final IndividualChange<TestValue> change2_10to60 = new IndividualChange<>(key2_10To60, value2, value2.cloneWithNewCupcakeCount(20));
-	protected static final IndividualChange<TestValue> change3_10To50 = new IndividualChange<>(key3_10To50, null, value3); //Insertion
-	protected static final IndividualChange<TestValue> change4_15_to75 = new IndividualChange<>(key4_15To75, value4, value4.cloneWithNewCupcakeCount(40));
-	protected static final IndividualChange<TestValue> change5_25to28 = new IndividualChange<>(key5_25To28, value5, null); //Deletion
-	protected static final IndividualChange<TestValue> change6_27to110 = new IndividualChange<>(key6_27To110, value6, value6.cloneWithNewCupcakeCount(60));
-	protected static final IndividualChange<TestValue> change7_32_to_90 = new IndividualChange<>(key7_32To90, value7, value7.cloneWithNewCupcakeCount(70));
-	protected static final IndividualChange<TestValue> change8_150to165 = new IndividualChange<>(key8_150To165, value8, value8.cloneWithNewCupcakeCount(80));
+	protected static final IndividualChange<TestValue> change1_1To50 = IndividualChange.manuallyCreateTestChange(key1_1To50, value1, value1.cloneWithNewCupcakeCount(10), false);
+	protected static final IndividualChange<TestValue> change2_10to60 = IndividualChange.manuallyCreateTestChange(key2_10To60, value2, value2.cloneWithNewCupcakeCount(20), false);
+	protected static final IndividualChange<TestValue> change3_10To50 = IndividualChange.manuallyCreateTestChange(key3_10To50, null, value3, false); //Insertion
+	protected static final IndividualChange<TestValue> change4_15_to75 = IndividualChange.manuallyCreateTestChange(key4_15To75, value4, value4.cloneWithNewCupcakeCount(40), false);
+	protected static final IndividualChange<TestValue> change5_25to28 = IndividualChange.manuallyCreateTestChange(key5_25To28, value5, null, false); //Deletion
+	protected static final IndividualChange<TestValue> change6_27to110 = IndividualChange.manuallyCreateTestChange(key6_27To110, value6, value6.cloneWithNewCupcakeCount(60), false);
+	protected static final IndividualChange<TestValue> change7_32_to_90 = IndividualChange.manuallyCreateTestChange(key7_32To90, value7, value7.cloneWithNewCupcakeCount(70), false);
+	protected static final IndividualChange<TestValue> change8_150to165 = IndividualChange.manuallyCreateTestChange(key8_150To165, value8, value8.cloneWithNewCupcakeCount(80), false);
 	
 	protected static final List<IndividualChange<TestValue>> changeList = Arrays.asList(change1_1To50, change2_10to60, change3_10To50, change4_15_to75, change5_25to28, change6_27to110, change7_32_to_90, change8_150to165);
 	

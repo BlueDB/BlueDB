@@ -29,7 +29,7 @@ import org.junit.Test;
 public class IndexInitializationIntegrationTest {
 	@Test
 	public void test_largeIndexInitialization() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled, null)) {
 			long now = System.currentTimeMillis();
 			long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
 			int valuesToInsert = 5_000;

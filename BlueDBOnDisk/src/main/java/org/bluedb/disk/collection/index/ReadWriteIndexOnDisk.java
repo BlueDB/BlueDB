@@ -152,28 +152,29 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		}
 	}
 
-	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueChange(key, oldValue, newValue);
+	public void indexChange(BlueKey key, T oldValue, T newValue, boolean isKeyChanged) throws BlueDbException {
+		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueChange(key, oldValue, newValue, isKeyChanged);
 		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges));
 	}
 	
 	public List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(IndividualChange<T> change) {
-		return getSortedIndexChangesForValueChange(change.getKey(), change.getOldValue(), change.getNewValue());
+		return getSortedIndexChangesForValueChange(change.getKey(), change.getOldValue(), change.getNewValue(), change.isKeyChanged());
 	}
 
-	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(BlueKey valueKey, T oldValue, T newValue) {
+	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(BlueKey valueKey, T oldValue, T newValue, boolean isKeyChanged) {
 		Set<IndexCompositeKey<I>> oldCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, oldValue))
 				.collect(Collectors.toCollection(HashSet::new));
 		
 		Set<IndexCompositeKey<I>> newCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, newValue))
 				.collect(Collectors.toCollection(HashSet::new));
 		
+		
 		Stream<IndividualChange<BlueKey>> deleteChanges = StreamUtils.stream(oldCompositeKeys)
 			.filter(oldKey -> !newCompositeKeys.contains(oldKey))
-			.map(oldKey -> new IndividualChange<>(oldKey, valueKey, null));
+			.map(oldKey -> IndividualChange.createDeleteChange(oldKey, valueKey));
 		
 		Stream<IndividualChange<BlueKey>> insertChanges = StreamUtils.stream(newCompositeKeys)
-				.filter(newKey -> !oldCompositeKeys.contains(newKey))
+				.filter(newKey -> isKeyChanged || !oldCompositeKeys.contains(newKey)) //If the index key is new for this value key or the value key changed then we want to update our index data for it.
 				.map(newKey -> IndividualChange.createInsertChange(newKey, valueKey));
 		
 		return StreamUtils.concat(deleteChanges, insertChanges)

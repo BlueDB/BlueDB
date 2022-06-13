@@ -3,6 +3,7 @@ package org.bluedb.disk.segment;
 import static java.util.Arrays.asList;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.FIFTEEN_DAYS;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.FIVE_DAYS;
+import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.FIVE_MINUTES;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.ONE_DAY;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.ONE_HOUR;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.ONE_MILLI;
@@ -50,16 +51,16 @@ import org.junit.Test;
 
 public class SegmentSizeSettingsTest {
 	private static final List<SegmentSizeConfiguration> allSupportedTimeKeyConfigs = Arrays.asList(
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_HOUR, 	24L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(TWO_HOURS, 	12L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, TWO_HOURS)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_HOURS, 	 4L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, SIX_HOURS)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(TWELVE_HOURS, 2L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, TWELVE_HOURS)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_DAY, 	     30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(FIVE_DAYS, 		  6L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIVE_DAYS)),
-		new SegmentSizeConfiguration(TimeKey.class,		asList(FIFTEEN_DAYS, 	  2L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIFTEEN_DAYS)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_MONTH, 			  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH)),
-		new SegmentSizeConfiguration(TimeKey.class,		asList(THREE_MONTHS, 		   4L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS)),
-		new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			   2L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_HOUR, 	24L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(TWO_HOURS, 	12L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, TWO_HOURS)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_HOURS, 	 4L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, SIX_HOURS)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(TWELVE_HOURS, 2L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, TWELVE_HOURS)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_DAY, 	     30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(FIVE_DAYS, 		  6L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, FIVE_DAYS)),
+		new SegmentSizeConfiguration(TimeKey.class,		asList(FIFTEEN_DAYS, 	  2L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, FIFTEEN_DAYS)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_MONTH, 			  12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, ONE_MONTH)),
+		new SegmentSizeConfiguration(TimeKey.class,		asList(THREE_MONTHS, 		   4L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS)),
+		new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			   2L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))
 	);
 	
 	private static final List<SegmentSizeConfiguration> allSupportedIntegerKeyConfigs = Arrays.asList(

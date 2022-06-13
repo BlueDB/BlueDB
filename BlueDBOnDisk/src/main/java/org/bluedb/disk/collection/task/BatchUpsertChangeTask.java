@@ -111,7 +111,7 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 		return new CollectionEntityIterator<T>(segmentManager, range, true, indexConditionGroups, objectConditions, keyConditions, Optional.of(includedSegmentRangeInfo));
 	}
 	
-	private IndividualChange<T> findMatchingEntityAndMapInsertToUpdateIfSuccessful(CollectionEntityIterator<T> entitiesInRangeIterator, IndividualChange<T> insertChange) {
+	private IndividualChange<T> findMatchingEntityAndMapInsertToUpdateIfSuccessful(CollectionEntityIterator<T> entitiesInRangeIterator, IndividualChange<T> insertChange) throws BlueDbException {
 		while(entitiesInRangeIterator.hasNext()) {
 			BlueEntity<T> nextEntityInRange = entitiesInRangeIterator.peek();
 			
@@ -126,7 +126,8 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 			
 			if(compareTo == 0) {
 				//This should be an update change for this entity instead of an insert
-				return new IndividualChange<T>(insertChange.getKey(), nextEntityInRange.getValue(), insertChange.getNewValue());
+				BlueEntity<T> newEntity = new BlueEntity<T>(insertChange.getKey(), insertChange.getNewValue());
+				return IndividualChange.createUpdateChange(nextEntityInRange, newEntity, collection.getSerializer());
 			}
 		}
 		

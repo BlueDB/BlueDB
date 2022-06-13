@@ -64,7 +64,7 @@ public class OnDiskSortedChangeSupplier<T extends Serializable> implements Sorte
 		
 		while(changesObjectInputStream.hasNext()) {
 			IndividualChange<T> change = changesObjectInputStream.peek();
-			if(change.getKey().isInRange(range.getStart(), range.getEnd())) {
+			if(change.getKey().overlapsRange(range.getStart(), range.getEnd())) {
 				return true;
 			} else if(change.getKey().isAfterRange(range.getStart(), range.getEnd())) {
 				return false;
@@ -101,13 +101,13 @@ public class OnDiskSortedChangeSupplier<T extends Serializable> implements Sorte
 			
 			while(changesObjectInputStream.hasNext()) {
 				IndividualChange<T> change = changesObjectInputStream.next();
-				if(change.getKey().isInRange(range.getStart(), range.getEnd())) {
+				if(change.getKey().overlapsRange(range.getStart(), range.getEnd())) {
 					inRangeCount++;
 				}
 				
 				if(inRangeCount > 1) {
 					return true;
-				} else if(change.getGroupingNumber() > range.getEnd()) {
+				} else if(change.getKey().isAfterRange(range.getStart(), range.getEnd())) {
 					return false; //The changes are sorted so once we are after the range end we can stop looking.
 				}
 			}

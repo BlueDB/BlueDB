@@ -73,7 +73,7 @@ public class RecoveryManager<T extends Serializable> {
 				SortedChangeIterator<?> sortedChangeIterator = new SortedChangeIterator<>(onDiskSortedChangeSupplier);
 				while(sortedChangeIterator.hasNext()) {
 					IndividualChange<?> nextChange = sortedChangeIterator.next();
-					if(nextChange.getKey().isInRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
+					if(nextChange.getKey().overlapsRange(includedTimeRange.getStart(), includedTimeRange.getEnd())) {
 						output.write((IndividualChange<T>) nextChange);
 					}
 				}

@@ -30,15 +30,20 @@ public class OverlappingTimeSegmentsKeyExtractor<V extends Serializable> impleme
 	
 	@Override
 	public List<LongTimeKey> extractKeys(BlueKey key, ReadableSegmentManager<V> segmentManager) {
-		SegmentPathManager pm = segmentManager.getPathManager();
-		
 		List<LongTimeKey> keys = new LinkedList<>();
+		
+		if(key == null || key.isActiveTimeKey()) {
+			//Active time keys have special treatment and don't need to be tracked with this index
+			return keys;
+		}
+		
+		SegmentPathManager pm = segmentManager.getPathManager();
 		
 		long currentGroupingNumber = key.getGroupingNumber() + pm.getSegmentSize(); //Start with a grouping number in the next segment, since we only care about the segments it overlaps into
 		long currentSegmentStartGroupingNumber = pm.getSegmentStartGroupingNumber(currentGroupingNumber);
 		long currentSegmentEndGroupingNumber = currentSegmentStartGroupingNumber + pm.getSegmentSize() - 1;
 		
-		while (key.isInRange(currentSegmentStartGroupingNumber, currentSegmentEndGroupingNumber)) {
+		while (key.overlapsRange(currentSegmentStartGroupingNumber, currentSegmentEndGroupingNumber)) {
 			keys.add(new LongTimeKey(currentGroupingNumber));
 			
 			currentGroupingNumber += pm.getSegmentSize();

@@ -29,7 +29,7 @@ public class InMemorySortedChangeSupplier<T extends Serializable> implements Sor
 		for(int i = currentIndex + 1; i < sortedChanges.size(); i++) {
 			currentIndex = i;
 			IndividualChange<T> change = sortedChanges.get(i);
-			if(change.getKey().isInRange(range.getStart(), range.getEnd())) {
+			if(change.getKey().overlapsRange(range.getStart(), range.getEnd())) {
 				return true;
 			} else if(change.getKey().isAfterRange(range.getStart(), range.getEnd())) {
 				return false; //The changes are sorted so once we are after the range we can stop looking.
@@ -44,7 +44,7 @@ public class InMemorySortedChangeSupplier<T extends Serializable> implements Sor
 		int countFound = 0;
 		for(int i = Math.max(0, currentIndex); i < sortedChanges.size(); i++) {
 			IndividualChange<T> change = sortedChanges.get(i);
-			if(change.getKey().isInRange(range.getStart(), range.getEnd())) {
+			if(change.getKey().overlapsRange(range.getStart(), range.getEnd())) {
 				countFound++;
 				if(countFound > 1) {
 					return true;

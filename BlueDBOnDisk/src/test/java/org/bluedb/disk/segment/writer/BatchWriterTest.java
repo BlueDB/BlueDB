@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.Mapper;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
@@ -31,6 +32,7 @@ import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 import org.bluedb.disk.serialization.validation.ObjectValidation;
+import org.bluedb.disk.serialization.validation.SerializationException;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -38,27 +40,51 @@ import org.mockito.stubbing.Answer;
 
 public class BatchWriterTest {
 	
-	private static BlueKey key1 = new LongKey(1);
-	private static BlueKey key2 = new LongKey(2);
-	private static BlueKey key3 = new LongKey(3);
-	private static BlueKey key5 = new LongKey(5);
-	private static BlueKey key7 = new LongKey(7);
-	private static BlueKey key8 = new LongKey(8);
-	private static BlueEntity<String> value1at1 = new BlueEntity<>(key1, "1");
-	private static BlueEntity<String> value3at3 = new BlueEntity<>(key3, "3");
-	private static BlueEntity<String> value5at5 = new BlueEntity<>(key5, "5");
-	private static BlueEntity<String> value7at7 = new BlueEntity<>(key7, "7");
-	private static BlueEntity<String> value5bAt5 = new BlueEntity<>(key5, "5b");
-	private static IndividualChange<String> delete2 = new IndividualChange<>(key2, null, null);
-	private static IndividualChange<String> delete3 = new IndividualChange<>(key3, null, null);
-	private static IndividualChange<String> delete5 = new IndividualChange<>(key5, null, null);
-	private static IndividualChange<String> delete8 = new IndividualChange<>(key8, null, null);
-
-	private static IndividualChange<String> insert1 = new IndividualChange<>(key1, null, "1");
-
-	private static IndividualChange<String> update5bAt5 = new IndividualChange<>(key5, "5", "5b");
+	private ThreadLocalFstSerializer serializer;
 	
-	private ThreadLocalFstSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class<?>[] { });
+	private BlueKey key1;
+	private BlueKey key2;
+	private BlueKey key3;
+	private BlueKey key5;
+	private BlueKey key7;
+	private BlueKey key8;
+	private BlueEntity<String> value1at1;
+	private BlueEntity<String> value3at3;
+	private BlueEntity<String> value5at5;
+	private BlueEntity<String> value7at7;
+	private BlueEntity<String> value5bAt5;
+	private IndividualChange<String> delete2;
+	private IndividualChange<String> delete3;
+	private IndividualChange<String> delete5;
+	private IndividualChange<String> delete8;
+
+	private IndividualChange<String> insert1;
+
+	private IndividualChange<String> update5bAt5;
+	
+	public BatchWriterTest() throws SerializationException {
+		serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), new Class<?>[] { });
+		
+		key1 = new LongKey(1);
+		key2 = new LongKey(2);
+		key3 = new LongKey(3);
+		key5 = new LongKey(5);
+		key7 = new LongKey(7);
+		key8 = new LongKey(8);
+		value1at1 = new BlueEntity<>(key1, "1");
+		value3at3 = new BlueEntity<>(key3, "3");
+		value5at5 = new BlueEntity<>(key5, "5");
+		value7at7 = new BlueEntity<>(key7, "7");
+		value5bAt5 = new BlueEntity<>(key5, "5b");
+		delete2 = IndividualChange.createDeleteChange(key2, null);
+		delete3 = IndividualChange.createDeleteChange(key3, null);
+		delete5 = IndividualChange.createDeleteChange(key5, null);
+		delete8 = IndividualChange.createDeleteChange(key8, null);
+
+		insert1 = IndividualChange.createInsertChange(value1at1.getKey(), value1at1.getValue());
+
+		update5bAt5 = IndividualChange.createReplaceChange(value5at5, (Mapper<String>) (value -> value5bAt5.getValue()), serializer);
+	}
 
 	@Test
 	public void testDeletes() throws Exception {
@@ -142,9 +168,9 @@ public class BatchWriterTest {
 		List<BlueEntity<Call>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<Call>> mockOutput = createMockOutput(serializer, results);
 		
-		IndividualChange<Call> updateInvalidCall = new IndividualChange<Call>(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue());
+		IndividualChange<Call> updateInvalidCall = IndividualChange.manuallyCreateTestChange(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue(), false);
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
-		IndividualChange<Call> update4 = new IndividualChange<Call>(call4.getKey(), call4.getValue(), updatedcall4.getValue());
+		IndividualChange<Call> update4 = IndividualChange.manuallyCreateTestChange(call4.getKey(), call4.getValue(), updatedcall4.getValue(), false);
 		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
@@ -200,9 +226,9 @@ public class BatchWriterTest {
 		outputMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, "output-key");
 		Mockito.when(mockOutput.getMetadata()).thenReturn(outputMetadata);
 
-		IndividualChange<Call> updateInvalidCall = new IndividualChange<Call>(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue());
+		IndividualChange<Call> updateInvalidCall = IndividualChange.manuallyCreateTestChange(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue(), false);
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
-		IndividualChange<Call> update4 = new IndividualChange<Call>(call4.getKey(), call4.getValue(), updatedcall4.getValue());
+		IndividualChange<Call> update4 = IndividualChange.manuallyCreateTestChange(call4.getKey(), call4.getValue(), updatedcall4.getValue(), false);
 		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
@@ -250,7 +276,7 @@ public class BatchWriterTest {
 		updatedcall2.getValue().setCallingParty("testChange2");
 		
 		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall);
-		IndividualChange<Call> update4Again = new IndividualChange<Call>(call2.getKey(), call2.getValue(), updatedcall2.getValue());
+		IndividualChange<Call> update4Again = IndividualChange.manuallyCreateTestChange(call2.getKey(), call2.getValue(), updatedcall2.getValue(), false);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(deleteInvalidObject, update4Again));
 		Range range = new Range(deleteInvalidObject.getGroupingNumber(), update4Again.getGroupingNumber());
@@ -287,7 +313,7 @@ public class BatchWriterTest {
 		updatedcall2.getValue().setCallingParty("testChange3");
 		
 		IndividualChange<Call> insertInvalidObject = IndividualChange.createInsertChange(invalidCall.getKey(), invalidCall.getValue());
-		IndividualChange<Call> updateCall4AThirdTime = new IndividualChange<Call>(call2.getKey(), updatedcall2.getValue(), updatedcall2.getValue());
+		IndividualChange<Call> updateCall4AThirdTime = IndividualChange.manuallyCreateTestChange(call2.getKey(), updatedcall2.getValue(), updatedcall2.getValue(), false);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(insertInvalidObject, updateCall4AThirdTime));
 		Range range = new Range(insertInvalidObject.getGroupingNumber(), updateCall4AThirdTime.getGroupingNumber());

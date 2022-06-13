@@ -71,43 +71,39 @@ public class IteratorWrapper<I, O> implements Iterator<O> {
 	
 	@SuppressWarnings("unchecked")
 	private void loadNextListIfNecessary() throws UncheckedBlueDbException {
-		while(nextList.isEmpty() && inputIterator.hasNext()) {
-			I nextInput = inputIterator.next();
-			if(shouldAccept(nextInput)) {
-				validateUnchecked(nextInput);
-				if(mapper != null) {
-					nextList.add(mapper.map(nextInput));
-				} else if(flatMapper != null) {
-					nextList.addAll(flatMapper.flatMap(nextInput));
-				} else if(outputClassType != null) {
-					if(outputClassType.isAssignableFrom(nextInput.getClass())) {
-						nextList.add((O) nextInput);
-					} else {
-						BlueDbException e = new BlueDbException("A mapper must be supplied in order to wrap an iterator whose type can't be assigned to the outer iterator type.");
-						throw new UncheckedBlueDbException(e);
+		try {
+			while(nextList.isEmpty() && inputIterator.hasNext()) {
+				I nextInput = inputIterator.next();
+				if(shouldAccept(nextInput)) {
+					validate(nextInput);
+					if(mapper != null) {
+						nextList.add(mapper.map(nextInput));
+					} else if(flatMapper != null) {
+						nextList.addAll(flatMapper.flatMap(nextInput));
+					} else if(outputClassType != null) {
+						if(outputClassType.isAssignableFrom(nextInput.getClass())) {
+							nextList.add((O) nextInput);
+						} else {
+							BlueDbException e = new BlueDbException("A mapper must be supplied in order to wrap an iterator whose type can't be assigned to the outer iterator type.");
+							throw new UncheckedBlueDbException(e);
+						}
 					}
+				} else {
+					continue;
 				}
-			} else {
-				continue;
 			}
+		} catch (BlueDbException e) {
+			throw new UncheckedBlueDbException(e);
 		}
 	}
 
-	private boolean shouldAccept(I inputObject) {
+	private boolean shouldAccept(I inputObject) throws BlueDbException {
 		for(IteratorWrapperFilter<I> filter : filters) {
 			if(!filter.accepts(inputObject)) {
 				return false;
 			}
 		}
 		return true;
-	}
-	
-	private void validateUnchecked(I inputObject) throws UncheckedBlueDbException {
-		try {
-			validate(inputObject);
-		} catch (BlueDbException e) {
-			throw new UncheckedBlueDbException(e);
-		}
 	}
 	
 	private void validate(I inputObject) throws BlueDbException {
@@ -118,17 +114,17 @@ public class IteratorWrapper<I, O> implements Iterator<O> {
 
 	@FunctionalInterface
 	public interface IteratorWrapperMapper<I, O> {
-		public O map(I object);
+		public O map(I object) throws BlueDbException;
 	}
 	
 	@FunctionalInterface
 	public interface IteratorWrapperFlatMapper<I, O> {
-		public List<O> flatMap(I object);
+		public List<O> flatMap(I object) throws BlueDbException;
 	}
 	
 	@FunctionalInterface
 	public interface IteratorWrapperFilter<I> {
-		public boolean accepts(I object);
+		public boolean accepts(I object) throws BlueDbException;
 	}
 	
 	@FunctionalInterface

@@ -41,6 +41,18 @@ public class ReadOnlyTimeQueryOnDisk<T extends Serializable> extends ReadOnlyQue
 	}
 
 	@Override
+	public ReadBlueTimeQuery<T> whereKeyIsActive() {
+		super.whereKeyIsActive();
+		return this;
+	}
+
+	@Override
+	public ReadBlueTimeQuery<T> whereKeyIsNotActive() {
+		super.whereKeyIsNotActive();
+		return this;
+	}
+
+	@Override
 	public ReadBlueTimeQuery<T> afterTime(long time) {
 		super.afterTime(time);
 		return this;

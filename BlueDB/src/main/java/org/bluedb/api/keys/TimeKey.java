@@ -62,7 +62,7 @@ public class TimeKey implements BlueKey {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
+		if (!(obj instanceof TimeKey)) {
 			return false;
 		}
 		TimeKey other = (TimeKey) obj;

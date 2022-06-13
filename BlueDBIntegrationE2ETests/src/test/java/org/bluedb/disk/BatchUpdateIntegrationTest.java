@@ -24,7 +24,7 @@ import org.junit.Test;
 public class BatchUpdateIntegrationTest {
 	@Test
 	public void test_largeBatchUpsert() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled, null)) {
 			long now = System.currentTimeMillis();
 			long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
 			int valuesToInsert = 2000;
@@ -74,7 +74,7 @@ public class BatchUpdateIntegrationTest {
 	
 	@Test
 	public void test_smallBatchUpsert() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled, null)) {
 			long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
 			long now = System.currentTimeMillis();
 			long oneHourAgo = now - oneHour;

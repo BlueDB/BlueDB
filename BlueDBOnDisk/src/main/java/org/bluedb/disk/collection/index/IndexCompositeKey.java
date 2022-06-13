@@ -59,13 +59,8 @@ public class IndexCompositeKey<K extends BlueKey> implements BlueKey {
 	}
 	
 	@Override
-	public boolean isBeforeRange(long min, long max) {
-		return indexKey.isBeforeRange(min, max);
-	}
-
-	@Override
-	public boolean isInRange(long min, long max) {
-		return indexKey.isInRange(min, max);
+	public boolean overlapsRange(long min, long max) {
+		return indexKey.overlapsRange(min, max);
 	}
 	
 	@Override

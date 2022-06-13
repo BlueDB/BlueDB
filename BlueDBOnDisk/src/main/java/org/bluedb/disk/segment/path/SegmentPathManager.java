@@ -61,10 +61,15 @@ public class SegmentPathManager {
 		List<Path> paths = new ArrayList<>();
 		long groupingNumber = key.getGroupingNumber();
 		long i = getSegmentStartGroupingNumber(groupingNumber);
-		while (key.isInRange(i, i + segmentSize - 1)) {
+		while (key.overlapsRange(i, i + segmentSize - 1)) {
 			Path path = getSegmentPath(i);
 			paths.add(path);
 			i += segmentSize;
+			
+			if(key.isActiveTimeKey()) {
+				//An active time key would keep going forever but won't ever actually be stored in more than the segment it starts in
+				break;
+			}
 		}
 		return paths;
 	}

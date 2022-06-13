@@ -19,7 +19,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 
 public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> implements BlueQuery<T> {
 
-	private ReadWriteCollectionOnDisk<T> writeableCollection;
+	protected ReadWriteCollectionOnDisk<T> writeableCollection;
 
 	public QueryOnDisk(ReadWriteCollectionOnDisk<T> collection) {
 		super(collection);

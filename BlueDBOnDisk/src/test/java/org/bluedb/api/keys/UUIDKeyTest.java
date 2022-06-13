@@ -114,27 +114,15 @@ public class UUIDKeyTest extends TestCase {
 	}
 
 	@Test
-	public void test_isBeforeRange() {
-		UUIDKey UUIDKey = new UUIDKey(new UUID(0, 1));
-		long groupingNumber = UUIDKey.getGroupingNumber();
-		assertFalse(UUIDKey.isBeforeRange(groupingNumber - 1, groupingNumber - 1));
-		assertFalse(UUIDKey.isBeforeRange(groupingNumber - 1, groupingNumber));
-		assertFalse(UUIDKey.isBeforeRange(groupingNumber - 1, groupingNumber + 1));
-		assertFalse(UUIDKey.isBeforeRange(groupingNumber, groupingNumber));
-		assertFalse(UUIDKey.isBeforeRange(groupingNumber, groupingNumber + 1));
-		assertTrue(UUIDKey.isBeforeRange(groupingNumber + 1, groupingNumber + 1));
-	}
-
-	@Test
 	public void test_isInRange() {
 		UUIDKey UUIDKey = new UUIDKey(new UUID(0, 1));
 		long groupingNumber = UUIDKey.getGroupingNumber();
-		assertFalse(UUIDKey.isInRange(groupingNumber - 1, groupingNumber - 1));
-		assertTrue(UUIDKey.isInRange(groupingNumber - 1, groupingNumber));
-		assertTrue(UUIDKey.isInRange(groupingNumber - 1, groupingNumber + 1));
-		assertTrue(UUIDKey.isInRange(groupingNumber, groupingNumber));
-		assertTrue(UUIDKey.isInRange(groupingNumber, groupingNumber + 1));
-		assertFalse(UUIDKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+		assertFalse(UUIDKey.overlapsRange(groupingNumber - 1, groupingNumber - 1));
+		assertTrue(UUIDKey.overlapsRange(groupingNumber - 1, groupingNumber));
+		assertTrue(UUIDKey.overlapsRange(groupingNumber - 1, groupingNumber + 1));
+		assertTrue(UUIDKey.overlapsRange(groupingNumber, groupingNumber));
+		assertTrue(UUIDKey.overlapsRange(groupingNumber, groupingNumber + 1));
+		assertFalse(UUIDKey.overlapsRange(groupingNumber + 1, groupingNumber + 1));
 	}
 
 	@Test
@@ -147,5 +135,11 @@ public class UUIDKeyTest extends TestCase {
 		assertFalse(UUIDKey.isAfterRange(groupingNumber, groupingNumber));
 		assertFalse(UUIDKey.isAfterRange(groupingNumber, groupingNumber + 1));
 		assertFalse(UUIDKey.isAfterRange(groupingNumber + 1, groupingNumber + 1));
+	}
+	
+	@Test
+	public void test_isActiveTimeKey() {
+		UUIDKey UUIDKey = new UUIDKey(new UUID(0, 1));
+		assertFalse(UUIDKey.isActiveTimeKey());
 	}
 }

@@ -18,7 +18,7 @@ public class ReadWriteDbOnDiskIT {
 
 	@Test
 	public void encryptedDb_writeAndQueryValues_successfullyEncryptsAndDecrypts() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled, null)) {
 			BlueKey key1At1 = new TimeKey(1, 1);
 			TestValue value1Anna = new TestValue("Anna");
 			dbWrapper.getTimeCollection().insert(key1At1, value1Anna);
@@ -36,7 +36,7 @@ public class ReadWriteDbOnDiskIT {
 
 	@Test
 	public void encryptedDb_writeThenDisableEncryptionThenQuery_successfullyDecryptsAsNeeded() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled, null)) {
 			BlueKey key1At1 = new TimeKey(1, 1);
 			TestValue value1Anna = new TestValue("Anna");
 			dbWrapper.getTimeCollection().insert(key1At1, value1Anna);
@@ -56,7 +56,7 @@ public class ReadWriteDbOnDiskIT {
 
 	@Test
 	public void encryptedDb_backupThenRestoreThenQuery_success() throws BlueDbException, IOException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled, null)) {
 			BlueKey key1At1 = new TimeKey(1, 1);
 			TestValue value1 = new TestValue("Anna");
 			dbWrapper.getTimeCollection().insert(key1At1, value1);
@@ -74,7 +74,7 @@ public class ReadWriteDbOnDiskIT {
 			ZipUtils.extractFiles(backupPath, restoredPath);
 			Path restoredBlueDbPath = Paths.get(restoredPath.toString(), "bluedb");
 
-			try (BlueDbOnDiskWrapper restoredDbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled, restoredBlueDbPath)) {
+			try (BlueDbOnDiskWrapper restoredDbWrapper = new BlueDbOnDiskWrapper(BlueDbOnDiskWrapper.StartupOption.EncryptionEnabled, restoredBlueDbPath, null)) {
 
 				ReadWriteTimeCollectionOnDisk<TestValue> restoredCollection = restoredDbWrapper.getTimeCollection();
 				assertTrue(restoredCollection.contains(key1At1));

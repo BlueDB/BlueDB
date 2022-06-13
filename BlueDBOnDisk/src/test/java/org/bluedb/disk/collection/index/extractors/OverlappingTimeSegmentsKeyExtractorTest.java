@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 import java.util.Arrays;
 import java.util.UUID;
 
+import org.bluedb.api.keys.ActiveTimeKey;
 import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.disk.TestValue;
@@ -40,6 +41,18 @@ public class OverlappingTimeSegmentsKeyExtractorTest {
 				new LongTimeKey(85), 
 				new LongTimeKey(95),
 				new LongTimeKey(105)), extractor.extractKeys(key, segManagerMock));
+	}
+	
+	@Test
+	public void test_extractKeys_nullResultsInEmptyList() {
+		OverlappingTimeSegmentsKeyExtractor<TestValue> extractor = new OverlappingTimeSegmentsKeyExtractor<>();
+		assertEquals(Arrays.asList(), extractor.extractKeys(null, null));
+	}
+	
+	@Test
+	public void test_extractKeys_activeKeyResultsInEmptyList() {
+		OverlappingTimeSegmentsKeyExtractor<TestValue> extractor = new OverlappingTimeSegmentsKeyExtractor<>();
+		assertEquals(Arrays.asList(), extractor.extractKeys(new ActiveTimeKey(4, 100), null));
 	}
 
 	@Test

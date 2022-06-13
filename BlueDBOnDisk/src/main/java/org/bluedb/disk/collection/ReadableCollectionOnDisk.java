@@ -42,6 +42,7 @@ import org.bluedb.disk.serialization.ThreadLocalFstSerializer;
 public abstract class ReadableCollectionOnDisk<T extends Serializable> implements ReadableBlueCollection<T> {
 	
 	public static final String OVERLAPPING_TIME_SEGMENTS_INDEX_NAME = "overlapping-time-segments-index";
+	public static final String ACTIVE_RECORD_TIMES_INDEX_NAME = "active-record-times-index";
 
 	private final Class<T> valueType;
 	private final Class<? extends BlueKey> keyType;
@@ -151,6 +152,10 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 	
 	public BlueIndex<LongTimeKey, T> getOverlappingTimeSegmentsIndex() throws BlueDbException {
 		return getIndex(OVERLAPPING_TIME_SEGMENTS_INDEX_NAME, LongTimeKey.class);
+	}
+	
+	public BlueIndex<LongTimeKey, T> getActiveRecordTimesIndex() throws BlueDbException {
+		return getIndex(ACTIVE_RECORD_TIMES_INDEX_NAME, LongTimeKey.class);
 	}
 	
 	protected static SegmentSizeSetting determineSegmentSize(ReadableCollectionMetadata metaData, Class<? extends BlueKey> keyType, SegmentSizeSetting requestedSegmentSize, boolean isNewCollection) throws BlueDbException {

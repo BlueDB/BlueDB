@@ -3,6 +3,7 @@ package org.bluedb.disk.segment;
 import static java.util.Arrays.asList;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.FIFTEEN_DAYS;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.FIVE_DAYS;
+import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.FIVE_MINUTES;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.ONE_DAY;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.ONE_HOUR;
 import static org.bluedb.disk.segment.path.SegmentPathTimeUnits.ONE_MILLI;
@@ -42,16 +43,16 @@ import org.bluedb.disk.segment.path.SegmentSizeConfiguration;
  * growing out of control for small data sets. Segments will be created quickly and will slowly fill up.
  */
 public enum SegmentSizeSetting {
-	TIME_1_HOUR(new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_HOUR, 	24L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR))),
-	TIME_2_HOURS(new SegmentSizeConfiguration(TimeKey.class, 	asList(TWO_HOURS, 	12L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, TWO_HOURS))),
-	TIME_6_HOURS(new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_HOURS, 	 4L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, SIX_HOURS))),
-	TIME_12_HOURS(new SegmentSizeConfiguration(TimeKey.class, 	asList(TWELVE_HOURS, 2L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, TWELVE_HOURS))),
-	TIME_1_DAY(new SegmentSizeConfiguration(TimeKey.class, 		asList(ONE_DAY, 	     30L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY))),
-	TIME_5_DAYS(new SegmentSizeConfiguration(TimeKey.class, 	asList(FIVE_DAYS, 		  6L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIVE_DAYS))),
-	TIME_15_DAYS(new SegmentSizeConfiguration(TimeKey.class,	asList(FIFTEEN_DAYS, 	  2L, 12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, FIFTEEN_DAYS))),
-	TIME_1_MONTH(new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_MONTH, 			  12L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH))),
-	TIME_3_MONTHS(new SegmentSizeConfiguration(TimeKey.class,	asList(THREE_MONTHS, 		   4L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS))),
-	TIME_6_MONTHS(new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			   2L), asList(ONE_MILLI, SIX_SECONDS, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))),
+	TIME_1_HOUR(new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_HOUR, 	24L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR))),
+	TIME_2_HOURS(new SegmentSizeConfiguration(TimeKey.class, 	asList(TWO_HOURS, 	12L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, TWO_HOURS))),
+	TIME_6_HOURS(new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_HOURS, 	 4L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, SIX_HOURS))),
+	TIME_12_HOURS(new SegmentSizeConfiguration(TimeKey.class, 	asList(TWELVE_HOURS, 2L, 30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, TWELVE_HOURS))),
+	TIME_1_DAY(new SegmentSizeConfiguration(TimeKey.class, 		asList(ONE_DAY, 	     30L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY))),
+	TIME_5_DAYS(new SegmentSizeConfiguration(TimeKey.class, 	asList(FIVE_DAYS, 		  6L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, FIVE_DAYS))),
+	TIME_15_DAYS(new SegmentSizeConfiguration(TimeKey.class,	asList(FIFTEEN_DAYS, 	  2L, 12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, FIFTEEN_DAYS))),
+	TIME_1_MONTH(new SegmentSizeConfiguration(TimeKey.class, 	asList(ONE_MONTH, 			  12L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, ONE_MONTH))),
+	TIME_3_MONTHS(new SegmentSizeConfiguration(TimeKey.class,	asList(THREE_MONTHS, 		   4L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, ONE_MONTH, THREE_MONTHS))),
+	TIME_6_MONTHS(new SegmentSizeConfiguration(TimeKey.class, 	asList(SIX_MONTHS, 			   2L), asList(ONE_MILLI, SIX_SECONDS, FIVE_MINUTES, ONE_HOUR, ONE_DAY, ONE_MONTH, SIX_MONTHS))),
 	
 	INT_128(new SegmentSizeConfiguration(IntegerKey.class, 	asList(128L,  128L, 64L, 64L), 	asList(1L, 128L))),
 	INT_256(new SegmentSizeConfiguration(IntegerKey.class, 	asList(256L,   64L, 64L, 64L), 	asList(1L, 256L))), //Original, Default

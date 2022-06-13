@@ -72,9 +72,9 @@ public class ReadWriteIndexManager<T extends Serializable> extends ReadableIndex
 		return typedIndex;
 	}
 
-	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
+	public void indexChange(BlueKey key, T oldValue, T newValue, boolean isKeyChanged) throws BlueDbException {
 		for (ReadWriteIndexOnDisk<ValueKey, T> index: indexesByName.values()) {
-			index.indexChange(key, oldValue, newValue);
+			index.indexChange(key, oldValue, newValue, isKeyChanged);
 		}
 	}
 

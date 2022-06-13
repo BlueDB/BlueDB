@@ -565,9 +565,10 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		Map<RollupTarget, Long> rollupTimes;
 		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
 		RollupTarget target_6000 = new RollupTarget(0, new Range(0, 5999));
+		RollupTarget target_299999 = new RollupTarget(0, new Range(0, 299999));
 		RollupTarget target_3600000 = new RollupTarget(0, new Range(0, 3599999));
 		Set<RollupTarget> targets_none = new HashSet<>();
-		Set<RollupTarget> targets_mid_and_top = new HashSet<>(Arrays.asList(target_6000, target_3600000));
+		Set<RollupTarget> targets_mid_to_top = new HashSet<>(Arrays.asList(target_6000, target_299999, target_3600000));
 		
 		rollupTimes = scheduler.getRollupTimes();
 		assertEquals(targets_none, rollupTimes.keySet());
@@ -581,7 +582,7 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(2, values.size());
 
 		rollupTimes = scheduler.getRollupTimes();
-		assertEquals(targets_mid_and_top, rollupTimes.keySet());
+		assertEquals(targets_mid_to_top, rollupTimes.keySet());
 		assertTrue(rollupTimes.get(target_3600000) > rollupTimes.get(target_6000));
 	}
 

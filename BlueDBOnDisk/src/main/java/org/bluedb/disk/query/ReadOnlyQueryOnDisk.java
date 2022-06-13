@@ -14,6 +14,7 @@ import org.bluedb.api.ReadBlueQuery;
 import org.bluedb.api.datastructures.BlueSimpleIterator;
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.exceptions.UnsupportedIndexConditionTypeException;
 import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.Blutils;
@@ -38,6 +39,7 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	protected long max = Long.MAX_VALUE;
 	protected long min = Long.MIN_VALUE;
 	protected boolean byStartTime = false;
+	protected TimeIncludeMode timeIncludeMode = TimeIncludeMode.INCLUDE_ALL;
 
 	public ReadOnlyQueryOnDisk(ReadableCollectionOnDisk<T> collection) {
 		this.collection = collection;
@@ -105,43 +107,62 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 		return collection.findMatches(getRange(), indexConditionGroups, objectConditions, keyConditions, byStartTime, getSegmentRangeInfoToInclude());
 	}
 
-	@SuppressWarnings("unchecked")
 	private void finalizeParametersBeforeExecution() throws BlueDbException {
-		/*
-		 * If we're not searching from the dawn of time and we want to include overlapping records
-		 * that start before the timeframe and we're a version 2 or later collection then we have
-		 * to utilize the default index to identify what pre timeframe segments need to be searched.
-		 */
-		if(collection.utilizesDefaultTimeIndex() && !byStartTime && min > Long.MIN_VALUE) {
-			Range timeRange = getRange();
-			SegmentPathManager pm = collection.getSegmentManager().getPathManager();
+		if(collection.utilizesDefaultTimeIndex()) {
+
+			addKeyConditionsForTimeIncludeMode();
 			
-			long startSegmentGroupingNumber = pm.getSegmentStartGroupingNumber(timeRange.getStart());
-			long endSegmentGroupingNumber = startSegmentGroupingNumber + pm.getSegmentSize() - 1;
-			
-			QueryIndexConditionGroup<T> defaultTimeIndexConditionOrGroup = new QueryIndexConditionGroup<>(false);
-			
-			/*
-			 * Utilize the time segments index to find all records that overlap the start segment. This will find
-			 * all records that started before the start segment and ended during or after the start segment.
-			 */
-			defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isInRange(startSegmentGroupingNumber, endSegmentGroupingNumber));
-			
-			/*
-			 * Or with the all segments in range accepting index condition since it doesn't really save time trying to 
-			 * narrow down what segments inside the range to search. We already know that everything stored in the
-			 * timeframe started in the timeframe.
-			 */
-			defaultTimeIndexConditionOrGroup.addIndexCondition(new AllSegmentsInRangeAcceptingIndexCondition<>(collection, timeRange));
-			
-			indexConditionGroups.add(defaultTimeIndexConditionOrGroup);
-			
-			//The indices will find the right segments to search, but not all keys in the segments will match the target range.
-			keyConditions.add(key -> key.isInRange(timeRange.getStart(), timeRange.getEnd()));
-			
-			//Let the index conditions limit where we start searching from
-			min = Long.MIN_VALUE;
+			if(!byStartTime && min > Long.MIN_VALUE) {
+				Range timeRange = getRange();
+				SegmentPathManager pm = collection.getSegmentManager().getPathManager();
+				
+				long firstSegmentStartGroupingNumber = pm.getSegmentStartGroupingNumber(timeRange.getStart());
+				long firstSegmentEndGroupingNumber = firstSegmentStartGroupingNumber + pm.getSegmentSize() - 1;
+				
+				indexConditionGroups.add(createDefaultTimeIndexConditionOrGroup(timeRange, firstSegmentStartGroupingNumber, firstSegmentEndGroupingNumber));
+				
+				//The indices will find the right segments to search, but not all keys in the segments will match the target range.
+				keyConditions.add(key -> key.overlapsRange(timeRange.getStart(), timeRange.getEnd()));
+				
+				//Let the index conditions limit where we start searching from
+				min = Long.MIN_VALUE;
+			}
 		}
+	}
+
+	private void addKeyConditionsForTimeIncludeMode() {
+		if(timeIncludeMode == TimeIncludeMode.INCLUDE_ONLY_ACTIVE) {
+			keyConditions.add(BlueKey::isActiveTimeKey);
+		} else if(timeIncludeMode == TimeIncludeMode.EXCLUDE_ACTIVE) {
+			keyConditions.add(key -> !key.isActiveTimeKey());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private QueryIndexConditionGroup<T> createDefaultTimeIndexConditionOrGroup(Range timeRange, long firstSegmentStartGroupingNumber, long firstSegmentEndGroupingNumber) throws UnsupportedIndexConditionTypeException, BlueDbException {
+		QueryIndexConditionGroup<T> defaultTimeIndexConditionOrGroup = new QueryIndexConditionGroup<>(false);
+		
+		if(timeIncludeMode == TimeIncludeMode.INCLUDE_ALL) {
+			//Find and include all records that start before the query timeframe and overlap into the timeframe
+			defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isInRange(firstSegmentStartGroupingNumber, firstSegmentEndGroupingNumber));
+			
+			//Find and include all active records that start before the query timeframe
+			defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getActiveRecordTimesIndex().createLongIndexCondition().isLessThan(firstSegmentStartGroupingNumber));
+			
+			//Include all segments that cover the query timeframe
+			defaultTimeIndexConditionOrGroup.addIndexCondition(new AllSegmentsInRangeAcceptingIndexCondition<>(collection, timeRange));
+		} else if(timeIncludeMode == TimeIncludeMode.EXCLUDE_ACTIVE) {
+			//Find and include all records that start before the query timeframe and overlap into the timeframe
+			defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getOverlappingTimeSegmentsIndex().createLongIndexCondition().isInRange(firstSegmentStartGroupingNumber, firstSegmentEndGroupingNumber));
+			
+			//Include all segments that cover the query timeframe
+			defaultTimeIndexConditionOrGroup.addIndexCondition(new AllSegmentsInRangeAcceptingIndexCondition<>(collection, timeRange));
+		} else if(timeIncludeMode == TimeIncludeMode.INCLUDE_ONLY_ACTIVE) {
+			//Find and include all active records that start before or during the query timeframe
+			defaultTimeIndexConditionOrGroup.addIndexCondition((OnDiskIndexCondition<?, T>) collection.getActiveRecordTimesIndex().createLongIndexCondition().isLessThanOrEqualTo(timeRange.getEnd()));
+		}
+		
+		return defaultTimeIndexConditionOrGroup;
 	}
 
 	private Optional<IncludedSegmentRangeInfo> getSegmentRangeInfoToInclude() {
@@ -157,7 +178,7 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 			try(BlueSimpleIterator<BlueKey> keysIterator = keysToInclude.iterator()) {
 				while(keysIterator.hasNext()) {
 					BlueKey key = keysIterator.next();
-					if(key.isInRange(queryTimeframe.getStart(), queryTimeframe.getEnd())) {
+					if(key.overlapsRange(queryTimeframe.getStart(), queryTimeframe.getEnd())) {
 						Range segmentRangeContainingKey = segmentManager.toRange(pathManager.getSegmentPath(key.getGroupingNumber()));
 						if(!collection.utilizesDefaultTimeIndex() && segmentRangeContainingKey.getEnd() < firstSegmentRangeInQueryTimeframe.getStart()) {
 							/*
@@ -213,5 +234,29 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	protected ReadBlueQuery<T> byStartTime() {
 		byStartTime = true;
 		return this;
+	}
+
+	protected ReadBlueQuery<T> whereKeyIsActive() {
+		if(timeIncludeMode == TimeIncludeMode.EXCLUDE_ACTIVE) {
+			throw new IllegalStateException("You cannot call whereKeyIsActive if you have already called whereKeyIsNotActive");
+		}
+		
+		timeIncludeMode = TimeIncludeMode.INCLUDE_ONLY_ACTIVE;
+		return this;
+	}
+
+	protected ReadBlueQuery<T> whereKeyIsNotActive() {
+		if(timeIncludeMode == TimeIncludeMode.INCLUDE_ONLY_ACTIVE) {
+			throw new IllegalStateException("You cannot call whereKeyIsNotActive if you have already called whereKeyIsActive");
+		}
+		
+		timeIncludeMode = TimeIncludeMode.EXCLUDE_ACTIVE;
+		return this;
+	}
+	
+	enum TimeIncludeMode {
+		INCLUDE_ALL,
+		INCLUDE_ONLY_ACTIVE,
+		EXCLUDE_ACTIVE,
 	}
 }

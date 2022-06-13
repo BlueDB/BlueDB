@@ -38,7 +38,7 @@ public class AllSegmentsInRangeAcceptingIndexCondition<I extends Serializable, T
 	
 	@Override
 	public boolean test(BlueEntity<T> entity) {
-		return entity.getKey().isInRange(groupingNumberRangeToAccept.getStart(), groupingNumberRangeToAccept.getEnd());
+		return entity.getKey().overlapsRange(groupingNumberRangeToAccept.getStart(), groupingNumberRangeToAccept.getEnd());
 	}
 
 	@Override

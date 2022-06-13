@@ -94,7 +94,7 @@ public class SegmentEntityIterator<T extends Serializable> implements Iterator<B
 				if (key.getGroupingNumber() <= highestGroupingNumberCompleted) {
 					continue;
 				}
-				if (key.isInRange(rangeMin, rangeMax)) {
+				if (key.overlapsRange(rangeMin, rangeMax)) {
 					return next;
 				}
 				if (key.isAfterRange(rangeMin, rangeMax)) {

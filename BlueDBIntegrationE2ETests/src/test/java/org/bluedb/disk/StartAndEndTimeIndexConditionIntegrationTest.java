@@ -28,7 +28,7 @@ import org.junit.Test;
 public class StartAndEndTimeIndexConditionIntegrationTest {
 	@Test
 	public void test_startAndEndTimeIndexConditionQueries() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled, null)) {
 			long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
 			long now = System.currentTimeMillis();
 			long oneHourAgo = now - oneHour;

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.index.conditions.BlueIndexCondition;
+import org.bluedb.api.keys.ActiveTimeKey;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
@@ -28,7 +29,23 @@ public interface ReadBlueTimeQuery<V extends Serializable> extends ReadBlueQuery
 	ReadBlueTimeQuery<V> whereKeyIsIn(BlueSimpleSet<BlueKey> keys);
 	
 	/**
-	 * For queries on a collection with a key type of {@link TimeFrameKey}, this adds a condition that the value starts in the 
+	 * In collections (version 2+) this will add a condition that the key must be of type {@link ActiveTimeKey},
+	 * meaning that it represents a value that is considered active.
+	 * @return itself, with the condition added to the query that the key must be of type {@link ActiveTimeKey},
+	 * meaning that it represents a value that is considered active.
+	 */
+	ReadBlueTimeQuery<V> whereKeyIsActive();
+	
+	/**
+	 * In collections (version 2+) this will add a condition that the key must NOT be of type {@link ActiveTimeKey},
+	 * meaning that it represents a value that is NOT considered active.
+	 * @return itself, with the condition added to the query that the key must NOT be of type {@link ActiveTimeKey},
+	 * meaning that it represents a value that is NOT considered active.
+	 */
+	ReadBlueTimeQuery<V> whereKeyIsNotActive();
+	
+	/**
+	 * For queries on a collection containing key types of {@link TimeFrameKey}, this adds a condition that the value starts in the 
 	 * queried interval. Normally, it is only required that the value's time interval overlaps the queried time interval.
 	 * <br><br>
 	 * This can be very useful if you want to map reduce the results. Instead of making one query for the entire time interval you
