@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import org.bluedb.TestUtils;
@@ -50,6 +51,7 @@ public class IndividualChangeTest {
 		assertEquals(key, insertChange.getKey());
 		assertEquals(newEntity, insertChange.getNewEntity());
 		assertFalse(insertChange.isKeyChanged());
+		assertEquals(key, insertChange.getOriginalKey());
 	}
 
 	@Test
@@ -65,6 +67,7 @@ public class IndividualChangeTest {
 		assertEquals(key, deleteChange.getKey());
 		assertEquals(null, deleteChange.getNewEntity());
 		assertFalse(deleteChange.isKeyChanged());
+		assertEquals(key, deleteChange.getOriginalKey());
 	}
 	
 	@Test
@@ -85,6 +88,7 @@ public class IndividualChangeTest {
 		assertEquals(key, updateChange.getKey());
 		assertEquals(newEntity, updateChange.getNewEntity());
 		assertFalse(updateChange.isKeyChanged());
+		assertEquals(key, updateChange.getOriginalKey());
 	}
 	
 	@Test
@@ -104,6 +108,7 @@ public class IndividualChangeTest {
 		assertEquals(key, updateChange.getKey());
 		assertEquals(newEntity, updateChange.getNewEntity());
 		assertFalse(updateChange.isKeyChanged());
+		assertEquals(key, updateChange.getOriginalKey());
 	}
 	
 	@Test
@@ -125,6 +130,7 @@ public class IndividualChangeTest {
 		assertEquals(newKey, updateChange.getKey());
 		assertEquals(newEntity, updateChange.getNewEntity());
 		assertTrue(updateChange.isKeyChanged());
+		assertEquals(oldKey, updateChange.getOriginalKey());
 	}
 	
 	@Test
@@ -164,9 +170,10 @@ public class IndividualChangeTest {
 		
 		assertEquals(oldValue, updateChange.getOldValue());
 		assertEquals(newValue, updateChange.getNewValue());
-		assertEquals(key, updateChange.getKey());
+		assertEquals(newKey, updateChange.getKey());
 		assertEquals(newEntity, updateChange.getNewEntity());
 		assertTrue(updateChange.isKeyChanged());
+		assertEquals(key, updateChange.getOriginalKey());
 	}
 	
 	@Test
@@ -191,6 +198,7 @@ public class IndividualChangeTest {
 		assertEquals(key, updateChange.getKey());
 		assertEquals(newEntity, updateChange.getNewEntity());
 		assertFalse(updateChange.isKeyChanged());
+		assertEquals(key, updateChange.getOriginalKey());
 	}
 	
 	@Test
@@ -218,13 +226,14 @@ public class IndividualChangeTest {
 		String newValue = "newValue";
 		BlueEntity<String> newEntity = new BlueEntity<>(key, newValue);
 		
-		IndividualChange<String> updateChange = IndividualChange.manuallyCreateTestChange(key, oldValue, newValue, false);
+		IndividualChange<String> updateChange = IndividualChange.manuallyCreateTestChange(key, oldValue, newValue, Optional.empty());
 		
 		assertEquals(oldValue, updateChange.getOldValue());
 		assertEquals(newValue, updateChange.getNewValue());
 		assertEquals(key, updateChange.getKey());
 		assertEquals(newEntity, updateChange.getNewEntity());
 		assertFalse(updateChange.isKeyChanged());
+		assertEquals(key, updateChange.getOriginalKey());
 	}
 	
 	@Test
@@ -250,6 +259,7 @@ public class IndividualChangeTest {
 		assertEquals(key, replaceChange.getKey());
 		assertEquals(newEntity, replaceChange.getNewEntity());
 		assertFalse(replaceChange.isKeyChanged());
+		assertEquals(key, replaceChange.getOriginalKey());
 	}
 	
 	@Test
@@ -271,9 +281,10 @@ public class IndividualChangeTest {
 		
 		assertEquals(oldValue, replaceChange.getOldValue());
 		assertEquals(newValue, replaceChange.getNewValue());
-		assertEquals(oldKey, replaceChange.getKey());
+		assertEquals(newKey, replaceChange.getKey());
 		assertEquals(newEntity, replaceChange.getNewEntity());
 		assertTrue(replaceChange.isKeyChanged());
+		assertEquals(oldKey, replaceChange.getOriginalKey());
 	}
 	
 	@Test
@@ -297,6 +308,7 @@ public class IndividualChangeTest {
 		assertEquals(oldKey, replaceChange.getKey());
 		assertEquals(newEntity, replaceChange.getNewEntity());
 		assertFalse(replaceChange.isKeyChanged());
+		assertEquals(oldKey, replaceChange.getOriginalKey());
 	}
 	
 	@Test
@@ -321,12 +333,12 @@ public class IndividualChangeTest {
 	
 	@Test
 	public void testHashEquals() {
-		IndividualChange<TestValue> change1 = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob"), new TestValue("Bob", 5), false);
-		IndividualChange<TestValue> change1Clone = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob"), new TestValue("Bob", 5), false);
+		IndividualChange<TestValue> change1 = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob"), new TestValue("Bob", 5), Optional.empty());
+		IndividualChange<TestValue> change1Clone = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob"), new TestValue("Bob", 5), Optional.empty());
 		
-		IndividualChange<TestValue> changeWithDifferentKey = IndividualChange.manuallyCreateTestChange(new TimeKey(2, 2), new TestValue("Bob"), new TestValue("Bob", 5), false);
-		IndividualChange<TestValue> changeWithDifferentOldValue = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob", 3), new TestValue("Bob", 5), false);
-		IndividualChange<TestValue> changeWithDifferentNewValue = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob"), new TestValue("Bob", 8), false);
+		IndividualChange<TestValue> changeWithDifferentKey = IndividualChange.manuallyCreateTestChange(new TimeKey(2, 2), new TestValue("Bob"), new TestValue("Bob", 5), Optional.empty());
+		IndividualChange<TestValue> changeWithDifferentOldValue = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob", 3), new TestValue("Bob", 5), Optional.empty());
+		IndividualChange<TestValue> changeWithDifferentNewValue = IndividualChange.manuallyCreateTestChange(new TimeKey(1, 1), new TestValue("Bob"), new TestValue("Bob", 8), Optional.empty());
 		
 		assertEquals(change1, change1);
 		assertEquals(change1, change1Clone);
@@ -346,7 +358,7 @@ public class IndividualChangeTest {
 		 * We don't want toString to show up as uncovered code. This also verifies that 
 		 * null values don't result in an NPE
 		 */
-		IndividualChange.manuallyCreateTestChange(null, null, null, false).toString();
+		IndividualChange.manuallyCreateTestChange(null, null, null, Optional.empty()).toString();
 	}
 	
 	@Test
@@ -363,17 +375,13 @@ public class IndividualChangeTest {
 		TestValue newValue = new TestValue("Bob", 2);
 		
 		IndividualChange<TestValue> change = IndividualChange.createUpdateChange(new BlueEntity<>(oldKey, oldValue), new BlueEntity<>(newKey, newValue), serializer);
+		IndividualChange<TestValue> expectedWhenDeserializingOldChanges = IndividualChange.manuallyCreateTestChange(newKey, oldValue, newValue, Optional.empty());
+		
 //		Files.write(v1RegisteredChangePath, serializer.serializeObjectToByteArray(change));
 		
-		assertDeserializedChange(change, false, serializer.deserializeObjectFromByteArray(Files.readAllBytes(v0UnregisteredChangePath)));
-		assertDeserializedChange(change, false, serializer.deserializeObjectFromByteArray(Files.readAllBytes(v0RegisteredChangePath)));
-		assertDeserializedChange(change, true, serializer.deserializeObjectFromByteArray(Files.readAllBytes(v1RegisteredChangePath)));
-	}
-
-	@SuppressWarnings("unchecked")
-	private void assertDeserializedChange(IndividualChange<TestValue> expectedChange, boolean expectedKeyChange, Object actualChange) {
-		assertEquals(expectedChange, actualChange);
-		assertEquals(expectedKeyChange, ((IndividualChange<TestValue>) actualChange).isKeyChanged());
+		assertEquals(expectedWhenDeserializingOldChanges, serializer.deserializeObjectFromByteArray(Files.readAllBytes(v0UnregisteredChangePath)));
+		assertEquals(expectedWhenDeserializingOldChanges, serializer.deserializeObjectFromByteArray(Files.readAllBytes(v0RegisteredChangePath)));
+		assertEquals(change, serializer.deserializeObjectFromByteArray(Files.readAllBytes(v1RegisteredChangePath)));
 	}
 
 }

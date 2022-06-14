@@ -71,7 +71,7 @@ public class PendingChange<T extends Serializable> implements Serializable, Reco
 		for (ReadWriteSegment<T> segment: segments) {
 			applyChange(segment);
 		}
-		indexManager.indexChange(key, oldValue, newValue, false);
+		indexManager.indexChange(key, oldValue, newValue);
 	}
 
 	public void applyChange(ReadWriteSegment<T> segment) throws BlueDbException {

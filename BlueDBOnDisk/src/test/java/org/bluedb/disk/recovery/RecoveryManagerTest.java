@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.bluedb.TestCloseableIterator;
@@ -141,7 +142,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 			if(i % 2 == 0) {
 				originalSortedChangeList.add(IndividualChange.createInsertChange(key, newValue));
 			} else {
-				originalSortedChangeList.add(IndividualChange.manuallyCreateTestChange(key, oldValue, newValue, false));
+				originalSortedChangeList.add(IndividualChange.manuallyCreateTestChange(key, oldValue, newValue, Optional.empty()));
 			}
 		}
 		

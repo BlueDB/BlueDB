@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.Mapper;
@@ -168,9 +169,9 @@ public class BatchWriterTest {
 		List<BlueEntity<Call>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<Call>> mockOutput = createMockOutput(serializer, results);
 		
-		IndividualChange<Call> updateInvalidCall = IndividualChange.manuallyCreateTestChange(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue(), false);
+		IndividualChange<Call> updateInvalidCall = IndividualChange.manuallyCreateTestChange(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue(), Optional.empty());
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
-		IndividualChange<Call> update4 = IndividualChange.manuallyCreateTestChange(call4.getKey(), call4.getValue(), updatedcall4.getValue(), false);
+		IndividualChange<Call> update4 = IndividualChange.manuallyCreateTestChange(call4.getKey(), call4.getValue(), updatedcall4.getValue(), Optional.empty());
 		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
@@ -226,9 +227,9 @@ public class BatchWriterTest {
 		outputMetadata.put(BlueFileMetadataKey.ENCRYPTION_VERSION_KEY, "output-key");
 		Mockito.when(mockOutput.getMetadata()).thenReturn(outputMetadata);
 
-		IndividualChange<Call> updateInvalidCall = IndividualChange.manuallyCreateTestChange(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue(), false);
+		IndividualChange<Call> updateInvalidCall = IndividualChange.manuallyCreateTestChange(invalidCall.getKey(), invalidCall.getValue(), updatedInvalidCall.getValue(), Optional.empty());
 		IndividualChange<Call> insert3 = IndividualChange.createInsertChange(call3.getKey(), call3.getValue());
-		IndividualChange<Call> update4 = IndividualChange.manuallyCreateTestChange(call4.getKey(), call4.getValue(), updatedcall4.getValue(), false);
+		IndividualChange<Call> update4 = IndividualChange.manuallyCreateTestChange(call4.getKey(), call4.getValue(), updatedcall4.getValue(), Optional.empty());
 		IndividualChange<Call> delete5 = IndividualChange.createDeleteChange(call5);
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(updateInvalidCall, insert3, update4, delete5));
@@ -276,7 +277,7 @@ public class BatchWriterTest {
 		updatedcall2.getValue().setCallingParty("testChange2");
 		
 		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall);
-		IndividualChange<Call> update4Again = IndividualChange.manuallyCreateTestChange(call2.getKey(), call2.getValue(), updatedcall2.getValue(), false);
+		IndividualChange<Call> update4Again = IndividualChange.manuallyCreateTestChange(call2.getKey(), call2.getValue(), updatedcall2.getValue(), Optional.empty());
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(deleteInvalidObject, update4Again));
 		Range range = new Range(deleteInvalidObject.getGroupingNumber(), update4Again.getGroupingNumber());
@@ -313,7 +314,7 @@ public class BatchWriterTest {
 		updatedcall2.getValue().setCallingParty("testChange3");
 		
 		IndividualChange<Call> insertInvalidObject = IndividualChange.createInsertChange(invalidCall.getKey(), invalidCall.getValue());
-		IndividualChange<Call> updateCall4AThirdTime = IndividualChange.manuallyCreateTestChange(call2.getKey(), updatedcall2.getValue(), updatedcall2.getValue(), false);
+		IndividualChange<Call> updateCall4AThirdTime = IndividualChange.manuallyCreateTestChange(call2.getKey(), updatedcall2.getValue(), updatedcall2.getValue(), Optional.empty());
 		
 		SortedChangeSupplier<Call> sortedChangeSupplier = new InMemorySortedChangeSupplier<Call>(Arrays.asList(insertInvalidObject, updateCall4AThirdTime));
 		Range range = new Range(insertInvalidObject.getGroupingNumber(), updateCall4AThirdTime.getGroupingNumber());

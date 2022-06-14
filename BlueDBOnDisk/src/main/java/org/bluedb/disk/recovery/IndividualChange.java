@@ -2,6 +2,7 @@ package org.bluedb.disk.recovery;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.bluedb.api.Mapper;
 import org.bluedb.api.TimeEntityMapper;
@@ -28,14 +29,14 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 	private final T oldValue;
 	private final T newValue;
 	
-	@Version(1) private final boolean keyChanged;
+	@Version(1) private final BlueKey originalKeyIfDifferent;
 
 	public static <T extends Serializable> IndividualChange<T> createInsertChange(BlueKeyValuePair<T> keyValuePair) {
 		return createInsertChange(keyValuePair.getKey(), keyValuePair.getValue());
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createInsertChange(BlueKey key, T value) {
-		return new IndividualChange<T>(key, null, value, false);
+		return new IndividualChange<T>(key, null, value, Optional.empty());
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createDeleteChange(BlueEntity<T> entity) {
@@ -43,7 +44,7 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 	}
 	
 	public static <T extends Serializable> IndividualChange<T> createDeleteChange(BlueKey key, T value) {
-		return new IndividualChange<T>(key, value, null, false);
+		return new IndividualChange<T>(key, value, null, Optional.empty());
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createUpdateChange(BlueEntity<T> entity, Updater<T> updater, BlueSerializer serializer) throws SerializationException {
@@ -55,7 +56,7 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 		T newValue = serializer.clone(oldValue);
 		updater.update(newValue);
 		
-		return new IndividualChange<T>(key, oldValue, newValue, false);
+		return new IndividualChange<T>(key, oldValue, newValue, Optional.empty());
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createUpdateKeyAndValueChange(BlueKey originalKey, T originalValue, TimeEntityUpdater<T> updater, BlueSerializer serializer) throws BlueDbException {
@@ -67,9 +68,9 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 			throw new BlueDbException("Invalid new key created in update query. If you are going to change the key of a record then the new key must be equivalent. A TimeKey, ActiveTimeKey, or TimeFrameKey would all be considered equivalent if the time and id are the same. The end time on a TimeFrameKey isn't significant for equivalence.");
 		}
 		
-		boolean keyChanged = isEquivalentKeyChanged(originalKey, newKey);
+		Optional<BlueKey> originalKeyIfDifferent = getOriginalKeyIfChanged(originalKey, newKey);
 		
-		return new IndividualChange<T>(newKey, oldValue, newValue, keyChanged);
+		return new IndividualChange<T>(newKey, oldValue, newValue, originalKeyIfDifferent);
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createUpdateChange(BlueEntity<T> oldEntity, BlueEntity<T> newEntity, BlueSerializer serializer) throws BlueDbException {
@@ -77,21 +78,23 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 			throw new BlueDbException("Invalid new key created in update query. If you are going to change the key of a record then the new key must be equivalent. A TimeKey, ActiveTimeKey, or TimeFrameKey would all be considered equivalent if the time and id are the same. The end time on a TimeFrameKey isn't significant for equivalence.");
 		}
 		
-		boolean keyChanged = isEquivalentKeyChanged(oldEntity.getKey(), newEntity.getKey());
+		Optional<BlueKey> originalKeyIfDifferent = getOriginalKeyIfChanged(oldEntity.getKey(), newEntity.getKey());
 		
-		return new IndividualChange<T>(newEntity.getKey(), oldEntity.getValue(), newEntity.getValue(), keyChanged);
+		return new IndividualChange<T>(newEntity.getKey(), oldEntity.getValue(), newEntity.getValue(), originalKeyIfDifferent);
 	}
 
-	private static boolean isEquivalentKeyChanged(BlueKey oldKey, BlueKey newKey) {
+	private static Optional<BlueKey> getOriginalKeyIfChanged(BlueKey oldKey, BlueKey newKey) {
 		if(oldKey.getClass() != newKey.getClass()) {
-			return true;
+			return Optional.of(oldKey);
 		}
 		
 		if(oldKey instanceof TimeFrameKey && newKey instanceof TimeFrameKey) {
-			return ((TimeFrameKey)oldKey).getEndTime() != ((TimeFrameKey)newKey).getEndTime();
+			if(((TimeFrameKey)oldKey).getEndTime() != ((TimeFrameKey)newKey).getEndTime()) {
+				return Optional.of(oldKey);
+			}
 		}
 		
-		return false;
+		return Optional.empty();
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createReplaceChange(BlueEntity<T> entity, Mapper<T> mapper, BlueSerializer serializer) throws SerializationException {
@@ -101,7 +104,7 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 	public static <T extends Serializable> IndividualChange<T> createReplaceChange(BlueKey key, T value, Mapper<T> mapper, BlueSerializer serializer) throws SerializationException {
 		T oldValue = serializer.clone(value);
 		T newValue = mapper.update(serializer.clone(oldValue));
-		return new IndividualChange<T>(key, oldValue, newValue, false);
+		return new IndividualChange<T>(key, oldValue, newValue, Optional.empty());
 	}
 
 	public static <T extends Serializable> IndividualChange<T> createReplaceKeyAndValueChange(BlueKey originalKey, T originalValue, TimeEntityMapper<T> mapper, BlueSerializer serializer) throws BlueDbException {
@@ -112,20 +115,20 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 			throw new BlueDbException("Invalid new key created in replace query. If you are going to change the key of a record then the new key must be equivalent. A TimeKey, ActiveTimeKey, or TimeFrameKey would all be considered equivalent if the time and id are the same. The end time on a TimeFrameKey isn't significant for equivalence.");
 		}
 		
-		boolean keyChanged = isEquivalentKeyChanged(originalKey, newEntity.getKey());
+		Optional<BlueKey> originalKeyIfDifferent = getOriginalKeyIfChanged(originalKey, newEntity.getKey());
 		
-		return new IndividualChange<T>(newEntity.getKey(), oldValue, newEntity.getValue(), keyChanged);
+		return new IndividualChange<T>(newEntity.getKey(), oldValue, newEntity.getValue(), originalKeyIfDifferent);
 	}
 
-	public static <T extends Serializable> IndividualChange<T> manuallyCreateTestChange(BlueKey key, T oldValue, T newValue, boolean keyChanged) {
-		return new IndividualChange<T>(key, oldValue, newValue, keyChanged);
+	public static <T extends Serializable> IndividualChange<T> manuallyCreateTestChange(BlueKey key, T oldValue, T newValue, Optional<BlueKey> originalKeyIfDifferent) {
+		return new IndividualChange<T>(key, oldValue, newValue, originalKeyIfDifferent);
 	}
 
-	private IndividualChange(BlueKey key, T oldValue, T newValue, boolean keyChanged) {
+	private IndividualChange(BlueKey key, T oldValue, T newValue, Optional<BlueKey> originalKeyIfDifferent) {
 		this.key = key;
 		this.oldValue = oldValue;
 		this.newValue = newValue;
-		this.keyChanged = keyChanged;
+		this.originalKeyIfDifferent = originalKeyIfDifferent.orElse(null);
 	}
 
 	public BlueKey getKey() {
@@ -133,9 +136,17 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 	}
 	
 	public boolean isKeyChanged() {
-		return keyChanged;
+		return originalKeyIfDifferent != null;
 	}
-
+	
+	public BlueKey getOriginalKey() {
+		if(originalKeyIfDifferent != null) {
+			return originalKeyIfDifferent;
+		} else {
+			return key;
+		}
+	}
+	
 	public T getOldValue() {
 		return oldValue;
 	}
@@ -179,6 +190,7 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
         if (obj instanceof IndividualChange) {
 			IndividualChange<?> other = (IndividualChange<?>) obj;
 			return Objects.equals(key, other.key) &&
+					Objects.equals(originalKeyIfDifferent, other.originalKeyIfDifferent) &&
 					Objects.equals(oldValue, other.oldValue) &&
 					Objects.equals(newValue, other.newValue);
         }
@@ -188,7 +200,8 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 
 	@Override
 	public String toString() {
-		return "IndividualChange [key=" + key + ", oldValue=" + oldValue + ", newValue=" + newValue + ", keyChanged="
-				+ keyChanged + "]";
+		return "IndividualChange [key=" + key + ", oldValue=" + oldValue + ", newValue=" + newValue
+				+ ", originalKeyIfDifferent=" + originalKeyIfDifferent + "]";
 	}
+	
 }

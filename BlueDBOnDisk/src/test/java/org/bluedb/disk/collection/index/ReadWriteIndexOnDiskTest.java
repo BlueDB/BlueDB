@@ -184,7 +184,7 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		 * by making the index think that it has 3 in it. Getting the list of values with 3 cupcakes
 		 * should filter Bob out since he actually has 4. 
 		 */
-		collection.getIndexManager().indexChange(timeKeyBob3, null, valueBob3, false); //Should make index 3 point to this value even though the indexed value was just changed to 4
+		collection.getIndexManager().indexChange(timeKeyBob3, null, valueBob3); //Should make index 3 point to this value even though the indexed value was just changed to 4
 		valueBob3.addCupcake();
 		
 		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, indexOnDisk, integerKey3)); //3 should point to the value, but since the value doesn't contain 3 it shouldn't return it.
@@ -199,7 +199,7 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		
 		TestValue valueFred1 = new TestValue("Fred", 1);
 		TimeKey timeKeyFred1 = createTimeKey(1, valueFred1);
-		collection.getIndexManager().indexChange(timeKeyFred1, null, valueFred1, false);
+		collection.getIndexManager().indexChange(timeKeyFred1, null, valueFred1);
 		List<TestValue> emptyList = Arrays.asList();
 		
 		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(collection, index, new IntegerKey(1)));
@@ -801,27 +801,27 @@ public class ReadWriteIndexOnDiskTest extends BlueDbDiskTestBase {
 		TestValue oldValue = null;
 		TestValue newValue = new TestValue("Fred", 5);
 		
-		assertEquals(Arrays.asList(add1, add3, add5), index.getSortedIndexChangesForValueChange(key, oldValue, newValue, false));
+		assertEquals(Arrays.asList(add1, add3, add5), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 4);
-		assertEquals(Arrays.asList(add0, remove1, add2, remove3, add4, remove5), index.getSortedIndexChangesForValueChange(key, oldValue, newValue, false));
+		assertEquals(Arrays.asList(add0, remove1, add2, remove3, add4, remove5), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 4);
-		assertEquals(Arrays.asList(), index.getSortedIndexChangesForValueChange(key, oldValue, newValue, false));
+		assertEquals(Arrays.asList(), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 2);
-		assertEquals(Arrays.asList(remove4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue, false));
+		assertEquals(Arrays.asList(remove4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 4);
-		assertEquals(Arrays.asList(add4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue, false));
+		assertEquals(Arrays.asList(add4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 		
 		oldValue = newValue;
 		newValue = new TestValue("Fred", 0);
-		assertEquals(Arrays.asList(remove2, remove4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue, false));
+		assertEquals(Arrays.asList(remove2, remove4), index.getSortedIndexChangesForValueChange(key, oldValue, newValue));
 	}
 
 	private IndividualChange<BlueKey> createIndexChange(int indexKey, BlueKey valueKey, boolean isAdd) {
