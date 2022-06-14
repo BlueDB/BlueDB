@@ -40,7 +40,7 @@ public class SingleRecordChangeTask<T extends Serializable> extends QueryTask {
 			throw new NoSuchElementException("Cannot find object for key: " + key);
 		}
 		
-		BlueKey originalKey = entity != null ? entity.getKey() : null;
+		BlueKey originalKey = entity != null ? entity.getKey() : key;
 		T originalValue = entity != null ? entity.getValue() : null;
 		
 		List<IndividualChange<T>> changeList = Arrays.asList(changeMapper.map(originalKey, originalValue));
