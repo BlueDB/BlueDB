@@ -89,9 +89,14 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 
 	@Override
 	public T get(BlueKey key) throws BlueDbException {
+		BlueEntity<T> entity = getEntity(key);
+		return entity != null ? entity.getValue() : null;
+	}
+
+	public BlueEntity<T> getEntity(BlueKey key) throws BlueDbException {
 		ensureCorrectKeyType(key);
 		ReadableSegment<T> firstSegment = getSegmentManager().getFirstSegment(key);
-		return firstSegment.get(key);
+		return firstSegment.getEntity(key);
 	}
 
 	@Override

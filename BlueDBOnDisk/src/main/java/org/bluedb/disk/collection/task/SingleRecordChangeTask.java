@@ -13,6 +13,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.KeyValueToChangeMapper;
 import org.bluedb.disk.recovery.PendingMassChange;
 import org.bluedb.disk.recovery.RecoveryManager;
+import org.bluedb.disk.serialization.BlueEntity;
 
 public class SingleRecordChangeTask<T extends Serializable> extends QueryTask {
 	private final ReadWriteCollectionOnDisk<T> collection;
@@ -32,14 +33,17 @@ public class SingleRecordChangeTask<T extends Serializable> extends QueryTask {
 	public void execute() throws BlueDbException {
 		RecoveryManager<T> recoveryManager = collection.getRecoveryManager();
 		
-		T value = collection.get(key);
-		if(mode == SingleRecordChangeMode.REQUIRE_DOES_NOT_ALREADY_EXIST && value != null) {
+		BlueEntity<T> entity = collection.getEntity(key);
+		if(mode == SingleRecordChangeMode.REQUIRE_DOES_NOT_ALREADY_EXIST && entity != null) {
 			throw new DuplicateKeyException("Value for key " + key + " already exists", key);
-		} else if(mode == SingleRecordChangeMode.REQUIRE_ALREADY_EXISTS && value == null) {
+		} else if(mode == SingleRecordChangeMode.REQUIRE_ALREADY_EXISTS && entity == null) {
 			throw new NoSuchElementException("Cannot find object for key: " + key);
 		}
 		
-		List<IndividualChange<T>> changeList = Arrays.asList(changeMapper.map(key, value));
+		BlueKey originalKey = entity != null ? entity.getKey() : null;
+		T originalValue = entity != null ? entity.getValue() : null;
+		
+		List<IndividualChange<T>> changeList = Arrays.asList(changeMapper.map(originalKey, originalValue));
 		
 		PendingMassChange<T> changeBatch = recoveryManager.saveMassChangeForUnorderedChanges(changeList.iterator());
 		changeBatch.apply(collection);
