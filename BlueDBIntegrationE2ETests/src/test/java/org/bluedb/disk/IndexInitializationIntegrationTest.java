@@ -20,10 +20,10 @@ import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
-import org.bluedb.disk.collection.index.TestMultiRetrievalKeyExtractor;
-import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper.StartupOption;
+import org.bluedb.disk.helpers.index.TestMultiRetrievalKeyExtractor;
+import org.bluedb.disk.helpers.index.TestRetrievalKeyExtractor;
 import org.junit.Test;
 
 public class IndexInitializationIntegrationTest {

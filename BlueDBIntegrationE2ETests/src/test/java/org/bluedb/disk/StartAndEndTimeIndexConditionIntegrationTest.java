@@ -19,10 +19,10 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.ValueKey;
-import org.bluedb.disk.collection.index.TestEndTimeIndexKeyExtractor;
-import org.bluedb.disk.collection.index.TestStartTimeIndexKeyExtractor;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper.StartupOption;
+import org.bluedb.disk.helpers.index.TestEndTimeIndexKeyExtractor;
+import org.bluedb.disk.helpers.index.TestStartTimeIndexKeyExtractor;
 import org.junit.Test;
 
 public class StartAndEndTimeIndexConditionIntegrationTest {

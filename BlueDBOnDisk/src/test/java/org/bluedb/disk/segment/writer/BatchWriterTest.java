@@ -26,6 +26,7 @@ import org.bluedb.disk.file.BlueObjectOutput;
 import org.bluedb.disk.metadata.BlueFileMetadata;
 import org.bluedb.disk.metadata.BlueFileMetadataKey;
 import org.bluedb.disk.models.calls.Call;
+import org.bluedb.disk.models.calls.CallGenerator;
 import org.bluedb.disk.recovery.InMemorySortedChangeSupplier;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.SortedChangeSupplier;
@@ -152,15 +153,15 @@ public class BatchWriterTest {
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
 		
-		BlueEntity<Call> call1 = Call.generateBasicTestCallEntity(invalidCallStart - 10);
-		BlueEntity<Call> call3 = Call.generateBasicTestCallEntity(invalidCallStart + 10);
-		BlueEntity<Call> call4 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
-		BlueEntity<Call> call5 = Call.generateBasicTestCallEntity(invalidCallStart + 30);
+		BlueEntity<Call> call1 = CallGenerator.generateBasicTestCallEntity(invalidCallStart - 10);
+		BlueEntity<Call> call3 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 10);
+		BlueEntity<Call> call4 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 20);
+		BlueEntity<Call> call5 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 30);
 		
 		BlueEntity<Call> updatedInvalidCall = serializer.clone(invalidCall);
 		updatedInvalidCall.getValue().setReceivingParty("testChange");
 		
-		BlueEntity<Call> updatedcall4 = Call.wrapCallAsEntity(call4.getValue().clone());
+		BlueEntity<Call> updatedcall4 = CallGenerator.wrapCallAsEntity(call4.getValue().clone());
 		updatedcall4.getValue().setCallingParty("testChange");
 		
 		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(call1, invalidCall, call4, call5));
@@ -207,15 +208,15 @@ public class BatchWriterTest {
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
 
-		BlueEntity<Call> call1 = Call.generateBasicTestCallEntity(invalidCallStart - 10);
-		BlueEntity<Call> call3 = Call.generateBasicTestCallEntity(invalidCallStart + 10);
-		BlueEntity<Call> call4 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
-		BlueEntity<Call> call5 = Call.generateBasicTestCallEntity(invalidCallStart + 30);
+		BlueEntity<Call> call1 = CallGenerator.generateBasicTestCallEntity(invalidCallStart - 10);
+		BlueEntity<Call> call3 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 10);
+		BlueEntity<Call> call4 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 20);
+		BlueEntity<Call> call5 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 30);
 
 		BlueEntity<Call> updatedInvalidCall = serializer.clone(invalidCall);
 		updatedInvalidCall.getValue().setReceivingParty("testChange");
 
-		BlueEntity<Call> updatedcall4 = Call.wrapCallAsEntity(call4.getValue().clone());
+		BlueEntity<Call> updatedcall4 = CallGenerator.wrapCallAsEntity(call4.getValue().clone());
 		updatedcall4.getValue().setCallingParty("testChange");
 
 		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(call1, invalidCall, call4, call5));
@@ -265,7 +266,7 @@ public class BatchWriterTest {
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
 		
-		BlueEntity<Call> call2 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
+		BlueEntity<Call> call2 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 20);
 		
 		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(invalidCall, call2));
 		BlueObjectInput<BlueEntity<Call>> mockInput = createMockInput(serializer, initialValues);
@@ -273,7 +274,7 @@ public class BatchWriterTest {
 		List<BlueEntity<Call>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<Call>> mockOutput = createMockOutput(serializer, results);
 		
-		BlueEntity<Call> updatedcall2 = Call.wrapCallAsEntity(call2.getValue().clone());
+		BlueEntity<Call> updatedcall2 = CallGenerator.wrapCallAsEntity(call2.getValue().clone());
 		updatedcall2.getValue().setCallingParty("testChange2");
 		
 		IndividualChange<Call> deleteInvalidObject = IndividualChange.createDeleteChange(invalidCall);
@@ -302,7 +303,7 @@ public class BatchWriterTest {
 		BlueEntity<Call> invalidCall = TestUtils.loadCorruptCall();
 		long invalidCallStart = invalidCall.getValue().getStart();
 		
-		BlueEntity<Call> call2 = Call.generateBasicTestCallEntity(invalidCallStart + 20);
+		BlueEntity<Call> call2 = CallGenerator.generateBasicTestCallEntity(invalidCallStart + 20);
 		
 		List<BlueEntity<Call>> initialValues = new LinkedList<>(Arrays.asList(call2));
 		BlueObjectInput<BlueEntity<Call>> mockInput = createMockInput(serializer, initialValues);
@@ -310,7 +311,7 @@ public class BatchWriterTest {
 		List<BlueEntity<Call>> results = new ArrayList<>();
 		BlueObjectOutput<BlueEntity<Call>> mockOutput = createMockOutput(serializer, results);
 		
-		BlueEntity<Call> updatedcall2 = Call.wrapCallAsEntity(call2.getValue().clone());
+		BlueEntity<Call> updatedcall2 = CallGenerator.wrapCallAsEntity(call2.getValue().clone());
 		updatedcall2.getValue().setCallingParty("testChange3");
 		
 		IndividualChange<Call> insertInvalidObject = IndividualChange.createInsertChange(invalidCall.getKey(), invalidCall.getValue());
