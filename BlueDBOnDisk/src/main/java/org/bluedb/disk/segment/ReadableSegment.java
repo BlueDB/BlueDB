@@ -82,11 +82,11 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 	}
 
 	public List<File> getOrderedFilesEnclosedInRange(Range range) {
-		return RangeNamedFiles.getOrderedFilesEnclosedInRange(segmentPath, range); //Will throw exception if directory doesn't exist
+		return RangeNamedFiles.getOrderedFilesEnclosedInRange(segmentPath, range);
 	}
 
 	public List<File> getOrderedFilesInRange(Range range) {
-		return RangeNamedFiles.getOrderedFilesInRange(segmentPath, range); //Will throw exception if directory doesn't exist
+		return RangeNamedFiles.getOrderedFilesInRange(segmentPath, range);
 	}
 
 	protected BlueObjectInput<BlueEntity<T>> getObjectInputFor(Path path) throws BlueDbException {

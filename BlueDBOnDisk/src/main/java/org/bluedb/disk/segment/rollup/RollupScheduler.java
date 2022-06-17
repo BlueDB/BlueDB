@@ -2,10 +2,13 @@ package org.bluedb.disk.segment.rollup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.bluedb.disk.Blutils;
@@ -77,10 +80,18 @@ public class RollupScheduler {
 		}
 	}
 
-	public void forceScheduleRollups() {
+	public void forceScheduleRollups(boolean blockUntilFinished) throws InterruptedException, ExecutionException {
+		List<Future<?>> futures = new LinkedList<>();
+		
 		List<RollupTarget> allRangesWaitingForRollups = new ArrayList<>(rollupTimes.keySet());
 		for (RollupTarget timeRange: allRangesWaitingForRollups) {
-			scheduleRollup(timeRange);
+			futures.add(scheduleRollup(timeRange));
+		}
+		
+		if(blockUntilFinished) {
+			for(Future<?> future : futures) {
+				future.get();
+			}
 		}
 	}
 
@@ -101,7 +112,7 @@ public class RollupScheduler {
 		return results;
 	}
 
-	protected void scheduleRollup(RollupTarget target) {
+	protected Future<?> scheduleRollup(RollupTarget target) {
 		Runnable rollupRunnable;
 		if (target instanceof IndexRollupTarget) {
 			IndexRollupTarget indexTarget = (IndexRollupTarget) target;
@@ -109,8 +120,9 @@ public class RollupScheduler {
 		} else {
 			rollupRunnable = new RollupTask<>(collection, target);
 		}
-		collection.submitTask(rollupRunnable);
+		Future<?> future = collection.submitTask(rollupRunnable);
 		rollupTimes.remove(target);
+		return future;
 	}
 
 	public Map<RollupTarget, Long> getRollupTimes() {

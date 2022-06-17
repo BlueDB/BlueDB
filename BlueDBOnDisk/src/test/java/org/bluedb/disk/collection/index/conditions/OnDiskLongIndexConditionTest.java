@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.keys.LongKey;
+import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.ValueKey;
@@ -34,8 +35,12 @@ public class OnDiskLongIndexConditionTest {
 	private static final String INDEX_NAME = "index-name";
 	private static final Path INDEX_PATH = Paths.get(INDEX_NAME);
 	
-	private ReadableIndexOnDiskMocker<LongKey, TestValue> indexMocker = new ReadableIndexOnDiskMocker<>();
-	private OnDiskLongIndexCondition<TestValue> indexCondition = new OnDiskLongIndexCondition<>(indexMocker.getIndex());
+	private ReadableIndexOnDiskMocker<LongKey, TestValue> longIndexMocker = new ReadableIndexOnDiskMocker<>();
+	private OnDiskLongIndexCondition<TestValue> longIndexCondition = new OnDiskLongIndexCondition<>(longIndexMocker.getIndex());
+	
+	private ReadableIndexOnDiskMocker<LongTimeKey, TestValue> longTimeIndexMocker = new ReadableIndexOnDiskMocker<>();
+	private OnDiskLongIndexCondition<TestValue> longTimeIndexCondition = new OnDiskLongIndexCondition<>(longTimeIndexMocker.getIndex());
+	
 	private TestSegmentRangeCalculator segmentRangeCalculator = new TestSegmentRangeCalculator(10);
 	
 	private BlueEntity<TestValue> entity1 = new BlueEntity<TestValue>(new TimeKey(1, 6), new TestValue("name1", 6));
@@ -52,118 +57,143 @@ public class OnDiskLongIndexConditionTest {
 	private List<BlueEntity<TestValue>> allEntities = Arrays.asList(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8, entity9, entity10);
 	
 	public OnDiskLongIndexConditionTest() {
-		indexMocker.setIndexName(INDEX_NAME);
-		indexMocker.setIndexedCollectionType(TestValue.class);
-		indexMocker.setIndexKeyType(LongKey.class);
-		indexMocker.setIndexPath(INDEX_PATH);
+		longIndexMocker.setIndexName(INDEX_NAME);
+		longIndexMocker.setIndexedCollectionType(TestValue.class);
+		longIndexMocker.setIndexKeyType(LongKey.class);
+		longIndexMocker.setIndexPath(INDEX_PATH);
 		
-		indexMocker.setIndexKeyToIndexSegmentRangeMapper(valueKey -> segmentRangeCalculator.calculateRange(valueKey.getGroupingNumber()));
-		indexMocker.setValueKeyToCollectionSegmentRangeMapper(valueKey -> segmentRangeCalculator.calculateRange(valueKey.getGroupingNumber()));
+		longIndexMocker.setIndexKeyToIndexSegmentRangeMapper(valueKey -> segmentRangeCalculator.calculateRange(valueKey.getGroupingNumber()));
+		longIndexMocker.setValueKeyToCollectionSegmentRangeMapper(valueKey -> segmentRangeCalculator.calculateRange(valueKey.getGroupingNumber()));
 		
-		indexMocker.setIndexExtractor(entity -> {
+		longIndexMocker.setIndexExtractor(entity -> {
 			ValueKey indexKey = toIndexKey(entity);
 			return indexKey == null ? new LinkedList<>() : new LinkedList<>(Arrays.asList(indexKey));	
 		});
+		longIndexMocker.setEntities(new LinkedList<>(allEntities));
 		
-		indexMocker.setEntities(new LinkedList<>(allEntities));
+		longTimeIndexMocker.setIndexName(INDEX_NAME);
+		longTimeIndexMocker.setIndexedCollectionType(TestValue.class);
+		longTimeIndexMocker.setIndexKeyType(LongTimeKey.class);
+		longTimeIndexMocker.setIndexPath(INDEX_PATH);
+		
+		longTimeIndexMocker.setIndexKeyToIndexSegmentRangeMapper(valueKey -> segmentRangeCalculator.calculateRange(valueKey.getGroupingNumber()));
+		longTimeIndexMocker.setValueKeyToCollectionSegmentRangeMapper(valueKey -> segmentRangeCalculator.calculateRange(valueKey.getGroupingNumber()));
+		
+		longTimeIndexMocker.setIndexExtractor(entity -> {
+			ValueKey indexKey = toIndexKey(entity);
+			return indexKey == null ? new LinkedList<>() : new LinkedList<>(Arrays.asList(indexKey));	
+		});
+		longTimeIndexMocker.setEntities(new LinkedList<>(allEntities));
 	}
 
 	@Test
 	public void test_simpleGetters() {
-		assertEquals(INDEX_NAME, indexCondition.getIndexName());
-		assertEquals(TestValue.class, indexCondition.getIndexedCollectionType());
-		assertEquals(LongKey.class, indexCondition.getIndexKeyType());
-		assertEquals(INDEX_PATH, indexCondition.getIndexPath());
+		assertEquals(INDEX_NAME, longIndexCondition.getIndexName());
+		assertEquals(TestValue.class, longIndexCondition.getIndexedCollectionType());
+		assertEquals(LongKey.class, longIndexCondition.getIndexKeyType());
+		assertEquals(INDEX_PATH, longIndexCondition.getIndexPath());
 		
 	}
 	
 	@Test
 	public void test_extractIndexValueFromKey() {
-		assertNull(indexCondition.extractIndexValueFromKey(null));
-		assertNull(indexCondition.extractIndexValueFromKey(new StringKey("My String")));
+		assertNull(longIndexCondition.extractIndexValueFromKey(null));
+		assertNull(longTimeIndexCondition.extractIndexValueFromKey(null));
+		
+		assertNull(longIndexCondition.extractIndexValueFromKey(new StringKey("My String")));
+		assertNull(longTimeIndexCondition.extractIndexValueFromKey(new StringKey("My String")));
 		
 		for(BlueEntity<TestValue> entity : allEntities) {
 			ValueKey indexKey = toIndexKey(entity);
 			if(indexKey instanceof LongKey) {
 				Long expectedIndexValue = indexKey == null ? null : ((LongKey)indexKey).getId();
-				assertEquals(expectedIndexValue, indexCondition.extractIndexValueFromKey(indexKey));
+				assertEquals(expectedIndexValue, longIndexCondition.extractIndexValueFromKey(indexKey));
 			} else {
-				assertNull(indexCondition.extractIndexValueFromKey(indexKey));
+				assertNull(longIndexCondition.extractIndexValueFromKey(indexKey));
+				assertNull(longTimeIndexCondition.extractIndexValueFromKey(indexKey));
 			}
 		}
+
+		assertEquals(1L, (long) longIndexCondition.extractIndexValueFromKey(new LongTimeKey(1L)));
+	}
+	
+	@Test
+	public void test_createKeyForIndexValue() {
+		assertEquals(new LongKey(1), longIndexCondition.createKeyForIndexValue(1L));
+		assertEquals(new LongTimeKey(1), longTimeIndexCondition.createKeyForIndexValue(1L));
 	}
 	
 	@Test
 	public void test_extractIndexKeysFromEntity() {
 		for(BlueEntity<TestValue> entity : allEntities) {
-			assertEquals(toIndexKeyList(entity), indexCondition.extractIndexKeysFromEntity(entity));
+			assertEquals(toIndexKeyList(entity), longIndexCondition.extractIndexKeysFromEntity(entity));
 		}
 	}
 	
 	@Test
 	public void test_conditionConfiguration_exceptionsThrownForPassingNullIn() {
 		try {
-			indexCondition.isEqualTo(null);
+			longIndexCondition.isEqualTo(null);
 			fail();
 		} catch(InvalidParameterException e) { }
 		
 		try {
-			indexCondition.isIn((Set<Long>)null);
+			longIndexCondition.isIn((Set<Long>)null);
 			fail();
 		} catch(InvalidParameterException e) { }
 		
 		try {
-			indexCondition.isIn((BlueSimpleSet<Long>)null);
+			longIndexCondition.isIn((BlueSimpleSet<Long>)null);
 			fail();
 		} catch(InvalidParameterException e) { }
 		
 		try {
-			indexCondition.meets(null);
+			longIndexCondition.meets(null);
 			fail();
 		} catch(InvalidParameterException e) { }
 	}
 	
 	@Test
 	public void test_conditionConfiguration_exceptionsThrownForAddingConditionsAfterSettingEqualsCondition() {
-		indexCondition.isEqualTo(10L);
+		longIndexCondition.isEqualTo(10L);
 		
 		try {
-			indexCondition.isIn(new BlueSimpleInMemorySet<Long>(new HashSet<>()));
+			longIndexCondition.isIn(new BlueSimpleInMemorySet<Long>(new HashSet<>()));
 			fail();
 		} catch(IllegalStateException e) { }
 		
 		try {
-			indexCondition.isIn(new HashSet<>());
+			longIndexCondition.isIn(new HashSet<>());
 			fail();
 		} catch(IllegalStateException e) { }
 		
 		try {
-			indexCondition.meets(indexedLong -> false);
+			longIndexCondition.meets(indexedLong -> false);
 			fail();
 		} catch(IllegalStateException e) { }
 		
 		try {
-			indexCondition.isInRange(0, 1);
+			longIndexCondition.isInRange(0, 1);
 			fail();
 		} catch(IllegalStateException e) { }
 		
 		try {
-			indexCondition.isLessThan(10);
+			longIndexCondition.isLessThan(10);
 			fail();
 		} catch(IllegalStateException e) { }
 		
 		try {
-			indexCondition.isLessThanOrEqualTo(10);
+			longIndexCondition.isLessThanOrEqualTo(10);
 			fail();
 		} catch(IllegalStateException e) { }
 		
 		try {
-			indexCondition.isGreaterThan(10);
+			longIndexCondition.isGreaterThan(10);
 			fail();
 		} catch(IllegalStateException e) { }
 		
 		try {
-			indexCondition.isGreaterThanOrEqualTo(10);
+			longIndexCondition.isGreaterThanOrEqualTo(10);
 			fail();
 		} catch(IllegalStateException e) { }
 	}
@@ -171,80 +201,80 @@ public class OnDiskLongIndexConditionTest {
 	@Test
 	public void test_allEntitiesContainingIndexValueMatchByDefault() {
 		assertTestMethod(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8);
-		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isIn() {
-		indexCondition.isIn(new HashSet<Long>(Arrays.asList(10L, 24L, 29L)));
+		longIndexCondition.isIn(new HashSet<Long>(Arrays.asList(10L, 24L, 29L)));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
-		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_meets() {
 		HashSet<Long> valuesToMatch = new HashSet<Long>(Arrays.asList(10L, 24L, 29L));
-		indexCondition.meets(value -> valuesToMatch.contains(value));
+		longIndexCondition.meets(value -> valuesToMatch.contains(value));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
-		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isInRange() {
-		indexCondition.isInRange(10, 29);
+		longIndexCondition.isInRange(10, 29);
 		
 		assertTestMethod(entity2, entity3, entity4, entity5, entity6, entity7);
-		assertEquals(toIncludedSegmentRangeInfo(entity2, entity3, entity4, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity2, entity3, entity4, entity5, entity6, entity7), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isEqualTo() {
-		indexCondition.isEqualTo(24L);
+		longIndexCondition.isEqualTo(24L);
 		
 		assertTestMethod(entity5, entity6);
-		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isLessThan() {
-		indexCondition.isLessThan(24);
+		longIndexCondition.isLessThan(24);
 		
 		assertTestMethod(entity1, entity2, entity3, entity4);
-		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isLessThanOrEqualTo() {
-		indexCondition.isLessThanOrEqualTo(24);
+		longIndexCondition.isLessThanOrEqualTo(24);
 		
 		assertTestMethod(entity1, entity2, entity3, entity4, entity5, entity6);
-		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isGreaterThan() {
-		indexCondition.isGreaterThan(24);
+		longIndexCondition.isGreaterThan(24);
 		
 		assertTestMethod(entity7, entity8);
-		assertEquals(toIncludedSegmentRangeInfo(entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity7, entity8), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isGreaterThanOrEqualTo() {
-		indexCondition.isGreaterThanOrEqualTo(24);
+		longIndexCondition.isGreaterThanOrEqualTo(24);
 		
 		assertTestMethod(entity5, entity6, entity7, entity8);
-		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6, entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6, entity7, entity8), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	@Test
 	public void test_isGreaterThanANDisLessThan() {
-		indexCondition.isGreaterThan(10).isLessThan(24);
+		longIndexCondition.isGreaterThan(10).isLessThan(24);
 		
 		assertTestMethod(entity3, entity4);
-		assertEquals(toIncludedSegmentRangeInfo(entity3, entity4), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+		assertEquals(toIncludedSegmentRangeInfo(entity3, entity4), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
 	private ValueKey toIndexKey(BlueEntity<TestValue> collectionEntity) {
@@ -290,7 +320,7 @@ public class OnDiskLongIndexConditionTest {
 		for(BlueEntity<TestValue> entity : allEntities) {
 			boolean shouldMatch = entitySetThatShouldMatch.contains(entity);
 			String failureMessage = "Expected entity " + entity + " to " + (shouldMatch ? "match" : "not match");
-			assertEquals(failureMessage, shouldMatch, indexCondition.test(entity));
+			assertEquals(failureMessage, shouldMatch, longIndexCondition.test(entity));
 		}
 	}
 	

@@ -223,8 +223,8 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 		return sharedExecutor;
 	}
 
-	public void submitTask(Runnable task) {
-		sharedExecutor.submitQueryTask(collectionKey, task);
+	public Future<?> submitTask(Runnable task) {
+		return sharedExecutor.submitQueryTask(collectionKey, task);
 	}
 
 	public void executeTask(Runnable task) throws BlueDbException{

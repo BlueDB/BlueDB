@@ -31,6 +31,7 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.index.conditions.BlueIndexCondition;
+import org.bluedb.api.keys.ActiveTimeKey;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
@@ -610,6 +611,57 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 				.whereKeyIsIn(new HashSet<>(Arrays.asList(keys.get(0), keys.get(1))))
 				.afterOrAtTime(fiveHoursAgo)
 				.beforeOrAtTime(now)
+				.getList();
+		assertQueryResults(queryResults, 0, 0, 1);
+	}
+	
+	@Test
+	public void test_query_IncludeAll_OnlyActive_OrOnlyCompleted() throws BlueDbException {
+		/*
+		 * The where key is in method for version 1 collections needs to include pre-segment keys
+		 * in the first segment included range info.
+		 */
+		BlueTimeCollection<TestValue> timeCollection = db().getTimeCollectionBuilder("my-time-collection", TimeKey.class, TestValue.class)
+			.withCollectionVersion(BlueCollectionVersion.VERSION_2)
+			.build();
+		
+		long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
+		long now = System.currentTimeMillis();
+		long threeHoursAgo = now - oneHour*3;
+		long fourHoursAgo = now - oneHour*4;
+		long fiveHoursAgo = now - oneHour*5;
+		long sevenHoursAgo = now - oneHour*7;
+		long eightHoursAgo = now - oneHour*8;
+
+		ArrayList<BlueKey> keys = new ArrayList<>();
+		keys.add(new TimeFrameKey(0, eightHoursAgo + 10, fourHoursAgo));
+		keys.add(new TimeFrameKey(1, sevenHoursAgo, now));
+		keys.add(new ActiveTimeKey(2, threeHoursAgo));
+		
+		Map<BlueKey, TestValue> keyValuePairs = new HashMap<>();
+		for(int i = 0; i < keys.size(); i++) {
+			keyValuePairs.put(keys.get(i), new TestValue(String.valueOf(i), i));
+		}
+		
+		timeCollection.batchUpsert(keyValuePairs);
+		
+		List<TestValue> queryResults = timeCollection.query()
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.getList();
+		assertQueryResults(queryResults, 0, 0, 1, 2);
+		
+		queryResults = timeCollection.query()
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.whereKeyIsActive()
+				.getList();
+		assertQueryResults(queryResults, 0, 2);
+		
+		queryResults = timeCollection.query()
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.whereKeyIsNotActive()
 				.getList();
 		assertQueryResults(queryResults, 0, 0, 1);
 	}

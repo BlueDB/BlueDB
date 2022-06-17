@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -807,7 +808,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_batchUpdateIntoInfinitelyRolledUpPreSegmentChunk() throws BlueDbException {
+	public void test_batchUpdateIntoInfinitelyRolledUpPreSegmentChunk() throws BlueDbException, InterruptedException, ExecutionException {
 		assertEquals(TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS), getTimeSegmentManager().getPathManager().getSegmentSize());
 		
 		long now = System.currentTimeMillis();
@@ -825,7 +826,7 @@ public class ReadWriteSegmentTest extends BlueDbDiskTestBase {
 		insertAtTimeFrame(threeHoursAgo, threeHoursInFuture, jeremy);
 		insertAtTimeFrame(now, now + 10, ben);
 
-		getTimeCollection().getRollupScheduler().forceScheduleRollups();
+		getTimeCollection().getRollupScheduler().forceScheduleRollups(true);
 		insertAtTimeFrame(now + 20, now + 50, weston); //Shouldn't complete until rollups are done
 		
 		getTimeCollection().query()

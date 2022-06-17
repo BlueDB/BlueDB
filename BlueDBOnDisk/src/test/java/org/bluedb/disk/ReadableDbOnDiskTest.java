@@ -1008,8 +1008,8 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		insertItems(timeFrameItems, secondCollection);
 		
 		//Force rollups so that we can test the querying of chunks that contain multiple items.
-		timeCollection.getRollupScheduler().forceScheduleRollups();
-		secondCollection.getRollupScheduler().forceScheduleRollups();
+		timeCollection.getRollupScheduler().forceScheduleRollups(true);
+		secondCollection.getRollupScheduler().forceScheduleRollups(true);
 		
 		/*
 		 * Run updates on each collection in order to wait until rollups are done. These both update the cupcake
