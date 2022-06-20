@@ -2,6 +2,7 @@ package org.bluedb.api;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -63,6 +64,13 @@ public interface ReadBlueQuery<V extends Serializable> {
 	 * @throws BlueDbException
 	 */
 	List<V> getList() throws BlueDbException;
+
+	/**
+	 * Executes the query and returns the first result or Optional.empty if there are no results.
+	 * @return the first result from the query or Optional.empty if there are no results.
+	 * @throws BlueDbException
+	 */
+	Optional<V> getFirst() throws BlueDbException;
 
 	/**
 	 * Begins executing the query and returns an iterator for processing the results. BlueDB will iterate over

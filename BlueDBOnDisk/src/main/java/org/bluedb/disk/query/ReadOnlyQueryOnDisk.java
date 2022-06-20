@@ -77,6 +77,16 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 	public List<T> getList() throws BlueDbException {
 		return Blutils.map(getEntities(), (e) -> e.getValue());
 	}
+	
+	@Override
+	public Optional<T> getFirst() throws BlueDbException {
+		try(CloseableIterator<T> queryIterator = getIterator()) {
+			if(queryIterator.hasNext()) {
+				return Optional.of(queryIterator.next());
+			}
+		}
+		return Optional.empty();
+	}
 
 	@Override
 	public CloseableIterator<T> getIterator() throws BlueDbException {
