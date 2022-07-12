@@ -16,6 +16,8 @@ import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.Blutils;
+import org.bluedb.disk.CloseableIteratorWrapper;
+import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
 import org.bluedb.disk.StreamUtils;
 import org.bluedb.disk.collection.index.IndexCompositeKey;
 import org.bluedb.disk.collection.index.ReadableIndexOnDisk;
@@ -127,6 +129,29 @@ public abstract class OnDiskIndexConditionBase<I extends Serializable, T extends
 			}
 		}
 		return includedCollectionSegmentRangeInfo;
+	}
+	
+	@Override
+	public CloseableIterator<BlueKey> getMatchingValueKeysIterator() {
+		List<Condition<BlueKey>> indexKeyConditions = new LinkedList<>();
+		indexKeyConditions.add(this::doesIndexKeyMatch);
+		
+		//We're looking at the index key, not the key of the original object
+		List<Condition<BlueKey>> objectConditions = new LinkedList<>();
+		
+		Optional<IncludedSegmentRangeInfo> includedIndexSegmentRangeInfo = getIndexSegmentRangesToInclude();
+		CloseableIterator<BlueEntity<BlueKey>> entityIterator = index.getEntities(range, indexKeyConditions, objectConditions, includedIndexSegmentRangeInfo);
+		
+		IteratorWrapperMapper<BlueEntity<BlueKey>, BlueKey> valueKeyMapper = indexEntity -> {
+			BlueKey key = indexEntity.getKey();
+			if(key instanceof IndexCompositeKey) {
+				IndexCompositeKey<?> indexCompositeKey = (IndexCompositeKey<?>) key;
+				return indexCompositeKey.getValueKey();
+			}
+			return key;
+		};
+		
+		return new CloseableIteratorWrapper<BlueEntity<BlueKey>, BlueKey>(entityIterator, valueKeyMapper);
 	}
 	
 	private boolean doesIndexKeyMatch(BlueKey key) {

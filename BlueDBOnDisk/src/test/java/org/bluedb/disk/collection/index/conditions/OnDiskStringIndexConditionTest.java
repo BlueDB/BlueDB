@@ -15,8 +15,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
 import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
@@ -145,7 +147,14 @@ public class OnDiskStringIndexConditionTest {
 	@Test
 	public void test_allEntitiesContainingIndexValueMatchByDefault() {
 		assertTestMethod(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8);
+		assertMatchingValueKeys(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8);
 		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
+	}
+	
+	@Test
+	public void test_allValueKeysMatchWhenNonIndexCompositeKeysAreReturnedByIndex() {
+		indexMocker.setEntitiesToReturnNonCompositeIndexKeys(new LinkedList<>(allEntities));
+		assertMatchingValueKeys(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8);
 	}
 	
 	@Test
@@ -153,6 +162,7 @@ public class OnDiskStringIndexConditionTest {
 		indexCondition.isIn(new HashSet<String>(Arrays.asList("10", "24", "29")));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
+		assertMatchingValueKeys(entity2, entity5, entity6, entity7);
 		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -162,6 +172,7 @@ public class OnDiskStringIndexConditionTest {
 		indexCondition.meets(value -> valuesToMatch.contains(value));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
+		assertMatchingValueKeys(entity2, entity5, entity6, entity7);
 		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -170,6 +181,7 @@ public class OnDiskStringIndexConditionTest {
 		indexCondition.isEqualTo("24");
 		
 		assertTestMethod(entity5, entity6);
+		assertMatchingValueKeys(entity5, entity6);
 		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6), indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -218,6 +230,22 @@ public class OnDiskStringIndexConditionTest {
 			String failureMessage = "Expected entity " + entity + " to " + (shouldMatch ? "match" : "not match");
 			assertEquals(failureMessage, shouldMatch, indexCondition.test(entity));
 		}
+	}
+
+	@SafeVarargs
+	private final void assertMatchingValueKeys(BlueEntity<TestValue>...entitiesThatShouldMatch) {
+		HashSet<BlueKey> expectedMatchingValueKeys = StreamUtils.stream(entitiesThatShouldMatch)
+			.map(BlueEntity::getKey)
+			.collect(Collectors.toCollection(HashSet::new));
+		
+		HashSet<BlueKey> actualMatchingValueKeys = new HashSet<>();
+		try(CloseableIterator<BlueKey> matchingValueKeysIterator = indexCondition.getMatchingValueKeysIterator()) {
+			while(matchingValueKeysIterator.hasNext()) {
+				actualMatchingValueKeys.add(matchingValueKeysIterator.next());
+			}
+		}
+
+		assertEquals(expectedMatchingValueKeys, actualMatchingValueKeys);
 	}
 	
 }

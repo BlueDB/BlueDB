@@ -3,8 +3,10 @@ package org.bluedb.api.index.conditions;
 import java.io.Serializable;
 import java.util.Set;
 
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.keys.BlueKey;
 
 public interface BlueIndexCondition<V extends Serializable> {
 	
@@ -42,5 +44,14 @@ public interface BlueIndexCondition<V extends Serializable> {
 	 * @return itself with the condition added.
 	 */
 	public BlueIndexCondition<V> meets(Condition<V> condition);
+	
+	/**
+	 * If you don't want to utilize the index condition in a query and just want to know what keys match it then you
+	 * can use this method to get a list of matching keys. They are returned in order based on the index key, then by
+	 * the value key.
+	 * @return a list of collection keys that match this index condition. They are returned in order based on the index 
+	 * key, then by the value key.
+	 */
+	public CloseableIterator<BlueKey> getMatchingValueKeysIterator();
 	
 }

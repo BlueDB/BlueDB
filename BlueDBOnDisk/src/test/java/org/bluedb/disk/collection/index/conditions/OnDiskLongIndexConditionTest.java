@@ -15,8 +15,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
 import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.LongTimeKey;
 import org.bluedb.api.keys.StringKey;
@@ -205,10 +207,17 @@ public class OnDiskLongIndexConditionTest {
 	}
 	
 	@Test
+	public void test_allValueKeysMatchWhenNonIndexCompositeKeysAreReturnedByIndex() {
+		longIndexMocker.setEntitiesToReturnNonCompositeIndexKeys(new LinkedList<>(allEntities));
+		assertMatchingValueKeys(entity1, entity2, entity3, entity4, entity5, entity6, entity7, entity8);
+	}
+	
+	@Test
 	public void test_isIn() {
 		longIndexCondition.isIn(new HashSet<Long>(Arrays.asList(10L, 24L, 29L)));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
+		assertMatchingValueKeys(entity2, entity5, entity6, entity7);
 		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -218,6 +227,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.meets(value -> valuesToMatch.contains(value));
 		
 		assertTestMethod(entity2, entity5, entity6, entity7);
+		assertMatchingValueKeys(entity2, entity5, entity6, entity7);
 		assertEquals(toIncludedSegmentRangeInfo(entity2, entity5, entity6, entity7), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -226,6 +236,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.isInRange(10, 29);
 		
 		assertTestMethod(entity2, entity3, entity4, entity5, entity6, entity7);
+		assertMatchingValueKeys(entity2, entity3, entity4, entity5, entity6, entity7);
 		assertEquals(toIncludedSegmentRangeInfo(entity2, entity3, entity4, entity5, entity6, entity7), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -234,6 +245,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.isEqualTo(24L);
 		
 		assertTestMethod(entity5, entity6);
+		assertMatchingValueKeys(entity5, entity6);
 		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -242,6 +254,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.isLessThan(24);
 		
 		assertTestMethod(entity1, entity2, entity3, entity4);
+		assertMatchingValueKeys(entity1, entity2, entity3, entity4);
 		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -250,6 +263,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.isLessThanOrEqualTo(24);
 		
 		assertTestMethod(entity1, entity2, entity3, entity4, entity5, entity6);
+		assertMatchingValueKeys(entity1, entity2, entity3, entity4, entity5, entity6);
 		assertEquals(toIncludedSegmentRangeInfo(entity1, entity2, entity3, entity4, entity5, entity6), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -258,6 +272,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.isGreaterThan(24);
 		
 		assertTestMethod(entity7, entity8);
+		assertMatchingValueKeys(entity7, entity8);
 		assertEquals(toIncludedSegmentRangeInfo(entity7, entity8), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -266,6 +281,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.isGreaterThanOrEqualTo(24);
 		
 		assertTestMethod(entity5, entity6, entity7, entity8);
+		assertMatchingValueKeys(entity5, entity6, entity7, entity8);
 		assertEquals(toIncludedSegmentRangeInfo(entity5, entity6, entity7, entity8), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -274,6 +290,7 @@ public class OnDiskLongIndexConditionTest {
 		longIndexCondition.isGreaterThan(10).isLessThan(24);
 		
 		assertTestMethod(entity3, entity4);
+		assertMatchingValueKeys(entity3, entity4);
 		assertEquals(toIncludedSegmentRangeInfo(entity3, entity4), longIndexCondition.getSegmentRangeInfoToIncludeInCollectionQuery());
 	}
 	
@@ -322,6 +339,22 @@ public class OnDiskLongIndexConditionTest {
 			String failureMessage = "Expected entity " + entity + " to " + (shouldMatch ? "match" : "not match");
 			assertEquals(failureMessage, shouldMatch, longIndexCondition.test(entity));
 		}
+	}
+
+	@SafeVarargs
+	private final void assertMatchingValueKeys(BlueEntity<TestValue>...entitiesThatShouldMatch) {
+		HashSet<BlueKey> expectedMatchingValueKeys = StreamUtils.stream(entitiesThatShouldMatch)
+			.map(BlueEntity::getKey)
+			.collect(Collectors.toCollection(HashSet::new));
+		
+		HashSet<BlueKey> actualMatchingValueKeys = new HashSet<>();
+		try(CloseableIterator<BlueKey> matchingValueKeysIterator = longIndexCondition.getMatchingValueKeysIterator()) {
+			while(matchingValueKeysIterator.hasNext()) {
+				actualMatchingValueKeys.add(matchingValueKeysIterator.next());
+			}
+		}
+
+		assertEquals(expectedMatchingValueKeys, actualMatchingValueKeys);
 	}
 	
 }

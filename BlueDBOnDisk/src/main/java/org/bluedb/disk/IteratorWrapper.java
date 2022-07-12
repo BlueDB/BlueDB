@@ -69,6 +69,11 @@ public class IteratorWrapper<I, O> implements Iterator<O> {
 		return nextList.poll();
 	}
 	
+	public O peek() {
+		loadNextListIfNecessary();
+		return nextList.peek();
+	}
+	
 	@SuppressWarnings("unchecked")
 	private void loadNextListIfNecessary() throws UncheckedBlueDbException {
 		try {

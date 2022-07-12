@@ -1,10 +1,12 @@
 package org.bluedb.disk;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -17,13 +19,15 @@ import org.junit.Test;
 
 public class IteratorWrapperTest {
 	
+	private AtomicInteger index = new AtomicInteger(0);
+	
 	@Test
 	public void test_iteration() {
 		List<Integer> intList = IntStream.range(0, 100)
 				.boxed()
 				.collect(Collectors.toList());
 		
-		Iterator<Integer> iterator = new IteratorWrapper<Integer, Integer>(intList.iterator(), Integer.class);
+		IteratorWrapper<Integer, Integer> iterator = new IteratorWrapper<Integer, Integer>(intList.iterator(), Integer.class);
 		List<Integer> resultList = readIntoList(iterator);
 		
 		assertEquals(intList, resultList);
@@ -35,7 +39,7 @@ public class IteratorWrapperTest {
 				.boxed()
 				.collect(Collectors.toList());
 		
-		Iterator<String> iterator = new IteratorWrapper<Integer, String>(intList.iterator(), String.class);
+		IteratorWrapper<Integer, String> iterator = new IteratorWrapper<Integer, String>(intList.iterator(), String.class);
 		readIntoList(iterator);
 	}
 	
@@ -45,7 +49,7 @@ public class IteratorWrapperTest {
 			.boxed()
 			.collect(Collectors.toList());
 		
-		Iterator<Integer> iterator = new IteratorWrapper<Integer, Integer>(intList.iterator(), Integer.class)
+		IteratorWrapper<Integer, Integer> iterator = new IteratorWrapper<Integer, Integer>(intList.iterator(), Integer.class)
 				.addFilter(i -> isMultipleOfX(2, i));
 
 		assertAllMultiplesOfX(2, iterator);
@@ -69,7 +73,7 @@ public class IteratorWrapperTest {
 			}
 		};
 		
-		Iterator<Integer> iterator = new IteratorWrapper<Integer, Integer>(intList.iterator(), Integer.class)
+		IteratorWrapper<Integer, Integer> iterator = new IteratorWrapper<Integer, Integer>(intList.iterator(), Integer.class)
 				.addFilter(i -> isMultipleOfX(2, i))
 				.addValidator(noOddNumbersValidator);
 		readIntoList(iterator); //Doesn't throw an exception because odd numbers are filtered out
@@ -96,7 +100,7 @@ public class IteratorWrapperTest {
 		
 		IteratorWrapperMapper<Integer, String> mapper = String::valueOf;
 		
-		Iterator<String> iterator = new IteratorWrapper<Integer, String>(intList.iterator(), mapper);
+		IteratorWrapper<Integer, String> iterator = new IteratorWrapper<Integer, String>(intList.iterator(), mapper);
 		assertEquals(stringList, readIntoList(iterator));
 	}
 	
@@ -126,17 +130,17 @@ public class IteratorWrapperTest {
 		assertFalse(flatMappingIterator.hasNext());
 	}
 	
-	private <T> List<T> readIntoList(Iterator<T> iterator) {
-		List<T> list = new LinkedList<>();
-		while(iterator.hasNext()) {
-			list.add(iterator.next());
+	private <I, O> List<O> readIntoList(IteratorWrapper<I, O> iteratorWrapper) {
+		List<O> list = new LinkedList<>();
+		while(hasNext(iteratorWrapper)) {
+			list.add(next(iteratorWrapper));
 		}
 		return list;
 	}
 
-	private void assertAllMultiplesOfX(int x, Iterator<Integer> iterator) {
-		while(iterator.hasNext()) {
-			Integer i = iterator.next();
+	private <I> void assertAllMultiplesOfX(int x, IteratorWrapper<I, Integer> iteratorWrapper) {
+		while(hasNext(iteratorWrapper)) {
+			Integer i = next(iteratorWrapper);
 			if(!isMultipleOfX(x, i)) {
 				fail("Invalid value " + i + ". Expected all values in the iterator to be multiples of " + x);
 			}
@@ -145,6 +149,27 @@ public class IteratorWrapperTest {
 
 	private boolean isMultipleOfX(int x, int number) {
 		return (number % x) == 0;
+	}
+	
+	private <I, O> boolean hasNext(IteratorWrapper<I, O> iteratorWrapper) {
+		//We want to alternate between hasNext and peek != null to make sure that both work
+		if(index.get() % 2 == 0) {
+			return iteratorWrapper.hasNext();
+		} else {
+			O peek = iteratorWrapper.peek();
+			return peek != null;
+		}
+	}
+	
+	private <I, O> O next(IteratorWrapper<I, O> iteratorWrapper) {
+		//We want to alternate between next and peek/next to make sure that both work
+		if(index.getAndIncrement() % 2 == 0) {
+			return iteratorWrapper.next();
+		} else {
+			O peek = iteratorWrapper.peek();
+			iteratorWrapper.next();
+			return peek;
+		}
 	}
 
 }

@@ -27,6 +27,7 @@ public class DummyLongIndexConditionTest {
 		assertEquals(OnDiskDummyIndexCondition.DUMMY_INDEX_NAME, indexCondition.getIndexName());
 		assertNull(indexCondition.getIndexPath());
 		assertTrue(indexCondition.getSegmentRangeInfoToIncludeInCollectionQuery().isEmpty());
+		assertFalse(indexCondition.getMatchingValueKeysIterator().hasNext());
 	}
 
 	@Test

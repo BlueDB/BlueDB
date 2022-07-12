@@ -70,6 +70,7 @@ public class DummyReadOnlyCollectionOnDiskTest {
 				.where((t) -> true);
 		assertEquals(Arrays.asList(), dummyQuery.getList());
 		assertEquals(0, dummyQuery.count());
+		assertFalse(dummyQuery.getFirst().isPresent());
 		
 		
 		CloseableIterator<TestValue> dummyIterator = dummyQuery.getIterator();

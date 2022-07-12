@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.BlueTimeCollection;
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
@@ -485,6 +486,7 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 			@Override public BlueIndexCondition<TestValue> isIn(Set<TestValue> values) { return this; }
 			@Override public BlueIndexCondition<TestValue> isIn(BlueSimpleSet<TestValue> values) { return this; }
 			@Override public BlueIndexCondition<TestValue> meets(Condition<TestValue> condition) { return this; }
+			@Override public CloseableIterator<BlueKey> getMatchingValueKeysIterator() { return null; }
 		};
 		assertFalse("You have to use an index condition that is an instance of OnDiskIndexCondition", getTimeCollection().isCompatibleIndexCondition(anonomysInnerIndexConditionDefinition));
 		

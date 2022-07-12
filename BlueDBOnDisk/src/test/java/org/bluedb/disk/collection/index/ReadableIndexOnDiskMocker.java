@@ -107,6 +107,43 @@ public class ReadableIndexOnDiskMocker<I extends ValueKey, T extends Serializabl
 		Mockito.doAnswer(answer).when(index).getEntities(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
 	}
 	
+	/** Must be called after setIndexExtractor*/
+	public void setEntitiesToReturnNonCompositeIndexKeys(List<BlueEntity<T>> collectionEntities) {
+		TreeMap<IndexCompositeKey<BlueKey>, BlueKey> indexData = new TreeMap<>();
+		for(BlueEntity<T> entity : collectionEntities) {
+			List<? extends ValueKey> indexKeysForEntity = index.extractIndexKeys(entity);
+			if(indexKeysForEntity != null) {
+				for(ValueKey indexKeyForEntity : indexKeysForEntity) {
+					indexData.put(new IndexCompositeKey<BlueKey>(indexKeyForEntity, entity.getKey()), entity.getKey());
+				}
+			}
+		}
+		
+		@SuppressWarnings("unchecked")
+		Answer<CloseableIterator<BlueEntity<BlueKey>>> answer = invocation -> {
+			Range range = (Range) invocation.getArguments()[0];
+			List<Condition<BlueKey>> indexKeyConditions = (List<Condition<BlueKey>>) invocation.getArguments()[1];
+			List<Condition<BlueKey>> objectConditions = (List<Condition<BlueKey>>) invocation.getArguments()[2];
+			Optional<IncludedSegmentRangeInfo> segmentRangesToInclude = (Optional<IncludedSegmentRangeInfo>) invocation.getArguments()[3];
+			
+			List<BlueEntity<BlueKey>> matchingEntities = new LinkedList<>();
+			
+			for(Entry<IndexCompositeKey<BlueKey>, BlueKey> entry : indexData.entrySet()) {
+				long groupingNumber = entry.getKey().getGroupingNumber();
+				if(range.containsInclusive(groupingNumber) &&
+						(!segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().getSegmentRangeGroupingNumberRangePairs().stream().anyMatch(rangeEntry -> rangeEntry.getKey().containsInclusive(groupingNumber) && rangeEntry.getValue().containsInclusive(groupingNumber))) &&
+						indexKeyConditions.stream().allMatch(condition -> condition.test(entry.getKey())) &&
+						objectConditions.stream().allMatch(condition -> condition.test(entry.getValue()))) {
+					matchingEntities.add(new BlueEntity<BlueKey>(entry.getKey().getValueKey(), entry.getValue()));
+				}
+			}
+			
+			return new TestCloseableIterator<>(matchingEntities.iterator());
+		};
+		
+		Mockito.doAnswer(answer).when(index).getEntities(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+	}
+	
 	@FunctionalInterface
 	public static interface TestIndexKeyExtractor<T extends Serializable> {
 		public List<? extends ValueKey> extractIndexKeysFromValue(BlueEntity<T> value);

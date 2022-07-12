@@ -186,6 +186,25 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		} catch(BlueDbException e) {
 		}
 	}
+
+	@Test
+	public void test_getFirst() throws Exception {
+		assertFalse(getTimeCollection().query().getFirst().isPresent());
+		
+        TestValue joeValue = new TestValue("Joe", 0);
+		BlueKey key = insertAtTime(10, joeValue);
+        assertEquals(joeValue, getTimeCollection().query().getFirst().orElse(null));
+        
+        TestValue bobValue = new TestValue("Bob", 0);
+		BlueKey key2 = insertAtTime(5, bobValue);
+        assertEquals(bobValue, getTimeCollection().query().getFirst().orElse(null));
+        
+        getTimeCollection().delete(key2);
+        assertEquals(joeValue, getTimeCollection().query().getFirst().orElse(null));
+
+        getTimeCollection().delete(key);
+		assertFalse(getTimeCollection().query().getFirst().isPresent());
+	}
 	
 	@Test
 	public void test_query_count() throws Exception {
