@@ -92,6 +92,44 @@ public class IndividualChangeTest {
 	}
 	
 	@Test
+	public void test_createUpdateChange_withOldEntityAndNewValue_sameKeys() throws BlueDbException {
+		BlueKey key = new LongKey(42);
+		TestValue oldValue = new TestValue("oldValue", 1);
+		BlueEntity<TestValue> oldEntity = new BlueEntity<>(key, oldValue);
+		TestValue newValue = new TestValue("oldValue", 2);
+		BlueEntity<TestValue> newEntity = new BlueEntity<>(key, newValue);
+		
+		IndividualChange<TestValue> updateChange = IndividualChange.createUpdateChange(oldEntity, newEntity.getValue());
+		
+		assertEquals(oldValue, updateChange.getOldValue());
+		assertEquals(newValue, updateChange.getNewValue());
+		assertEquals(key, updateChange.getKey());
+		assertEquals(newEntity, updateChange.getNewEntity());
+		assertFalse(updateChange.isKeyChanged());
+		assertEquals(key, updateChange.getOriginalKey());
+	}
+	
+	@Test
+	public void test_createUpdateChange_withOldEntityAndNewValue_keyChangeHasNoAffect() throws BlueDbException {
+		BlueKey oldKey = new TimeFrameKey(1, 5, 10);
+		TestValue oldValue = new TestValue("oldValue", 1);
+		BlueEntity<TestValue> oldEntity = new BlueEntity<>(oldKey, oldValue);
+		
+		BlueKey newKey = new TimeFrameKey(1, 5, 15);
+		TestValue newValue = new TestValue("oldValue", 2);
+		BlueEntity<TestValue> newEntity = new BlueEntity<>(newKey, newValue);
+		
+		IndividualChange<TestValue> updateChange = IndividualChange.createUpdateChange(oldEntity, newEntity.getValue());
+		
+		assertEquals(oldValue, updateChange.getOldValue());
+		assertEquals(newValue, updateChange.getNewValue());
+		assertEquals(newKey, updateChange.getKey());
+		assertEquals(newEntity, updateChange.getNewEntity());
+		assertFalse(updateChange.isKeyChanged());
+		assertEquals(oldKey, updateChange.getOriginalKey());
+	}
+	
+	@Test
 	public void test_createUpdateChange_withOldAndNewEntities_keyUnchanged() throws BlueDbException {
 		BlueKey key = new LongKey(42);
 		TestValue oldValue = new TestValue("oldValue", 1);
@@ -99,9 +137,7 @@ public class IndividualChangeTest {
 		TestValue newValue = new TestValue("oldValue", 2);
 		BlueEntity<TestValue> newEntity = new BlueEntity<>(key, newValue);
 		
-		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), IndividualChange.class);
-		
-		IndividualChange<TestValue> updateChange = IndividualChange.createUpdateChange(oldEntity, newEntity, serializer);
+		IndividualChange<TestValue> updateChange = IndividualChange.createUpdateKeyAndValueChange(oldEntity, newEntity);
 		
 		assertEquals(oldValue, updateChange.getOldValue());
 		assertEquals(newValue, updateChange.getNewValue());
@@ -121,9 +157,7 @@ public class IndividualChangeTest {
 		TestValue newValue = new TestValue("oldValue", 2);
 		BlueEntity<TestValue> newEntity = new BlueEntity<>(newKey, newValue);
 		
-		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), IndividualChange.class);
-		
-		IndividualChange<TestValue> updateChange = IndividualChange.createUpdateChange(oldEntity, newEntity, serializer);
+		IndividualChange<TestValue> updateChange = IndividualChange.createUpdateKeyAndValueChange(oldEntity, newEntity);
 		
 		assertEquals(oldValue, updateChange.getOldValue());
 		assertEquals(newValue, updateChange.getNewValue());
@@ -143,10 +177,8 @@ public class IndividualChangeTest {
 		TestValue newValue = new TestValue("oldValue", 2);
 		BlueEntity<TestValue> newEntity = new BlueEntity<>(newKey, newValue);
 		
-		BlueSerializer serializer = new ThreadLocalFstSerializer(new TestDefaultConfigurationService(), IndividualChange.class);
-
 		try {
-			IndividualChange.createUpdateChange(oldEntity, newEntity, serializer);
+			IndividualChange.createUpdateKeyAndValueChange(oldEntity, newEntity);
 			fail("You should be able to change the start time on a time frame key. Only the end time.");
 		} catch(BlueDbException e) { /* Expected */ }
 	}
@@ -374,7 +406,7 @@ public class IndividualChangeTest {
 		TimeKey newKey = new TimeFrameKey(1, 1, 10);
 		TestValue newValue = new TestValue("Bob", 2);
 		
-		IndividualChange<TestValue> change = IndividualChange.createUpdateChange(new BlueEntity<>(oldKey, oldValue), new BlueEntity<>(newKey, newValue), serializer);
+		IndividualChange<TestValue> change = IndividualChange.createUpdateKeyAndValueChange(new BlueEntity<>(oldKey, oldValue), new BlueEntity<>(newKey, newValue));
 		IndividualChange<TestValue> expectedWhenDeserializingOldChanges = IndividualChange.manuallyCreateTestChange(newKey, oldValue, newValue, Optional.empty());
 		
 //		Files.write(v1RegisteredChangePath, serializer.serializeObjectToByteArray(change));

@@ -14,18 +14,14 @@ import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Mapper;
-import org.bluedb.api.TimeEntityMapper;
-import org.bluedb.api.TimeEntityUpdater;
 import org.bluedb.api.Updater;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
-import org.bluedb.api.datastructures.TimeKeyValuePair;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.BlueIndexInfo;
 import org.bluedb.api.index.KeyExtractor;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.LongTimeKey;
-import org.bluedb.api.keys.TimeKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.IteratorWrapper;
 import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
@@ -35,7 +31,7 @@ import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
 import org.bluedb.disk.collection.index.extractors.ActiveRecordTimeKeyExtractor;
 import org.bluedb.disk.collection.index.extractors.OverlappingTimeSegmentsKeyExtractor;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
-import org.bluedb.disk.collection.task.BatchUpsertChangeTask;
+import org.bluedb.disk.collection.task.BatchUpsertValuesTask;
 import org.bluedb.disk.collection.task.SingleRecordChangeTask;
 import org.bluedb.disk.collection.task.SingleRecordChangeTask.SingleRecordChangeMode;
 import org.bluedb.disk.executors.BlueExecutor;
@@ -139,14 +135,14 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 		Iterator<BlueKeyValuePair<T>> keyValuePairIterator = new IteratorWrapper<>(values.entrySet().iterator(), mapper);
 		
 		String description = "BatchUpsert map of size " + values.size();
-		Runnable task = new BatchUpsertChangeTask<>(description, this, keyValuePairIterator);
+		Runnable task = new BatchUpsertValuesTask<T>(description, this, keyValuePairIterator);
 		executeTask(task);
 	}
 	
 	@Override
 	public void batchUpsert(Iterator<BlueKeyValuePair<T>> keyValuePairIterator) throws BlueDbException {
 		String description = "BatchUpsert using an iterator of key value pairs";
-		Runnable task = new BatchUpsertChangeTask<T>(description, this, keyValuePairIterator);
+		Runnable task = new BatchUpsertValuesTask<T>(description, this, keyValuePairIterator);
 		executeTask(task);
 	}
 
@@ -154,58 +150,28 @@ public class ReadWriteCollectionOnDisk<T extends Serializable> extends ReadableC
 	public void replace(BlueKey key, Mapper<T> mapper) throws BlueDbException {
 		ensureCorrectKeyType(key);
 		
-		KeyValueToChangeMapper<T> changeMapper = getReplaceKeyValueToChangeMapper(key, mapper);
+		KeyValueToChangeMapper<T> changeMapper = (originalKey, originalvalue) -> {
+			return IndividualChange.createReplaceChange(originalKey, originalvalue, mapper, serializer);
+		};
 		
 		String description = "Replace [key]" + key;
 		Runnable task = new SingleRecordChangeTask<>(description, this, key, changeMapper, SingleRecordChangeMode.REQUIRE_ALREADY_EXISTS);
 		executeTask(task);
 	}
 	
-	private KeyValueToChangeMapper<T> getReplaceKeyValueToChangeMapper(BlueKey key, Mapper<T> mapper) {
-		if(isTimeBased()) {
-			TimeKey newTimeKey = (TimeKey) key;
-			TimeEntityMapper<T> timeEntityMapper = originalValue -> {
-				T newValue = mapper.update(originalValue);
-				return new TimeKeyValuePair<T>(newTimeKey, newValue);
-			};
-			return (originalKey, originalvalue) -> {
-				return IndividualChange.createReplaceKeyAndValueChange(originalKey, originalvalue, timeEntityMapper, serializer);
-			};
-		} else {
-			return (originalKey, originalvalue) -> {
-				return IndividualChange.createReplaceChange(originalKey, originalvalue, mapper, serializer);
-			};
-		}
-	}
-
 	@Override
 	public void update(BlueKey key, Updater<T> updater) throws BlueDbException {
 		ensureCorrectKeyType(key);
 		
-		KeyValueToChangeMapper<T> changeMapper = getUpdateKeyValueToChangeMapper(key, updater);
+		KeyValueToChangeMapper<T> changeMapper = (originalKey, originalvalue) -> {
+			return IndividualChange.createUpdateChange(originalKey, originalvalue, updater, serializer);
+		};
 		
 		String description = "Update [key]" + key;
 		Runnable task = new SingleRecordChangeTask<>(description, this, key, changeMapper, SingleRecordChangeMode.REQUIRE_ALREADY_EXISTS);
 		executeTask(task);
 	}
 	
-	private KeyValueToChangeMapper<T> getUpdateKeyValueToChangeMapper(BlueKey key, Updater<T> updater) {
-		if(isTimeBased()) {
-			TimeKey newTimeKey = (TimeKey) key;
-			TimeEntityUpdater<T> timeEntityUpdater = originalValue -> {
-				updater.update(originalValue);
-				return newTimeKey;
-			};
-			return (originalKey, originalvalue) -> {
-				return IndividualChange.createUpdateKeyAndValueChange(originalKey, originalvalue, timeEntityUpdater, serializer);
-			};
-		} else {
-			return (originalKey, originalvalue) -> {
-				return IndividualChange.createUpdateChange(originalKey, originalvalue, updater, serializer);
-			};
-		}
-	}
-
 	@Override
 	public void delete(BlueKey key) throws BlueDbException {
 		ensureCorrectKeyType(key);

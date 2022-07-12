@@ -75,10 +75,7 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	
 	/**
 	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch methods many times.
-	 * Using an iterator instead of a map allows you to provide entries without storing all of them in memory at one time. 
-	 * If this is a version 2 time collection then you can specify a new but equivalent key to replace the old one. You 
-	 * would use this to end an active record or to change the end time on a record without deleting and re-adding that 
-	 * record.
+	 * Using an iterator instead of a map allows you to provide entries without storing all of them in memory at one time.
 	 * @param values the key value pairs to insert. Key types must match the keyType specified when the collection was created.
 	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
 	 */
@@ -86,9 +83,7 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	
 	/**
 	 * Inserts or replaces the given key value pairs. Batch methods are much more efficient than calling non-batch 
-	 * methods many times. If this is a version 2 time collection then you can specify a new but equivalent key to 
-	 * replace the old one. You would use this to end an active record or to change the end time on a record without 
-	 * deleting and re-adding that record.
+	 * methods many times.
 	 * @param keyValuePairs the key value pairs to insert. Key types must match the keyType specified when the 
 	 * collection was created.
 	 * @throws BlueDbException if the key types do not match the type specified when the collection was created
@@ -96,9 +91,7 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	public void batchUpsert(Iterator<BlueKeyValuePair<V>> keyValuePairs) throws BlueDbException;
 
 	/**
-	 * Mutates the value for the given key by passing it to the given updater. If this is a version 2+ time collection then you can
-	 * specify a new but equivalent key to replace the old one. You would use this to end an active record or to change the end
-	 * time on a record without deleting and re-adding that record. 
+	 * Mutates the value for the given key by passing it to the given updater.
 	 * @param key The key for the value which will be updated
 	 * @param updater a function that mutates the value to which the specified key is mapped
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created or if updater throws an exception
@@ -106,9 +99,7 @@ public interface BlueCollection<V extends Serializable> extends ReadableBlueColl
 	public void update(BlueKey key, Updater<V> updater) throws BlueDbException;
 	
 	/**
-	 * Replaces the value for the given key by passing it to the given updater. If this is a version 2+ time collection then you can
-	 * specify a new but equivalent key to replace the old one. You would use this to end an active record or to change the end
-	 * time on a record without deleting and re-adding that record.
+	 * Replaces the value for the given key by passing it to the given updater.
 	 * @param key the key for the value which will be replaced
 	 * @param updater a function that returns the value that should replace the value to which the specified key is mapped
 	 * @throws BlueDbException if type of key is not the type specified when the collection was created or if updater throws an exception

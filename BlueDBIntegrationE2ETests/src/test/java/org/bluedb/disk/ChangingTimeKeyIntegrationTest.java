@@ -4,8 +4,10 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -14,6 +16,7 @@ import org.bluedb.api.datastructures.BlueKeyValuePair;
 import org.bluedb.api.datastructures.TimeKeyValuePair;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.ActiveTimeKey;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
@@ -90,19 +93,19 @@ public class ChangingTimeKeyIntegrationTest {
 		TestTimeKeyUpdater taskToInsertActiveKey = () -> timeCollection.insert(activeKey, testValue);
 		TestTimeKeyUpdater taskToChangeToTimeFrameKey1 = () -> {
 			testValue.addCupcake();
-			timeCollection.update(timeFrameKey1, valueToUpdate -> valueToUpdate.addCupcake());
+			timeCollection.updateKeyAndValue(timeFrameKey1, valueToUpdate -> valueToUpdate.addCupcake());
 		};
 		TestTimeKeyUpdater taskToChangeToTimeFrameKey2 = () -> {
 			testValue.addCupcake();
-			timeCollection.update(timeFrameKey2, valueToUpdate -> valueToUpdate.addCupcake());	
+			timeCollection.updateKeyAndValue(timeFrameKey2, valueToUpdate -> valueToUpdate.addCupcake());	
 		};
 		TestTimeKeyUpdater taskToChangeToActiveTimeKey = () -> {
 			testValue.addCupcake();
-			timeCollection.update(activeKey, valueToUpdate -> valueToUpdate.addCupcake());
+			timeCollection.updateKeyAndValue(activeKey, valueToUpdate -> valueToUpdate.addCupcake());
 		};
 		TestTimeKeyUpdater taskToChangeToTimeKey = () -> {
 			testValue.addCupcake();
-			timeCollection.update(timeKey, valueToUpdate -> valueToUpdate.addCupcake());
+			timeCollection.updateKeyAndValue(timeKey, valueToUpdate -> valueToUpdate.addCupcake());
 		};
 		testChangingKeyTypesStartingWithActiveTestValue(taskToInsertActiveKey, taskToChangeToTimeFrameKey1, taskToChangeToTimeFrameKey2, taskToChangeToActiveTimeKey, taskToChangeToTimeKey);
 	}
@@ -111,19 +114,19 @@ public class ChangingTimeKeyIntegrationTest {
 		TestTimeKeyUpdater taskToInsertActiveKey = () -> timeCollection.insert(activeKey, testValue);
 		TestTimeKeyUpdater taskToChangeToTimeFrameKey1 = () -> {
 			testValue.addCupcake();
-			timeCollection.replace(timeFrameKey1, valueToUpdate -> testValue);
+			timeCollection.replaceKeyAndValue(timeFrameKey1, valueToUpdate -> testValue);
 		};
 		TestTimeKeyUpdater taskToChangeToTimeFrameKey2 = () -> {
 			testValue.addCupcake();
-			timeCollection.replace(timeFrameKey2, valueToUpdate -> testValue);	
+			timeCollection.replaceKeyAndValue(timeFrameKey2, valueToUpdate -> testValue);	
 		};
 		TestTimeKeyUpdater taskToChangeToActiveTimeKey = () -> {
 			testValue.addCupcake();
-			timeCollection.replace(activeKey, valueToUpdate -> testValue);
+			timeCollection.replaceKeyAndValue(activeKey, valueToUpdate -> testValue);
 		};
 		TestTimeKeyUpdater taskToChangeToTimeKey = () -> {
 			testValue.addCupcake();
-			timeCollection.replace(timeKey, valueToUpdate -> testValue);
+			timeCollection.replaceKeyAndValue(timeKey, valueToUpdate -> testValue);
 		};
 		testChangingKeyTypesStartingWithActiveTestValue(taskToInsertActiveKey, taskToChangeToTimeFrameKey1, taskToChangeToTimeFrameKey2, taskToChangeToActiveTimeKey, taskToChangeToTimeKey);
 	}
@@ -134,19 +137,23 @@ public class ChangingTimeKeyIntegrationTest {
 		};
 		TestTimeKeyUpdater taskToChangeToTimeFrameKey1 = () -> {
 			testValue.addCupcake();
-			timeCollection.batchUpsert(Arrays.asList(new BlueKeyValuePair<>(timeFrameKey1, testValue)).iterator());
+			timeCollection.batchUpsertKeysAndValues(Arrays.asList(new BlueKeyValuePair<>(timeFrameKey1, testValue)).iterator());
 		};
 		TestTimeKeyUpdater taskToChangeToTimeFrameKey2 = () -> {
 			testValue.addCupcake();
-			timeCollection.batchUpsert(Arrays.asList(new BlueKeyValuePair<>(timeFrameKey2, testValue)).iterator());
+			timeCollection.batchUpsertKeysAndValues(Arrays.asList(new BlueKeyValuePair<>(timeFrameKey2, testValue)).iterator());
 		};
 		TestTimeKeyUpdater taskToChangeToActiveTimeKey = () -> {
 			testValue.addCupcake();
-			timeCollection.batchUpsert(Arrays.asList(new BlueKeyValuePair<>(activeKey, testValue)).iterator());
+			timeCollection.batchUpsertKeysAndValues(Arrays.asList(new BlueKeyValuePair<>(activeKey, testValue)).iterator());
 		};
 		TestTimeKeyUpdater taskToChangeToTimeKey = () -> {
 			testValue.addCupcake();
-			timeCollection.batchUpsert(Arrays.asList(new BlueKeyValuePair<>(timeKey, testValue)).iterator());
+			
+			Map<BlueKey, TestValue> values = new HashMap<>();
+			values.put(timeKey, testValue);
+			
+			timeCollection.batchUpsertKeysAndValues(values);
 		};
 		testChangingKeyTypesStartingWithActiveTestValue(taskToInsertActiveKey, taskToChangeToTimeFrameKey1, taskToChangeToTimeFrameKey2, taskToChangeToActiveTimeKey, taskToChangeToTimeKey);
 	}

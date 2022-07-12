@@ -59,6 +59,10 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 		return new IndividualChange<T>(key, oldValue, newValue, Optional.empty());
 	}
 
+	public static <T extends Serializable> IndividualChange<T> createUpdateChange(BlueEntity<T> oldEntity, T newValue) throws BlueDbException {
+		return new IndividualChange<T>(oldEntity.getKey(), oldEntity.getValue(), newValue, Optional.empty());
+	}
+
 	public static <T extends Serializable> IndividualChange<T> createUpdateKeyAndValueChange(BlueKey originalKey, T originalValue, TimeEntityUpdater<T> updater, BlueSerializer serializer) throws BlueDbException {
 		T oldValue = serializer.clone(originalValue);
 		T newValue = serializer.clone(oldValue);
@@ -73,7 +77,7 @@ public class IndividualChange <T extends Serializable> implements ComparableAndS
 		return new IndividualChange<T>(newKey, oldValue, newValue, originalKeyIfDifferent);
 	}
 
-	public static <T extends Serializable> IndividualChange<T> createUpdateChange(BlueEntity<T> oldEntity, BlueEntity<T> newEntity, BlueSerializer serializer) throws BlueDbException {
+	public static <T extends Serializable> IndividualChange<T> createUpdateKeyAndValueChange(BlueEntity<T> oldEntity, BlueEntity<T> newEntity) throws BlueDbException {
 		if(!Objects.equals(oldEntity.getKey(), newEntity.getKey())) {
 			throw new BlueDbException("Invalid new key created in update query. If you are going to change the key of a record then the new key must be equivalent. A TimeKey, ActiveTimeKey, or TimeFrameKey would all be considered equivalent if the time and id are the same. The end time on a TimeFrameKey isn't significant for equivalence.");
 		}

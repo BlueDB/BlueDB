@@ -27,7 +27,7 @@ import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
+public abstract class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 	
 	private final ReadWriteCollectionOnDisk<T> collection;
 	private final ReadableSegmentManager<T> segmentManager;
@@ -127,11 +127,13 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 			if(compareTo == 0) {
 				//This should be an update change for this entity instead of an insert
 				BlueEntity<T> newEntity = new BlueEntity<T>(insertChange.getKey(), insertChange.getNewValue());
-				return IndividualChange.createUpdateChange(nextEntityInRange, newEntity, collection.getSerializer());
+				return createUpdateChange(nextEntityInRange, newEntity);
 			}
 		}
 		
 		//There was no existing record for this key so this is truly an insert change
 		return insertChange;
 	}
+	
+	protected abstract IndividualChange<T> createUpdateChange(BlueEntity<T> oldEntity, BlueEntity<T> newEntity) throws BlueDbException;
 }

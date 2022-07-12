@@ -107,7 +107,7 @@ public class EmptyDirectoriesAfterDeleteIntegrationTest {
 			assertTrue(Files.exists(dataDirectoryPath));
 			
 			testValue.addCupcake();
-			timeCollection.update(completedKey, valueToUpdate -> valueToUpdate.addCupcake());
+			timeCollection.updateKeyAndValue(completedKey, valueToUpdate -> valueToUpdate.addCupcake());
 			
 			assertEquals(testValue, timeCollection.get(activeKey));
 			assertEquals(testValue, timeCollection.get(completedKey));
