@@ -107,6 +107,8 @@ public abstract class ReadableIndexOnDisk<I extends ValueKey, T extends Serializ
 	/**
 	 * Returns the keys that contain the exact given indexed data. This should only be used in tests to verify that
 	 * the index data is correct after making changes.
+	 * @param targetIndexKey the indexed data that should be contained in values in order for their keys to be returned
+	 * @return a set of keys for values that contain the target indexed data
 	 */
 	public Set<BlueKey> getKeys(I targetIndexKey) {
 		Range range = new Range(targetIndexKey.getGroupingNumber(), targetIndexKey.getGroupingNumber());

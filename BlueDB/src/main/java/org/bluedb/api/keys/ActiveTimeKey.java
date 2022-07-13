@@ -13,7 +13,7 @@ import org.bluedb.api.index.BlueIndex;
  * when you query for all values in a timeframe, these will be returned as if the end time was set to now since they
  * are considered still active or not ended. The time query API now also gives you the ability to include only
  * active records in a query or to exclude active records from a query. These only receive special treatment 
- * if the collection version is >= 2.
+ * if the collection version is 2+.
  */
 public final class ActiveTimeKey extends TimeKey {
 

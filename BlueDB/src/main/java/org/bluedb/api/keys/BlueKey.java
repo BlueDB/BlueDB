@@ -39,6 +39,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	/**
 	 * This is used to order the key/value pairs on disk. If this is being called then other is not null
 	 * and the grouping numbers matched.
+	 * @param other The other key to compare this one to
+	 * @return the value 0 if x == y; a value less than 0 if x &lt; y; and a value greater than 0 if x &gt; y
 	 */
 	public abstract int postGroupingNumberCompareTo(BlueKey other);
 	

@@ -32,7 +32,7 @@ public interface IntegerIndexCondition extends BlueIndexCondition<Integer> {
 	 * included in the query.
 	 * @param maxValue - The max that an indexed value can be in order for the records that contain them to be
 	 * included in the query.
-	 * @return
+	 * @return itself with the condition added.
 	 */
 	public IntegerIndexCondition isInRange(int minValue, int maxValue);
 	

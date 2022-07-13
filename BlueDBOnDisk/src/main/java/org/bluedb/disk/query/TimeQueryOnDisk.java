@@ -102,7 +102,7 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 	}
 
 	@Override
-	public BlueTimeQuery<T> updateKeyAndValue(TimeEntityUpdater<T> updater) throws BlueDbException {
+	public void updateKeyAndValue(TimeEntityUpdater<T> updater) throws BlueDbException {
 		EntityToChangeMapper<T> changeMapper = entity -> {
 			return IndividualChange.createUpdateKeyAndValueChange(entity.getKey(), entity.getValue(), updater, writeableCollection.getSerializer());
 		};
@@ -110,11 +110,10 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 		String description = "Update using query " + this;
 		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
 		writeableCollection.executeTask(task);
-		return this;
 	}
 
 	@Override
-	public BlueTimeQuery<T> replaceKeyAndValue(TimeEntityMapper<T> mapper) throws BlueDbException {
+	public void replaceKeyAndValue(TimeEntityMapper<T> mapper) throws BlueDbException {
 		EntityToChangeMapper<T> changeMapper = entity -> {
 			return IndividualChange.createReplaceKeyAndValueChange(entity.getKey(), entity.getValue(), mapper, writeableCollection.getSerializer());
 		};
@@ -122,7 +121,6 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 		String description = "Replace using query " + this;
 		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
 		writeableCollection.executeTask(task);
-		return this;
 	}
 	
 }

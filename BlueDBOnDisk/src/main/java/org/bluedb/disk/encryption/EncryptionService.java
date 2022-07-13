@@ -11,11 +11,13 @@ public interface EncryptionService {
 
 	/**
 	 * Gets the current encryption version key. The key acts as an identifier for the current encryption implementation.
-	 * <p/>
+	 * <p>
 	 * For a key to be valid, it cannot be null or whitespace, and it must be no longer than {@value EncryptionUtils#ENCRYPTION_VERSION_KEY_MAX_LENGTH} characters.
-	 * <p/>
+	 * </p>
+	 * <p>
 	 * Each time the encryption implementation is updated, a new encryption version key should be set.
 	 * All encryption version keys used for a database should be handled in {@linkplain #encrypt(String, byte[])} and {@linkplain #decrypt(String, byte[])}.
+	 * </p>
 	 *
 	 * @return the current encryption version key.
 	 */
@@ -23,10 +25,10 @@ public interface EncryptionService {
 
 	/**
 	 * Encrypt a byte array using a given encryption version key.
-	 * <p/>
+	 * <p>
 	 * This method should handle all encryption version keys used during the lifetime of a database.
 	 * When the encryption or decryption implementation is changed, this method should still support encrypting using the old encryption version key.
-	 * <p/>
+	 * </p>
 	 * Example pattern to follow:
 	 * <pre>{@code
 	 * switch (encryptionVersionKey) {
@@ -40,20 +42,20 @@ public interface EncryptionService {
 	 * }
 	 * }</pre>
 	 *
-	 * @param encryptionVersionKey The encryption version key the bytes should encrypt with.
-	 *                             <p/>
-	 *                             Will be the return value of {@linkplain #getCurrentEncryptionVersionKey()} unless the value returned is invalid. Defaults to the most recent valid key cached in memory, if one exists.
-	 * @param bytesToEncrypt       The bytes to encrypt.
+	 * @param encryptionVersionKey The encryption version key the bytes should encrypt with. Will be the return value of 
+	 * {@linkplain #getCurrentEncryptionVersionKey()} unless the value returned is invalid. Defaults to the most recent 
+	 * valid key cached in memory, if one exists.
+	 * @param bytesToEncrypt The bytes to encrypt.
 	 * @return The encrypted bytes.
 	 */
 	byte[] encrypt(String encryptionVersionKey, byte[] bytesToEncrypt);
 
 	/**
 	 * Decrypt a byte array using a given encryption version key.
-	 * <p/>
+	 * <p>
 	 * This method should handle all encryption version keys used during the lifetime of a database.
 	 * When the encryption or decryption implementation is changed, this method should still support decrypting using the old encryption version key.
-	 * <p/>
+	 * </p>
 	 * Example pattern to follow:
 	 * <pre>{@code
 	 * switch (encryptionVersionKey) {

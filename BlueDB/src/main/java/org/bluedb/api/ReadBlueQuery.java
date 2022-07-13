@@ -61,14 +61,14 @@ public interface ReadBlueQuery<V extends Serializable> {
 	 * Executes the query and returns the results as a list. Use getIterator if you don't want to load all matching 
 	 * values into memory at once.
 	 * @return the query results as a list
-	 * @throws BlueDbException
+	 * @throws BlueDbException if the query fails
 	 */
 	List<V> getList() throws BlueDbException;
 
 	/**
 	 * Executes the query and returns the first result or Optional.empty if there are no results.
 	 * @return the first result from the query or Optional.empty if there are no results.
-	 * @throws BlueDbException
+	 * @throws BlueDbException if the query fails
 	 */
 	Optional<V> getFirst() throws BlueDbException;
 
@@ -84,7 +84,7 @@ public interface ReadBlueQuery<V extends Serializable> {
 	 * the iterator will timeout and release resources.
 	 * 
 	 * @return an iterator for the query results
-	 * @throws BlueDbException 
+	 * @throws BlueDbException if the query fails
 	 */
 	CloseableIterator<V> getIterator() throws BlueDbException;
 
@@ -99,15 +99,17 @@ public interface ReadBlueQuery<V extends Serializable> {
 	 * in order to ensure that you don't block other BlueDB tasks. If you fail to call next for the given timeout period then
 	 * the iterator will timeout and release resources.
 	 * 
+	 * @param timeout the custom time this query will be automatically ended if inactive
+	 * @param timeUnit the time unit for the timeout
 	 * @return an iterator for the query results
-	 * @throws BlueDbException 
+	 * @throws BlueDbException if the query fails
 	 */
 	CloseableIterator<V> getIterator(long timeout, TimeUnit timeUnit) throws BlueDbException;
 
 	/**
 	 * Executes the query and returns the number of values matching the query
 	 * @return the number of values matching the query
-	 * @throws BlueDbException 
+	 * @throws BlueDbException if the query fails
 	 */
 	public int count() throws BlueDbException;
 }

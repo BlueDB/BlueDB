@@ -20,4 +20,7 @@ For more information visit: [bluedb.org](http://bluedb.org)
 - Run all JUnit tests in `BlueDBOnDisk/src/test/java` and `BlueDBIntegrationE2ETests/src/test/java` with `CollectionVersion#getDefault` returning `VERSION_1` and verify they all pass. There is no need to keep 100% coverage when running the test suite on the legacy version 1 collections though.  
 
 ### How to build a jar from source
-Execute `gradlew onDiskJar` and a jar will be built and placed into `bluedb/build/libs`.
+Execute `gradlew buildArtifacts` and jars will be built and placed into `bluedb/build/libs`. You can then manually copy them or add them to your own binary repository.
+
+### Example of how to manually add artifacts to Apache Archiva
+![Apache Archiva Artifact Upload Example](manuallyAddBlueDbArtifactsToArchiva.PNG?raw=true "Title")

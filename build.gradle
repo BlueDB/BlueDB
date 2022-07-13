@@ -19,6 +19,7 @@ subprojects {
 }
 
 def onDiskProjects = [':BlueDB',':BlueDBOnDisk']
+
 task onDiskJar(type: Jar) {
 	group 'deploy'
 	manifest {
@@ -31,4 +32,41 @@ task onDiskJar(type: Jar) {
 	from {
 		files(onDiskProjects.collect{ project(it).sourceSets.main.output })
 	}
+}
+
+task onDiskSources(type: Jar) {
+	group 'deploy'
+	classifier = 'sources'
+	manifest {
+        attributes(
+            'Version'       : "${version}",
+            'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+        )
+    }
+	baseName = 'bluedb-on-disk'
+	from {
+		files(onDiskProjects.collect{ project(it).sourceSets.main.allSource })
+	}
+}
+
+task onDiskJavadoc(type: Jar) {
+	group 'deploy'
+	classifier = 'javadoc'
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	manifest {
+        attributes(
+            'Version'       : "${version}",
+            'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+        )
+    }
+	baseName = 'bluedb-on-disk'
+	from {
+		files(onDiskProjects.collect{ project(it).javadoc })
+	}
+}
+
+task buildArtifacts() {
+	dependsOn onDiskJar
+	dependsOn onDiskSources
+	dependsOn onDiskJavadoc
 }

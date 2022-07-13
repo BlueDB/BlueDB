@@ -28,7 +28,7 @@ public interface BlueQuery<V extends Serializable> extends ReadBlueQuery<V> {
 	
 	/**
 	 * Executes the query and deletes any matching values
-	 * @throws BlueDbException
+	 * @throws BlueDbException if the query fails
 	 */
 	void delete() throws BlueDbException;
 
