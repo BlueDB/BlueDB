@@ -201,8 +201,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 	}
 
 	protected void cleanupTempFiles() {
-		try {
-			DirectoryStream<Path> tempIndexFileStream = FileUtils.getTempFolderContentsAsStream(indexPath.toFile(), file -> true);
+		try(DirectoryStream<Path> tempIndexFileStream = FileUtils.getTempFolderContentsAsStream(indexPath.toFile(), file -> true)) {
 			tempIndexFileStream.forEach(path -> {
 				path.toFile().delete();	
 			});
