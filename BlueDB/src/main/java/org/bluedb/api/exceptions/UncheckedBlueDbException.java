@@ -1,8 +1,5 @@
 package org.bluedb.api.exceptions;
 
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectInputStream;
 import java.util.Objects;
 
 /**

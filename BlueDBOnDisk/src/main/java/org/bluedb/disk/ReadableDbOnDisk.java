@@ -77,10 +77,10 @@ public class ReadableDbOnDisk implements ReadableBlueDb {
 	}
 
 	private <T extends Serializable> ReadOnlyCollectionOnDisk<T> instantiateCollectionFromExistingOnDisk(String name, Class<T> valueType) throws BlueDbException {
-		ReadOnlyCollectionOnDisk<T> collection = new ReadOnlyCollectionOnDisk<>(this, name, null, valueType, Arrays.asList());
+		ReadOnlyCollectionOnDisk<T> collection = new ReadOnlyCollectionOnDisk<>(this, name, null, null, valueType, Arrays.asList());
 		if (TimeKey.class.isAssignableFrom(collection.getKeyType())) {
 			Class<? extends BlueKey> keyType = collection.getKeyType();
-			collection = new ReadOnlyTimeCollectionOnDisk<>(this, name, keyType, valueType, Arrays.asList());
+			collection = new ReadOnlyTimeCollectionOnDisk<>(this, name, null, keyType, valueType, Arrays.asList());
 		}
 		return collection;
 	}

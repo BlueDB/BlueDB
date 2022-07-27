@@ -136,30 +136,6 @@ public class IndexCompositeKeyTest {
 	}
 
 	@Test
-	public void test_isBeforeRange() {
-		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
-		TimeKey _4 = new TimeKey(4, 4);
-		TimeKey _5 = new TimeKey(5, 5);
-		IndexCompositeKey<TimeKey> compositeKey_2_4 = new IndexCompositeKey<TimeKey>(_2_to_4, _5);
-		IndexCompositeKey<TimeKey> compositeKey_4 = new IndexCompositeKey<TimeKey>(_4, _5);
-
-		assertFalse(compositeKey_2_4.isBeforeRange(0, 1));
-		assertFalse(compositeKey_2_4.isBeforeRange(0, 2));
-		assertFalse(compositeKey_2_4.isBeforeRange(0, 3));
-		assertFalse(compositeKey_2_4.isBeforeRange(3, 3));
-		assertFalse(compositeKey_2_4.isBeforeRange(0, 6));
-		assertFalse(compositeKey_2_4.isBeforeRange(3, 6));
-		assertFalse(compositeKey_2_4.isBeforeRange(4, 6));
-		assertTrue(compositeKey_2_4.isBeforeRange(5, 6));
-
-		assertFalse(compositeKey_4.isBeforeRange(0, 3));
-		assertFalse(compositeKey_4.isBeforeRange(0, 4));
-		assertFalse(compositeKey_4.isBeforeRange(0, 6));
-		assertFalse(compositeKey_4.isBeforeRange(4, 6));
-		assertTrue(compositeKey_4.isBeforeRange(5, 6));
-	}
-
-	@Test
 	public void test_isInRange() {
 		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
 		TimeKey _4 = new TimeKey(4, 4);
@@ -167,20 +143,20 @@ public class IndexCompositeKeyTest {
 		IndexCompositeKey<TimeKey> compositeKey_2_4 = new IndexCompositeKey<TimeKey>(_2_to_4, _5);
 		IndexCompositeKey<TimeKey> compositeKey_4 = new IndexCompositeKey<TimeKey>(_4, _5);
 
-		assertFalse(compositeKey_2_4.isInRange(0, 1));
-		assertTrue(compositeKey_2_4.isInRange(0, 2));
-		assertTrue(compositeKey_2_4.isInRange(0, 3));
-		assertTrue(compositeKey_2_4.isInRange(3, 3));
-		assertTrue(compositeKey_2_4.isInRange(0, 6));
-		assertTrue(compositeKey_2_4.isInRange(3, 6));
-		assertTrue(compositeKey_2_4.isInRange(4, 6));
-		assertFalse(compositeKey_2_4.isInRange(5, 6));
+		assertFalse(compositeKey_2_4.overlapsRange(0, 1));
+		assertTrue(compositeKey_2_4.overlapsRange(0, 2));
+		assertTrue(compositeKey_2_4.overlapsRange(0, 3));
+		assertTrue(compositeKey_2_4.overlapsRange(3, 3));
+		assertTrue(compositeKey_2_4.overlapsRange(0, 6));
+		assertTrue(compositeKey_2_4.overlapsRange(3, 6));
+		assertTrue(compositeKey_2_4.overlapsRange(4, 6));
+		assertFalse(compositeKey_2_4.overlapsRange(5, 6));
 
-		assertFalse(compositeKey_4.isInRange(0, 3));
-		assertTrue(compositeKey_4.isInRange(0, 4));
-		assertTrue(compositeKey_4.isInRange(0, 6));
-		assertTrue(compositeKey_4.isInRange(4, 6));
-		assertFalse(compositeKey_4.isInRange(5, 6));
+		assertFalse(compositeKey_4.overlapsRange(0, 3));
+		assertTrue(compositeKey_4.overlapsRange(0, 4));
+		assertTrue(compositeKey_4.overlapsRange(0, 6));
+		assertTrue(compositeKey_4.overlapsRange(4, 6));
+		assertFalse(compositeKey_4.overlapsRange(5, 6));
 	}
 
 	@Test
@@ -205,5 +181,13 @@ public class IndexCompositeKeyTest {
 		assertFalse(compositeKey_4.isAfterRange(0, 6));
 		assertFalse(compositeKey_4.isAfterRange(4, 6));
 		assertFalse(compositeKey_4.isAfterRange(5, 6));
+	}
+	
+	@Test
+	public void test_isActiveTimeKey() {
+		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
+		TimeKey _5 = new TimeKey(5, 5);
+		IndexCompositeKey<TimeKey> compositeKey_2_4 = new IndexCompositeKey<TimeKey>(_2_to_4, _5);
+		assertFalse(compositeKey_2_4.isActiveTimeKey());
 	}
 }

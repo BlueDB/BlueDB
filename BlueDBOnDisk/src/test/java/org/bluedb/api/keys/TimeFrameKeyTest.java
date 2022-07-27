@@ -94,8 +94,8 @@ public class TimeFrameKeyTest extends TestCase {
 		assertEquals(one, oneCopy);
 		assertTrue(one.equals(oneCopy));
 		assertFalse(one.equals(oneDifferent));
-		assertFalse(one.equals(oneToTwo));
-		assertFalse(oneToTwo.equals(one));
+		assertTrue(one.equals(oneToTwo));
+		assertTrue(oneToTwo.equals(one));
 		assertTrue(oneToTwo.equals(oneToTwoCopy));
 		assertFalse(oneToTwoDifferent.equals(oneToTwoCopy));
 		assertFalse(oneToTwo.equals(oneToTwoDifferent));
@@ -165,29 +165,16 @@ public class TimeFrameKeyTest extends TestCase {
 	}
 
 	@Test
-	public void test_isBeforeRange() {
-		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
-		assertFalse(_2_to_4.isBeforeRange(0, 1));
-		assertFalse(_2_to_4.isBeforeRange(0, 2));
-		assertFalse(_2_to_4.isBeforeRange(0, 3));
-		assertFalse(_2_to_4.isBeforeRange(3, 3));
-		assertFalse(_2_to_4.isBeforeRange(0, 6));
-		assertFalse(_2_to_4.isBeforeRange(3, 6));
-		assertFalse(_2_to_4.isBeforeRange(4, 6));
-		assertTrue(_2_to_4.isBeforeRange(5, 6));
-	}
-
-	@Test
 	public void test_isInRange() {
 		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
-		assertFalse(_2_to_4.isInRange(0, 1));
-		assertTrue(_2_to_4.isInRange(0, 2));
-		assertTrue(_2_to_4.isInRange(0, 3));
-		assertTrue(_2_to_4.isInRange(3, 3));
-		assertTrue(_2_to_4.isInRange(0, 6));
-		assertTrue(_2_to_4.isInRange(3, 6));
-		assertTrue(_2_to_4.isInRange(4, 6));
-		assertFalse(_2_to_4.isInRange(5, 6));
+		assertFalse(_2_to_4.overlapsRange(0, 1));
+		assertTrue(_2_to_4.overlapsRange(0, 2));
+		assertTrue(_2_to_4.overlapsRange(0, 3));
+		assertTrue(_2_to_4.overlapsRange(3, 3));
+		assertTrue(_2_to_4.overlapsRange(0, 6));
+		assertTrue(_2_to_4.overlapsRange(3, 6));
+		assertTrue(_2_to_4.overlapsRange(4, 6));
+		assertFalse(_2_to_4.overlapsRange(5, 6));
 	}
 
 	@Test
@@ -201,5 +188,11 @@ public class TimeFrameKeyTest extends TestCase {
 		assertFalse(_2_to_4.isAfterRange(3, 6));
 		assertFalse(_2_to_4.isAfterRange(4, 6));
 		assertFalse(_2_to_4.isAfterRange(5, 6));
+	}
+	
+	@Test
+	public void test_isActiveTimeKey() {
+		TimeFrameKey _2_to_4 = new TimeFrameKey(1, 2, 4);
+		assertFalse(_2_to_4.isActiveTimeKey());
 	}
 }

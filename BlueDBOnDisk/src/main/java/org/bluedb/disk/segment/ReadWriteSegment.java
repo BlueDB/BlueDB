@@ -164,16 +164,19 @@ public class ReadWriteSegment <T extends Serializable> extends ReadableSegment<T
 			}
 		}
 		try (BlueWriteLock<Path> targetFileLock = acquireWriteLock(targetPath)) {
-			FileUtils.moveFile(tmpPath, targetFileLock);
+			if(!FileUtils.isEmpty(tmpPath)) {
+				FileUtils.moveFile(tmpPath, targetFileLock);
+			} else {
+				FileUtils.deleteIfExistsWithoutLock(tmpPath);
+				FileUtils.deleteFile(targetFileLock);
+			}
 		}
 		reportWrite(targetPath);
 	}
 
 	public void rollup(Range timeRange) throws BlueDbException {
 		rollup(timeRange, true);
-		if (getAllFileRangesInOrder(segmentPath).size() == 0) {
-			segmentPath.toFile().delete();
-		}
+		FileUtils.deleteDirectoryAndParentsIfEmpty(segmentPath);
 	}
 
 	private void rollup(Range timeRange, boolean abortIfOnlyOneFile) throws BlueDbException {

@@ -6,48 +6,16 @@ import org.bluedb.api.BlueCollection;
 import org.bluedb.api.index.BlueIndex;
 
 /**
- * A key that can be mapped to a value in a {@link BlueCollection} or {@link BlueIndex}. Values inserted with
- * this key will be ordered by start time. I-node usage will scale with the size of the timeframe that your data covers.
+ * A key that can be mapped to a value in a {@link BlueCollection} or {@link BlueIndex}. Use this key when
+ * your values have a start and end time and you need to be able to query all values that overlap a given
+ * timeframe. BlueDB has to know the end time in order to fulfill that need, but the end time it isn't really 
+ * part of the primary key of the value. You should be able to use a {@link TimeKey} when finding, updating,
+ * or deleting these values. Values inserted with this type of key will be ordered by start time. I-node usage 
+ * will scale with the size of the timeframe that your data covers. Efficiency goes down when your individual
+ * records span a really large timeframe. In that case you may want to consider specifying a larger segment 
+ * size for your collection.
  */
 public final class TimeFrameKey extends TimeKey {
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = super.hashCode();
-		result = prime * result + (int) (endTime ^ (endTime >>> 32));
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null)
-			return false;
-		if (this == obj)
-			return true;
-		if (getClass() != obj.getClass())
-			return false;
-		if (!super.equals(obj))
-			return false;
-		TimeFrameKey other = (TimeFrameKey) obj;
-		if (endTime != other.endTime)
-			return false;
-		return true;
-	}
-	
-	@Override
-	public boolean isBeforeRange(long min, long max) {
-		return getStartTime() < min && endTime < min;
-	}
-
-	@Override
-	public boolean isInRange(long min, long max) {
-		return endTime >= min && getStartTime() <= max;
-	}
-	
-	@Override
-	public boolean isAfterRange(long min, long max) {
-		return getStartTime() > max && endTime > max;
-	}
 
 	private static final long serialVersionUID = 1L;
 
@@ -77,6 +45,12 @@ public final class TimeFrameKey extends TimeKey {
 		this.endTime = endTime;
 	}
 
+	private void validateEndTime(long endTime) {
+		if (endTime < this.getStartTime()) {
+			throw new IllegalArgumentException("TimeFrameKey endTime must be >= startTime.");
+		}
+	}
+
 	/**
 	 * @return the start time of this key
 	 */
@@ -92,13 +66,17 @@ public final class TimeFrameKey extends TimeKey {
 	}
 
 	@Override
-	public String toString() {
-		return "TimeFrameKey [key=" + getId() + ", time=[" + getStartTime() + ", " + endTime + "] ]";
+	public boolean overlapsRange(long min, long max) {
+		return endTime >= min && getStartTime() <= max;
+	}
+	
+	@Override
+	public boolean isAfterRange(long min, long max) {
+		return getStartTime() > max && endTime > max;
 	}
 
-	private void validateEndTime(long endTime) {
-		if (endTime < this.getStartTime()) {
-			throw new IllegalArgumentException("TimeFrameKey endTime must be >= startTime.");
-		}
+	@Override
+	public String toString() {
+		return "TimeFrameKey [key=" + getId() + ", time=[" + getStartTime() + ", " + endTime + "] ]";
 	}
 }

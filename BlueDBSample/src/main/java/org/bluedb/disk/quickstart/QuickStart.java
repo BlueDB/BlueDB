@@ -11,6 +11,7 @@ import java.util.Map;
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueDb;
 import org.bluedb.api.BlueTimeCollection;
+import org.bluedb.api.CloseableIterator;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.IntegerIndexKeyExtractor;
@@ -30,7 +31,7 @@ public class QuickStart {
 		
 		TimeKey key = insertValueUsingTime(ballCollection);
 		
-		confirmValueSaved(ballCollection, key);
+		containsKey(ballCollection, key);
 		
 		fetchValue(ballCollection, key);
 		
@@ -49,15 +50,19 @@ public class QuickStart {
 		BlueIndex<IntegerKey, Ball> ballSizeIndex = createIndexOnBallSize(ballCollection);
 		
 		insertValueAndRetreiveViaIndex(ballCollection, ballSizeIndex);
+		
+		printBallsWithSizeLessThan(ballCollection, ballSizeIndex, 5);
 	}
 	
 	//IGNORE ABOVE HERE
-	
+
 	/*
 	 *  For this quick start we'll persist a POJO called ball that has a radius property. See best practices
 	 *  for more information about how to structure your database model objects.
 	 */
 	public static class Ball implements Serializable {
+		private static final long serialVersionUID = 1L;
+		
 		private int radius;
 		//[Hide below here in a ... Maybe give them access to expand to see the details or a link or something]
 		public Ball(int radius) {
@@ -71,6 +76,12 @@ public class QuickStart {
 		public void setRadius(int radius) {
 			this.radius = radius;
 		}
+
+		@Override
+		public String toString() {
+			return "Ball [radius=" + radius + "]";
+		}
+		
 		//[Hide above here in a ...]
 	}
 
@@ -97,13 +108,13 @@ public class QuickStart {
 	}
 
 	// Confirm the value is saved
-	private static void confirmValueSaved(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
-		boolean contains = ballCollection.contains(key);
+	private static boolean containsKey(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
+		return ballCollection.contains(key);
 	}
 
 	// Fetch the value
-	private static void fetchValue(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
-		Ball ball = ballCollection.get(key);
+	private static Ball fetchValue(BlueCollection<Ball> ballCollection, TimeKey key) throws BlueDbException {
+		return ballCollection.get(key);
 	}
 
 	// Update the value
@@ -134,10 +145,10 @@ public class QuickStart {
 	}
 
 	// Query objects mapped to a TimeKey within the last hour, meeting a filter.
-	private static void queryValuesInTimeframeMatchingCondition(BlueTimeCollection<Ball> ballCollection) throws BlueDbException {
+	private static List<Ball> queryValuesInTimeframeMatchingCondition(BlueTimeCollection<Ball> ballCollection) throws BlueDbException {
 		long now = System.currentTimeMillis();
 		long oneHourAgo = now - 60 * 60 * 1000;
-		List<Ball> ballsOfRadius2= ballCollection.query()
+		return ballCollection.query()
 			.afterTime(oneHourAgo)
 			.beforeOrAtTime(now)
 			.where(ball -> ball.getRadius() == 2)
@@ -165,6 +176,8 @@ public class QuickStart {
 	
 	//[Website note] This whole class definition should be included, not just the body
 	public static class BallSizeIndexKeyExtractor implements IntegerIndexKeyExtractor<Ball> {
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public List<Integer> extractIntsForIndex(Ball value) {
 			return Arrays.asList(value.getRadius());
@@ -178,10 +191,27 @@ public class QuickStart {
 	}
 
 	// Insert a value and then retrieve it using the index
-	private static void insertValueAndRetreiveViaIndex(BlueCollection<Ball> ballCollection, BlueIndex<IntegerKey, Ball> ballSizeIndex) throws BlueDbException {
+	private static List<Ball> insertValueAndRetreiveViaIndex(BlueCollection<Ball> ballCollection, BlueIndex<IntegerKey, Ball> ballSizeIndex) throws BlueDbException {
 		TimeKey key = new TimeKey(3, System.currentTimeMillis());
 		Ball ball = new Ball(7);
 		ballCollection.insert(key, ball);
-		List<Ball> ballsOfSize7 = ballSizeIndex.get(new IntegerKey(7));  // returns List containing the ball;
+		
+		// returns List containing the ball;
+		return ballCollection.query()
+				.where(ballSizeIndex.createIntegerIndexCondition().isEqualTo(7))
+				.getList();
+	}
+	
+	private static void printBallsWithSizeLessThan(BlueTimeCollection<Ball> ballCollection, BlueIndex<IntegerKey, Ball> ballSizeIndex, int size) {
+		try(CloseableIterator<Ball> iterator = ballCollection.query()
+			.where(ballSizeIndex.createIntegerIndexCondition()
+					.isLessThan(size))
+			.getIterator()) {
+			while(iterator.hasNext()) {
+				System.out.println(iterator.next());
+			}
+		} catch (BlueDbException e) {
+			e.printStackTrace();
+		}
 	}
 }

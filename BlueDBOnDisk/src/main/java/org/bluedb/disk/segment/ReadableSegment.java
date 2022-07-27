@@ -43,9 +43,14 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 	}
 
 	public T get(BlueKey key) throws BlueDbException {
+		BlueEntity<T> entity = getEntity(key);
+		return entity != null ? entity.getValue() : null;
+	}
+	
+	public BlueEntity<T> getEntity(BlueKey key) throws BlueDbException {
 		long groupingNumber = key.getGroupingNumber();
 		try(BlueObjectInput<BlueEntity<T>> inputStream = getObjectInputFor(groupingNumber)) {
-			return get(key, inputStream);
+			return getEntity(key, inputStream);
 		}
 	}
 
@@ -53,12 +58,12 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 		return segmentRange;
 	}
 
-	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, Range range) {
-		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, range.getStart(), range.getEnd());
+	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, Range range, boolean enforceRangeStart) {
+		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, range.getStart(), range.getEnd(), enforceRangeStart);
 	}
 
-	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, long rangeMin, long rangeMax) {
-		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, rangeMin, rangeMax);
+	public SegmentEntityIterator<T> getIterator(long highestGroupingNumberCompleted, long rangeMin, long rangeMax, boolean enforceRangeStart) {
+		return new SegmentEntityIterator<>(this, highestGroupingNumberCompleted, rangeMin, rangeMax, enforceRangeStart);
 	}
 
 	public SegmentEntityIterator<T> getIterator(long min, long max) {
@@ -144,11 +149,11 @@ public abstract class ReadableSegment <T extends Serializable> implements Compar
 		return getFileManager().getLockManager().acquireReadLock(path);
 	}
 
-	protected static <T extends Serializable> T get(BlueKey key, BlueObjectInput<BlueEntity<T>> inputStream) {
+	protected static <T extends Serializable> BlueEntity<T> getEntity(BlueKey key, BlueObjectInput<BlueEntity<T>> inputStream) {
 		while(inputStream.hasNext()) {
 			BlueEntity<T> next = inputStream.next();
 			if (next.getKey().equals(key)) {
-				return next.getValue();
+				return next;
 			}
 		}
 		return null;

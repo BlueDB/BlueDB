@@ -18,7 +18,9 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.Condition;
+import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
@@ -166,9 +168,9 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<TestValue> listEmpty = Arrays.asList();
 		List<TestValue> list1and3 = Arrays.asList(value1, value3);
 
-		assertEquals(listEmpty, index.get(indexKeyFor1and3));
+		assertEquals(listEmpty, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, indexKeyFor1and3));
 		getTimeCollection().batchUpsert(batchInserts);
-		assertEquals(list1and3, index.get(indexKeyFor1and3));
+		assertEquals(list1and3, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, indexKeyFor1and3));
 	}
 	
 	@Test
@@ -203,8 +205,8 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptyList, getTimeCollection().query().getList());
 		assertEquals(emptyKeySet, index.getKeys(new IntegerKey(indexValue1)));
 		assertEquals(emptyKeySet, index.getKeys(new IntegerKey(indexValue2)));
-		assertEquals(emptyList, index.get(new IntegerKey(indexValue1)));
-		assertEquals(emptyList, index.get(new IntegerKey(indexValue2)));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue1)));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue2)));
 		
 		Map<BlueKey, TestValue> entriesToUpsert = new HashMap<>();
 		entriesToUpsert.put(key1, value1);
@@ -216,8 +218,8 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(values1_2_3, getTimeCollection().query().getList());
 		assertEquals(keys1_3, index.getKeys(new IntegerKey(indexValue1)));
 		assertEquals(keys2, index.getKeys(new IntegerKey(indexValue2)));
-		assertEquals(values1_3, index.get(new IntegerKey(indexValue1)));
-		assertEquals(values2, index.get(new IntegerKey(indexValue2)));
+		assertEquals(values1_3, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue1)));
+		assertEquals(values2, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue2)));
 		
 		TestValue value4 = new TestValue("Aaron", indexValue1);
 		BlueKey key4 = createTimeKey(5, value4);
@@ -254,10 +256,10 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(emptyKeySet, index.getKeys(new IntegerKey(indexValue2)));
 		assertEquals(keys5, index.getKeys(new IntegerKey(indexValue3)));
 		assertEquals(keys1_2, index.getKeys(new IntegerKey(indexValue4)));
-		assertEquals(values3_4, index.get(new IntegerKey(indexValue1)));
-		assertEquals(emptyList, index.get(new IntegerKey(indexValue2)));
-		assertEquals(values5, index.get(new IntegerKey(indexValue3)));
-		assertEquals(values1_2, index.get(new IntegerKey(indexValue4)));
+		assertEquals(values3_4, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue1)));
+		assertEquals(emptyList, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue2)));
+		assertEquals(values5, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue3)));
+		assertEquals(values1_2, getValuesByIndexForTargetIndexedInteger(getTimeCollection(), index, new IntegerKey(indexValue4)));
 	}
 	
 	@Test
@@ -439,12 +441,12 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<BlueEntity<TestValue>> allEntities, entitiesWithJoe, entities3to5, entities2to3, entities0to1, entities0to0;
 
 		Condition<TestValue> isJoe = (v) -> v.getName().equals("Joe");
-		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
-		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), Arrays.asList(isJoe), new ArrayList<>(), false, Optional.empty());
-		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
-		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
-		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
-		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entitiesWithJoe = getTimeCollection().findMatches(new Range(0, 5), new ArrayList<>(), Arrays.asList(isJoe), new ArrayList<>(), false, Optional.empty());
+		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
+		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), false, Optional.empty());
 
 		assertEquals(2, allEntities.size());
 		assertEquals(1, entitiesWithJoe.size());
@@ -465,11 +467,11 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		insertAtTimeFrame(2, 3, valueBob);
 		List<BlueEntity<TestValue>> allEntities, entities3to5, entities2to3, entities0to1, entities0to0;
 
-		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
-		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
-		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
-		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
-		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		allEntities = getTimeCollection().findMatches(new Range(0, 3), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities3to5 = getTimeCollection().findMatches(new Range(3, 5), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities2to3 = getTimeCollection().findMatches(new Range(2, 3), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities0to1 = getTimeCollection().findMatches(new Range(0, 1), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
+		entities0to0 = getTimeCollection().findMatches(new Range(0, 0), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), true, Optional.empty());
 
 		assertEquals(2, allEntities.size());
 		assertEquals(0, entities3to5.size());
@@ -478,6 +480,16 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(1, entities0to1.size());
 		assertEquals(valueJoe, entities0to1.get(0).getValue());
 		assertEquals(0, entities0to0.size());
+	}
+
+	@Test
+	public void test_getFirst() throws Exception {
+		TestValue valueJoe = new TestValue("Joe");
+		TestValue valueBob = new TestValue("Bob");
+		insertAtTimeFrame(1, 2, valueJoe);
+		insertAtTimeFrame(2, 3, valueBob);
+
+		assertEquals(valueJoe, getTimeCollection().query().getFirst().orElse(null));
 	}
 
 	@Test
@@ -563,10 +575,10 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		Map<RollupTarget, Long> rollupTimes;
 		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
 		RollupTarget target_6000 = new RollupTarget(0, new Range(0, 5999));
+		RollupTarget target_299999 = new RollupTarget(0, new Range(0, 299999));
 		RollupTarget target_3600000 = new RollupTarget(0, new Range(0, 3599999));
 		Set<RollupTarget> targets_none = new HashSet<>();
-		Set<RollupTarget> targets_mid_and_top = new HashSet<>(Arrays.asList(target_6000, target_3600000));
-//		Set<RollupTarget> targets_top = new HashSet<>(Arrays.asList(target_3600000));
+		Set<RollupTarget> targets_mid_to_top = new HashSet<>(Arrays.asList(target_6000, target_299999, target_3600000));
 		
 		rollupTimes = scheduler.getRollupTimes();
 		assertEquals(targets_none, rollupTimes.keySet());
@@ -580,7 +592,7 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertEquals(2, values.size());
 
 		rollupTimes = scheduler.getRollupTimes();
-		assertEquals(targets_mid_and_top, rollupTimes.keySet());
+		assertEquals(targets_mid_to_top, rollupTimes.keySet());
 		assertTrue(rollupTimes.get(target_3600000) > rollupTimes.get(target_6000));
 	}
 
@@ -599,9 +611,14 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 
 		RollupScheduler scheduler = getTimeCollection().getRollupScheduler();
 		Map<RollupTarget, Long> rollupTimes = scheduler.getRollupTimes();
-		long rollupTime = rollupTimes.get(rollupTarget);
-		assertTrue(rollupTime > now + rollupDelay - 10_000);
-		assertTrue(rollupTime < now + rollupDelay + 10_000);
+		Long rollupTime = rollupTimes.get(rollupTarget);
+		
+		if(BlueCollectionVersion.getDefault() == BlueCollectionVersion.VERSION_1) {
+			assertTrue(rollupTime > now + rollupDelay - 10_000);
+			assertTrue(rollupTime < now + rollupDelay + 10_000);
+		} else {
+			assertNull(rollupTime); //There is no pre-segment in other versions
+		}
 
 		assertEquals(Arrays.asList(value), getTimeCollection().query().getList());
 	}
@@ -776,5 +793,11 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 		assertFalse(getHashGroupedCollection().isTimeBased());
 		assertTrue(getCallCollection().isTimeBased());
 		assertTrue(getTimeCollection().isTimeBased());
+	}
+
+	private List<TestValue> getValuesByIndexForTargetIndexedInteger(ReadableBlueCollection<TestValue> collection, BlueIndex<IntegerKey, TestValue> index, IntegerKey targetIntegerKey) throws BlueDbException {
+		return collection.query()
+				.where(index.createIntegerIndexCondition().isEqualTo(targetIntegerKey.getId()))
+				.getList();
 	}
 }

@@ -126,27 +126,27 @@ public class IntegerKeyTest extends TestCase {
 	}
 
 	@Test
-	public void test_isBeforeRange() {
+	public void test_getStringIdIfPresent() {
 		IntegerKey integerKey = new IntegerKey(1);
-		long groupingNumber = integerKey.getGroupingNumber();
-		assertFalse(integerKey.isBeforeRange(groupingNumber - 1, groupingNumber - 1));
-		assertFalse(integerKey.isBeforeRange(groupingNumber - 1, groupingNumber));
-		assertFalse(integerKey.isBeforeRange(groupingNumber - 1, groupingNumber + 1));
-		assertFalse(integerKey.isBeforeRange(groupingNumber, groupingNumber));
-		assertFalse(integerKey.isBeforeRange(groupingNumber, groupingNumber + 1));
-		assertTrue(integerKey.isBeforeRange(groupingNumber + 1, groupingNumber + 1));
+		assertNull(integerKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		IntegerKey integerKey = new IntegerKey(1);
+		assertNull(integerKey.getUUIDIdIfPresent());
 	}
 
 	@Test
 	public void test_isInRange() {
 		IntegerKey integerKey = new IntegerKey(1);
 		long groupingNumber = integerKey.getGroupingNumber();
-		assertFalse(integerKey.isInRange(groupingNumber - 1, groupingNumber - 1));
-		assertTrue(integerKey.isInRange(groupingNumber - 1, groupingNumber));
-		assertTrue(integerKey.isInRange(groupingNumber - 1, groupingNumber + 1));
-		assertTrue(integerKey.isInRange(groupingNumber, groupingNumber));
-		assertTrue(integerKey.isInRange(groupingNumber, groupingNumber + 1));
-		assertFalse(integerKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+		assertFalse(integerKey.overlapsRange(groupingNumber - 1, groupingNumber - 1));
+		assertTrue(integerKey.overlapsRange(groupingNumber - 1, groupingNumber));
+		assertTrue(integerKey.overlapsRange(groupingNumber - 1, groupingNumber + 1));
+		assertTrue(integerKey.overlapsRange(groupingNumber, groupingNumber));
+		assertTrue(integerKey.overlapsRange(groupingNumber, groupingNumber + 1));
+		assertFalse(integerKey.overlapsRange(groupingNumber + 1, groupingNumber + 1));
 	}
 
 	@Test
@@ -159,5 +159,11 @@ public class IntegerKeyTest extends TestCase {
 		assertFalse(integerKey.isAfterRange(groupingNumber, groupingNumber));
 		assertFalse(integerKey.isAfterRange(groupingNumber, groupingNumber + 1));
 		assertFalse(integerKey.isAfterRange(groupingNumber + 1, groupingNumber + 1));
+	}
+	
+	@Test
+	public void test_isActiveTimeKey() {
+		IntegerKey integerKey = new IntegerKey(1);
+		assertFalse(integerKey.isActiveTimeKey());
 	}
 }

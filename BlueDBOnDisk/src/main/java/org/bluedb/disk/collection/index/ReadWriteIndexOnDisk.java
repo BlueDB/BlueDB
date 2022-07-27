@@ -76,7 +76,7 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 		this.indexName = indexPath.toFile().getName();
 		this.fileManager = collection.getFileManager();
 		SegmentSizeSetting sizeSetting = determineSegmentSize(keyExtractor.getType());
-		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig());
+		segmentManager = new ReadWriteSegmentManager<BlueKey>(indexPath, fileManager, this, sizeSetting.getConfig(), false);
 		rollupScheduler = collection.getRollupScheduler();
 		cleanupTempFiles();
 	}
@@ -153,28 +153,32 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 	}
 
 	public void indexChange(BlueKey key, T oldValue, T newValue) throws BlueDbException {
-		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueChange(key, oldValue, newValue);
+		List<IndividualChange<BlueKey>> sortedIndexChanges = getSortedIndexChangesForValueChange(key, key, false, oldValue, newValue);
 		getSegmentManager().applyChanges(new InMemorySortedChangeSupplier<>(sortedIndexChanges));
 	}
 	
 	public List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(IndividualChange<T> change) {
-		return getSortedIndexChangesForValueChange(change.getKey(), change.getOldValue(), change.getNewValue());
+		return getSortedIndexChangesForValueChange(change.getOriginalKey(), change.getKey(), change.isKeyChanged(), change.getOldValue(), change.getNewValue());
 	}
 
-	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(BlueKey valueKey, T oldValue, T newValue) {
-		Set<IndexCompositeKey<I>> oldCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, oldValue))
+	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(BlueKey key, T oldValue, T newValue) {
+		return getSortedIndexChangesForValueChange(key, key, false, oldValue, newValue);
+	}
+
+	protected List<IndividualChange<BlueKey>> getSortedIndexChangesForValueChange(BlueKey originalValueKey, BlueKey newValueKey, boolean isKeyChanged, T oldValue, T newValue) {
+		Set<IndexCompositeKey<I>> oldCompositeKeys = StreamUtils.stream(toCompositeKeys(originalValueKey, oldValue))
 				.collect(Collectors.toCollection(HashSet::new));
 		
-		Set<IndexCompositeKey<I>> newCompositeKeys = StreamUtils.stream(toCompositeKeys(valueKey, newValue))
+		Set<IndexCompositeKey<I>> newCompositeKeys = StreamUtils.stream(toCompositeKeys(newValueKey, newValue))
 				.collect(Collectors.toCollection(HashSet::new));
 		
 		Stream<IndividualChange<BlueKey>> deleteChanges = StreamUtils.stream(oldCompositeKeys)
-			.filter(oldKey -> !newCompositeKeys.contains(oldKey))
-			.map(oldKey -> new IndividualChange<>(oldKey, valueKey, null));
+			.filter(oldIndexKey -> !newCompositeKeys.contains(oldIndexKey))
+			.map(oldIndexKey -> IndividualChange.createDeleteChange(oldIndexKey, originalValueKey));
 		
 		Stream<IndividualChange<BlueKey>> insertChanges = StreamUtils.stream(newCompositeKeys)
-				.filter(newKey -> !oldCompositeKeys.contains(newKey))
-				.map(newKey -> IndividualChange.createInsertChange(newKey, valueKey));
+				.filter(newIndexKey -> isKeyChanged || !oldCompositeKeys.contains(newIndexKey)) //If the index key is new for this value key or the value key changed then we want to update our index data for it to reflect the new value key
+				.map(newIndexKey -> IndividualChange.createInsertChange(newIndexKey, newValueKey)); //An insert change is fine for index files. We don't need to know the previous value for index changes.
 		
 		return StreamUtils.concat(deleteChanges, insertChanges)
 				.sorted()
@@ -191,14 +195,13 @@ public class ReadWriteIndexOnDisk<I extends ValueKey, T extends Serializable> ex
 			return new ArrayList<>();
 		}
 		
-		return StreamUtils.stream(keyExtractor.extractKeys(value))
+		return StreamUtils.stream(extractIndexKeys(destination, value))
 				.map( (indexKey) -> new IndexCompositeKey<I>(indexKey, destination) )
 				.collect( Collectors.toList() );
 	}
 
 	protected void cleanupTempFiles() {
-		try {
-			DirectoryStream<Path> tempIndexFileStream = FileUtils.getTempFolderContentsAsStream(indexPath.toFile(), file -> true);
+		try(DirectoryStream<Path> tempIndexFileStream = FileUtils.getTempFolderContentsAsStream(indexPath.toFile(), file -> true)) {
 			tempIndexFileStream.forEach(path -> {
 				path.toFile().delete();	
 			});

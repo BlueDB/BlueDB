@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.config.ConfigurationService;
@@ -34,6 +35,10 @@ public class ReadWriteCollectionMetaData extends ReadableCollectionMetadata {
 
 	public void saveSegmentSize(SegmentSizeSetting segmentSize) throws BlueDbException {
 		getFileManager().saveObject(segmentSizePath, segmentSize);
+	}
+
+	public void saveCollectionVersion(BlueCollectionVersion collectionVersion) throws BlueDbException {
+		getFileManager().saveObject(collectionVersionPath, collectionVersion);
 	}
 
 	public void updateSerializedClassList(List<Class<? extends Serializable>> classes) throws BlueDbException {

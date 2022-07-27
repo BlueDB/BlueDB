@@ -6,6 +6,7 @@ import java.util.Set;
 import org.bluedb.api.Condition;
 import org.bluedb.api.ReadBlueTimeQuery;
 import org.bluedb.api.datastructures.BlueSimpleSet;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.ReadOnlyCollectionOnDisk;
 
@@ -22,6 +23,12 @@ public class ReadOnlyTimeQueryOnDisk<T extends Serializable> extends ReadOnlyQue
 	}
 	
 	@Override
+	public ReadBlueTimeQuery<T> where(BlueIndexCondition<?> indexCondition) {
+		super.where(indexCondition);
+		return this;
+	}
+	
+	@Override
 	public ReadBlueTimeQuery<T> whereKeyIsIn(Set<BlueKey> keys) {
 		super.whereKeyIsIn(keys);
 		return this;
@@ -30,6 +37,18 @@ public class ReadOnlyTimeQueryOnDisk<T extends Serializable> extends ReadOnlyQue
 	@Override
 	public ReadBlueTimeQuery<T> whereKeyIsIn(BlueSimpleSet<BlueKey> keys) {
 		super.whereKeyIsIn(keys);
+		return this;
+	}
+
+	@Override
+	public ReadBlueTimeQuery<T> whereKeyIsActive() {
+		super.whereKeyIsActive();
+		return this;
+	}
+
+	@Override
+	public ReadBlueTimeQuery<T> whereKeyIsNotActive() {
+		super.whereKeyIsNotActive();
 		return this;
 	}
 

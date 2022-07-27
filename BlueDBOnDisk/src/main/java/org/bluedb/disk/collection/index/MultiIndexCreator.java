@@ -172,7 +172,9 @@ public class MultiIndexCreator<T extends Serializable> {
 		
 		/** To initialize an index we must go through all entities in the collection and generate and sort index changes. That
 		 * process involves sorting on disk. This value controls how many records are in each initial file on disk before being
-		 * combined. */
+		 * combined. 
+		 * @return the max records that should be allowed in the initial files on disk before being combined
+		 */
 		public int getMaxRecordsInInitializationChunks();
 	}
 

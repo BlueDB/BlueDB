@@ -35,6 +35,14 @@ public interface BlueCollectionBuilder<K extends BlueKey, V extends Serializable
 	 * @throws BlueDbException if the requested segment size is invalid
 	 */
 	public BlueCollectionBuilder<K, V> withSegmentSize(SegmentSize<K> segmentSize) throws BlueDbException;
+
+	/**
+	 * Sets the desired collection version to use if this is a new collection, then returns itself.
+	 * @param version The blue collection version to use if this is a new collection. If not specified
+	 * then {@link BlueCollectionVersion#getDefault()} will be used.
+	 * @return itself, after version is set as the desired version.
+	 */
+	public BlueCollectionBuilder<K, V> withCollectionVersion(BlueCollectionVersion version);
 	
 	/**
 	 * @return the existing {@link BlueCollection} or else builds a new one if none exists

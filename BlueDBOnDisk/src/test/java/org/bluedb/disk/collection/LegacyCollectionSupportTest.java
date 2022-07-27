@@ -243,9 +243,21 @@ public class LegacyCollectionSupportTest extends TestCase {
 		TestUtils.assertCollectionAndValue(stringCollection, value.getStringKey(), value);
 		TestUtils.assertCollectionAndValue(uuidCollection, value.getUUIDKey(), value);
 		
-		assertEquals(true, longIndex.get(value.getLongKey()).contains(value));
-		assertEquals(true, intIndex.get(value.getIntegerKey()).contains(value));
-		assertEquals(true, stringIndex.get(value.getStringKey()).contains(value));
-		assertEquals(true, uuidIndex.get(value.getUUIDKey()).contains(value));
+		assertEquals(true, timeCollection.query()
+				.where(longIndex.createLongIndexCondition().isEqualTo(value.getLongKey().getId()))
+				.getList()
+				.contains(value));
+		assertEquals(true, timeCollection.query()
+				.where(intIndex.createIntegerIndexCondition().isEqualTo(value.getIntegerKey().getId()))
+				.getList()
+				.contains(value));
+		assertEquals(true, timeCollection.query()
+				.where(stringIndex.createStringIndexCondition().isEqualTo(value.getStringKey().getId()))
+				.getList()
+				.contains(value));
+		assertEquals(true, timeCollection.query()
+				.where(uuidIndex.createUUIDIndexCondition().isEqualTo(value.getUUIDKey().getId()))
+				.getList()
+				.contains(value));
 	}
 }

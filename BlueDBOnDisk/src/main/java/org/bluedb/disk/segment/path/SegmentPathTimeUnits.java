@@ -4,6 +4,9 @@ public class SegmentPathTimeUnits {
 	public static long ONE_MILLI = 1L;
 	public static long SIX_SECONDS = 6_000L;
 	public static long ONE_MINUTE = 60_000L;
+	public static long FIVE_MINUTES = ONE_MINUTE * 5;
+	public static long FIFTEEN_MINUTES = ONE_MINUTE * 15;
+	public static long THIRTY_MINUTES = ONE_MINUTE * 30;
 	
 	public static long ONE_HOUR = 3_600_000L;
 	public static long TWO_HOURS = ONE_HOUR * 2;

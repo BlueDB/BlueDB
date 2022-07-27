@@ -181,15 +181,49 @@ public class FileUtilsTest extends TestCase {
 	}
 	
 	@Test
-	public void test_isEmpty() throws IOException {
+	public void test_isEmpty() throws IOException, BlueDbException {
 		Path tmpFile = Files.createTempFile("FileUtilsTest-test_isEmpty", null);
+		Path tmpDir = createTempFolder("test_isEmpty").toPath();
 		
 		assertTrue(FileUtils.isEmpty(null));
 		assertTrue(FileUtils.isEmpty(Paths.get("Something-that-doesn't-exist.wat")));
 		assertTrue(FileUtils.isEmpty(tmpFile));
+		assertTrue(FileUtils.isEmpty(tmpDir));
 		
 		Files.write(tmpFile, new byte[10]);
 		assertFalse(FileUtils.isEmpty(tmpFile));
+		
+		Path tmpDirInTmpDir = tmpDir.resolve("subdirectory");
+		Files.createDirectories(tmpDirInTmpDir);
+		assertFalse(FileUtils.isEmpty(tmpDir));
+		
+		Files.delete(tmpDirInTmpDir);
+		assertTrue(FileUtils.isEmpty(tmpDir));
+		
+		createTempFile(tmpDir.toFile(), "tmpFileInTmpDir");
+		assertFalse(FileUtils.isEmpty(tmpDir));
+	}
+	
+	@Test
+	public void test_isDirectoryEmpty() throws IOException, BlueDbException {
+		Path tmpDir = createTempFolder("test_isEmpty").toPath();
+		
+		assertTrue(FileUtils.isDirectoryEmpty(tmpDir));
+		
+		Path tmpDirInTmpDir = tmpDir.resolve("subdirectory");
+		Files.createDirectories(tmpDirInTmpDir);
+		assertFalse(FileUtils.isEmpty(tmpDir));
+		
+		Files.delete(tmpDirInTmpDir);
+		assertTrue(FileUtils.isEmpty(tmpDir));
+		
+		File tmpFileInTmpDir = createTempFile(tmpDir.toFile(), "tmpFileInTmpDir");
+		assertFalse(FileUtils.isEmpty(tmpDir));
+		
+		try {
+			FileUtils.isDirectoryEmpty(tmpFileInTmpDir.toPath());
+			fail("This should throw an exception if the path is not a directory or if there is some other IO Exception");
+		} catch(BlueDbException e) { /* expected */ }
 	}
 	
 	@Test
@@ -470,7 +504,63 @@ public class FileUtilsTest extends TestCase {
 			e.printStackTrace();
 		}
 	}
-
+	
+	@Test
+	public void test_deleteDirectoryAndParentsIfEmpty_deletesUntilAncestorHasAFile() throws IOException, BlueDbException {
+		Path rootPath = createTempFolder("deleteDirectoryAndParentsIfEmptyTest").toPath();
+		createTempFile(rootPath.toFile(), "fileInRootDir");
+		
+		Path level1Path = rootPath.resolve("level1");
+		Path level2Path = level1Path.resolve("level2");
+		Path level3Path = level2Path.resolve("level3");
+		Path level4Path = level3Path.resolve("level4");
+		Files.createDirectories(level4Path);
+		
+		assertTrue(Files.exists(rootPath));
+		assertTrue(Files.exists(level1Path));
+		assertTrue(Files.exists(level2Path));
+		assertTrue(Files.exists(level3Path));
+		assertTrue(Files.exists(level4Path));
+		
+		FileUtils.deleteDirectoryAndParentsIfEmpty(level4Path);
+		
+		assertTrue(Files.exists(rootPath));
+		assertFalse(Files.exists(level1Path));
+		assertFalse(Files.exists(level2Path));
+		assertFalse(Files.exists(level3Path));
+		assertFalse(Files.exists(level4Path));
+	}
+	
+	@Test
+	public void test_deleteDirectoryAndParentsIfEmpty_deletesUntilAncestorHasADirectory() throws IOException, BlueDbException {
+		Path rootPath = createTempFolder("deleteDirectoryAndParentsIfEmptyTest").toPath();
+		
+		Path level1Path = rootPath.resolve("level1");
+		Path level2Path = level1Path.resolve("level2");
+		Path level3Path = level2Path.resolve("level3");
+		Path level4Path = level3Path.resolve("level4");
+		Files.createDirectories(level4Path);
+		
+		Path secondFileInRootDir = rootPath.resolve("second-directory");
+		Files.createDirectories(secondFileInRootDir);
+		
+		assertTrue(Files.exists(rootPath));
+		assertTrue(Files.exists(secondFileInRootDir));
+		assertTrue(Files.exists(level1Path));
+		assertTrue(Files.exists(level2Path));
+		assertTrue(Files.exists(level3Path));
+		assertTrue(Files.exists(level4Path));
+		
+		FileUtils.deleteDirectoryAndParentsIfEmpty(level4Path);
+		
+		assertTrue(Files.exists(rootPath));
+		assertTrue(Files.exists(secondFileInRootDir));
+		assertFalse(Files.exists(level1Path));
+		assertFalse(Files.exists(level2Path));
+		assertFalse(Files.exists(level3Path));
+		assertFalse(Files.exists(level4Path));
+	}
+	
 	private File createTempFile(File parentFolder, String fileName) throws IOException {
 		File targetFile = Paths.get(parentFolder.toPath().toString(), fileName).toFile();
 		Path tempFilePath = FileUtils.createTempFilePath(targetFile.toPath());

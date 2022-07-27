@@ -61,7 +61,7 @@ public class PendingBatchChange<T extends Serializable> implements Serializable,
 		Iterator<IndividualChange<T>> it = sortedChanges.iterator();
 		while(it.hasNext()) {
 			IndividualChange<T> change = it.next();
-			if(!change.getKey().isInRange(groupingNumberRange.getStart(), groupingNumberRange.getEnd())) {
+			if(!change.getKey().overlapsRange(groupingNumberRange.getStart(), groupingNumberRange.getEnd())) {
 				it.remove();
 			}
 		}

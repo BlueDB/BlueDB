@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
@@ -33,8 +34,8 @@ import org.bluedb.disk.ReadWriteDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
-import org.bluedb.disk.collection.config.TestDefaultConfigurationService;
 import org.bluedb.disk.collection.metadata.ReadWriteCollectionMetaData;
+import org.bluedb.disk.helpers.config.TestDefaultConfigurationService;
 import org.bluedb.disk.lock.LockManager;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.ReadWriteSegment;
@@ -63,7 +64,7 @@ public class BlueDbOnDiskWrapper implements Closeable {
 	private final ReadWriteCollectionMetaData timeCollectionMetaData;
 	private final SimpleEncryptionService encryptionService;
 
-	public BlueDbOnDiskWrapper(StartupOption startupOption) throws BlueDbException {
+	public BlueDbOnDiskWrapper(StartupOption startupOption, BlueCollectionVersion requestedCollectionVersion) throws BlueDbException {
 		dbPath = createTempFolder().toPath();
 		encryptionService = new SimpleEncryptionService();
 
@@ -86,17 +87,17 @@ public class BlueDbOnDiskWrapper implements Closeable {
 			default:
 				throw new IllegalStateException("Unexpected value: " + startupOption);
 		}
-		timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
-		hashGroupedCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
-		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
-		callCollection = (ReadWriteCollectionOnDisk<Call>) db.getCollectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
-		intCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
+		timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
+		hashGroupedCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
+		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
+		callCollection = (ReadWriteCollectionOnDisk<Call>) db.getCollectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).withCollectionVersion(requestedCollectionVersion).build();
+		intCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
 		timeCollectionMetaData = getTimeCollection().getMetaData();
 	}
 
-	public BlueDbOnDiskWrapper(StartupOption startupOption, Path path) throws BlueDbException {
+	public BlueDbOnDiskWrapper(StartupOption startupOption, Path path, BlueCollectionVersion requestedCollectionVersion) throws BlueDbException {
 		dbPath = path;
 		encryptionService = new SimpleEncryptionService();
 
@@ -119,11 +120,11 @@ public class BlueDbOnDiskWrapper implements Closeable {
 			default:
 				throw new IllegalStateException("Unexpected value: " + startupOption);
 		}
-		timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).build();
-		hashGroupedCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).build();
-		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).build();
-		callCollection = (ReadWriteCollectionOnDisk<Call>) db.getCollectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).build();
-		intCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).build();
+		timeCollection = (ReadWriteTimeCollectionOnDisk<TestValue>) db.getTimeCollectionBuilder(TIME_COLLECTION_NAME, TimeKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
+		hashGroupedCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(HASH_GROUPED_COLLECTION_NAME, HashGroupedKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
+		longCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(LONG_COLLECTION_NAME, LongKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
+		callCollection = (ReadWriteCollectionOnDisk<Call>) db.getCollectionBuilder(CALL_COLLECTION_NAME, TimeFrameKey.class, Call.class).withOptimizedClasses(Call.getClassesToRegisterAsList()).withCollectionVersion(requestedCollectionVersion).build();
+		intCollection = (ReadWriteCollectionOnDisk<TestValue>) db.getCollectionBuilder(INT_COLLECTION_NAME, IntegerKey.class, TestValue.class).withCollectionVersion(requestedCollectionVersion).build();
 		lockManager = timeCollection.getFileManager().getLockManager();
 		rollupScheduler = new RollupScheduler(timeCollection);
 		timeCollectionMetaData = getTimeCollection().getMetaData();

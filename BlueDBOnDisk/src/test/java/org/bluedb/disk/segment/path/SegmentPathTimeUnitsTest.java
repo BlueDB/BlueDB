@@ -18,6 +18,9 @@ public class SegmentPathTimeUnitsTest {
 		assertEquals(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MILLISECONDS), SegmentPathTimeUnits.ONE_MILLI);
 		assertEquals(TimeUnit.MILLISECONDS.convert(6, TimeUnit.SECONDS), SegmentPathTimeUnits.SIX_SECONDS);
 		assertEquals(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES), SegmentPathTimeUnits.ONE_MINUTE);
+		assertEquals(TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES), SegmentPathTimeUnits.FIVE_MINUTES);
+		assertEquals(TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES), SegmentPathTimeUnits.FIFTEEN_MINUTES);
+		assertEquals(TimeUnit.MILLISECONDS.convert(30, TimeUnit.MINUTES), SegmentPathTimeUnits.THIRTY_MINUTES);
 		
 		assertEquals(TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS), SegmentPathTimeUnits.ONE_HOUR);
 		assertEquals(TimeUnit.MILLISECONDS.convert(2, TimeUnit.HOURS), SegmentPathTimeUnits.TWO_HOURS);

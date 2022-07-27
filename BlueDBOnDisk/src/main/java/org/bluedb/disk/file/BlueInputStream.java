@@ -12,7 +12,8 @@ public interface BlueInputStream extends Closeable {
 	/**
 	 * Reads the next four bytes as an integer. Returns null instead of throwing an exception if it 
 	 * reaches the end of the file.
-	 * @throws BlueDbException
+	 * @return the integer read in or null if it reaches the end of the file
+	 * @throws BlueDbException if it fails
 	 */
 	public default Integer readNextFourBytesAsInt() throws BlueDbException {
 		/*
@@ -60,6 +61,7 @@ public interface BlueInputStream extends Closeable {
 	 * stream at the last marked position so that subsequent reads re-read the same bytes. The read limit argument 
 	 * tells this input stream to allow that many bytes to be read before the mark position gets invalidated.
 	 * @param readLimit the maximum limit of bytes that can be read beforethe mark position becomes invalid.
+	 * @throws BlueDbException if it fails
 	 */
 	public void mark(int readLimit) throws BlueDbException;
 	
@@ -70,6 +72,7 @@ public interface BlueInputStream extends Closeable {
 	 * parser. If the stream is of the type handled by the parse, it just chugs along happily. If the stream is 
 	 * not of that type, the parser should toss an exception when it fails.If this happens within readlimit bytes, 
 	 * it allows the outercode to reset the stream and try another parser.
+	 * @throws BlueDbException if it fails
 	 */
 	public void resetToLastMark() throws BlueDbException;
 	

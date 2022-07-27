@@ -126,27 +126,27 @@ public class LongKeyTest extends TestCase {
 	}
 
 	@Test
-	public void test_isBeforeRange() {
+	public void test_getStringIdIfPresent() {
 		LongKey longKey = new LongKey(1);
-		long groupingNumber = longKey.getGroupingNumber();
-		assertFalse(longKey.isBeforeRange(groupingNumber - 1, groupingNumber - 1));
-		assertFalse(longKey.isBeforeRange(groupingNumber - 1, groupingNumber));
-		assertFalse(longKey.isBeforeRange(groupingNumber - 1, groupingNumber + 1));
-		assertFalse(longKey.isBeforeRange(groupingNumber, groupingNumber));
-		assertFalse(longKey.isBeforeRange(groupingNumber, groupingNumber + 1));
-		assertTrue(longKey.isBeforeRange(groupingNumber + 1, groupingNumber + 1));
+		assertNull(longKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		LongKey longKey = new LongKey(1);
+		assertNull(longKey.getUUIDIdIfPresent());
 	}
 
 	@Test
 	public void test_isInRange() {
 		LongKey longKey = new LongKey(1);
 		long groupingNumber = longKey.getGroupingNumber();
-		assertFalse(longKey.isInRange(groupingNumber - 1, groupingNumber - 1));
-		assertTrue(longKey.isInRange(groupingNumber - 1, groupingNumber));
-		assertTrue(longKey.isInRange(groupingNumber - 1, groupingNumber + 1));
-		assertTrue(longKey.isInRange(groupingNumber, groupingNumber));
-		assertTrue(longKey.isInRange(groupingNumber, groupingNumber + 1));
-		assertFalse(longKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+		assertFalse(longKey.overlapsRange(groupingNumber - 1, groupingNumber - 1));
+		assertTrue(longKey.overlapsRange(groupingNumber - 1, groupingNumber));
+		assertTrue(longKey.overlapsRange(groupingNumber - 1, groupingNumber + 1));
+		assertTrue(longKey.overlapsRange(groupingNumber, groupingNumber));
+		assertTrue(longKey.overlapsRange(groupingNumber, groupingNumber + 1));
+		assertFalse(longKey.overlapsRange(groupingNumber + 1, groupingNumber + 1));
 	}
 
 	@Test
@@ -159,5 +159,11 @@ public class LongKeyTest extends TestCase {
 		assertFalse(longKey.isAfterRange(groupingNumber, groupingNumber));
 		assertFalse(longKey.isAfterRange(groupingNumber, groupingNumber + 1));
 		assertFalse(longKey.isAfterRange(groupingNumber + 1, groupingNumber + 1));
+	}
+	
+	@Test
+	public void test_isActiveTimeKey() {
+		LongKey longKey = new LongKey(1);
+		assertFalse(longKey.isActiveTimeKey());
 	}
 }

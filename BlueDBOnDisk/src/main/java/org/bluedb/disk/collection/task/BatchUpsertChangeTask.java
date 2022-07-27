@@ -1,12 +1,10 @@
 package org.bluedb.disk.collection.task;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.bluedb.api.Condition;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
@@ -16,7 +14,9 @@ import org.bluedb.disk.IteratorWrapper;
 import org.bluedb.disk.IteratorWrapper.IteratorWrapperMapper;
 import org.bluedb.disk.collection.CollectionEntityIterator;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.file.FileUtils;
+import org.bluedb.disk.query.QueryIndexConditionGroup;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.OnDiskSortedChangeSupplier;
 import org.bluedb.disk.recovery.PendingMassChange;
@@ -27,7 +27,7 @@ import org.bluedb.disk.segment.ReadableSegmentManager;
 import org.bluedb.disk.segment.path.SegmentPathManager;
 import org.bluedb.disk.serialization.BlueEntity;
 
-public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
+public abstract class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 	
 	private final ReadWriteCollectionOnDisk<T> collection;
 	private final ReadableSegmentManager<T> segmentManager;
@@ -36,7 +36,7 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 	
 	private final Iterator<BlueKeyValuePair<T>> keyValuePairIterator;
 	
-	private final Set<Range> includedSegmentRanges = new HashSet<>();
+	private final IncludedSegmentRangeInfo includedSegmentRangeInfo = new IncludedSegmentRangeInfo();
 	private long minIncludedRangeTime = Long.MAX_VALUE;
 	private long maxIncludedRangeTime = Long.MIN_VALUE;
 	
@@ -84,13 +84,13 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 	}
 	
 	private IndividualChange<T> createInsertChangeAndUpdateIncludedSegmentInfo(BlueKeyValuePair<T> keyValuePair) {
-		Range rangeForKey = segmentManager.toRange(pathManager.getSegmentPath(keyValuePair.getKey()));
-		includedSegmentRanges.add(rangeForKey);
-		if(rangeForKey.getStart() < minIncludedRangeTime) {
-			minIncludedRangeTime = rangeForKey.getStart();
+		Range segmentRangeForKey = segmentManager.toRange(pathManager.getSegmentPath(keyValuePair.getKey()));
+		includedSegmentRangeInfo.addIncludedSegmentRangeInfo(segmentRangeForKey, keyValuePair.getKey().getGroupingNumber());
+		if(segmentRangeForKey.getStart() < minIncludedRangeTime) {
+			minIncludedRangeTime = segmentRangeForKey.getStart();
 		}
-		if(rangeForKey.getEnd() > maxIncludedRangeTime) {
-			maxIncludedRangeTime = rangeForKey.getEnd();
+		if(segmentRangeForKey.getEnd() > maxIncludedRangeTime) {
+			maxIncludedRangeTime = segmentRangeForKey.getEnd();
 		}
 		
 		return IndividualChange.createInsertChange(keyValuePair);
@@ -104,13 +104,14 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 
 	private CollectionEntityIterator<T> createIteratorForAllEntitiesInIncludedRanges() {
 		Range range = new Range(minIncludedRangeTime, maxIncludedRangeTime);
+		List<QueryIndexConditionGroup<T>> indexConditionGroups = new LinkedList<>();
 		List<Condition<T>> objectConditions = new LinkedList<>();
 		List<Condition<BlueKey>> keyConditions = new LinkedList<>();
 		
-		return new CollectionEntityIterator<T>(segmentManager, range, true, objectConditions, keyConditions, Optional.of(includedSegmentRanges));
+		return new CollectionEntityIterator<T>(segmentManager, range, true, indexConditionGroups, objectConditions, keyConditions, Optional.of(includedSegmentRangeInfo));
 	}
 	
-	private IndividualChange<T> findMatchingEntityAndMapInsertToUpdateIfSuccessful(CollectionEntityIterator<T> entitiesInRangeIterator, IndividualChange<T> insertChange) {
+	private IndividualChange<T> findMatchingEntityAndMapInsertToUpdateIfSuccessful(CollectionEntityIterator<T> entitiesInRangeIterator, IndividualChange<T> insertChange) throws BlueDbException {
 		while(entitiesInRangeIterator.hasNext()) {
 			BlueEntity<T> nextEntityInRange = entitiesInRangeIterator.peek();
 			
@@ -125,11 +126,14 @@ public class BatchUpsertChangeTask<T extends Serializable> extends QueryTask {
 			
 			if(compareTo == 0) {
 				//This should be an update change for this entity instead of an insert
-				return new IndividualChange<T>(insertChange.getKey(), nextEntityInRange.getValue(), insertChange.getNewValue());
+				BlueEntity<T> newEntity = new BlueEntity<T>(insertChange.getKey(), insertChange.getNewValue());
+				return createUpdateChange(nextEntityInRange, newEntity);
 			}
 		}
 		
 		//There was no existing record for this key so this is truly an insert change
 		return insertChange;
 	}
+	
+	protected abstract IndividualChange<T> createUpdateChange(BlueEntity<T> oldEntity, BlueEntity<T> newEntity) throws BlueDbException;
 }

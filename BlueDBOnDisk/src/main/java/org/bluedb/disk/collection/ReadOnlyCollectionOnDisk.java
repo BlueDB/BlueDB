@@ -3,6 +3,7 @@ package org.bluedb.disk.collection;
 import java.io.Serializable;
 import java.util.List;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
@@ -23,12 +24,12 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 	private final ReadOnlySegmentManager<T> segmentManager;
 	protected final ReadOnlyIndexManager<T> indexManager;
 
-	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
-		this(db, name, requestedKeyType, valueType, additionalRegisteredClasses, null);
+	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, BlueCollectionVersion requestedVersion, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses) throws BlueDbException {
+		this(db, name, requestedVersion, requestedKeyType, valueType, additionalRegisteredClasses, null);
 	}
 
-	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
-		super(db, name, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
+	public ReadOnlyCollectionOnDisk(ReadableDbOnDisk db, String name, BlueCollectionVersion requestedVersion, Class<? extends BlueKey> requestedKeyType, Class<T> valueType, List<Class<? extends Serializable>> additionalRegisteredClasses, SegmentSizeSetting segmentSize) throws BlueDbException {
+		super(db, name, requestedVersion, requestedKeyType, valueType, additionalRegisteredClasses, segmentSize);
 		metadata = getOrCreateMetadata();
 		fileManager = new ReadOnlyFileManager(serializer, db.getEncryptionService());
 		segmentManager = new ReadOnlySegmentManager<>(collectionPath, fileManager, segmentSizeSettings.getConfig());
@@ -74,7 +75,7 @@ public class ReadOnlyCollectionOnDisk<T extends Serializable> extends ReadableCo
 				} catch (BlueDbException e2) {
 					return null;
 				}
-			});
+			}, getType());
 		}
 	}
 

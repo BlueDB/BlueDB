@@ -12,14 +12,19 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.ReadableBlueTimeCollection;
+import org.bluedb.api.datastructures.BlueSimpleInMemorySet;
+import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.StringKey;
 import org.bluedb.api.keys.TimeKey;
@@ -180,7 +185,37 @@ public class ReadOnlyDbOnDiskTest extends BlueDbDiskTestBase {
         assertFalse(onlyBob.contains(valueJoe));
         assertTrue(onlyBob.contains(valueBob));
 	}
+	
+	@Test
+	public void test_query_whereKeyIsIn() throws Exception {
+        ReadableDbOnDisk readOnlyDb = (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db.getPath()).buildReadOnly();
+        ReadableBlueTimeCollection<TestValue> collection = readOnlyDb.getTimeCollection(getTimeCollectionName(), TestValue.class);
+        TestValue valueJoe = new TestValue("Joe");
+        TestValue valueBob = new TestValue("Bob");
+        BlueKey joeKey = insertAtTime(1, valueJoe);
+        BlueKey bobKey = insertAtTime(2, valueBob);
+        List<TestValue> storedValues;
 
+        storedValues = collection.query().getList();
+        assertEquals(2, storedValues.size());
+        
+        Set<BlueKey> emptyKeySet = new HashSet<>(Arrays.asList());
+        List<TestValue> results = collection.query().whereKeyIsIn(emptyKeySet).getList();
+        assertEquals(0, results.size());
+        
+        Set<BlueKey> joeAndBobKeySet = new HashSet<>(Arrays.asList(joeKey, bobKey));
+        results = collection.query().whereKeyIsIn(joeAndBobKeySet).getList();
+        assertEquals(2, results.size());
+        assertEquals(valueJoe, results.get(0));
+        assertEquals(valueBob, results.get(1));
+        
+        BlueSimpleSet<BlueKey> bobKeyBlueSet = new BlueSimpleInMemorySet<BlueKey>(new HashSet<>(Arrays.asList(bobKey)));
+        results = collection.query().whereKeyIsIn(bobKeyBlueSet).getList();
+        assertEquals(1, results.size());
+        assertEquals(valueBob, results.get(0));
+        
+	}
+	
 	@Test
 	public void test_query_beforeTime_timeframe() throws Exception {
         ReadableDbOnDisk readOnlyDb = (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db.getPath()).buildReadOnly();

@@ -3,6 +3,7 @@ package org.bluedb.disk;
 import java.io.Serializable;
 import java.util.Collection;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.BlueTimeCollection;
 import org.bluedb.api.BlueTimeCollectionBuilder;
 import org.bluedb.api.SegmentSize;
@@ -24,9 +25,14 @@ public class TimeCollectionOnDiskBuilder<K extends BlueKey, T extends Serializab
 	public BlueTimeCollectionBuilder<K, T> withSegmentSize(SegmentSize<K> segmentSize) throws BlueDbException {
 		return (BlueTimeCollectionBuilder<K,T>) super.withSegmentSize(segmentSize);
 	}
+	
+	@Override
+	public BlueTimeCollectionBuilder<K, T> withCollectionVersion(BlueCollectionVersion version) {
+		return (BlueTimeCollectionBuilder<K,T>) super.withCollectionVersion(version);
+	}
 
 	@Override
 	public BlueTimeCollection<T> build() throws BlueDbException {
-		return db.initializeTimeCollection(name, requestedKeyType, valueType, registeredClasses, segmentSize);
+		return db.initializeTimeCollection(name, requestedVersion, requestedKeyType, valueType, registeredClasses, segmentSize);
 	}
 }

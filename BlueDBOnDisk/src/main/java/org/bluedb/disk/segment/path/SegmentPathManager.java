@@ -58,17 +58,24 @@ public class SegmentPathManager {
 	}
 
 	public List<Path> getAllPossibleSegmentPaths(BlueKey key) {
-		long segmentSize = getSegmentSize();
 		List<Path> paths = new ArrayList<>();
 		long groupingNumber = key.getGroupingNumber();
-		long minTime = Blutils.roundDownToMultiple(groupingNumber, segmentSize);
-		long i = minTime;
-		while (key.isInRange(i, i + segmentSize - 1)) {
+		long i = getSegmentStartGroupingNumber(groupingNumber);
+		while (key.overlapsRange(i, i + segmentSize - 1)) {
 			Path path = getSegmentPath(i);
 			paths.add(path);
 			i += segmentSize;
+			
+			if(key.isActiveTimeKey()) {
+				//An active time key would keep going forever but won't ever actually be stored in more than the segment it starts in
+				break;
+			}
 		}
 		return paths;
+	}
+
+	public long getSegmentStartGroupingNumber(long groupingNumber) {
+		return Blutils.roundDownToMultiple(groupingNumber, segmentSize);
 	}
 
 	public List<File> getExistingSegmentFiles(Range range) {

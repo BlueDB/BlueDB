@@ -62,7 +62,7 @@ public class TimeKey implements BlueKey {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
+		if (!(obj instanceof TimeKey)) {
 			return false;
 		}
 		TimeKey other = (TimeKey) obj;
@@ -114,5 +114,15 @@ public class TimeKey implements BlueKey {
 	@Override
 	public Long getLongIdIfPresent() {
 		return id.getLongIdIfPresent();
+	}
+	
+	@Override
+	public String getStringIdIfPresent() {
+		return id.getStringIdIfPresent();
+	}
+
+	@Override
+	public UUID getUUIDIdIfPresent() {
+		return id.getUUIDIdIfPresent();
 	}
 }

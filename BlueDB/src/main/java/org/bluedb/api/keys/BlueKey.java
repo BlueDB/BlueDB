@@ -2,6 +2,7 @@ package org.bluedb.api.keys;
 
 import java.io.Serializable;
 import java.util.Comparator;
+import java.util.UUID;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.index.BlueIndex;
@@ -38,6 +39,8 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	/**
 	 * This is used to order the key/value pairs on disk. If this is being called then other is not null
 	 * and the grouping numbers matched.
+	 * @param other The other key to compare this one to
+	 * @return the value 0 if x == y; a value less than 0 if x &lt; y; and a value greater than 0 if x &gt; y
 	 */
 	public abstract int postGroupingNumberCompareTo(BlueKey other);
 	
@@ -64,22 +67,30 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	}
 
 	/**
-	 * Returns true if this key's grouping number is before the range [min, max] exclusive, else false
-	 * @param min the minimum grouping number
-	 * @param max the maximum grouping number
-	 * @return true if this key's grouping number is before the range [min, max] exclusive, else false
+	 * Convenience method to get the underlying Integer value if this is a IntegerKey
+	 * @return the underlying Integer value if this is a IntegerKey
 	 */
-	default boolean isBeforeRange(long min, long max) {
-		return getGroupingNumber() < min;
+	default public String getStringIdIfPresent() {
+		return null;
 	}
 
 	/**
-	 * Returns true if this key's grouping number is in the range [min, max] inclusive, else false
+	 * Convenience method to get the underlying Integer value if this is a IntegerKey
+	 * @return the underlying Integer value if this is a IntegerKey
+	 */
+	default public UUID getUUIDIdIfPresent() {
+		return null;
+	}
+
+	/**
+	 * Returns true if this key overlaps the grouping number range [min, max] inclusive, else false.
+	 * This is the same as isInRange except for some time based keys that can start before the range
+	 * and still be considered active during the range. 
 	 * @param min the minimum grouping number
 	 * @param max the maximum grouping number
 	 * @return true if this key's grouping number is in the range [min, max] inclusive, else false
 	 */
-	default boolean isInRange(long min, long max) {
+	default boolean overlapsRange(long min, long max) {
 		return getGroupingNumber() >= min && getGroupingNumber() <= max;
 	}
 
@@ -91,6 +102,15 @@ public interface BlueKey extends Serializable, Comparable<BlueKey> {
 	 */
 	default boolean isAfterRange(long min, long max) {
 		return getGroupingNumber() > max;
+	}
+
+	/**
+	 * Returns true if this key represents an active time based value. That means that it will be
+	 * considered overlapping with any range after its start time.
+	 * @return true if this key represents an active time based value.
+	 */
+	default boolean isActiveTimeKey() {
+		return false;
 	}
 
 	/**

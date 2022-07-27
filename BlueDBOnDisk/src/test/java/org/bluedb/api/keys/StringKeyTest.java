@@ -101,44 +101,38 @@ public class StringKeyTest extends TestCase {
 
 	@Test
 	public void test_getLongIdIfPresent() {
-		StringKey one = new StringKey("1");
-		StringKey empty = new StringKey("");
-		StringKey _null = new StringKey(null);
-		assertNull(one.getLongIdIfPresent());
-		assertNull(empty.getLongIdIfPresent());
-		assertNull(_null.getLongIdIfPresent());
+		StringKey stringKey = new StringKey("whatever");
+		assertNull(stringKey.getLongIdIfPresent());
 	}
 
 	@Test
 	public void test_getIntegerIdIfPresent() {
-		TimeKey fourLongAtOne = new TimeKey(4L, 1);
-		TimeKey fourIntegerAtOne = new TimeKey(new IntegerKey(4), 1);
-		assertNull(fourLongAtOne.getIntegerIdIfPresent());
-		assertEquals(Integer.valueOf(4), fourIntegerAtOne.getIntegerIdIfPresent());
+		StringKey stringKey = new StringKey("whatever");
+		assertNull(stringKey.getIntegerIdIfPresent());
 	}
 
 	@Test
-	public void test_isBeforeRange() {
-		StringKey stringKey = new StringKey("1");
-		long groupingNumber = stringKey.getGroupingNumber();
-		assertFalse(stringKey.isBeforeRange(groupingNumber - 1, groupingNumber - 1));
-		assertFalse(stringKey.isBeforeRange(groupingNumber - 1, groupingNumber));
-		assertFalse(stringKey.isBeforeRange(groupingNumber - 1, groupingNumber + 1));
-		assertFalse(stringKey.isBeforeRange(groupingNumber, groupingNumber));
-		assertFalse(stringKey.isBeforeRange(groupingNumber, groupingNumber + 1));
-		assertTrue(stringKey.isBeforeRange(groupingNumber + 1, groupingNumber + 1));
+	public void test_getStringIdIfPresent() {
+		StringKey stringKey = new StringKey("whatever");
+		assertEquals("whatever", stringKey.getStringIdIfPresent());
+	}
+
+	@Test
+	public void test_getUUIDIdIfPresent() {
+		StringKey stringKey = new StringKey("whatever");
+		assertNull(stringKey.getUUIDIdIfPresent());
 	}
 
 	@Test
 	public void test_isInRange() {
 		StringKey stringKey = new StringKey("1");
 		long groupingNumber = stringKey.getGroupingNumber();
-		assertFalse(stringKey.isInRange(groupingNumber - 1, groupingNumber - 1));
-		assertTrue(stringKey.isInRange(groupingNumber - 1, groupingNumber));
-		assertTrue(stringKey.isInRange(groupingNumber - 1, groupingNumber + 1));
-		assertTrue(stringKey.isInRange(groupingNumber, groupingNumber));
-		assertTrue(stringKey.isInRange(groupingNumber, groupingNumber + 1));
-		assertFalse(stringKey.isInRange(groupingNumber + 1, groupingNumber + 1));
+		assertFalse(stringKey.overlapsRange(groupingNumber - 1, groupingNumber - 1));
+		assertTrue(stringKey.overlapsRange(groupingNumber - 1, groupingNumber));
+		assertTrue(stringKey.overlapsRange(groupingNumber - 1, groupingNumber + 1));
+		assertTrue(stringKey.overlapsRange(groupingNumber, groupingNumber));
+		assertTrue(stringKey.overlapsRange(groupingNumber, groupingNumber + 1));
+		assertFalse(stringKey.overlapsRange(groupingNumber + 1, groupingNumber + 1));
 	}
 
 	@Test
@@ -151,5 +145,11 @@ public class StringKeyTest extends TestCase {
 		assertFalse(stringKey.isAfterRange(groupingNumber, groupingNumber));
 		assertFalse(stringKey.isAfterRange(groupingNumber, groupingNumber + 1));
 		assertFalse(stringKey.isAfterRange(groupingNumber + 1, groupingNumber + 1));
+	}
+	
+	@Test
+	public void test_isActiveTimeKey() {
+		StringKey stringKey = new StringKey("1");
+		assertFalse(stringKey.isActiveTimeKey());
 	}
 }

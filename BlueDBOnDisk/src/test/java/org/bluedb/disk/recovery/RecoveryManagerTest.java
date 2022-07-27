@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.bluedb.TestCloseableIterator;
@@ -97,8 +98,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 		Mockito.doReturn(sortedEntitiesToUpdateIterator).when(mockedQuery).getEntityIterator();
 		
 		EntityToChangeMapper<TestValue> entityToChangeMapper = entity -> {
-			TestValue newValue = entity.getValue().cloneWithNewCupcakeCount(entity.getValue().getCupcakes() + 1);
-			return IndividualChange.createChange(entity.getKey(), entity.getValue(), newValue);
+			return IndividualChange.createUpdateChange(entity.getKey(), entity.getValue(), value -> value.addCupcake(), serializer);
 		};
 
 		List<Recoverable<TestValue>> changes = getRecoveryManager().getPendingChanges();
@@ -142,7 +142,7 @@ public class RecoveryManagerTest extends BlueDbDiskTestBase {
 			if(i % 2 == 0) {
 				originalSortedChangeList.add(IndividualChange.createInsertChange(key, newValue));
 			} else {
-				originalSortedChangeList.add(new IndividualChange<>(key, oldValue, newValue));
+				originalSortedChangeList.add(IndividualChange.manuallyCreateTestChange(key, oldValue, newValue, Optional.empty()));
 			}
 		}
 		

@@ -10,6 +10,7 @@ import org.bluedb.api.Mapper;
 import org.bluedb.api.Updater;
 import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
 import org.bluedb.disk.collection.task.BatchQueryChangeTask;
@@ -18,7 +19,7 @@ import org.bluedb.disk.recovery.IndividualChange;
 
 public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> implements BlueQuery<T> {
 
-	private ReadWriteCollectionOnDisk<T> writeableCollection;
+	protected ReadWriteCollectionOnDisk<T> writeableCollection;
 
 	public QueryOnDisk(ReadWriteCollectionOnDisk<T> collection) {
 		super(collection);
@@ -28,6 +29,12 @@ public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> 
 	@Override
 	public BlueQuery<T> where(Condition<T> c) {
 		super.where(c);
+		return this;
+	}
+	
+	@Override
+	public BlueQuery<T> where(BlueIndexCondition<?> indexCondition) {
+		super.where(indexCondition);
 		return this;
 	}
 	

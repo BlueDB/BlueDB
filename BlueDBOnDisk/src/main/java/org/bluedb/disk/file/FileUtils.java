@@ -125,13 +125,26 @@ public class FileUtils {
 		return path.toFile().exists();
 	}
 	
-	public static boolean isEmpty(Path path) {
+	public static boolean isEmpty(Path path) throws BlueDbException {
 		if(path == null || !path.toFile().exists()) {
 			return true;
 		}
+		
+		if(Files.isDirectory(path)) {
+			return isDirectoryEmpty(path);
+		}
+		
 		return path.toFile().length() == 0;
 	}
 
+	protected static boolean isDirectoryEmpty(Path path) throws BlueDbException {
+		try (DirectoryStream<Path> directory = Files.newDirectoryStream(path)) {
+		    return !directory.iterator().hasNext();
+		} catch (IOException e) {
+			throw new BlueDbException("Trouble listing files in directory to determine if empty. Path: "  + path, e);
+		}
+	}
+	
 	public static long size(Path path) {
 		if(path == null || !path.toFile().exists()) {
 			return 0;
@@ -200,6 +213,14 @@ public class FileUtils {
 	public static boolean deleteFile(BlueWriteLock<Path> writeLock) {
 		Path path = writeLock.getKey();
 		return path.toFile().delete();
+	}
+
+	public static void deleteDirectoryAndParentsIfEmpty(Path path) throws BlueDbException {
+		Path currentPath = path;
+		while(currentPath != null && Files.isDirectory(currentPath) && isEmpty(currentPath)) {
+			currentPath.toFile().delete();
+			currentPath = currentPath.getParent();
+		}
 	}
 
 	private static List<File> toList(File[] files) {

@@ -4,7 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
@@ -216,7 +219,7 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 		mockRollupScheduler.scheduleReadyRollups(Integer.MAX_VALUE);
 		assertEquals(0, rollupsRequested.size());
 
-		mockRollupScheduler.forceScheduleRollups();
+		mockRollupScheduler.forceScheduleRollups(true);
 		assertEquals(1, rollupsRequested.size());
 		assertTrue(rollupsRequested.contains(rollupTarget));
 	}
@@ -246,11 +249,15 @@ public class RollupSchedulerTest extends BlueDbDiskTestBase {
 
 	private ReadWriteCollectionOnDisk<TestValue> createMockCollection(List<RollupTarget> rollupsRequested) throws Exception {
 		@SuppressWarnings("unchecked")
-		ReadWriteCollectionOnDisk<TestValue> collection = new ReadWriteCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", TimeKey.class, TestValue.class, Arrays.asList()) {
+		ReadWriteCollectionOnDisk<TestValue> collection = new ReadWriteCollectionOnDisk<TestValue>(db(), "test_RollupSchedulerTest", BlueCollectionVersion.getDefault(), TimeKey.class, TestValue.class, Arrays.asList()) {
             @Override
-            public void submitTask(Runnable r) {
+            public Future<?> submitTask(Runnable r) {
             	RollupTask<TestValue> rollupTask = (RollupTask<TestValue>) r;
                 rollupsRequested.add(rollupTask.getTarget());
+                
+                CompletableFuture<Void> future = new CompletableFuture<Void>();
+                future.complete(null);
+                return future;
             }
         };
         return collection;

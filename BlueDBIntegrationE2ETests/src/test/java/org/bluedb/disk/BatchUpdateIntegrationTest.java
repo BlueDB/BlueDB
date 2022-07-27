@@ -16,15 +16,15 @@ import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
-import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper.StartupOption;
+import org.bluedb.disk.helpers.index.TestRetrievalKeyExtractor;
 import org.junit.Test;
 
 public class BatchUpdateIntegrationTest {
 	@Test
 	public void test_largeBatchUpsert() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled, null)) {
 			long now = System.currentTimeMillis();
 			long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
 			int valuesToInsert = 2000;
@@ -52,7 +52,9 @@ public class BatchUpdateIntegrationTest {
 			assertEquals(valuesToInsert, queryResults.size());
 			
 			int targetCookieCount = 0;
-			queryResults = cookieIndex.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(cookieIndex.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(1, queryResults.size());
 			assertEquals(String.valueOf(0), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());
@@ -61,7 +63,9 @@ public class BatchUpdateIntegrationTest {
 				.update(value -> value.addCupcake());
 			
 			targetCookieCount = 1;
-			queryResults = cookieIndex.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(cookieIndex.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(1, queryResults.size());
 			assertEquals(String.valueOf(0), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());
@@ -70,7 +74,7 @@ public class BatchUpdateIntegrationTest {
 	
 	@Test
 	public void test_smallBatchUpsert() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled, null)) {
 			long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
 			long now = System.currentTimeMillis();
 			long oneHourAgo = now - oneHour;

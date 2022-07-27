@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import org.bluedb.api.BlueCollection;
 import org.bluedb.api.BlueCollectionBuilder;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.SegmentSize;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
@@ -17,6 +18,7 @@ public class CollectionOnDiskBuilder<K extends BlueKey, T extends Serializable> 
 	protected final Class<T> valueType;
 	protected final Class<? extends BlueKey> requestedKeyType;
 	protected final String name;
+	protected BlueCollectionVersion requestedVersion;
 	protected SegmentSizeSetting segmentSize;
 	ArrayList<Class<? extends Serializable>> registeredClasses = new ArrayList<>();
 
@@ -38,9 +40,15 @@ public class CollectionOnDiskBuilder<K extends BlueKey, T extends Serializable> 
 		this.segmentSize = SegmentSizeSetting.fromUserSelection(segmentSize);
 		return this;
 	}
+	
+	@Override
+	public BlueCollectionBuilder<K, T> withCollectionVersion(BlueCollectionVersion version) {
+		this.requestedVersion = version;
+		return this;
+	}
 
 	@Override
 	public BlueCollection<T> build() throws BlueDbException {
-		return db.initializeCollection(name, requestedKeyType, valueType, registeredClasses, segmentSize);
+		return db.initializeCollection(name, requestedVersion, requestedKeyType, valueType, registeredClasses, segmentSize);
 	}
 }

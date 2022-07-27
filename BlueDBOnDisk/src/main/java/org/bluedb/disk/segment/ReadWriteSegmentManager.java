@@ -4,11 +4,11 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.keys.BlueKey;
+import org.bluedb.disk.collection.index.conditions.IncludedSegmentRangeInfo;
 import org.bluedb.disk.file.ReadWriteFileManager;
 import org.bluedb.disk.recovery.IndividualChange;
 import org.bluedb.disk.recovery.SortedChangeSupplier;
@@ -20,11 +20,14 @@ public class ReadWriteSegmentManager<T extends Serializable> extends ReadableSeg
 	private final ReadWriteFileManager fileManager;
 
 	private final Rollupable rollupable;
+	
+	private final boolean saveDuplicateRecordsInEachSegment;
 
-	public ReadWriteSegmentManager(Path collectionPath, ReadWriteFileManager fileManager, Rollupable rollupable, SegmentSizeConfiguration sizeConfig) {
+	public ReadWriteSegmentManager(Path collectionPath, ReadWriteFileManager fileManager, Rollupable rollupable, SegmentSizeConfiguration sizeConfig, boolean saveDuplicateRecordsInEachSegment) {
 		super(collectionPath, sizeConfig);
 		this.fileManager = fileManager;
 		this.rollupable = rollupable;
+		this.saveDuplicateRecordsInEachSegment = saveDuplicateRecordsInEachSegment;
 	}
 
 	protected ReadWriteSegment<T> toSegment(Path path) {
@@ -61,10 +64,19 @@ public class ReadWriteSegmentManager<T extends Serializable> extends ReadableSeg
 	}
 
 	@Override
-	public List<ReadWriteSegment<T>> getExistingSegments(Range range, Optional<Set<Range>> segmentRangesToInclude) {
+	public List<ReadWriteSegment<T>> getExistingSegments(Range range, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) {
 		return pathManager.getExistingSegmentFiles(range).stream()
 				.map((f) -> (toSegment(f.toPath())))
-				.filter(s -> !segmentRangesToInclude.isPresent() || segmentRangesToInclude.get().contains(s.getRange()))
+				.filter(s -> !includedSegmentRangeInfo.isPresent() || includedSegmentRangeInfo.get().containsSegment(s.getRange()))
+				.sorted()
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public List<Range> getExistingSegmentRanges(Range range, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) {
+		return pathManager.getExistingSegmentFiles(range).stream()
+				.map((f) -> (toRange(f.toPath())))
+				.filter(r -> !includedSegmentRangeInfo.isPresent() || includedSegmentRangeInfo.get().containsSegment(r))
 				.sorted()
 				.collect(Collectors.toList());
 	}
@@ -72,9 +84,11 @@ public class ReadWriteSegmentManager<T extends Serializable> extends ReadableSeg
 	public void applyChanges(SortedChangeSupplier<T> sortedChangeSupplier) throws BlueDbException {
 		sortedChangeSupplier.setCursorToBeginning();
 		
-		long minStartTime = Long.MIN_VALUE;
-		while(sortedChangeSupplier.seekToNextChangeInRange(new Range(minStartTime, Long.MAX_VALUE))) {
-			sortedChangeSupplier.setCursorCheckpoint(); //We shouldn't ever have to look at changes before this point again
+		Range range = new Range(Long.MIN_VALUE, Long.MAX_VALUE);
+		while(sortedChangeSupplier.nextChangeOverlapsRange(range) || sortedChangeSupplier.seekToNextChangeInRange(range)) {
+			if(saveDuplicateRecordsInEachSegment) {
+				sortedChangeSupplier.setCursorCheckpoint(); //We shouldn't ever have to look at changes before this point again
+			}
 			
 			/*
 			 * The first change will help us discover what segment to apply the next changes to. Unless the first change
@@ -82,12 +96,14 @@ public class ReadWriteSegmentManager<T extends Serializable> extends ReadableSeg
 			 * to the next segment.
 			 */
 			IndividualChange<T> change = sortedChangeSupplier.getNextChange().get();
-			ReadWriteSegment<T> segment = getSegment(Math.max(change.getGroupingNumber(), minStartTime));
+			ReadWriteSegment<T> segment = getSegment(Math.max(change.getGroupingNumber(), range.getStart()));
 			
 			segment.applyChanges(sortedChangeSupplier);
+			range = new Range(segment.getRange().getEnd() + 1, Long.MAX_VALUE); //Don't look at anything before this range
 			
-			minStartTime = segment.getRange().getEnd() + 1; //Don't look at anything before this range
-			sortedChangeSupplier.setCursorToLastCheckpoint();
+			if(saveDuplicateRecordsInEachSegment) {
+				sortedChangeSupplier.setCursorToLastCheckpoint();
+			}
 		}
 	}
 }

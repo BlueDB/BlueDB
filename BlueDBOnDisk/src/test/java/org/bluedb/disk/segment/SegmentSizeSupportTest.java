@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.IntegerIndexKeyExtractor;
 import org.bluedb.api.index.LongIndexKeyExtractor;
@@ -79,7 +80,7 @@ public class SegmentSizeSupportTest {
 				.build();
 		
 		this.segmentSize = segmentSize;
-		collection = new ReadWriteCollectionOnDisk<>(db, "seg-size-support-test-collection", segmentSize.getKeyType(), IndexableTestValue.class, 
+		collection = new ReadWriteCollectionOnDisk<>(db, "seg-size-support-test-collection", BlueCollectionVersion.getDefault(), segmentSize.getKeyType(), IndexableTestValue.class, 
 				Arrays.asList(UUID.class, IndexableTestValue.class), segmentSize);
 		
 		LongIndexKeyExtractor<IndexableTestValue> longExtractor = value -> Arrays.asList(value.getLongValue());
@@ -176,10 +177,25 @@ public class SegmentSizeSupportTest {
 		
 		TestUtils.assertCollectionAndValue(collection, keySupplier.createKey(value), value);
 		
-		assertEquals(true, longIndex.get(value.getLongKey()).contains(value));
-		assertEquals(true, intIndex.get(value.getIntegerKey()).contains(value));
-		assertEquals(true, stringIndex.get(value.getStringKey()).contains(value));
-		assertEquals(true, uuidIndex.get(value.getUUIDKey()).contains(value));
+		assertEquals(true, collection.query()
+				.where(longIndex.createLongIndexCondition().isEqualTo(value.getLongKey().getId()))
+				.getList()
+				.contains(value));
+		
+		assertEquals(true, collection.query()
+				.where(intIndex.createIntegerIndexCondition().isEqualTo(value.getIntegerKey().getId()))
+				.getList()
+				.contains(value));
+		
+		assertEquals(true, collection.query()
+				.where(stringIndex.createStringIndexCondition().isEqualTo(value.getStringKey().getId()))
+				.getList()
+				.contains(value));
+		
+		assertEquals(true, collection.query()
+				.where(uuidIndex.createUUIDIndexCondition().isEqualTo(value.getUUIDKey().getId()))
+				.getList()
+				.contains(value));
 	}
 	
 	@FunctionalInterface

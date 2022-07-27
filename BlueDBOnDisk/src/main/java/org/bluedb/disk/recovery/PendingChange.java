@@ -14,6 +14,11 @@ import org.bluedb.disk.serialization.BlueEntity;
 import org.bluedb.disk.serialization.BlueSerializer;
 import org.bluedb.disk.serialization.validation.SerializationException;
 
+@Deprecated
+/*
+ * The PendingChange object is no longer used, but is still in the codebase in order to support the initial
+ * startup after a site updates to a current version of BlueDB.
+ */
 public class PendingChange<T extends Serializable> implements Serializable, Recoverable<T> {
 
 	private static final long serialVersionUID = 1L;

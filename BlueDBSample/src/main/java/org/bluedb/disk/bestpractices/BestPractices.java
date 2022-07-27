@@ -178,7 +178,7 @@ public class BestPractices {
 
 	// Use a builder for BlueCollection objects
 	private static BlueCollection<Ball> useABuilderForCollections(BlueDb blueDb, List<Class<? extends Serializable>> classesToRegister) throws BlueDbException {
-		BlueCollection<Ball> ballCollection = blueDb.collectionBuilder("ball_collection", TimeKey.class, Ball.class)
+		BlueCollection<Ball> ballCollection = blueDb.getCollectionBuilder("ball_collection", TimeKey.class, Ball.class)
 				.withOptimizedClasses(classesToRegister)
 				.withSegmentSize(SegmentSize.TIME_1_DAY)
 				.build();
@@ -201,7 +201,7 @@ public class BestPractices {
 	private static void registerClassesWithCollection(BlueDb blueDb) throws BlueDbException {
 		List<Class<? extends Serializable>> classesToRegister = Arrays.asList(BallV1.class, BallV2.class, Color.class);
 		
-		BlueCollection<Ball> collection = blueDb.collectionBuilder("ball-collection", TimeKey.class, Ball.class)
+		BlueCollection<Ball> collection = blueDb.getCollectionBuilder("ball-collection", TimeKey.class, Ball.class)
 				.withOptimizedClasses(classesToRegister) //registers classes
 				.build();
 	}
@@ -228,11 +228,11 @@ public class BestPractices {
 	// Use file-system friendly names for BlueCollections and BlueIndexes
 	private static void useFileSystemFriendlyNames(BlueDb blueDb, BlueCollection<Ball> ballCollection) throws BlueDbException {
 		//Good
-		BlueCollection<Ball> ballCollection1 = blueDb.collectionBuilder("ball_collection", TimeKey.class, Ball.class).build();
+		BlueCollection<Ball> ballCollection1 = blueDb.getCollectionBuilder("ball_collection", TimeKey.class, Ball.class).build();
 		BlueIndex<IntegerKey, Ball> myIndex1 = ballCollection.createIndex("ball-size-index", IntegerKey.class, new BallSizeIndexKeyExtractor());
 
 		//Bad
-		BlueCollection<Ball> ballCollection2 = blueDb.collectionBuilder("Don't do this", TimeKey.class, Ball.class).build();
+		BlueCollection<Ball> ballCollection2 = blueDb.getCollectionBuilder("Don't do this", TimeKey.class, Ball.class).build();
 		BlueIndex<IntegerKey, Ball> myIndex2 = ballCollection.createIndex("// or // this", IntegerKey.class, new BallSizeIndexKeyExtractor());
 	}
 }

@@ -22,7 +22,7 @@ public class FacadeCollection<T extends Serializable> implements ReadableBlueCol
 		this.db = db;
 		this.valueType = valueType;
 		this.name = name;
-		this.dummyCollection = new DummyReadOnlyCollectionOnDisk<T>();
+		this.dummyCollection = new DummyReadOnlyCollectionOnDisk<T>(valueType);
 	}
 
 	
@@ -47,7 +47,7 @@ public class FacadeCollection<T extends Serializable> implements ReadableBlueCol
 			} catch (BlueDbException e) {
 				return null;
 			}
-		});
+		}, valueType);
 	}
 
 	@Override

@@ -8,8 +8,9 @@ repositories {
 
 dependencies{
 	implementation project(':BlueDB')
-	
     implementation 'com.github.d-w-johnson:fast-serialization:v2.59'
+    
+	testImplementation project(":TestUtils")
     testImplementation group: 'org.mockito', name: 'mockito-all', version: mockitoVersion
     testImplementation "junit:junit:4.12"
 }

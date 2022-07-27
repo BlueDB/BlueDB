@@ -4,7 +4,10 @@ import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URISyntaxException;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,35 +15,99 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bluedb.TestUtils;
+import org.bluedb.api.BlueCollectionVersion;
+import org.bluedb.api.BlueTimeCollection;
+import org.bluedb.api.CloseableIterator;
+import org.bluedb.api.Condition;
 import org.bluedb.api.ReadableBlueCollection;
 import org.bluedb.api.datastructures.BlueKeyValuePair;
+import org.bluedb.api.datastructures.BlueSimpleSet;
 import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.BlueIndex;
 import org.bluedb.api.index.KeyExtractor;
+import org.bluedb.api.index.conditions.BlueIndexCondition;
+import org.bluedb.api.keys.ActiveTimeKey;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.HashGroupedKey;
 import org.bluedb.api.keys.IntegerKey;
 import org.bluedb.api.keys.LongKey;
 import org.bluedb.api.keys.StringKey;
+import org.bluedb.api.keys.TimeFrameKey;
+import org.bluedb.api.keys.TimeKey;
 import org.bluedb.disk.BlueDbDiskTestBase;
 import org.bluedb.disk.BlueDbOnDiskBuilder;
 import org.bluedb.disk.Blutils;
 import org.bluedb.disk.ReadableDbOnDisk;
 import org.bluedb.disk.TestValue;
 import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
+import org.bluedb.disk.collection.index.TestRetrievalLongKeyExtractor;
+import org.bluedb.disk.collection.index.conditions.dummy.DummyUUIDIndexCondition;
+import org.bluedb.disk.collection.metadata.ReadOnlyCollectionMetadata;
 import org.bluedb.disk.models.calls.Call;
 import org.bluedb.disk.segment.Range;
 import org.bluedb.disk.segment.ReadWriteSegment;
 import org.bluedb.disk.segment.ReadWriteSegmentManager;
+import org.bluedb.disk.segment.SegmentSizeSetting;
 import org.bluedb.disk.serialization.BlueEntity;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
-
+	
+	@Test
+	public void test_getSegmentSizeSettings() throws BlueDbException {
+		assertEquals(SegmentSizeSetting.getDefaultSettingsFor(TimeKey.class).getConfig(), getTimeCollection().getSegmentSizeSettings().getConfig());
+	}
+	
+	@Test
+	public void test_getVersion() throws BlueDbException {
+		assertEquals(BlueCollectionVersion.getDefault(), getTimeCollection().getVersion());
+	}
+	
+	@Test
+	public void test_determineCollectionVersion() throws BlueDbException {
+		
+		ArrayList<ReadOnlyCollectionMetadata> metaDataReturningValidVersions = new ArrayList<>();
+		for(BlueCollectionVersion version : BlueCollectionVersion.values()) {
+			ReadOnlyCollectionMetadata versionReturningMetadata = Mockito.mock(ReadOnlyCollectionMetadata.class);
+			Mockito.doReturn(version).when(versionReturningMetadata).getCollectionVersion();
+			metaDataReturningValidVersions.add(versionReturningMetadata);
+		}
+		
+		ArrayList<Boolean> booleanOptions = new ArrayList<>(Arrays.asList(Boolean.TRUE, Boolean.FALSE));
+		
+		for(ReadOnlyCollectionMetadata metaDataReturningValidVersion : metaDataReturningValidVersions) {
+			for(BlueCollectionVersion requestedVersion : BlueCollectionVersion.values()) {
+				for(Boolean isNewCollection : booleanOptions) {
+					assertEquals("If the meta data returns a current collection version then that is what we should always use", 
+							metaDataReturningValidVersion.getCollectionVersion(), ReadableCollectionOnDisk.determineCollectionVersion(metaDataReturningValidVersion, requestedVersion, isNewCollection));
+				}
+			}
+		}
+		
+		ReadOnlyCollectionMetadata nullReturningMetadata = Mockito.mock(ReadOnlyCollectionMetadata.class);
+		Mockito.doReturn(null).when(nullReturningMetadata).getCollectionVersion();
+		
+		for(BlueCollectionVersion requestedVersion : BlueCollectionVersion.values()) {
+			assertEquals("If there is no current collection version and it is not a new collection then that means this is a legacy version 1 collection from before we saved the version", 
+					BlueCollectionVersion.VERSION_1, ReadableCollectionOnDisk.determineCollectionVersion(nullReturningMetadata, requestedVersion, false));
+		}
+		
+		for(BlueCollectionVersion requestedVersion : BlueCollectionVersion.values()) {
+			assertEquals("If there is no current collection version and it is a new collection then we will use the requested version", 
+					requestedVersion, ReadableCollectionOnDisk.determineCollectionVersion(nullReturningMetadata, requestedVersion, true));
+		}
+		
+		assertEquals("If there is no current collection version and it is a new collection and there is no requested version then we will return the default version", 
+				BlueCollectionVersion.getDefault(), ReadableCollectionOnDisk.determineCollectionVersion(nullReturningMetadata, null, true));
+	}
+	
 	@Test
 	public void test_query() throws Exception {
 		TestValue value = new TestValue("Joe");
@@ -175,9 +242,9 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		List<TestValue> listEmpty = Arrays.asList();
 		List<TestValue> list1and3 = Arrays.asList(value1, value3);
 
-		assertEquals(listEmpty, index.get(indexKeyFor1and3));
+		assertEquals(listEmpty, getValuesByIndexForTargetIndexedInteger(getLongCollection(), index, indexKeyFor1and3));
 		getLongCollection().batchUpsert(batchInserts);
-		assertEquals(list1and3, index.get(indexKeyFor1and3));
+		assertEquals(list1and3, getValuesByIndexForTargetIndexedInteger(getLongCollection(), index, indexKeyFor1and3));
 	}
 
 	@Test
@@ -411,7 +478,45 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		BlueKey key = insertAtLong(1, value);
 		assertEquals(value, getLongCollection().get(key));
 	}
-
+	
+	@Test
+	public void test_isIndexConditionCompatible() throws BlueDbException {
+		BlueIndexCondition<TestValue> anonomysInnerIndexConditionDefinition = new BlueIndexCondition<TestValue>() {
+			@Override public BlueIndexCondition<TestValue> isEqualTo(TestValue value) { return this; }
+			@Override public BlueIndexCondition<TestValue> isIn(Set<TestValue> values) { return this; }
+			@Override public BlueIndexCondition<TestValue> isIn(BlueSimpleSet<TestValue> values) { return this; }
+			@Override public BlueIndexCondition<TestValue> meets(Condition<TestValue> condition) { return this; }
+			@Override public CloseableIterator<BlueKey> getMatchingValueKeysIterator() { return null; }
+		};
+		assertFalse("You have to use an index condition that is an instance of OnDiskIndexCondition", getTimeCollection().isCompatibleIndexCondition(anonomysInnerIndexConditionDefinition));
+		
+		DummyUUIDIndexCondition<Serializable> dummyIndexConditionOfWrongType = new DummyUUIDIndexCondition<Serializable>(Serializable.class);
+		assertFalse("You have to use an index for the same value type as the collection", getTimeCollection().isCompatibleIndexCondition(dummyIndexConditionOfWrongType));
+		
+		DummyUUIDIndexCondition<TestValue> dummyIndexCondition = new DummyUUIDIndexCondition<TestValue>(TestValue.class);
+		assertTrue("Dummy indices don't return anything, so I'm not too worried aobut checking all of the details for those", getTimeCollection().isCompatibleIndexCondition(dummyIndexCondition));
+		
+		BlueIndex<IntegerKey, TestValue> index1OnTimeCollection = getTimeCollection().createIndex("index-1", IntegerKey.class, new TestRetrievalKeyExtractor());
+		BlueIndex<LongKey, TestValue> index2OnTimeCollection = getTimeCollection().createIndex("index-2", LongKey.class, new TestRetrievalLongKeyExtractor());
+		BlueIndex<IntegerKey, TestValue> index3OnTimeCollection = getTimeCollection().createIndex("index-3", IntegerKey.class, new TestRetrievalKeyExtractor());
+		BlueIndex<IntegerKey, TestValue> index1OnIntCollection = getIntCollection().createIndex("index-1", IntegerKey.class, new TestRetrievalKeyExtractor());
+		
+		assertTrue(getTimeCollection().isCompatibleIndexCondition(index1OnTimeCollection.createIntegerIndexCondition()));
+		assertTrue(getTimeCollection().isCompatibleIndexCondition(index2OnTimeCollection.createLongIndexCondition()));
+		assertTrue(getIntCollection().isCompatibleIndexCondition(index1OnIntCollection.createIntegerIndexCondition()));
+		
+		assertFalse("Wrong collection", getIntCollection().isCompatibleIndexCondition(index1OnTimeCollection.createIntegerIndexCondition()));
+		assertFalse("Wrong collection", getIntCollection().isCompatibleIndexCondition(index2OnTimeCollection.createLongIndexCondition()));
+		assertFalse("Wrong collection", getTimeCollection().isCompatibleIndexCondition(index1OnIntCollection.createIntegerIndexCondition()));
+		
+		assertFalse("Index name and type doesn't exist on this collection", getIntCollection().isCompatibleIndexCondition(index3OnTimeCollection.createIntegerIndexCondition()));
+		
+		try {
+			getTimeCollection().query().where(index1OnIntCollection.createIntegerIndexCondition());
+			fail("Trying to use an invalid index condition in a where clause should have resulted in an exception being thrown.");
+		} catch(InvalidParameterException e) { }
+	}
+	
 	@Test
 	public void test_rollup_ValueKey_invalid_size() throws Exception {
 		long segmentSize = getHashGroupedCollection().getSegmentManager().getSegmentSize();
@@ -468,5 +573,107 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		segmentDirectoryContents = segmentFor1.getPath().toFile().listFiles();
 		assertEquals(1, segmentDirectoryContents.length);
 
+	}
+
+	private List<TestValue> getValuesByIndexForTargetIndexedInteger(ReadableBlueCollection<TestValue> collection, BlueIndex<IntegerKey, TestValue> index, IntegerKey targetIntegerKey) throws BlueDbException {
+		return collection.query()
+				.where(index.createIntegerIndexCondition().isEqualTo(targetIntegerKey.getId()))
+				.getList();
+	}
+	
+	@Test
+	public void test_query_whereKeyIsIn_version1IncludesPreSegmentRange() throws Exception {
+		/*
+		 * The where key is in method for version 1 collections needs to include pre-segment keys
+		 * in the first segment included range info.
+		 */
+		BlueTimeCollection<TestValue> timeCollection = db().getTimeCollectionBuilder("my-time-collection", TimeKey.class, TestValue.class)
+			.withCollectionVersion(BlueCollectionVersion.VERSION_1)
+			.build();
+		
+		long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
+		long now = System.currentTimeMillis();
+		long fourHoursAgo = now - oneHour*4;
+		long fiveHoursAgo = now - oneHour*5;
+		long sevenHoursAgo = now - oneHour*7;
+		long eightHoursAgo = now - oneHour*8;
+
+		ArrayList<BlueKey> keys = new ArrayList<>();
+		keys.add(new TimeFrameKey(0, eightHoursAgo + 10, fourHoursAgo));
+		keys.add(new TimeFrameKey(1, sevenHoursAgo, now));
+		
+		Map<BlueKey, TestValue> keyValuePairs = new HashMap<>();
+		for(int i = 0; i < keys.size(); i++) {
+			keyValuePairs.put(keys.get(i), new TestValue(String.valueOf(i), i));
+		}
+		
+		timeCollection.batchUpsert(keyValuePairs);
+		
+		List<TestValue> queryResults = timeCollection.query()
+				.whereKeyIsIn(new HashSet<>(Arrays.asList(keys.get(0), keys.get(1))))
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.getList();
+		assertQueryResults(queryResults, 0, 0, 1);
+	}
+	
+	@Test
+	public void test_query_IncludeAll_OnlyActive_OrOnlyCompleted() throws BlueDbException {
+		/*
+		 * The where key is in method for version 1 collections needs to include pre-segment keys
+		 * in the first segment included range info.
+		 */
+		BlueTimeCollection<TestValue> timeCollection = db().getTimeCollectionBuilder("my-time-collection", TimeKey.class, TestValue.class)
+			.withCollectionVersion(BlueCollectionVersion.VERSION_2)
+			.build();
+		
+		long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
+		long now = System.currentTimeMillis();
+		long threeHoursAgo = now - oneHour*3;
+		long fourHoursAgo = now - oneHour*4;
+		long fiveHoursAgo = now - oneHour*5;
+		long sevenHoursAgo = now - oneHour*7;
+		long eightHoursAgo = now - oneHour*8;
+
+		ArrayList<BlueKey> keys = new ArrayList<>();
+		keys.add(new TimeFrameKey(0, eightHoursAgo + 10, fourHoursAgo));
+		keys.add(new TimeFrameKey(1, sevenHoursAgo, now));
+		keys.add(new ActiveTimeKey(2, threeHoursAgo));
+		
+		Map<BlueKey, TestValue> keyValuePairs = new HashMap<>();
+		for(int i = 0; i < keys.size(); i++) {
+			keyValuePairs.put(keys.get(i), new TestValue(String.valueOf(i), i));
+		}
+		
+		timeCollection.batchUpsert(keyValuePairs);
+		
+		List<TestValue> queryResults = timeCollection.query()
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.getList();
+		assertQueryResults(queryResults, 0, 0, 1, 2);
+		
+		queryResults = timeCollection.query()
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.whereKeyIsActive()
+				.getList();
+		assertQueryResults(queryResults, 0, 2);
+		
+		queryResults = timeCollection.query()
+				.afterOrAtTime(fiveHoursAgo)
+				.beforeOrAtTime(now)
+				.whereKeyIsNotActive()
+				.getList();
+		assertQueryResults(queryResults, 0, 0, 1);
+	}
+
+	private void assertQueryResults(List<TestValue> actualValues, int cupcakeModifier, int...expectedValueIndicies) {
+		List<TestValue> expectedValues = new LinkedList<>();
+		for(int i = 0; i < expectedValueIndicies.length; i++) {
+			int expectedIndex = expectedValueIndicies[i];
+			expectedValues.add(new TestValue(String.valueOf(expectedIndex), expectedIndex + cupcakeModifier));
+		}
+		assertEquals(expectedValues, actualValues);
 	}
 }

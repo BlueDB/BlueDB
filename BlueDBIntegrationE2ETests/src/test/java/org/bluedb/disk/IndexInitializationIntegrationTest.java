@@ -20,16 +20,16 @@ import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.ValueKey;
 import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.index.ReadWriteIndexOnDisk;
-import org.bluedb.disk.collection.index.TestMultiRetrievalKeyExtractor;
-import org.bluedb.disk.collection.index.TestRetrievalKeyExtractor;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper;
 import org.bluedb.disk.helpers.BlueDbOnDiskWrapper.StartupOption;
+import org.bluedb.disk.helpers.index.TestMultiRetrievalKeyExtractor;
+import org.bluedb.disk.helpers.index.TestRetrievalKeyExtractor;
 import org.junit.Test;
 
 public class IndexInitializationIntegrationTest {
 	@Test
 	public void test_largeIndexInitialization() throws IOException, BlueDbException {
-		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled)) {
+		try (BlueDbOnDiskWrapper dbWrapper = new BlueDbOnDiskWrapper(StartupOption.EncryptionDisabled, null)) {
 			long now = System.currentTimeMillis();
 			long oneHour = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
 			int valuesToInsert = 5_000;
@@ -68,12 +68,16 @@ public class IndexInitializationIntegrationTest {
 			ReadWriteIndexOnDisk<IntegerKey, TestValue> index2 = timeCollection.getIndex("COOKIE_INDEX2", IntegerKey.class);
 			
 			int targetCookieCount = new Random().nextInt(valuesToInsert-2);
-			queryResults = index1.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(index1.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(1, queryResults.size());
 			assertEquals(String.valueOf(targetCookieCount), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());
 			
-			queryResults = index2.get(new IntegerKey(targetCookieCount));
+			queryResults = timeCollection.query()
+					.where(index2.createIntegerIndexCondition().isEqualTo(targetCookieCount))
+					.getList();
 			assertEquals(2, queryResults.size());
 			assertEquals(String.valueOf(targetCookieCount), queryResults.get(0).getName());
 			assertEquals(targetCookieCount, queryResults.get(0).getCupcakes());

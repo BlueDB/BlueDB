@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.bluedb.api.keys.ActiveTimeKey;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.api.keys.TimeFrameKey;
 import org.bluedb.api.keys.TimeKey;
@@ -111,6 +112,10 @@ public class TimeSegmentPathManagerTest extends BlueDbDiskTestBase {
 		BlueKey timeKey = new TimeKey(1, segmentSize);
 		List<Path> timePaths = getPathManager().getAllPossibleSegmentPaths(timeKey);
 		assertEquals(secondPath, timePaths.get(0));
+
+		BlueKey activeTimeKey = new ActiveTimeKey(1, segmentSize);
+		List<Path> activeTimePaths = getPathManager().getAllPossibleSegmentPaths(activeTimeKey);
+		assertEquals(secondPath, activeTimePaths.get(0));
 	}
 
 	@Test

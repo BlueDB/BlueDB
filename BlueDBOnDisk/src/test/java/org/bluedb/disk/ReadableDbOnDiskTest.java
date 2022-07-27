@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import org.bluedb.TestUtils;
 import org.bluedb.api.BlueCollection;
+import org.bluedb.api.BlueCollectionVersion;
 import org.bluedb.api.BlueQuery;
 import org.bluedb.api.Updater;
 import org.bluedb.api.exceptions.BlueDbException;
@@ -76,11 +77,10 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
         assertNull(db.getUntypedCollectionForBackup(temp.getName()));
     }
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void test_getCollection() throws Exception {
 		// NOTE: we need at least one use of this deprecated method to maintain 100% coverage.
-		db.collectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
+		db.getCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build();
 
 		BlueCollection<TestValue> collection = db.getTimeCollection(getTimeCollectionName(), TestValue.class);
 		assertNotNull(collection);
@@ -139,12 +139,11 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		assertNotNull(db.getCollectionBuilder(getTimeCollectionName(), TimeKey.class, TestValue.class).build());  // make sure it works the second time as well
 	}
 
-	@SuppressWarnings({ "unchecked", "deprecation" })
 	@Test
 	public void test_initializeCollection_old() {
 		insertAtTime(10, new TestValue("Bob"));
 		try {
-			db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue.class, TestValue2.class);
+			db.initializeCollection(getTimeCollectionName(), BlueCollectionVersion.getDefault(), TimeKey.class, TestValue.class, Arrays.asList(TestValue2.class));
 		} catch(BlueDbException e) {
 			fail();
 		}
@@ -154,7 +153,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_initializeCollection_invalid_type() {
 		insertAtTime(10, new TestValue("Bob"));
 		try {
-			db.initializeCollection(getTimeCollectionName(), TimeKey.class, TestValue2.class, Arrays.asList());
+			db.initializeCollection(getTimeCollectionName(), BlueCollectionVersion.getDefault(), TimeKey.class, TestValue2.class, Arrays.asList());
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -163,7 +162,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_initializeCollection_invalid_key_type() {
 		try {
-			db.initializeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class, Arrays.asList());
+			db.initializeCollection(getTimeCollectionName(), BlueCollectionVersion.getDefault(), HashGroupedKey.class, TestValue.class, Arrays.asList());
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -173,7 +172,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 	public void test_initializeTimeCollection_invalid_type() {
 		insertAtTime(10, new TestValue("Bob"));
 		try {
-			db.initializeTimeCollection(getTimeCollectionName(), TimeKey.class, TestValue2.class, Arrays.asList(), null);
+			db.initializeTimeCollection(getTimeCollectionName(), BlueCollectionVersion.getDefault(), TimeKey.class, TestValue2.class, Arrays.asList(), null);
 			fail();
 		} catch(BlueDbException e) {
 		}
@@ -182,10 +181,29 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 	@Test
 	public void test_initializeTimeCollection_invalid_key_type() {
 		try {
-			db.initializeTimeCollection(getTimeCollectionName(), HashGroupedKey.class, TestValue.class, Arrays.asList(), null);
+			db.initializeTimeCollection(getTimeCollectionName(), BlueCollectionVersion.getDefault(), HashGroupedKey.class, TestValue.class, Arrays.asList(), null);
 			fail();
 		} catch(BlueDbException e) {
 		}
+	}
+
+	@Test
+	public void test_getFirst() throws Exception {
+		assertFalse(getTimeCollection().query().getFirst().isPresent());
+		
+        TestValue joeValue = new TestValue("Joe", 0);
+		BlueKey key = insertAtTime(10, joeValue);
+        assertEquals(joeValue, getTimeCollection().query().getFirst().orElse(null));
+        
+        TestValue bobValue = new TestValue("Bob", 0);
+		BlueKey key2 = insertAtTime(5, bobValue);
+        assertEquals(bobValue, getTimeCollection().query().getFirst().orElse(null));
+        
+        getTimeCollection().delete(key2);
+        assertEquals(joeValue, getTimeCollection().query().getFirst().orElse(null));
+
+        getTimeCollection().delete(key);
+		assertFalse(getTimeCollection().query().getFirst().isPresent());
 	}
 	
 	@Test
@@ -1009,8 +1027,8 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		insertItems(timeFrameItems, secondCollection);
 		
 		//Force rollups so that we can test the querying of chunks that contain multiple items.
-		timeCollection.getRollupScheduler().forceScheduleRollups();
-		secondCollection.getRollupScheduler().forceScheduleRollups();
+		timeCollection.getRollupScheduler().forceScheduleRollups(true);
+		secondCollection.getRollupScheduler().forceScheduleRollups(true);
 		
 		/*
 		 * Run updates on each collection in order to wait until rollups are done. These both update the cupcake
@@ -1187,9 +1205,7 @@ public class ReadableDbOnDiskTest extends BlueDbDiskTestBase {
 		List<IndividualChange<TestValue>> changesForBatch = new LinkedList<>();
 		
 		for(SelectiveBackupItem item : items) {
-			TestValue updatedValue = serializer.clone(item.getValue());
-			updatedValue.addCupcake();
-			changesForBatch.add(IndividualChange.createChange(item.getKey(), item.getValue(), updatedValue));
+			changesForBatch.add(IndividualChange.createUpdateChange(item.getKey(), item.getValue(), value -> value.addCupcake(), serializer));
         }
 		Collections.sort(changesForBatch);
 		
