@@ -108,7 +108,7 @@ public class RecoveryManager<T extends Serializable> {
 					IndividualChange<T> change = entityToChangeMapper.map(entity);
 					output.write(change);
 				} catch(Throwable t) {
-					throw new BlueDbException("Update query failed, the update/replace method probably did something weird to the " + entity.getKey() + " entity");
+					throw new BlueDbException("Update query failed, the update/replace method probably did something weird to the " + entity.getKey() + " entity", t);
 				}
 			}
 		} catch(Throwable t) {

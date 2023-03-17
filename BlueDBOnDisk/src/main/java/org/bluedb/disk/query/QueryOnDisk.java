@@ -1,7 +1,6 @@
 package org.bluedb.disk.query;
 
 import java.io.Serializable;
-import java.util.LinkedList;
 import java.util.Set;
 
 import org.bluedb.api.BlueQuery;
@@ -53,7 +52,7 @@ public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> 
 	@Override
 	public void delete() throws BlueDbException {
 		String description = "Delete using query " + this;
-		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), IndividualChange::createDeleteChange);
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, this, IndividualChange::createDeleteChange);
 		writeableCollection.executeTask(task);
 	}
 
@@ -64,7 +63,7 @@ public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> 
 		};
 		
 		String description = "Update using query " + this;
-		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, this, changeMapper);
 		writeableCollection.executeTask(task);
 	}
 
@@ -75,19 +74,8 @@ public class QueryOnDisk<T extends Serializable> extends ReadOnlyQueryOnDisk<T> 
 		};
 		
 		String description = "Replace using query " + this;
-		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, this, changeMapper);
 		writeableCollection.executeTask(task);
 	}
 
-	public QueryOnDisk<T> clone() {
-		QueryOnDisk<T> clone = new QueryOnDisk<T>((ReadWriteCollectionOnDisk<T>)collection);
-		clone.objectConditions = new LinkedList<>(objectConditions);
-		clone.keyConditions = new LinkedList<>(keyConditions);
-		clone.keySetsToInclude = new LinkedList<>(keySetsToInclude);
-		clone.min = min;
-		clone.max = max;
-		clone.byStartTime = byStartTime;
-		return clone;
-		
-	}
 }

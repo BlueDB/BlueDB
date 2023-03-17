@@ -1,7 +1,6 @@
 package org.bluedb.disk.query;
 
 import java.io.Serializable;
-import java.util.LinkedList;
 import java.util.Set;
 
 import org.bluedb.api.BlueTimeQuery;
@@ -13,7 +12,6 @@ import org.bluedb.api.exceptions.BlueDbException;
 import org.bluedb.api.index.conditions.BlueIndexCondition;
 import org.bluedb.api.keys.BlueKey;
 import org.bluedb.disk.collection.ReadWriteCollectionOnDisk;
-import org.bluedb.disk.collection.ReadWriteTimeCollectionOnDisk;
 import org.bluedb.disk.collection.task.BatchQueryChangeTask;
 import org.bluedb.disk.recovery.EntityToChangeMapper;
 import org.bluedb.disk.recovery.IndividualChange;
@@ -90,17 +88,6 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 		return this;
 	}
 
-	public TimeQueryOnDisk<T> clone() {
-		TimeQueryOnDisk<T> clone = new TimeQueryOnDisk<T>((ReadWriteTimeCollectionOnDisk<T>)collection);
-		clone.objectConditions = new LinkedList<>(objectConditions);
-		clone.keyConditions = new LinkedList<>(keyConditions);
-		clone.keySetsToInclude = new LinkedList<>(keySetsToInclude);
-		clone.min = min;
-		clone.max = max;
-		clone.byStartTime = byStartTime;
-		return clone;
-	}
-
 	@Override
 	public void updateKeyAndValue(TimeEntityUpdater<T> updater) throws BlueDbException {
 		EntityToChangeMapper<T> changeMapper = entity -> {
@@ -108,7 +95,7 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 		};
 		
 		String description = "Update using query " + this;
-		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, this, changeMapper);
 		writeableCollection.executeTask(task);
 	}
 
@@ -119,7 +106,7 @@ public class TimeQueryOnDisk<T extends Serializable> extends QueryOnDisk<T> impl
 		};
 		
 		String description = "Replace using query " + this;
-		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, clone(), changeMapper);
+		Runnable task = new BatchQueryChangeTask<T>(description, writeableCollection, this, changeMapper);
 		writeableCollection.executeTask(task);
 	}
 	
