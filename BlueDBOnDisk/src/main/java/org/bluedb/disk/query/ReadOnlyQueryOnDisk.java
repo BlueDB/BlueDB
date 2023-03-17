@@ -214,7 +214,7 @@ public class ReadOnlyQueryOnDisk<T extends Serializable> implements ReadBlueQuer
 
 	@Override
 	public String toString() {
-		return "<" + this.getClass().getSimpleName() + " [" + min + ", " + max + "] with " + objectConditions.size() + " conditions and " + keyConditions.size() + " key-conditions>";
+		return "<" + this.getClass().getSimpleName() + " [" + min + ", " + max + "] with " + objectConditions.size() + " conditions, " + keyConditions.size() + " key-conditions, and " + indexConditionGroups.size() + " index-condition groups>";
 	}
 
 	private Range getRange() {
