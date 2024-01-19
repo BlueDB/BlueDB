@@ -132,11 +132,15 @@ public class BackupManager {
 		for (File file : files) {
 			Range fileRange = Range.fromUnderscoreDelmimitedString(file.getName());
 			long groupingNumber = fileRange.getStart();
-
-			if (shouldFilterDataBasedOnTime(isTimeBased, includedTimeRange)) {
-				copyDataFileAfterFilteringBasedOnTime(segment, serializer, tempFolder, includedTimeRange, groupingNumber);
-			} else {
-				copyDataFileStraightOver(segment, serializer, tempFolder, groupingNumber);
+			
+			try {
+				if (shouldFilterDataBasedOnTime(isTimeBased, includedTimeRange)) {
+					copyDataFileAfterFilteringBasedOnTime(segment, serializer, tempFolder, includedTimeRange, groupingNumber);
+				} else {
+					copyDataFileStraightOver(segment, serializer, tempFolder, groupingNumber);
+				}
+			} catch (Exception e) {
+				new BlueDbException("Failed to copy data file from " + file, e).printStackTrace();
 			}
 		}
 	}
