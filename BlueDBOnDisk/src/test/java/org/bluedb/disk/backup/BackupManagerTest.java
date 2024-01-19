@@ -95,7 +95,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
-	public void test_backupToTempDirectory_ExceptionInCopyDataFileStraightOver_shouldWrapWithBlueDbException() throws Exception {
+	public void test_backupToTempDirectory_ExceptionInCopyDataFileStraightOver_shouldSkipFile() throws Exception {
 		// Arrange
 		IllegalStateException expected = new IllegalStateException("I'm broken!");
 		BlueKey key1At1 = createKey(1, 1);
@@ -114,17 +114,11 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BackupManager backupManager = db().getBackupManager();
 
 		// Act
-		try {
-			backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
-			fail("Expected exception was not thrown");
-		} catch (BlueDbException ex) {
-			// Assert
-			assertEquals("Cause of exception was not the expected Exception", expected, ex.getCause());
-		}
+		backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.createMaxRange(), false);
 	}
 
 	@Test
-	public void test_backupToTempDirectory_ExceptionInCopyDataFileAfterFilteringBasedOnTime_shouldWrapWithBlueDbException() throws Exception {
+	public void test_backupToTempDirectory_ExceptionInCopyDataFileAfterFilteringBasedOnTime_shouldSkipFile() throws Exception {
 		// Arrange
 		IllegalStateException expected = new IllegalStateException("I'm broken!");
 		BlueKey key1At1 = createKey(1, 1);
@@ -143,13 +137,7 @@ public class BackupManagerTest extends BlueDbDiskTestBase {
 		BackupManager backupManager = db().getBackupManager();
 
 		// Act
-		try {
-			backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.forValueAndRangeSize(1L, 100), false);
-			fail("Expected exception was not thrown");
-		} catch (BlueDbException ex) {
-			// Assert
-			assertEquals("Cause of exception was not the expected Exception", expected, ex.getCause());
-		}
+		backupManager.backupToTempDirectory(collectionsToBackup, backedUpPath, Range.forValueAndRangeSize(1L, 100), false);
 
 	}
 
