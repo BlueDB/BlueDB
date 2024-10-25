@@ -56,6 +56,26 @@ public class BlueSeekableInputStreamTest {
 			assertEquals("file " + mockedRandomAccessFile, inputStream.getDescription());
 		}
 	}
+	
+	@Test
+	public void test_getGetTotalBytesInStream() throws BlueDbException, IOException {
+		try(BlueSeekableInputStream inputStream = new BlueSeekableInputStream(tmpFilePath)) {
+			assertEquals(0, inputStream.getTotalBytesInStream());
+		}
+		
+		try(FileOutputStream fos = new FileOutputStream(tmpFilePath.toFile())) {
+			fos.write(new byte[100]);
+		}
+		
+		try(BlueSeekableInputStream inputStream = new BlueSeekableInputStream(tmpFilePath)) {
+			assertEquals(100, inputStream.getTotalBytesInStream());
+		}
+		
+		try(RandomAccessFile raf = new RandomAccessFile(tmpFilePath.toFile(), "r");
+			BlueSeekableInputStream inputStream = new BlueSeekableInputStream(raf);) {
+			assertEquals(100, inputStream.getTotalBytesInStream());
+		}
+	}
 
 	@Test
 	public void test_readNextByteAsInt() throws IOException, BlueDbException {

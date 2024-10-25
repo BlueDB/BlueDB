@@ -76,6 +76,12 @@ public interface BlueInputStream extends Closeable {
 	 */
 	public void resetToLastMark() throws BlueDbException;
 	
+	/**
+	 * @return the number of total bytes in the stream if that is known, or a number <= 0 if it is not known.
+	 * @throws BlueDbException
+	 */
+	public long getTotalBytesInStream();
+	
 	@Override
 	public void close(); //Don't want close to throw an IOException
 
