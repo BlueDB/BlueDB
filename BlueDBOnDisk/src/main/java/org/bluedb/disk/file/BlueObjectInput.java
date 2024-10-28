@@ -61,7 +61,6 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			} else {
 				this.metadata = new BlueFileMetadata();
 			}
-
 		} catch (Throwable t) {
 			close();
 			throw new BlueDbException(t.getMessage(), t);
@@ -169,18 +168,19 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			return;
 		}
 		try {
+			blueInputStream.mark(Integer.MAX_VALUE);
 			Integer objectLength = blueInputStream.readNextFourBytesAsInt();
-			if (objectLength == null) {
+			if (isInvalidObjectLength(objectLength)) {
+				if(objectLength != null) {
+					//Null just means end of file, not error
+					System.out.println("BlueDB Error: We just read in an object size of " + objectLength + " which doesn't make sense. We will skip this file since it must be corrupt: " + path);
+				}
 				nextRawBytes = null;
 				nextUnencryptedBytes = null;
-				return; // This means that we've reached the end of the file
-			}
-			if (objectLength <= 0) {
-				System.out.println("BlueDB Error: We just read in an object size of " + objectLength + " which doesn't make sense. We will skip this file since it must be corrupt: " + path);
-				nextRawBytes = null;
-				nextUnencryptedBytes = null;
+				this.blueInputStream.resetToLastMark();
 				return;
 			}
+			blueInputStream.mark(0); // Essentially removes the above mark, we don't want to tell the input stream to store more in it's buffer than is needed.
 			byte[] nextBytes = new byte[objectLength];
 			blueInputStream.readFully(nextBytes, 0, objectLength);
 			nextRawBytes = nextBytes;
@@ -190,6 +190,20 @@ public class BlueObjectInput<T> implements Closeable, Iterator<T> {
 			nextRawBytes = null;
 			nextUnencryptedBytes = null;
 		}
+	}
+
+	private boolean isInvalidObjectLength(Integer objectLength) {
+		if(objectLength == null || objectLength <= 0) {
+			//Obviously an object can't be 0 or less bytes so we know this file is corrupt
+			return true;
+		}
+		
+		if(blueInputStream.getTotalBytesInStream() > 0 && objectLength > blueInputStream.getTotalBytesInStream()) {
+            //We know the total length of the input stream and we think the object is larger than that so we know this file is corrupt
+            return true;
+        }
+		
+		return false;
 	}
 
 	public Path getPath() {

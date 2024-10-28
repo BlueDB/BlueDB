@@ -117,7 +117,7 @@ public class ReadFileManager {
 		try {
 			bis.mark(Integer.MAX_VALUE);
 			Integer objectLength = bis.readNextFourBytesAsInt();
-			if (objectLength == null || objectLength <= 0) {
+			if (isInvalidObjectLength(objectLength, bis)) {
 				bis.resetToLastMark();
 				return null; // The file is empty or the unexpected bytes are the first sign of a legacy file
 			}
@@ -143,6 +143,19 @@ public class ReadFileManager {
 		finally {
 			bis.mark(0); // Essentially removes the original mark, don't want to tell the input stream to store more in it's buffer than is needed.
 		}
+	}
+
+	private boolean isInvalidObjectLength(Integer objectLength, BlueInputStream bis) {
+		if(objectLength == null || objectLength <= 0) {
+			return true;
+		}
+		
+		if(bis.getTotalBytesInStream() > 0 && objectLength > bis.getTotalBytesInStream()) {
+            //We know the total length of the input stream and we think the object is larger than that so we know this file is corrupt
+            return true;
+        }
+		
+		return false;
 	}
 
 }

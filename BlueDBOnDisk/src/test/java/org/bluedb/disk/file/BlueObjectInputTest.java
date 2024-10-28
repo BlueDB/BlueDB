@@ -227,6 +227,27 @@ public class BlueObjectInputTest extends TestCase {
 		}
 	}
 
+	@Test
+	public void test_nextFromFileWithTooLargeSize() throws Exception {
+		File corruptedFile = createEmptyFile("test_nextFromFileWithTooLargeSize");
+		
+		try(DataOutputStream outStream = new DataOutputStream(new FileOutputStream(corruptedFile))) {
+			outStream.writeInt(1024);
+			byte[] zeros = new byte[]{0, 0, 0};
+			outStream.write(zeros);
+			outStream.close();
+		}
+		
+		assertEquals(7, corruptedFile.length());
+
+		try (BlueReadLock<Path> readLock = lockManager.acquireReadLock(corruptedFile.toPath())) {
+			try (BlueObjectInput<TestValue> inStream = fileManager.getBlueInputStream(readLock)) {
+				assertNull(inStream.next());
+				inStream.close();
+			}
+		}
+	}
+
 
 	@Test
 	public void test_nextFromFile_IOException() {

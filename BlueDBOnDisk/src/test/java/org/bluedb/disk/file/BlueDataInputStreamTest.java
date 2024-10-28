@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.times;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -56,6 +57,21 @@ public class BlueDataInputStreamTest {
 		InputStream mockedInputStream = Mockito.mock(InputStream.class);
 		try(BlueDataInputStream inputStream = new BlueDataInputStream(mockedInputStream)) {
 			assertEquals("input stream " + mockedInputStream, inputStream.getDescription());
+		}
+	}
+	
+	@Test
+	public void test_getGetTotalBytesInStream() throws BlueDbException, IOException {
+		try(BlueDataInputStream inputStream = new BlueDataInputStream(tmpFilePath)) {
+			assertEquals(0, inputStream.getTotalBytesInStream());
+		}
+		
+		try(FileOutputStream fos = new FileOutputStream(tmpFilePath.toFile())) {
+			fos.write(new byte[100]);
+		}
+		
+		try(BlueDataInputStream inputStream = new BlueDataInputStream(tmpFilePath)) {
+			assertEquals(100, inputStream.getTotalBytesInStream());
 		}
 	}
 	

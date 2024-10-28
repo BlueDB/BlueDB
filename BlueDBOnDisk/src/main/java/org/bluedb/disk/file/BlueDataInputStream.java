@@ -13,6 +13,7 @@ public class BlueDataInputStream implements BlueInputStream {
 	
 	private String description;
 	private DataInputStream dataInputStream;
+	private long totalBytesInStream = -1;
 	
 	public BlueDataInputStream(InputStream inputStream) {
 		this.description = "input stream " + inputStream;
@@ -27,6 +28,7 @@ public class BlueDataInputStream implements BlueInputStream {
 		try {
 			this.description = "file " + file;
 			this.dataInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+			this.totalBytesInStream = file.length();
 		} catch (Throwable t) {
 			throw new BlueDbException("Failed to create data input stream for " + description, t);
 		}
@@ -35,6 +37,11 @@ public class BlueDataInputStream implements BlueInputStream {
 	@Override
 	public String getDescription() {
 		return description;
+	}
+
+	@Override
+	public long getTotalBytesInStream() {
+		return totalBytesInStream;
 	}
 
 	@Override

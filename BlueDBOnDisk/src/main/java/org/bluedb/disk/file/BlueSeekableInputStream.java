@@ -9,12 +9,18 @@ import org.bluedb.api.exceptions.BlueDbException;
 public class BlueSeekableInputStream implements BlueInputStream {
 	private String description;
 	private RandomAccessFile randomAccessFile;
+	private long totalBytesInStream = -1;
 	
 	private long markedPosition = 0;
 	
-	public BlueSeekableInputStream(RandomAccessFile randomAccessFile) {
-		this.description = "file " + randomAccessFile;
-		this.randomAccessFile = randomAccessFile;
+	public BlueSeekableInputStream(RandomAccessFile randomAccessFile) throws BlueDbException {
+		try {
+			this.description = "file " + randomAccessFile;
+			this.randomAccessFile = randomAccessFile;
+			this.totalBytesInStream = randomAccessFile.length();
+		} catch (Throwable t) {
+			throw new BlueDbException("Failed to create BlueSeekableInputStream for file " + randomAccessFile, t);
+		}
 	}
 	
 	public BlueSeekableInputStream(Path path) throws BlueDbException {
@@ -25,14 +31,20 @@ public class BlueSeekableInputStream implements BlueInputStream {
 		try {
 			this.description = "file " + file;
 			this.randomAccessFile = new RandomAccessFile(file, "r");
+			this.totalBytesInStream = file.length();
 		} catch (Throwable t) {
-			throw new BlueDbException("Failed to create random access file for file" + file, t);
+			throw new BlueDbException("Failed to create BlueSeekableInputStream for file " + file, t);
 		}
 	}
 
 	@Override
 	public String getDescription() {
 		return description;
+	}
+
+	@Override
+	public long getTotalBytesInStream() {
+		return totalBytesInStream;
 	}
 
 	@Override
