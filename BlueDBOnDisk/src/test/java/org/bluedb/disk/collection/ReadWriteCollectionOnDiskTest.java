@@ -375,6 +375,17 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_getLastValue() throws Exception {
+		assertNull(getLongCollection().getLastValue());
+		insertAtLong(1, new TestValue("Joe"));
+		assertEquals(new TestValue("Joe"), getLongCollection().getLastValue());
+		insertAtLong(3, new TestValue("Bob"));
+		assertEquals(new TestValue("Bob"), getLongCollection().getLastValue());
+		insertAtLong(2, new TestValue("Fred"));
+		assertEquals(new TestValue("Bob"), getLongCollection().getLastValue());
+	}
+
+	@Test
 	public void test_getLastKey_readonly() throws Exception {
         ReadableDbOnDisk readOnlyDb = (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
         ReadableBlueCollection<TestValue> collection = readOnlyDb.getCollection(getLongCollection().getPath().toFile().getName(), TestValue.class);
@@ -387,6 +398,20 @@ public class ReadWriteCollectionOnDiskTest extends BlueDbDiskTestBase {
 		@SuppressWarnings("unused")
 		BlueKey key2 = insertAtLong(2, new TestValue("Fred"));
 		assertEquals(key3, collection.getLastKey());
+	}
+
+	@Test
+	public void test_getLastValue_readonly() throws Exception {
+		ReadableDbOnDisk readOnlyDb = (ReadableDbOnDisk) (new BlueDbOnDiskBuilder()).withPath(db().getPath()).buildReadOnly();
+		ReadableBlueCollection<TestValue> collection = readOnlyDb.getCollection(getLongCollection().getPath().toFile().getName(), TestValue.class);
+
+		assertNull(collection.getLastValue());
+		insertAtLong(1, new TestValue("Joe"));
+		assertEquals(new TestValue("Joe"), collection.getLastValue());
+		insertAtLong(3, new TestValue("Bob"));
+		assertEquals(new TestValue("Bob"), collection.getLastValue());
+		insertAtLong(2, new TestValue("Fred"));
+		assertEquals(new TestValue("Bob"), collection.getLastValue());
 	}
 
 	@Test

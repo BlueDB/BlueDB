@@ -433,6 +433,17 @@ public class ReadWriteTimeCollectionOnDiskTest extends BlueDbDiskTestBase {
 	}
 
 	@Test
+	public void test_getLastValue() throws Exception {
+		assertNull(getTimeCollection().getLastValue());
+		insertAtTime(1, new TestValue("Joe"));
+		assertEquals(new TestValue("Joe"), getTimeCollection().getLastValue());
+		insertAtTime(3, new TestValue("Bob"));
+		assertEquals(new TestValue("Bob"), getTimeCollection().getLastValue());
+		insertAtTime(2, new TestValue("Fred"));
+		assertEquals(new TestValue("Bob"), getTimeCollection().getLastValue());
+	}
+
+	@Test
 	public void test_findMatches() throws Exception {
 		TestValue valueJoe = new TestValue("Joe");
 		TestValue valueBob = new TestValue("Bob");
