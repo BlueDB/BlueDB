@@ -40,6 +40,11 @@ public class DummyReadOnlyCollectionOnDisk<T extends Serializable> implements Re
 	}
 
 	@Override
+	public T getLastValue() {
+		return null;
+	}
+
+	@Override
 	public ReadBlueTimeQuery<T> query() {
 		return new DummyQuery<T>();
 	}

@@ -57,6 +57,12 @@ public interface ReadableBlueCollection<V extends Serializable> {
 	public BlueKey getLastKey();
 
 	/**
+	 * Returns the value with the highest grouping number that exists in this collection
+	 * @return the value with the highest grouping number that exists in this collection
+	 */
+	public V getLastValue();
+
+	/**
 	 * Creates a {@link ReadBlueQuery} object which can be used to build and execute a query against this collection.
 	 * @return a {@link ReadBlueQuery} object which can be used to build and execute a query against this collection.
 	 */

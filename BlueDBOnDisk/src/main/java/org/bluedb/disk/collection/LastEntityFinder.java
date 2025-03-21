@@ -29,7 +29,10 @@ public class LastEntityFinder {
 			ReadableSegment<?> segment = segments.remove(0);
 			try (SegmentEntityIterator<?> segmentIterator = segment.getIterator(Long.MIN_VALUE, Long.MAX_VALUE)) {
 				while(segmentIterator.hasNext()) {
-					last = segmentIterator.next();
+					BlueEntity<?> blueEntity = segmentIterator.next();
+					if (blueEntity.getKey() != null && blueEntity.getValue() != null) {
+						last = blueEntity;
+					}
 				}
 			}
 			if (last != null) {
