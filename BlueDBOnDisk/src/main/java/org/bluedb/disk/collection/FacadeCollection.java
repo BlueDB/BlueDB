@@ -66,6 +66,11 @@ public class FacadeCollection<T extends Serializable> implements ReadableBlueCol
 	}
 
 	@Override
+	public T getLastValue() {
+		return getCollection().getLastValue();
+	}
+
+	@Override
 	public ReadBlueQuery<T> query() {
 		return getCollection().query();
 	}

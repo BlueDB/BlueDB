@@ -106,6 +106,14 @@ public abstract class ReadableCollectionOnDisk<T extends Serializable> implement
 		return lastEntity == null ? null : lastEntity.getKey();
 	}
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public T getLastValue() {
+		LastEntityFinder lastFinder = new LastEntityFinder(this);
+		BlueEntity<T> lastEntity = (BlueEntity<T>) lastFinder.getLastEntity();
+		return lastEntity == null ? null : lastEntity.getValue();
+	}
+
 	public List<BlueEntity<T>> findMatches(Range range, List<QueryIndexConditionGroup<T>> indexConditionGroups, List<Condition<T>> conditions, List<Condition<BlueKey>> keyConditions, boolean byStartTime, Optional<IncludedSegmentRangeInfo> includedSegmentRangeInfo) throws BlueDbException {
 		List<BlueEntity<T>> results = new ArrayList<>();
 		try (CollectionEntityIterator<T> iterator = new CollectionEntityIterator<T>(getSegmentManager(), range, byStartTime, indexConditionGroups, conditions, keyConditions, includedSegmentRangeInfo)) {
