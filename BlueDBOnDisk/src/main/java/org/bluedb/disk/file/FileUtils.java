@@ -97,7 +97,6 @@ public class FileUtils {
 	
 	public static Path createTempFilePathInDirectory(Path directory, String filename) throws BlueDbException {
 		Path path = directory.resolve(TEMP_FILE_PREFIX + filename);
-		path.toFile().deleteOnExit();
 		return path;
 	}
 

@@ -51,7 +51,6 @@ public class BackupManager {
 		try {
 			collectionsToBackup.forEach((c) -> (c).getRecoveryManager().placeHoldOnHistoryCleanup());
 			Path tempDirectoryPath = Files.createTempDirectory("bluedb_backup_in_progress");
-			tempDirectoryPath.toFile().deleteOnExit();
 			try {
 				Path unzippedBackupPath = Paths.get(tempDirectoryPath.toString(), "bluedb");
 				backupToTempDirectory(collectionsToBackup, unzippedBackupPath, includedTimeRange, acceptAllPendingChanges);
